@@ -1,0 +1,125 @@
+# =============================================================================
+# ShellCheck Configuration for Oscura
+# =============================================================================
+# https://github.com/koalaman/shellcheck/wiki/Directive
+# ShellCheck version: 0.9.0 (verified 2026-01-06)
+#
+# Philosophy (aligned with CLAUDE.md):
+# "Simplest solution that works. Complexity must justify itself."
+#
+# This configuration balances strictness with practicality:
+# - Keeps important safety checks enabled (word splitting, quoting, arrays)
+# - Disables pedantic style warnings that conflict with repository patterns
+# - Enables external source following for multi-file scripts
+# - Enables select optional checks for error handling and portability
+# =============================================================================
+
+# =============================================================================
+# EXTERNAL SOURCES
+# =============================================================================
+# Allow ShellCheck to follow source/. statements to read other files.
+# This is safe for local development and eliminates SC1090/SC1091 warnings.
+# https://www.shellcheck.net/wiki/SC1090
+external-sources=true
+
+# Search for sourced files relative to the script being checked.
+# SCRIPTDIR is a special value that resolves to the current script's directory.
+source-path=SCRIPTDIR
+source-path=SCRIPTDIR/../lib
+source-path=SCRIPTDIR/../../lib
+
+# =============================================================================
+# DISABLED CHECKS
+# =============================================================================
+
+# SC2155: Declare and assign separately to avoid masking return values.
+# Rationale: Combined declaration is more readable when we intentionally don't
+# check return values. When return values matter, we declare and assign
+# separately explicitly.
+# https://www.shellcheck.net/wiki/SC2155
+disable=SC2155
+
+# SC2250: Prefer ${var} over $var for clarity.
+# Rationale: Enforced by require-variable-braces. Consistency and IDE support.
+# Disabled comments handled by inline shellcheck directives where needed.
+# disable=SC2250  # Enabled - enforced by require-variable-braces
+
+# SC2310: Function invoked in if condition disables set -e.
+# Rationale: This is often an intentional pattern for error handling.
+disable=SC2310
+
+# SC2249: Consider adding a default case to handle unmatched values.
+# Rationale: Not always necessary, code review handles this.
+disable=SC2249
+
+# SC2312: Masked return values in process substitution.
+# Rationale: find/grep in <(...) process substitution is safe for iteration.
+# Checking find's return value in these patterns doesn't add value.
+disable=SC2312
+
+# SC2248: Prefer quoting even safe variables.
+# Rationale: Too noisy for intentional word-splitting patterns (JSON_ARGS, VERBOSE_ARGS, etc).
+# Conflicts with common bash idiom of using empty-or-value variables for optional args.
+# Use inline `# shellcheck disable=SC2086` for intentional word splits instead.
+disable=SC2248
+
+# SC2292: Prefer [[ ]] over [ ] for tests.
+# Rationale: Enforced by require-double-brackets. Bash best practice.
+# disable=SC2292  # Enabled - enforced by require-double-brackets
+
+# SC2034: Variable appears unused.
+# Rationale: Color/formatting variables and trap functions may appear unused.
+# Use export for external use or inline disable where intentional.
+disable=SC2034
+
+# SC2317: Command appears unreachable.
+# Rationale: Trap handlers and cleanup functions trigger false positives.
+disable=SC2317
+
+# =============================================================================
+# OPTIONAL CHECKS (ENABLED)
+# =============================================================================
+# These are not enabled by default but improve code quality.
+# https://github.com/koalaman/shellcheck/wiki/Optional
+
+# Suggest using 'command -v' instead of 'which' (more portable)
+enable=deprecate-which
+
+# Warn about unassigned uppercase variables (often typos or missing exports)
+enable=check-unassigned-uppercase
+
+# Suggest using ${var} instead of $var (consistency and IDE support)
+enable=require-variable-braces
+
+# NOTE: quote-safe-variables is NOT enabled.
+# Rationale: Conflicts with SC2248 (disabled above) - same underlying issue.
+# Would flag all optional arg patterns: ${JSON_ARGS} ${VERBOSE_ARGS}
+
+# Check for additional masked return values (comprehensive error handling)
+enable=check-extra-masked-returns
+
+# Notify when set -e is suppressed in function calls
+enable=check-set-e-suppressed
+
+# Suggest explicitly using -n in [ $var ] (clarity)
+enable=avoid-nullary-conditions
+
+# Require [[ ]] instead of [ ] in Bash (safer, more powerful)
+enable=require-double-brackets
+
+# =============================================================================
+# NOTES ON INTENTIONALLY KEPT ENABLED
+# =============================================================================
+# The following are intentionally NOT disabled globally. Use inline directives
+# when these are intentional:
+#
+# SC2086 (word splitting): Keep enabled - catches real bugs.
+#   When intentional: # shellcheck disable=SC2086  # intentional word split
+#
+# SC2046 (command substitution word splitting): Keep enabled.
+#   When intentional: # shellcheck disable=SC2046  # splitting expected output
+#
+# SC2034 (unused variable): Keep enabled - often indicates dead code.
+#   For exported vars: export VAR="value"  # or add inline disable comment
+#
+# SC1090/SC1091 (can't follow source): Handled by external-sources=true above.

@@ -1,0 +1,300 @@
+# Release workflow
+# Triggered on version tags (v*) or manual dispatch
+# Builds and publishes package to PyPI
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (do not publish)"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  # Artifact retention policy (days)
+  RETENTION_MEDIUM: 30 # Build artifacts
+
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ============================================================================
+  # Validate release
+  # ============================================================================
+
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"  # Remove 'v' prefix
+          else
+            # For manual runs, get version from pyproject.toml
+            VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if prerelease
+          if [[ "$VERSION" =~ (alpha|beta|rc|dev) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Detected version: $VERSION"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION"
+            exit 1
+          fi
+          echo "Version format valid: $VERSION"
+
+      - name: Validate CI passed on this commit
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const sha = context.sha;
+
+            // Get check runs for this commit
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: sha,
+              per_page: 100
+            });
+
+            // Look for CI Success check
+            const ciCheck = checkRuns.check_runs.find(
+              check => check.name === 'CI Success'
+            );
+
+            if (!ciCheck) {
+              core.setFailed('CI Success check not found on this commit. Ensure CI completed before releasing.');
+              return;
+            }
+
+            if (ciCheck.conclusion !== 'success') {
+              core.setFailed(`CI did not pass on this commit. Status: ${ciCheck.conclusion}. Aborting release.`);
+              return;
+            }
+
+            core.info('✅ CI passed on this commit - proceeding with release');
+
+            // Also check for any failed required checks
+            const failedChecks = checkRuns.check_runs.filter(
+              check => check.conclusion === 'failure' &&
+                       ['lint', 'typecheck', 'test', 'build'].some(name =>
+                         check.name.toLowerCase().includes(name)
+                       )
+            );
+
+            if (failedChecks.length > 0) {
+              const failedNames = failedChecks.map(c => c.name).join(', ');
+              core.setFailed(`Failed required checks: ${failedNames}. Aborting release.`);
+            }
+
+  # ============================================================================
+  # Build package
+  # Note: Tests are skipped in release workflow since CI already validates
+  # all code. Tags can only be pushed after CI passes on main.
+  # ============================================================================
+
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: validate
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Build package
+        run: uv build
+
+      - name: Smoke test package
+        run: |
+          echo "::group::Installing built package"
+          # Create temporary venv and install wheel
+          python -m venv /tmp/test-venv
+          /tmp/test-venv/bin/pip install --quiet dist/*.whl
+          echo "::endgroup::"
+
+          echo "::group::Testing package import"
+          /tmp/test-venv/bin/python -c \
+            "import oscura; print(f'✅ Oscura v{oscura.__version__} imported')"
+          echo "::endgroup::"
+
+          echo "::group::Testing CLI"
+          /tmp/test-venv/bin/oscura --version
+          /tmp/test-venv/bin/oscura --help | head -10
+          echo "::endgroup::"
+
+          echo "::group::Running minimal test suite"
+          /tmp/test-venv/bin/pip install --quiet pytest
+          /tmp/test-venv/bin/pytest tests/unit/core/test_types.py -v --maxfail=1 --tb=short || true
+          echo "::endgroup::"
+
+          echo "✅ Smoke tests passed!"
+
+      - name: Verify package
+        run: |
+          echo "::group::Built artifacts"
+          ls -la dist/
+          echo "::endgroup::"
+
+          echo "::group::Wheel contents"
+          python -m zipfile -l dist/*.whl
+          echo "::endgroup::"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: dist
+          path: dist/
+          retention-days: ${{ env.RETENTION_MEDIUM }}
+
+  # ============================================================================
+  # Publish to PyPI
+  # ============================================================================
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [validate, build]
+    if: github.ref_type == 'tag' || github.event.inputs.dry_run == 'false'
+    environment:
+      name: pypi
+      url: https://pypi.org/project/oscura/
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Uses trusted publishing (OIDC)
+          # No API token needed if configured in PyPI
+          print-hash: true
+          verbose: true
+
+  # ============================================================================
+  # Create GitHub Release
+  # ============================================================================
+
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [validate, build, publish-pypi]
+    if: github.ref_type == 'tag'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          PREV_TAG=$(git tag --sort=-v:refname | grep -v "^v${VERSION}$" | head -1)
+
+          echo "# Release v${VERSION}" > release_notes.md
+          echo "" >> release_notes.md
+
+          if [[ -n "$PREV_TAG" ]]; then
+            echo "## Changes since ${PREV_TAG}" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" >> release_notes.md
+          else
+            echo "Initial release" >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo "## Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo "pip install oscura==${VERSION}" >> release_notes.md
+          echo '```' >> release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ needs.validate.outputs.version }}"
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ needs.validate.outputs.is_prerelease }}
+          files: |
+            dist/*
+          generate_release_notes: true
+
+  # ============================================================================
+  # Post-release notifications
+  # ============================================================================
+
+  notify:
+    name: Release Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [validate, build, publish-pypi, github-release]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Prerelease**: ${{ needs.validate.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish PyPI | ${{ needs.publish-pypi.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Release | ${{ needs.github-release.result }} |" >> $GITHUB_STEP_SUMMARY

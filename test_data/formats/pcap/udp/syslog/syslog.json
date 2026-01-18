@@ -1,0 +1,8 @@
+{
+  "packet_count": 3,
+  "protocol": "udp",
+  "src_port": 12345,
+  "dst_port": 514,
+  "service": "syslog",
+  "message_count": 3
+}

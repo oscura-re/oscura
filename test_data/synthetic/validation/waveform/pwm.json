@@ -1,0 +1,14 @@
+{
+  "file": "pwm.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "PWM signal",
+  "expected_domains": ["waveform", "digital", "timing"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "pwm",
+    "frequency_hz": 10000.0,
+    "duty_cycle": 0.5
+  }
+}

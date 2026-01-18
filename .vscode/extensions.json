@@ -1,0 +1,55 @@
+{
+  "recommendations": [
+    // === Markdown & Documentation ===
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    "bierner.markdown-mermaid",
+    "esbenp.prettier-vscode",
+    "streetsidesoftware.code-spell-checker",
+    // === Python ===
+    "ms-python.python", // 120M+ downloads, testing, debugging
+    "ms-python.vscode-pylance", // 50M+ downloads, IntelliSense
+    "charliermarsh.ruff", // 3M+ downloads, linting + formatting (replaces Black/Flake8/isort)
+    "ms-python.mypy-type-checker", // Type checking
+
+    // === Bash Scripting ===
+    "mads-hartmann.bash-ide-vscode", // 600k+ downloads, LSP-based
+    "timonwong.shellcheck", // 1.8M+ downloads, includes binary
+
+    // === Git ===
+    "mhutchie.git-graph", // 13M+ downloads, 5/5 rating, better than GitLens
+
+    // === General Development ===
+    "usernamehw.errorlens", // 7.8M+ downloads, inline diagnostics
+    "gruntfuggly.todo-tree", // 6.8M+ downloads, TODO/FIXME tree view
+    "christian-kohler.path-intellisense", // 11M+ downloads, path autocomplete
+    "editorconfig.editorconfig", // 9M+ downloads, EditorConfig support
+
+    // === UI/Theming ===
+    "pkief.material-icon-theme", // 32M+ downloads, professional file icons
+
+    // === Data & Config Files ===
+    "redhat.vscode-yaml", // 30M+ downloads, YAML support
+    "tamasfe.even-better-toml", // 6M+ downloads, TOML support
+    "mechatroner.rainbow-csv", // 1.7M+ downloads, CSV highlighting
+
+    // === Templates ===
+    "samuelcolvin.jinjahtml" // Jinja2 template syntax highlighting and IntelliSense
+  ],
+
+  "unwantedRecommendations": [
+    // === Built into VS Code (no extension needed) ===
+    "coenraads.bracket-pair-colorizer",
+    "coenraads.bracket-pair-colorizer-2",
+    "shan.code-settings-sync",
+
+    // === Replaced by Ruff ===
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "ms-python.isort",
+
+    // === Deprecated or Superseded ===
+    "hookyqr.beautify",
+    "twxs.cmake"
+  ]
+}

@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{title}} - Oscura Analysis Report</title>
+    <style>
+      :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --bg-tertiary: #e9ecef;
+        --text-primary: #212529;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+        --link-color: #0066cc;
+        --link-hover: #004499;
+        --success-bg: #d4edda;
+        --success-text: #155724;
+        --error-bg: #f8d7da;
+        --error-text: #721c24;
+        --warning-bg: #fff3cd;
+        --warning-text: #856404;
+        --info-bg: #d1ecf1;
+        --info-text: #0c5460;
+        --shadow: rgba(0, 0, 0, 0.1);
+        --code-bg: #f5f5f5;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-primary: #1a1a1a;
+          --bg-secondary: #2d2d2d;
+          --bg-tertiary: #3d3d3d;
+          --text-primary: #e0e0e0;
+          --text-secondary: #a0a0a0;
+          --border-color: #4d4d4d;
+          --link-color: #4da6ff;
+          --link-hover: #80bfff;
+          --success-bg: #1e4620;
+          --success-text: #8fd892;
+          --error-bg: #4a1a1a;
+          --error-text: #f5a3a3;
+          --warning-bg: #4a3f1a;
+          --warning-text: #f5d88f;
+          --info-bg: #1a3a4a;
+          --info-text: #8fd8f5;
+          --shadow: rgba(0, 0, 0, 0.5);
+          --code-bg: #2a2a2a;
+        }
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text-primary);
+        background-color: var(--bg-primary);
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        background: var(--bg-secondary);
+        padding: 30px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border: 1px solid var(--border-color);
+      }
+
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        color: var(--text-primary);
+      }
+
+      h2 {
+        font-size: 1.5em;
+        margin: 30px 0 15px 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border-color);
+        color: var(--text-primary);
+      }
+
+      h3 {
+        font-size: 1.2em;
+        margin: 20px 0 10px 0;
+        color: var(--text-primary);
+      }
+
+      h4 {
+        font-size: 1em;
+        margin: 15px 0 8px 0;
+        color: var(--text-secondary);
+        font-weight: 600;
+      }
+
+      .metadata {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .metadata-item {
+        background: var(--bg-primary);
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+      }
+
+      .metadata-label {
+        font-size: 0.85em;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+      }
+
+      .metadata-value {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .stat-card {
+        background: var(--bg-secondary);
+        padding: 20px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: var(--text-primary);
+        display: block;
+      }
+
+      .stat-label {
+        font-size: 0.9em;
+        color: var(--text-secondary);
+        margin-top: 5px;
+      }
+
+      .stat-card.success .stat-value {
+        color: var(--success-text);
+      }
+
+      .stat-card.error .stat-value {
+        color: var(--error-text);
+      }
+
+      .toc {
+        background: var(--bg-secondary);
+        padding: 20px;
+        border-radius: 6px;
+        margin-bottom: 30px;
+        border: 1px solid var(--border-color);
+      }
+
+      .toc h2 {
+        margin-top: 0;
+        border-bottom: none;
+      }
+
+      .toc ul {
+        list-style: none;
+        margin-top: 15px;
+      }
+
+      .toc li {
+        margin: 8px 0;
+      }
+
+      .toc a {
+        color: var(--link-color);
+        text-decoration: none;
+        padding: 4px 8px;
+        display: inline-block;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+      }
+
+      .toc a:hover {
+        background: var(--bg-tertiary);
+        color: var(--link-hover);
+      }
+
+      .domain-section {
+        background: var(--bg-secondary);
+        padding: 25px;
+        border-radius: 8px;
+        margin: 25px 0;
+        border: 1px solid var(--border-color);
+        page-break-inside: avoid;
+      }
+
+      .domain-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .domain-name {
+        font-size: 1.3em;
+        font-weight: 600;
+      }
+
+      .domain-stats {
+        display: flex;
+        gap: 20px;
+        font-size: 0.9em;
+      }
+
+      .domain-stat {
+        color: var(--text-secondary);
+      }
+
+      .domain-stat strong {
+        color: var(--text-primary);
+      }
+
+      .callout {
+        background: var(--info-bg);
+        border-left: 4px solid var(--info-text);
+        padding: 15px 20px;
+        margin: 15px 0;
+        border-radius: 4px;
+      }
+
+      .callout.success {
+        background: var(--success-bg);
+        border-left-color: var(--success-text);
+      }
+
+      .callout.error {
+        background: var(--error-bg);
+        border-left-color: var(--error-text);
+      }
+
+      .callout.warning {
+        background: var(--warning-bg);
+        border-left-color: var(--warning-text);
+      }
+
+      .callout h4 {
+        margin-top: 0;
+        color: inherit;
+      }
+
+      .callout ul {
+        margin: 10px 0 0 20px;
+      }
+
+      .callout li {
+        margin: 5px 0;
+      }
+
+      .plots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .plot-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+
+      .plot-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px var(--shadow);
+      }
+
+      .plot-card img {
+        width: 100%;
+        height: auto;
+        display: block;
+        background: white;
+      }
+
+      .plot-card-title {
+        padding: 12px 15px;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+        text-align: center;
+        font-size: 0.9em;
+      }
+
+      .files-list {
+        list-style: none;
+        margin: 15px 0;
+      }
+
+      .files-list li {
+        padding: 10px 15px;
+        background: var(--bg-primary);
+        margin: 8px 0;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .files-list a {
+        color: var(--link-color);
+        text-decoration: none;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+      }
+
+      .files-list a:hover {
+        color: var(--link-hover);
+        text-decoration: underline;
+      }
+
+      .file-type {
+        font-size: 0.75em;
+        color: var(--text-secondary);
+        background: var(--bg-tertiary);
+        padding: 3px 8px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .error-section {
+        background: var(--error-bg);
+        padding: 20px;
+        border-radius: 6px;
+        margin: 20px 0;
+        border: 1px solid var(--error-text);
+      }
+
+      .error-section h3 {
+        color: var(--error-text);
+        margin-top: 0;
+      }
+
+      .error-item {
+        background: var(--bg-primary);
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+        border-left: 3px solid var(--error-text);
+      }
+
+      .error-domain {
+        font-weight: 600;
+        color: var(--error-text);
+        margin-bottom: 5px;
+      }
+
+      .error-analysis {
+        color: var(--text-secondary);
+        font-size: 0.9em;
+        margin-bottom: 8px;
+      }
+
+      .error-message {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85em;
+        color: var(--text-primary);
+        background: var(--code-bg);
+        padding: 10px;
+        border-radius: 3px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .summary-section {
+        background: var(--bg-secondary);
+        padding: 25px;
+        border-radius: 8px;
+        margin: 25px 0;
+        border: 1px solid var(--border-color);
+      }
+
+      footer {
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.9em;
+      }
+
+      a {
+        color: var(--link-color);
+        transition: color 0.2s;
+      }
+
+      a:hover {
+        color: var(--link-hover);
+      }
+
+      code {
+        font-family: 'Courier New', monospace;
+        background: var(--code-bg);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.9em;
+      }
+
+      @media print {
+        body {
+          padding: 0;
+          max-width: 100%;
+        }
+
+        .toc,
+        .plot-card:hover {
+          box-shadow: none;
+          transform: none;
+        }
+
+        .domain-section,
+        .plot-card {
+          page-break-inside: avoid;
+        }
+
+        a {
+          text-decoration: underline;
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        header {
+          padding: 20px;
+        }
+
+        h1 {
+          font-size: 1.5em;
+        }
+
+        .metadata {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .plots-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .domain-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .domain-stats {
+          flex-direction: column;
+          gap: 5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>{{title}}</h1>
+      <div class="metadata">
+        <div class="metadata-item">
+          <div class="metadata-label">Input File</div>
+          <div class="metadata-value">{{input_name}}</div>
+        </div>
+        <div class="metadata-item">
+          <div class="metadata-label">File Size</div>
+          <div class="metadata-value">{{input_size}}</div>
+        </div>
+        <div class="metadata-item">
+          <div class="metadata-label">Input Type</div>
+          <div class="metadata-value">{{input_type}}</div>
+        </div>
+        <div class="metadata-item">
+          <div class="metadata-label">Generated</div>
+          <div class="metadata-value">{{timestamp}}</div>
+        </div>
+        <div class="metadata-item">
+          <div class="metadata-label">Analysis Duration</div>
+          <div class="metadata-value">{{duration}}</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-value">{{total_analyses}}</span>
+        <span class="stat-label">Total Analyses</span>
+      </div>
+      <div class="stat-card success">
+        <span class="stat-value">{{successful}}</span>
+        <span class="stat-label">Successful</span>
+      </div>
+      <div class="stat-card error">
+        <span class="stat-value">{{failed}}</span>
+        <span class="stat-label">Failed</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{domains_count}}</span>
+        <span class="stat-label">Analysis Domains</span>
+      </div>
+    </section>
+
+    <nav class="toc">
+      <h2>Table of Contents</h2>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        {{#each domains}}
+        <li><a href="#domain-{{domain_id}}">{{domain_name}}</a></li>
+        {{/each}} {{#if has_errors}}
+        <li><a href="#errors">Errors</a></li>
+        {{/if}}
+        <li><a href="#data-files">Data Files</a></li>
+      </ul>
+    </nav>
+
+    <section id="overview" class="summary-section">
+      <h2>Overview</h2>
+      <p>
+        This comprehensive analysis report contains {{total_analyses}} analyses across {{domains_count}} domains.
+        Analysis completed in {{duration}}.
+      </p>
+      {{#if has_errors}}
+      <div class="callout warning">
+        <h4>Note</h4>
+        <p>{{failed}} analyses encountered errors. See the <a href="#errors">Errors section</a> for details.</p>
+      </div>
+      {{/if}}
+    </section>
+
+    {{#each domains}}
+    <section id="domain-{{domain_id}}" class="domain-section">
+      <div class="domain-header">
+        <h2 class="domain-name">{{domain_name}}</h2>
+        <div class="domain-stats">
+          <span class="domain-stat"><strong>{{analyses_count}}</strong> analyses</span>
+          <span class="domain-stat"><strong>{{plots_count}}</strong> plots</span>
+          <span class="domain-stat"><strong>{{data_files_count}}</strong> data files</span>
+        </div>
+      </div>
+
+      {{#if key_findings}}
+      <div class="callout">
+        <h4>Key Findings</h4>
+        <ul>
+          {{#each key_findings}}
+          <li>{{this}}</li>
+          {{/each}}
+        </ul>
+      </div>
+      {{/if}} {{#if plots}}
+      <h3>Visualizations</h3>
+      <div class="plots-grid">
+        {{#each plots}}
+        <div class="plot-card">
+          <a href="{{path}}" target="_blank">
+            <img src="{{path}}" alt="{{title}}" loading="lazy" />
+          </a>
+          <div class="plot-card-title">{{title}}</div>
+        </div>
+        {{/each}}
+      </div>
+      {{/if}} {{#if data_files}}
+      <h3>Data Files</h3>
+      <ul class="files-list">
+        {{#each data_files}}
+        <li>
+          <a href="{{path}}">{{filename}}</a>
+          <span class="file-type">{{format}}</span>
+        </li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </section>
+    {{/each}} {{#if has_errors}}
+    <section id="errors" class="error-section">
+      <h2>Analysis Errors</h2>
+      <p>The following analyses encountered errors during execution:</p>
+      {{#each errors}}
+      <div class="error-item">
+        <div class="error-domain">{{domain}}</div>
+        <div class="error-analysis">Analysis: {{analysis_name}}</div>
+        <div class="error-message">{{error_message}}</div>
+      </div>
+      {{/each}}
+    </section>
+    {{/if}}
+
+    <section id="data-files" class="summary-section">
+      <h2>Complete Data Files</h2>
+      <p>Full analysis results are available in multiple formats:</p>
+      <ul class="files-list">
+        <li>
+          <a href="summary.json">summary.json</a>
+          <span class="file-type">JSON</span>
+        </li>
+        <li>
+          <a href="summary.yaml">summary.yaml</a>
+          <span class="file-type">YAML</span>
+        </li>
+        <li>
+          <a href="summary.csv">summary.csv</a>
+          <span class="file-type">CSV</span>
+        </li>
+        <li>
+          <a href="index.md">index.md</a>
+          <span class="file-type">Markdown</span>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>Generated by Oscura Comprehensive Analysis System</p>
+      <p>Report generated at {{timestamp}}</p>
+    </footer>
+  </body>
+</html>

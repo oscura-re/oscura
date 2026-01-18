@@ -1,0 +1,418 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://oscura.io/schemas/packet_format.json",
+  "title": "Packet Format Configuration Schema",
+  "description": "Schema for validating binary packet format configurations for custom DAQ systems and packet captures (CFG-001).",
+  "type": "object",
+  "required": ["name", "packet", "header", "samples"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Format identifier",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Format version",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the packet format"
+    },
+    "packet": {
+      "type": "object",
+      "description": "Overall packet structure definition",
+      "required": ["byte_order"],
+      "properties": {
+        "size": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Fixed packet size in bytes"
+            },
+            {
+              "type": "string",
+              "enum": ["variable"],
+              "description": "Variable-length packets"
+            }
+          ]
+        },
+        "byte_order": {
+          "type": "string",
+          "enum": ["big", "little", "native"],
+          "description": "Default byte order for multi-byte fields"
+        },
+        "length_field": {
+          "type": "string",
+          "description": "Header field name containing packet length (required when size='variable')"
+        },
+        "length_includes_header": {
+          "type": "boolean",
+          "description": "Whether length field includes header size (default: true)",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "header": {
+      "type": "object",
+      "description": "Packet header definition",
+      "required": ["size", "fields"],
+      "properties": {
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Header size in bytes"
+        },
+        "fields": {
+          "type": "array",
+          "description": "Header field definitions",
+          "items": {
+            "type": "object",
+            "required": ["name", "offset", "size", "type"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Field name",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Byte offset from start of header"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Field size in bytes"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "uint8",
+                  "uint16",
+                  "uint32",
+                  "uint64",
+                  "int8",
+                  "int16",
+                  "int32",
+                  "int64",
+                  "uint40",
+                  "uint48",
+                  "uint56",
+                  "float32",
+                  "float64",
+                  "bitfield",
+                  "bytes"
+                ],
+                "description": "Field data type"
+              },
+              "endian": {
+                "type": "string",
+                "enum": ["big", "little", "native"],
+                "description": "Byte order for this field (overrides packet default)"
+              },
+              "value": {
+                "description": "Expected constant value for validation",
+                "oneOf": [
+                  { "type": "integer" },
+                  { "type": "array", "items": { "type": "integer" } }
+                ]
+              },
+              "description": {
+                "type": "string",
+                "description": "Field description"
+              },
+              "fields": {
+                "type": "object",
+                "description": "Bitfield extraction (when type=bitfield)",
+                "patternProperties": {
+                  "^[a-zA-Z][a-zA-Z0-9_]*$": {
+                    "type": "object",
+                    "properties": {
+                      "bit": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Single bit position"
+                      },
+                      "bits": {
+                        "type": "array",
+                        "items": { "type": "integer", "minimum": 0 },
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "Bit range [start, end] inclusive"
+                      },
+                      "description": {
+                        "type": "string"
+                      }
+                    },
+                    "oneOf": [{ "required": ["bit"] }, { "required": ["bits"] }]
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "samples": {
+      "type": "object",
+      "description": "Sample data definition",
+      "required": ["offset", "format"],
+      "properties": {
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Byte offset from start of packet where samples begin"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of samples per packet"
+        },
+        "format": {
+          "type": "object",
+          "description": "Sample format specification",
+          "required": ["size", "type"],
+          "properties": {
+            "size": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Size of each sample in bytes"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "uint8",
+                "uint16",
+                "uint32",
+                "uint64",
+                "int8",
+                "int16",
+                "int32",
+                "int64",
+                "float32",
+                "float64"
+              ],
+              "description": "Sample data type"
+            },
+            "endian": {
+              "type": "string",
+              "enum": ["big", "little", "native"],
+              "description": "Byte order for samples"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "channel_extraction": {
+          "type": "object",
+          "description": "Multi-channel extraction from sample values",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "mode": {
+              "type": "string",
+              "enum": ["bitwise", "byte"],
+              "description": "Extraction mode"
+            },
+            "channels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+                  },
+                  "bits": {
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 0 },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Bit range [start, end] inclusive"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "timing": {
+      "type": "object",
+      "description": "Timing and sample rate information",
+      "properties": {
+        "sample_rate": {
+          "oneOf": [
+            { "type": "number", "exclusiveMinimum": 0 },
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(\\.[0-9]+)?[eE][+-]?[0-9]+$"
+            }
+          ],
+          "description": "Sample rate in Hz (number or scientific notation string)"
+        },
+        "timestamp_resolution": {
+          "oneOf": [
+            { "type": "number", "exclusiveMinimum": 0 },
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(\\.[0-9]+)?[eE][+-]?[0-9]+$"
+            }
+          ],
+          "description": "Timestamp resolution in seconds (number or scientific notation string)"
+        },
+        "samples_per_packet": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Expected samples per packet"
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "description": "Packet validation rules",
+      "properties": {
+        "sync_check": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "field": {
+              "type": "string",
+              "description": "Header field name to validate"
+            },
+            "expected": {
+              "description": "Expected value",
+              "oneOf": [
+                { "type": "integer" },
+                { "type": "array", "items": { "type": "integer" } }
+              ]
+            },
+            "on_failure": {
+              "type": "string",
+              "enum": ["error", "warn", "skip"],
+              "description": "Action on validation failure"
+            }
+          },
+          "additionalProperties": false
+        },
+        "sequence_check": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "field": {
+              "type": "string",
+              "description": "Sequence number field name"
+            },
+            "expect_increment": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Expected increment between packets"
+            },
+            "on_gap": {
+              "type": "string",
+              "enum": ["error", "warn", "skip"]
+            },
+            "on_duplicate": {
+              "type": "string",
+              "enum": ["error", "warn", "skip"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "checksum": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "algorithm": {
+              "type": "string",
+              "enum": ["crc16", "crc32", "md5", "sha1"]
+            },
+            "field": {
+              "type": "string",
+              "description": "Checksum field name"
+            },
+            "scope": {
+              "type": "string",
+              "enum": ["header", "samples", "all"],
+              "description": "Data scope for checksum calculation"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "preprocessing": {
+      "type": "object",
+      "description": "Data preprocessing options",
+      "properties": {
+        "trim_idle": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "pattern": {
+              "description": "Idle pattern to detect",
+              "oneOf": [
+                { "type": "string", "enum": ["auto", "zeros", "ones"] },
+                { "type": "integer" }
+              ]
+            },
+            "min_duration": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Minimum samples to consider idle"
+            }
+          },
+          "additionalProperties": false
+        },
+        "deinterleave": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "channels": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of interleaved channels"
+            },
+            "order": {
+              "type": "string",
+              "enum": ["channel_first", "sample_first"],
+              "description": "Interleaving order"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

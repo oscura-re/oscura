@@ -1,0 +1,11 @@
+{
+  "file": "binary_random_data.bin",
+  "input_type": "binary",
+  "expected_domains": ["entropy", "statistics"],
+  "expected_metrics": {
+    "size": 65536,
+    "expected_entropy": 7.9,
+    "classification": "random"
+  },
+  "description": "High-entropy random data for classification"
+}

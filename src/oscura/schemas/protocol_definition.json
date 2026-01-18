@@ -1,0 +1,363 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://oscura.io/schemas/protocol_definition.json",
+  "title": "Protocol Definition Schema",
+  "description": "Schema for validating protocol DSL definitions for automatic decoder/encoder generation (CFG-001).",
+  "type": "object",
+  "required": ["name", "settings", "framing", "fields"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Protocol identifier",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Protocol version",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "settings": {
+      "type": "object",
+      "description": "Global protocol settings",
+      "properties": {
+        "endian": {
+          "type": "string",
+          "enum": ["big", "little", "native"],
+          "description": "Default byte order"
+        },
+        "alignment": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Byte alignment (1 = no padding)"
+        },
+        "strict": {
+          "type": "boolean",
+          "description": "Fail on unknown fields or extra data"
+        }
+      },
+      "additionalProperties": false
+    },
+    "framing": {
+      "type": "object",
+      "description": "Message framing and boundary detection",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["delimiter", "length_prefix", "fixed"],
+          "description": "Framing method"
+        },
+        "sync": {
+          "type": "object",
+          "description": "Synchronization pattern",
+          "properties": {
+            "pattern": {
+              "type": "array",
+              "description": "Sync byte pattern",
+              "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+            },
+            "required": {
+              "type": "boolean",
+              "description": "Whether sync pattern is mandatory"
+            }
+          },
+          "additionalProperties": false
+        },
+        "length_field": {
+          "type": "object",
+          "description": "Length field specification (for length_prefix framing)",
+          "properties": {
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset from start of message"
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8,
+              "description": "Length field size in bytes"
+            },
+            "endian": {
+              "type": "string",
+              "enum": ["big", "little", "native"],
+              "description": "Byte order for length field"
+            },
+            "includes_header": {
+              "type": "boolean",
+              "description": "Whether length includes header bytes"
+            }
+          },
+          "additionalProperties": false
+        },
+        "delimiter": {
+          "type": "object",
+          "description": "Delimiter specification (for delimiter framing)",
+          "properties": {
+            "pattern": {
+              "type": "array",
+              "description": "Delimiter byte pattern",
+              "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+            },
+            "escape": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255,
+              "description": "Escape byte for escaped delimiters"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fixed_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Fixed message size (for fixed framing)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fields": {
+      "type": "array",
+      "description": "Field definitions in order",
+      "minItems": 1,
+      "items": {
+        "allOf": [{ "$ref": "#/definitions/field" }, { "required": ["name"] }]
+      }
+    },
+    "computed_fields": {
+      "type": "array",
+      "description": "Computed/virtual fields derived from other fields",
+      "items": {
+        "type": "object",
+        "required": ["name", "expression"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+          },
+          "expression": {
+            "type": "string",
+            "description": "Expression to compute value"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "decoding": {
+      "type": "object",
+      "description": "Decoding hints and configuration",
+      "properties": {
+        "min_header_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum bytes to determine message length"
+        },
+        "max_message_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum allowed message size"
+        },
+        "resync_on_error": {
+          "type": "boolean",
+          "description": "Attempt to resynchronize on errors"
+        },
+        "max_resync_distance": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum bytes to search for resync"
+        }
+      },
+      "additionalProperties": false
+    },
+    "encoding": {
+      "type": "object",
+      "description": "Encoding rules for encoder generation",
+      "properties": {
+        "auto_fill": {
+          "type": "object",
+          "description": "Fields to auto-fill when encoding",
+          "additionalProperties": { "type": "boolean" }
+        },
+        "validate_required_fields": {
+          "type": "boolean",
+          "description": "Validate all required fields present"
+        },
+        "validate_field_ranges": {
+          "type": "boolean",
+          "description": "Validate field values in valid ranges"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "field": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Field name (optional for array elements)",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "float32",
+            "float64",
+            "bytes",
+            "string",
+            "array",
+            "struct",
+            "bitfield"
+          ],
+          "description": "Field data type"
+        },
+        "size": {
+          "description": "Field size (bytes for bytes type, can be expression)",
+          "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "string" }]
+        },
+        "endian": {
+          "type": "string",
+          "enum": ["big", "little", "native"],
+          "description": "Byte order override"
+        },
+        "value": {
+          "description": "Expected constant value for validation",
+          "oneOf": [
+            { "type": "integer" },
+            { "type": "number" },
+            { "type": "string" },
+            { "type": "array" }
+          ]
+        },
+        "condition": {
+          "type": "string",
+          "description": "Conditional expression - field only present if true"
+        },
+        "description": {
+          "type": "string",
+          "description": "Field description"
+        },
+        "enum": {
+          "type": "object",
+          "description": "Enumeration value to name mappings (keys can be integers or hex strings)",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "fields": {
+          "description": "Nested fields (for bitfield or struct types)",
+          "oneOf": [
+            {
+              "type": "object",
+              "description": "Bitfield extraction",
+              "patternProperties": {
+                "^[a-zA-Z][a-zA-Z0-9_]*$": {
+                  "type": "object",
+                  "properties": {
+                    "bit": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Single bit position"
+                    },
+                    "bits": {
+                      "type": "array",
+                      "items": { "type": "integer", "minimum": 0 },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "Bit range [start, end]"
+                    },
+                    "description": { "type": "string" }
+                  },
+                  "oneOf": [{ "required": ["bit"] }, { "required": ["bits"] }]
+                }
+              }
+            },
+            {
+              "type": "array",
+              "description": "Struct fields",
+              "items": { "$ref": "#/definitions/field" }
+            }
+          ]
+        },
+        "count_field": {
+          "type": ["string", "null"],
+          "description": "Field name containing array count (for array type)"
+        },
+        "element": {
+          "description": "Array element definition (for array type)",
+          "$ref": "#/definitions/field"
+        },
+        "encoding": {
+          "type": "string",
+          "description": "Character encoding (for string type)",
+          "enum": ["utf-8", "ascii", "latin-1", "utf-16", "utf-32"]
+        },
+        "validation": {
+          "type": "object",
+          "description": "Field validation rules",
+          "properties": {
+            "min": {
+              "type": "number",
+              "description": "Minimum value"
+            },
+            "max": {
+              "type": "number",
+              "description": "Maximum value"
+            },
+            "expected": {
+              "description": "Expected value",
+              "oneOf": [
+                { "type": "integer" },
+                { "type": "number" },
+                { "type": "string" },
+                { "type": "array" }
+              ]
+            },
+            "on_mismatch": {
+              "type": "string",
+              "enum": ["error", "warn", "ignore"],
+              "description": "Action on validation failure"
+            },
+            "algorithm": {
+              "type": "string",
+              "enum": ["crc16_ccitt", "crc32", "md5", "sha1"],
+              "description": "Checksum algorithm"
+            },
+            "scope": {
+              "type": "string",
+              "enum": ["all_prior", "message", "payload"],
+              "description": "Scope for checksum calculation"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

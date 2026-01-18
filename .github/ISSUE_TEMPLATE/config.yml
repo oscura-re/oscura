@@ -1,0 +1,21 @@
+# Issue template chooser configuration
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
+
+blank_issues_enabled: false
+
+contact_links:
+  - name: Documentation
+    url: https://github.com/lair-click-bats/oscura/wiki
+    about: Check the documentation for guides and examples before opening an issue
+
+  - name: Discussions
+    url: https://github.com/lair-click-bats/oscura/discussions
+    about: Ask questions and discuss ideas with the community
+
+  - name: IEEE/JEDEC Standards Reference
+    url: https://github.com/lair-click-bats/oscura/blob/main/docs/reference/standards-compliance.md
+    about: Information about supported IEEE and JEDEC standards
+
+  - name: Security Vulnerabilities
+    url: https://github.com/lair-click-bats/oscura/security/advisories/new
+    about: Report security vulnerabilities privately (do not use public issues)

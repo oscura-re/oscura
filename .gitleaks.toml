@@ -1,0 +1,95 @@
+# Gitleaks configuration for Oscura
+# https://github.com/gitleaks/gitleaks
+#
+# This configuration defines allowlists for patterns that are not actual secrets
+# but may trigger false positives in secret scanning.
+
+title = "Oscura Gitleaks Configuration"
+
+[extend]
+# Extend the default gitleaks configuration
+useDefault = true
+
+# =============================================================================
+# Allowlist Rules
+# =============================================================================
+# These patterns are explicitly allowed and will not trigger alerts
+
+[allowlist]
+description = "Oscura allowlisted patterns"
+
+# Example/demo secret keys in documentation and examples
+# These are clearly placeholder values, not real secrets
+regexes = [
+    # Example secret keys used in audit trail demos (updated format)
+    '''EXAMPLE-ONLY-replace-in-production-abc123''',
+    '''EXAMPLE-test-key-not-for-production''',
+    # Legacy patterns (for older code that may reference these)
+    '''my-organization-secret-key''',
+    '''test-key''',
+    '''example-key''',
+    '''demo-key''',
+    '''placeholder-key''',
+    # Standard example patterns
+    '''your-api-key-here''',
+    '''YOUR_API_KEY''',
+    '''<your-key-here>''',
+    '''REPLACE_WITH_YOUR_KEY''',
+    # Synthetic test credentials (documented in test_data/pcap/README.md)
+    '''secret123''',
+    '''admin''',
+]
+
+# Files/paths that should be completely excluded from scanning
+paths = [
+    # Test files with mock credentials
+    '''tests/unit/integrations/test_llm\.py''',
+    '''tests/unit/reporting/test_advanced\.py''',
+    '''tests/unit/requirements/test_phase2_core_features\.py''',
+    # Example files with demo secret keys
+    '''src/oscura/core/audit\.py''',
+    # Lock files (contain hashes, not secrets)
+    '''uv\.lock''',
+    # Test data manifests (contain MD5 hashes for verification)
+    '''test_data/.*/manifest\.json''',
+    '''test_data/real_captures/manifest\.json''',
+    # PCAP files (contain captured tokens/nonces and synthetic credentials)
+    '''test_data/pcap/.*\.pcap''',
+    # Binary test data (synthetic, may contain credential-like patterns)
+    '''test_data/binary/.*''',
+]
+
+# Commits to exclude (if needed for historical reasons)
+commits = []
+
+# =============================================================================
+# Rule-specific configurations
+# =============================================================================
+
+# Override generic-api-key rule to be less aggressive
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)api[_-]?key\s*[:=]\s*['"][a-zA-Z0-9_\-]{20,}['"]'''
+allowlist = { regexes = [
+    # Allow clearly example/placeholder keys
+    '''EXAMPLE-ONLY-.*''',
+    '''EXAMPLE-test-.*''',
+    '''my-organization-secret-key''',
+    '''test-key''',
+    '''example-.*''',
+    '''demo-.*''',
+]}
+
+# Allowlist for HMAC/audit trail example keys
+[[rules]]
+id = "oscura-example-keys"
+description = "Oscura example keys (not real secrets)"
+regex = '''secret_key\s*=\s*b?['"].*['"]'''
+allowlist = { paths = [
+    '''src/oscura/core/audit\.py''',
+    '''tests/unit/core/test_audit\.py''',
+    '''docs/api/index\.md''',
+    '''docs/api/session-management\.md''',
+    '''src/oscura/core/audit\.py''',
+]}

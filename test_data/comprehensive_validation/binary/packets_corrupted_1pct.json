@@ -1,0 +1,16 @@
+{
+  "file": "packets_corrupted_1pct.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Packets with 1% byte corruption",
+  "expected_domains": ["entropy", "patterns"],
+  "edge_cases": ["corruption"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "structured_packets",
+    "packet_size": 256,
+    "num_packets": 100,
+    "corruption_rate": 0.01,
+    "sequence_gaps": []
+  }
+}

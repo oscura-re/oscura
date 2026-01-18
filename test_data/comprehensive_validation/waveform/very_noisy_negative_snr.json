@@ -1,0 +1,14 @@
+{
+  "file": "very_noisy_negative_snr.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Signal buried in noise (SNR < 0dB)",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["very_noisy", "frequency_unreliable"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "very_noisy",
+    "snr_db": -10.0,
+    "expected_issues": ["frequency_detection_unreliable"]
+  }
+}

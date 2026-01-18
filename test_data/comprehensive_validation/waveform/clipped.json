@@ -1,0 +1,14 @@
+{
+  "file": "clipped.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Clipped/saturated sine wave",
+  "expected_domains": ["waveform", "spectral"],
+  "edge_cases": ["clipped", "high_thd"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "clipped",
+    "clip_level": 0.5,
+    "expected_issues": ["thd_high", "harmonics_present"]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "type": "invalid",
+  "issue": "wrong_magic_number",
+  "expected_behavior": "load_error"
+}

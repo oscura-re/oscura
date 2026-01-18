@@ -1,0 +1,5 @@
+{
+  "frequency_hz": 10000000.0,
+  "pattern_period": 100,
+  "edge_count": 2000
+}

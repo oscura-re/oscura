@@ -1,0 +1,65 @@
+# Stale issue and PR management
+# Automatically labels and closes stale issues/PRs to keep the backlog manageable
+
+name: Stale Issues
+
+on:
+  schedule:
+    # Run daily at 1 AM UTC
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Manage Stale Issues
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/stale@v10
+        with:
+          # Issue configuration
+          stale-issue-message: |
+            This issue has been automatically marked as stale because it has not had
+            recent activity. It will be closed in 14 days if no further activity occurs.
+
+            If this issue is still relevant:
+            - Add a comment with any updates or additional information
+            - Remove the `stale` label
+
+            Thank you for your contributions to Oscura!
+          stale-issue-label: "stale"
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          close-issue-message: |
+            This issue has been automatically closed due to inactivity.
+            Feel free to reopen if it's still relevant.
+          exempt-issue-labels: "pinned,security,bug,critical,in-progress"
+          # PR configuration
+          stale-pr-message: |
+            This pull request has been automatically marked as stale because it has not had
+            recent activity. It will be closed in 14 days if no further activity occurs.
+
+            If this PR is still relevant:
+            - Rebase on the latest main branch
+            - Address any review comments
+            - Add a comment with status update
+
+            Thank you for your contributions to Oscura!
+          stale-pr-label: "stale"
+          days-before-pr-stale: 30
+          days-before-pr-close: 14
+          close-pr-message: |
+            This pull request has been automatically closed due to inactivity.
+            Feel free to reopen if you'd like to continue working on it.
+          exempt-pr-labels: "pinned,work-in-progress,do-not-close"
+          # General configuration
+          remove-stale-when-updated: true
+          delete-branch: false
+          operations-per-run: 100
+
+          # Exempt authors (maintainers)
+          exempt-all-assignees: true

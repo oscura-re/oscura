@@ -1,0 +1,715 @@
+# Oscura Custom Dictionary
+# =============================================================================
+# USAGE - Adding Words to Dictionary
+# =============================================================================
+#
+# This is the SINGLE SOURCE OF TRUTH for custom spell-check words.
+# Config location: cspell.json → dictionaryDefinitions → workspace-custom
+#
+# QUICK ADD (VS Code):
+#   1. Right-click on misspelled word (wavy underline)
+#   2. Select "Add to workspace dictionary"
+#   3. Word automatically appends to end of this file
+#   4. Move to appropriate section and keep alphabetized
+#
+# MANUAL ADD:
+#   1. Open this file: .cspell/custom-dictionary.txt
+#   2. Add word to appropriate section below
+#   3. Keep alphabetized within sections
+#   4. Save file (changes take effect immediately)
+#
+# VERIFY:
+#   Run: npx cspell "docs/**/*.md" "*.md" --config cspell.json
+#
+# Format: One word per line, case-insensitive matching
+# Comments: Lines starting with # are ignored
+# =============================================================================
+
+# =============================================================================
+# Project Names and Branding
+# =============================================================================
+Oscura
+oscura
+
+# =============================================================================
+# Technical Acronyms - Signal Analysis (Alphabetized)
+# =============================================================================
+ADC
+BER
+CISPR
+DAC
+DAQ
+DCR
+dcr
+DDJ
+DFA
+DFAs
+DFE
+DJ
+DNL
+DPO
+DSL
+dsp
+DUT
+dut
+EMI
+ENOB
+FFE
+FFT
+FFTW
+FMT
+Gbps
+IFFT
+INL
+IPART
+IPC
+JIT
+kbps
+LISN
+lsb
+LVCMOS
+LVDS
+LVTTL
+MPPT
+msb
+mse
+MSO
+OOM
+PJ
+pmax
+pmin
+PSD
+PWL
+pwl
+PWM
+pwm
+RJ
+rtol
+RTP
+RTU
+SFDR
+SINAD
+SNR
+SOA
+SPE
+TDR
+TDT
+THD
+TIE
+TSS
+tss
+TTL
+vmax
+vmin
+
+# =============================================================================
+# Protocol Names (Alphabetized)
+# =============================================================================
+ACK
+CAN
+coap
+DCD
+DMX
+DMX512
+DNP
+dnp
+FlexRay
+hdcp
+HDLC
+I2C
+I2S
+JTAG
+KJKJKJKK
+LIN
+MDIO
+Modbus
+nak
+NMEA
+NRZI
+onewire
+opcua
+PCAP
+PCAPNG
+protofield
+SCPI
+SENT
+SPI
+SWD
+tcpdump
+TDMA
+udp
+UART
+Unstuffing
+unstuffing
+Wireshark
+wireshark
+
+# =============================================================================
+# JTAG-Related Acronyms (Alphabetized)
+# =============================================================================
+cjtag
+Cjtag
+ejtag
+JAAC
+JACR
+JCCR
+JDDS
+JDIS
+JGPA
+JGPC
+JPCR
+JPRO
+JRBD
+JRES
+JRLS
+JRRI
+JRSD
+JRTD
+JSBR
+JSDA
+JSDR
+JSDS
+JSEC
+JSLN
+JSNF
+
+# =============================================================================
+# File Formats (Alphabetized)
+# =============================================================================
+ASC
+BLF
+cff
+DBC
+dbc
+HDF5
+ISF
+LFS
+logicdata
+MDF
+MF4
+NPY
+NPZ
+PulseView
+sigrok
+sigrokcli
+TDMS
+VCD
+WFM
+
+# =============================================================================
+# Technical Terms - Waveforms (Alphabetized)
+# =============================================================================
+analyzers
+bandpass
+baseband
+bathtub
+baudrate
+biconical
+bitrate
+blackman
+dcdc
+decoders
+derandomize
+detrend
+feedthrough
+FEXT
+generatable
+guardband
+hann
+hanning
+highpass
+interharmonics
+jitter
+lowpass
+lstar
+Mbps
+metacharacters
+multitone
+Needleman
+ngram
+ngrams
+Ngrams
+oscilloscope
+overshoot
+parasitics
+Periodogram
+Preshoot
+refin
+refout
+Reflectometry
+reimplementation
+Rogowski
+samplerate
+slew
+sparameters
+sparams
+spectrogram
+STFT
+timebase
+timestamped
+timestamps
+undershoot
+Vpp
+wavelet
+wavelets
+waveform
+waveforms
+Wunsch
+
+# =============================================================================
+# Standards and Compliance (Alphabetized)
+# =============================================================================
+CEI
+IEC
+IEEE
+ISO14229
+JEDEC
+JESD
+OIF
+RFC
+SAE
+
+# =============================================================================
+# Company/Manufacturer Names (Alphabetized)
+# =============================================================================
+Adesto
+adesto
+Atmel
+Croy
+Fidelix
+Infinii
+Keysight
+lcsoft
+Rigol
+Saleae
+Siglent
+Silabs
+Tektronix
+Zenodo
+
+# =============================================================================
+# Hardware/Module Names (Alphabetized)
+# =============================================================================
+ampel
+dfu
+Dfu
+dmm
+Dualio
+mcp
+MCP
+nrf
+Nrf
+rfm
+Rfm
+rts
+Rxtx
+rxtx
+stm
+Stm
+tca
+Tca
+uid
+Uid
+wizmodbus
+Wizmodbus
+
+# =============================================================================
+# SPI Flash Terms (Alphabetized)
+# =============================================================================
+bootflash
+bytewrite
+crosspageboundary
+dualioreads
+dualspiflash
+pagewrite
+seqrndread
+Spiflash
+
+# =============================================================================
+# GPIO/Register Names (Alphabetized)
+# =============================================================================
+CPHA
+cpha
+OLATA
+OLATB
+SDA
+sda
+SCL
+scl
+
+# =============================================================================
+# Library and Tool Names (Alphabetized)
+# =============================================================================
+bokeh
+cupy
+dask
+dpkt
+jinja2
+libusb
+matplotlib
+memray
+nbconvert
+networkx
+Numba
+numba
+numpy
+openpyxl
+pandas
+plotly
+pywt
+pytest
+pyyaml
+rapidfuzz
+reportlab
+ruff
+scapy
+scikit
+scipy
+
+# =============================================================================
+# Python Terms (Alphabetized)
+# =============================================================================
+atol
+autouse
+conftest
+dataclass
+dataclasses
+docstrings
+dtype
+guvectorize
+isnan
+maxprocesses
+memmap
+Mmap
+mmap
+multiiter
+ndarray
+njit
+nocache
+Pathlib
+pydantic
+pypi
+pyproject
+pythonpath
+pytestmark
+rerunfailures
+runslow
+testmon
+xdist
+xpassed
+
+# =============================================================================
+# Matplotlib/Plotting Terms (Alphabetized)
+# =============================================================================
+cividis
+cmap
+colorbar
+figsize
+plt
+viridis
+vvv
+xbb
+xlabel
+xlim
+xscale
+xyz
+ylabel
+ylim
+
+# =============================================================================
+# Scipy/Signal Processing Terms (Alphabetized)
+# =============================================================================
+coeff
+nfft
+noverlap
+nperseg
+
+# =============================================================================
+# Project Infrastructure (Alphabetized)
+# =============================================================================
+bootstrapping
+compaction
+composable
+frontmatter
+handoffs
+orchestration
+orchestrator
+subagent
+subagents
+workspace
+
+# =============================================================================
+# Development Tools (Alphabetized)
+# =============================================================================
+bandit
+codecov
+codeql
+cspell
+darglint
+dependabot
+dotenv
+editcap
+gitleaks
+GHSA
+hatchling
+importlinter
+inkscape
+interrogate
+luac
+lychee
+markdownlint
+mermaid
+mkdocs
+mkdocstrings
+mypy
+plantuml
+pydeps
+pydocstyle
+pyreverse
+ripgrep
+semver
+shellcheck
+shfmt
+towncrier
+yamllint
+
+# =============================================================================
+# IDE/Editor (Alphabetized)
+# =============================================================================
+editorconfig
+gitattributes
+gitignore
+intellisense
+jsonc
+vscode
+
+# =============================================================================
+# Software Development Terms (Alphabetized)
+# =============================================================================
+allzero
+automatable
+autofix
+bak
+blinkled
+codebase
+datalines
+datasheet
+devmax
+fixedpin
+formatter
+formatters
+funcs
+globbing
+globstar
+htmlcov
+Lightbox
+lifecycle
+linter
+linting
+loadgroup
+loadscope
+maxlen
+myanalyzer
+myformat
+myproto
+myprotocol
+nameref
+noconn
+nodmm
+noinform
+nosw
+nullglob
+otherdev
+poweron
+powerup
+pycache
+refactor
+refactoring
+sandboxed
+scriptable
+streamcancel
+swo
+swp
+symlinks
+stdin
+toolchain
+tooling
+uncategorized
+unitsize
+Unitsize
+unsanitized
+varpin
+venv
+Wordwidths
+
+# =============================================================================
+# General Computing (Alphabetized)
+# =============================================================================
+args
+autoclean
+chmod
+cli
+config
+configs
+cov
+cwd
+env
+init
+param
+params
+repo
+repos
+stderr
+stdout
+
+# =============================================================================
+# AI/LLM (Alphabetized)
+# =============================================================================
+anthropic
+claude
+llm
+llms
+
+# =============================================================================
+# Project Specific (Alphabetized)
+# =============================================================================
+allenjd
+hhvf
+rqc
+SSOT
+todos
+unfixable
+
+# =============================================================================
+# MCP/Integration (Alphabetized)
+# =============================================================================
+commandline
+mcpServers
+stdio
+
+# =============================================================================
+# GitHub Actions and CI/CD (Alphabetized)
+# =============================================================================
+codecov
+concurrency
+dependabot
+healthcheck
+maxfail
+prebuild
+precommit
+pylint
+stylelint
+ubuntu
+workflow
+workflows
+
+# =============================================================================
+# GPU/CUDA (Alphabetized)
+# =============================================================================
+cuda
+CUDA
+
+# =============================================================================
+# Algorithms and Researchers (Alphabetized)
+# =============================================================================
+Angluin's
+RPNI
+
+# =============================================================================
+# Automotive Terms (Alphabetized)
+# =============================================================================
+ADAS
+BRS
+DTC
+ECU
+HVAC
+OBD
+OBD-II
+obd
+OEM
+PGN
+PID
+RPM
+UDS
+uds
+VIN
+
+# =============================================================================
+# Additional Technical Terms (Alphabetized)
+# =============================================================================
+autobuild
+changelog
+checksums
+codec
+codecs
+datetime
+doctest
+doctests
+downsampling
+endianness
+enum
+enums
+eyemask
+fibonacci
+hashable
+hexadecimal
+hostname
+interleaving
+interop
+iterable
+itertools
+jsonschema
+kwargs
+lifecycle
+localhost
+marshalling
+metadata
+middleware
+multiline
+multiprocessing
+namespace
+namespaces
+nullable
+numpy
+opaque
+passthrough
+pathname
+pathspec
+piecewise
+preprocessor
+quantization
+readonly
+realtime
+rebase
+regex
+regexes
+resample
+resampling
+roundtrip
+runtime
+serializable
+serialization
+subprocess
+submodule
+submodules
+synchronization
+syscall
+testcase
+testcases
+testdata
+timedelta
+timeseries
+timezone
+tokenization
+toolset
+traceback
+tuple
+tuples
+typedef
+typedefs
+typename
+upsampling
+versioning
+whitespace
+wildcard
+wildcards

@@ -1,0 +1,55 @@
+# Oscura Test Data Manifest
+# Generated: 2026-01-02T21:16:36.870935+00:00
+# Generator: scripts/remediate_test_data.py
+
+version: "2.0.0"
+generated: "2026-01-02T21:16:36.870935+00:00"
+
+summary:
+  total_files: 1033
+  total_size_bytes: 98762005
+  total_size_mb: 94.19
+  categories:
+    analysis_report_validation:
+      count: 34
+      size: 755105
+    binary:
+      count: 34
+      size: 5570443
+    comprehensive_validation:
+      count: 110
+      size: 2656837
+    eye_diagram:
+      count: 4
+      size: 327252
+    ground_truth:
+      count: 9
+      size: 26830
+    jitter:
+      count: 4
+      size: 325916
+    logic_analyzer:
+      count: 774
+      size: 79454499
+    pcap:
+      count: 28
+      size: 202519
+    power_analysis:
+      count: 3
+      size: 1127754
+    root:
+      count: 5
+      size: 41559
+    signal_integrity:
+      count: 3
+      size: 138752
+    statistical:
+      count: 6
+      size: 4047536
+    waveforms:
+      count: 19
+      size: 4087003
+
+# File inventory follows (truncated for readability)
+# Full inventory: 1033 files
+# Use scripts/verify_manifest.py for full validation

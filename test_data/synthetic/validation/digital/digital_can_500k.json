@@ -1,0 +1,7 @@
+{
+  "protocol": "can",
+  "bitrate_bps": 500000.0,
+  "arbitration_id": 291,
+  "data_hex": "deadbeef",
+  "expected_domains": ["digital", "protocols"]
+}

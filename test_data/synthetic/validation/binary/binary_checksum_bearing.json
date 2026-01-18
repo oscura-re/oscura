@@ -1,0 +1,7 @@
+{
+  "packet_count": 50,
+  "packet_size": 64,
+  "checksum_type": "crc16",
+  "checksum_offset": -2,
+  "expected_domains": ["statistics", "inference", "packet"]
+}

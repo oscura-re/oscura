@@ -1,0 +1,12 @@
+{
+  "file": "three_samples.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "Three samples (minimum for frequency)",
+  "expected_domains": ["waveform", "statistics"],
+  "edge_cases": ["minimum_samples"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "three_samples"
+  }
+}

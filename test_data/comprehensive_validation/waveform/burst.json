@@ -1,0 +1,13 @@
+{
+  "file": "burst.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Burst signal (intermittent)",
+  "expected_domains": ["waveform", "patterns"],
+  "edge_cases": ["burst", "intermittent"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "burst",
+    "burst_duty": 0.3
+  }
+}

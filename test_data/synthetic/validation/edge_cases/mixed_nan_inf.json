@@ -1,0 +1,13 @@
+{
+  "file": "mixed_nan_inf.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "Mix of valid, NaN, and Inf values",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["mixed_nan_inf"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "mixed_nan_inf",
+    "nan_count": 100
+  }
+}

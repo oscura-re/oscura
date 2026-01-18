@@ -1,0 +1,6 @@
+{
+  "protocol": "spi",
+  "clock_freq_hz": 10000000.0,
+  "data_hex": "aa5500ff",
+  "expected_domains": ["digital", "protocols", "timing"]
+}

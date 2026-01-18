@@ -1,0 +1,256 @@
+# Claude Code Configuration - Single Source of Truth
+# All behavioral settings in ONE place
+# Version: 4.1.0
+# Last Updated: 2026-01-16
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ORCHESTRATION BEHAVIOR
+# ═══════════════════════════════════════════════════════════════════════════
+
+orchestration:
+  # Agent limits (enforced by hooks)
+  agents:
+    max_concurrent: 2 # Max agents running simultaneously
+    max_batch_size: 2 # Max agents per batch
+    recommended_batch_size: 1 # Safest batch size
+    polling_interval_seconds: 10
+
+  # Workflow routing
+  workflow:
+    # Workflow tracking
+    track_progress: true
+    max_phases_without_checkpoint: 3
+    require_completion_reports: true
+
+  # Context management
+  context:
+    enable_monitoring: true
+    warning_threshold: 60 # Percent
+    checkpoint_threshold: 65 # Percent
+    critical_threshold: 75 # Percent
+    max_tool_output_size: 10000 # Tokens
+    truncate_large_outputs: true
+
+  # Checkpointing
+  checkpointing:
+    enabled: true
+    auto_checkpoint: true
+    checkpoint_between_batches: true
+    checkpoint_on_context_threshold: true
+    checkpoint_interval_phases: 1
+
+  # Output summarization
+  summaries:
+    enabled: true
+    auto_summarize: true
+    immediate_capture: true
+    immediate_summarization: true
+    auto_summarize_threshold_tokens: 5000
+    max_summary_length_tokens: 2000
+    write_summaries_to_file: true
+    max_output_tokens_in_context: 5000
+    format: markdown
+
+  # Agent registry
+  agent_registry:
+    enabled: true
+    auto_persist: true
+    persist_on_launch: true
+    update_on_completion: true
+    save_outputs: true
+
+  # Batch execution
+  batch:
+    strategy: sequential
+    wait_for_completion: true
+    checkpoint_between_batches: true
+    summarize_between_batches: true
+    immediate_retrieval: true
+
+  # Recovery mechanisms
+  recovery:
+    enabled: true
+    check_filesystem_on_lost_id: true
+    fallback_to_deliverables: true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RETENTION POLICIES (days unless specified)
+# ═══════════════════════════════════════════════════════════════════════════
+
+retention:
+  # Agent data
+  agent_registry: 30 # Keep for analysis/metrics
+  agent_outputs: 7 # Archive after 7 days
+
+  # Coordination data
+  checkpoints: 7 # Delete after 7 days (temporary)
+  coordination_files: 30 # Archive after 30 days
+  handoffs: 7 # Delete after 7 days
+  summaries: 30 # Keep with agent registry
+
+  # Temporary reports (analysis, assessments, summaries)
+  reports: 7 # Archive after 7 days
+  reports_archive: 30 # Delete from archive after 30 days
+
+  # Locks and temporary files
+  locks_stale_minutes: 60 # Delete stale locks after 1 hour
+
+  # Archives
+  archives_max_days: 180 # Delete archives after 6 months
+
+  # Orchestration logs
+  orchestration_log_days: 14 # Keep orchestration logs for 14 days
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CLEANUP SCHEDULES
+# ═══════════════════════════════════════════════════════════════════════════
+
+cleanup:
+  # When to run cleanup tasks
+  session_start:
+    - stale_agents
+    - old_locks
+    - health_check
+
+  session_end:
+    - temp_files
+    - completed_workflows
+    - update_metrics
+
+  weekly:
+    - old_checkpoints
+    - old_archives
+    - orphaned_files
+    - old_reports
+    - old_logs
+
+  # Cleanup patterns
+  temporary_files:
+    - "*.tmp"
+    - "*.temp"
+    - "*.bak"
+    - "*.backup"
+    - "*.partial"
+    - "*.swp"
+    - "*~"
+
+  orphan_detection:
+    pattern: "chunk-*.md"
+    missing_counterpart: "-translated.md"
+    age_hours: 24
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SECURITY & ACCESS CONTROL
+# ═══════════════════════════════════════════════════════════════════════════
+
+security:
+  # Denied read paths (context pollution prevention)
+  denied_reads:
+    - ".claude/agent-outputs/archive/**"
+    - ".coordination/archive/**"
+    - ".git/**"
+    - ".coordination/checkpoints/**/state.json"
+    - "__pycache__/**"
+    - ".venv/**"
+    - ".ruff_cache/**"
+    - ".mypy_cache/**"
+    - ".pytest_cache/**"
+    - "**/.DS_Store"
+    - "**/node_modules/**"
+
+  # Denied write paths (protected files)
+  denied_writes:
+    - ".claude/settings.json" # Generated file
+    - ".claude/config.yaml" # This file (prevent accidental changes)
+    - ".claude/template.lock"
+    - "**/.env*"
+    - "**/*.key"
+    - "**/*.pem"
+    - "**/*credentials*"
+    - "**/*secret*"
+    - ".git/**"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT
+# ═══════════════════════════════════════════════════════════════════════════
+
+enforcement:
+  enabled: true
+
+  # Which enforcements are active
+  agent_limit: true # Enforce max_concurrent
+  auto_summarize: true # Force summarization on large outputs
+  path_validation: true # Validate write paths
+  report_limits: true # Prevent report proliferation
+  context_monitoring: true # Monitor and warn about context
+
+  # Hook configuration
+  hooks:
+    enforce_agent_limit: ".claude/hooks/enforce_agent_limit.py"
+    check_subagent_stop: ".claude/hooks/check_subagent_stop.py"
+    validate_path: ".claude/hooks/validate_path.py"
+    check_report_proliferation: ".claude/hooks/check_report_proliferation.py"
+    health_check: ".claude/hooks/health_check.py"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOGGING & METRICS
+# ═══════════════════════════════════════════════════════════════════════════
+
+logging:
+  enabled: true
+
+  # Log file paths (relative to project root)
+  files:
+    context_metrics: ".claude/hooks/context_metrics.log"
+    compaction_events: ".claude/hooks/compaction.log"
+    checkpoint_history: ".claude/hooks/checkpoints.log"
+    session_history: ".claude/hooks/sessions.log"
+    errors: ".claude/hooks/errors.log"
+    enforcement: ".claude/hooks/enforcement.log"
+
+  # What to log
+  log_context_metrics: true
+  log_agent_launches: true
+  log_completions: true
+  log_failures: true
+  detect_compaction: true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FAILURE MODES & HANDLING
+# ═══════════════════════════════════════════════════════════════════════════
+
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  retry_delay_seconds: 5
+
+  # What to do on specific failures
+  on_context_explosion:
+    action: checkpoint_and_compact
+    notify_user: true
+
+  on_agent_failure:
+    action: log_and_report
+    notify_user: true
+    attempt_recovery: true
+
+  on_validation_failure:
+    action: report_and_block
+    notify_user: true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NOTES
+# ═══════════════════════════════════════════════════════════════════════════
+
+# This file is the SINGLE SOURCE OF TRUTH for all behavioral configuration.
+#
+# Related files:
+# - paths.yaml: Path definitions ONLY (no behavior)
+# - project-metadata.yaml: Project identity ONLY (no behavior)
+# - coding-standards.yaml: Code quality rules (separate domain)
+# - settings.json: GENERATED from this file (do not edit manually)
+#
+# To modify system behavior: Edit this file
+# To add new paths: Edit paths.yaml
+# To change project metadata: Edit project-metadata.yaml
+# To change code standards: Edit coding-standards.yaml

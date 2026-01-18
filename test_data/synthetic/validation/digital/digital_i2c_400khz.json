@@ -1,0 +1,7 @@
+{
+  "protocol": "i2c",
+  "clock_freq_hz": 400000.0,
+  "address": 80,
+  "data_hex": "00010203",
+  "expected_domains": ["digital", "protocols", "timing"]
+}

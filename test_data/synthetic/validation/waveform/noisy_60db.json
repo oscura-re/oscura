@@ -1,0 +1,14 @@
+{
+  "file": "noisy_60db.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Sine wave with 60dB SNR",
+  "expected_domains": ["waveform", "spectral", "statistics"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "noisy",
+    "frequency_hz": 1000.0,
+    "snr_db": 60.0
+  }
+}

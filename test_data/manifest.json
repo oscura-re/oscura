@@ -1,0 +1,170 @@
+{
+  "version": "2.0",
+  "generated": "2026-01-10",
+  "description": "Oscura test data - three-tier organization (synthetic, real_captures, formats)",
+  "structure": {
+    "synthetic": "Generated test data for unit tests (waveforms, digital, binary, statistical)",
+    "real_captures": "Curated real-world captures for validation (anonymized, 16 files, ~54MB)",
+    "formats": "Format compliance testing (tektronix, sigrok, pcap, csv, hdf5, vcd, wav, etc.)"
+  },
+  "total_size_mb": 80,
+  "total_files": 200,
+  "sanitization": {
+    "status": "complete",
+    "date": "2026-01-10",
+    "proprietary_terms_removed": true,
+    "vendor_specific_references": "generic naming only"
+  },
+  "categories": {
+    "synthetic": {
+      "purpose": "Unit testing, reproducible edge cases",
+      "subcategories": [
+        "waveforms (basic, edge_cases, frequencies, modulated)",
+        "digital (uart, spi, i2c, can)",
+        "binary (can, serial)",
+        "statistical (entropy, patterns)",
+        "power_analysis",
+        "validation",
+        "ground_truth"
+      ]
+    },
+    "real_captures": {
+      "purpose": "Real-world validation, stress testing",
+      "file_count": 16,
+      "size_mb": 54,
+      "subcategories": [
+        "waveforms/extended (5-24MB captures)",
+        "waveforms/multichannel (8-channel crosstalk)",
+        "waveforms/power (power supply ripple)",
+        "waveforms/timing (sub-microsecond precision)",
+        "protocols/startup_sequences",
+        "protocols/steady_state",
+        "protocols/error_conditions",
+        "protocols/edge_cases",
+        "sessions/tektronix_sessions"
+      ]
+    },
+    "formats": {
+      "purpose": "Format compliance, parser validation",
+      "subcategories": [
+        "tektronix (WFM files)",
+        "sigrok (45 .sr files - UART, SPI, I2C, CAN, USB, JTAG)",
+        "pcap (network captures)",
+        "csv (generated waveforms)",
+        "hdf5 (generated waveforms)",
+        "vcd (digital logic)",
+        "wav (audio)",
+        "touchstone (S-parameters)",
+        "keysight",
+        "rigol"
+      ]
+    }
+  },
+  "size_optimization": {
+    "before_mb": 650,
+    "after_mb": 80,
+    "reduction_percent": 88,
+    "sigrok_reduction": {
+      "before_files": 605,
+      "after_files": 45,
+      "before_mb": 110,
+      "after_mb": 17,
+      "reduction_percent": 94
+    }
+  },
+  "real_captures_manifest": [
+    {
+      "file": "real_captures/waveforms/extended/extended_24mb_01.wfm",
+      "size_mb": 24,
+      "purpose": "Stress test, 10M+ samples"
+    },
+    {
+      "file": "real_captures/waveforms/extended/extended_5mb_01.wfm",
+      "size_mb": 4.8,
+      "purpose": "Mid-length capture"
+    },
+    {
+      "file": "real_captures/waveforms/multichannel/multichannel_01.wfm",
+      "size_mb": 7.2,
+      "purpose": "8-channel crosstalk"
+    },
+    {
+      "file": "real_captures/waveforms/power/power_supply_01.wfm",
+      "size_mb": 2.5,
+      "purpose": "Regulation, ripple dynamics"
+    },
+    {
+      "file": "real_captures/waveforms/timing/edge_transition_01.wfm",
+      "size_kb": 26,
+      "purpose": "Signal integrity edge case"
+    },
+    {
+      "file": "real_captures/waveforms/timing/timing_precision_01.tss",
+      "size_mb": 1.7,
+      "purpose": "Sub-microsecond measurements"
+    },
+    {
+      "file": "real_captures/protocols/startup_sequences/startup_seq_01.tss",
+      "size_mb": 2.1,
+      "purpose": "Timing jitter, state transitions"
+    },
+    {
+      "file": "real_captures/protocols/startup_sequences/startup_seq_02.tss",
+      "size_mb": 1.8,
+      "purpose": "Device-specific timing variance"
+    },
+    {
+      "file": "real_captures/protocols/startup_sequences/startup_seq_03.tss",
+      "size_kb": 181,
+      "purpose": "Component init sequence"
+    },
+    {
+      "file": "real_captures/protocols/steady_state/steady_state_01.tss",
+      "size_mb": 1.8,
+      "purpose": "Clock drift, long-term stability"
+    },
+    {
+      "file": "real_captures/protocols/steady_state/steady_state_02.tss",
+      "size_kb": 159,
+      "purpose": "Behavioral variant"
+    },
+    {
+      "file": "real_captures/protocols/error_conditions/protocol_error_01.wfm",
+      "size_kb": 63,
+      "purpose": "Malformed command handling"
+    },
+    {
+      "file": "real_captures/protocols/edge_cases/partial_channel_01.wfm",
+      "size_kb": 63,
+      "purpose": "Incomplete channel data"
+    },
+    {
+      "file": "real_captures/protocols/edge_cases/noise_test_01.tss",
+      "size_kb": 95,
+      "purpose": "Quantified noise scenario"
+    },
+    {
+      "file": "real_captures/sessions/tektronix_sessions/session_large_01.tss",
+      "size_mb": 3.0,
+      "purpose": "Largest timing variant"
+    },
+    {
+      "file": "real_captures/sessions/tektronix_sessions/session_multiiter_01.tss",
+      "size_mb": 1.9,
+      "purpose": "Multi-iteration pattern"
+    }
+  ],
+  "naming_conventions": {
+    "waveforms": "extended_<size>_<number>.wfm, multichannel_<number>.wfm",
+    "protocols": "startup_seq_<number>.tss, steady_state_<number>.tss",
+    "sessions": "session_<descriptor>_<number>.tss",
+    "edge_cases": "noise_test_<number>.tss, partial_channel_<number>.wfm",
+    "rules": "Generic, descriptive, no proprietary terminology"
+  },
+  "maintenance": {
+    "regenerate_synthetic": "uv run python scripts/generate_comprehensive_test_data.py",
+    "size_limit_mb": 100,
+    "file_naming": "generic_descriptive_only",
+    "documentation": "test_data/README.md"
+  }
+}

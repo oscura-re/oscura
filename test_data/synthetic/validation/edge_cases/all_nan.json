@@ -1,0 +1,13 @@
+{
+  "file": "all_nan.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "All NaN values",
+  "expected_domains": [],
+  "edge_cases": ["all_nan"],
+  "expected_issues": ["no_valid_data"],
+  "ground_truth": {
+    "type": "all_nan",
+    "expected_issues": ["no_valid_data"]
+  }
+}

@@ -1,0 +1,382 @@
+# Git attributes for Oscura
+# Cross-platform support (Linux, macOS, Windows)
+# https://git-scm.com/docs/gitattributes
+
+# =============================================================================
+# Default behavior
+# =============================================================================
+# Auto detect text files and normalize line endings on commit
+# Text files get LF on checkout (Linux/macOS) or CRLF (Windows with core.autocrlf)
+* text=auto
+
+# =============================================================================
+# Source code - force LF (scripts must have LF even on Windows)
+# =============================================================================
+
+# Python
+*.py text eol=lf diff=python
+*.pyi text eol=lf diff=python
+*.pyw text eol=lf diff=python
+
+# Shell scripts (MUST be LF - will break on Windows with CRLF)
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
+# Batch scripts (Windows - allow CRLF)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# HDL/VHDL/Verilog
+*.vhd text eol=lf
+*.vhdl text eol=lf
+*.v text eol=lf
+*.sv text eol=lf
+*.svh text eol=lf
+
+# TCL scripts
+*.tcl text eol=lf
+*.tm text eol=lf
+
+# LaTeX
+*.tex text eol=lf
+*.sty text eol=lf
+*.cls text eol=lf
+*.bib text eol=lf
+*.bst text eol=lf
+
+# Perl
+*.pl text eol=lf
+*.pm text eol=lf
+*.t text eol=lf
+
+# Lua
+*.lua text eol=lf
+
+# Web languages
+*.html text eol=lf diff=html
+*.htm text eol=lf diff=html
+*.css text eol=lf diff=css
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.vue text eol=lf
+*.svelte text eol=lf
+
+# Other languages
+*.c text eol=lf diff=c
+*.cpp text eol=lf diff=cpp
+*.h text eol=lf diff=c
+*.hpp text eol=lf diff=cpp
+*.java text eol=lf diff=java
+*.go text eol=lf diff=go
+*.rs text eol=lf diff=rust
+*.rb text eol=lf diff=ruby
+
+# =============================================================================
+# Documentation and data files
+# =============================================================================
+
+# Markdown
+*.md text eol=lf diff=markdown
+*.markdown text eol=lf diff=markdown
+
+# Plain text
+*.txt text eol=lf
+*.log text eol=lf
+
+# CSV (allow platform line endings for Excel compatibility)
+*.csv text
+
+# XML and related
+*.xml text eol=lf
+*.xsl text eol=lf
+*.xslt text eol=lf
+*.xsd text eol=lf
+*.svg text eol=lf
+*.plist text eol=lf
+
+# =============================================================================
+# Configuration files
+# =============================================================================
+
+# YAML
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# JSON
+*.json text eol=lf
+*.jsonc text eol=lf
+*.json5 text eol=lf
+
+# TOML
+*.toml text eol=lf
+
+# INI style
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+*.config text eol=lf
+
+# Jinja2 templates
+*.j2 text eol=lf
+*.jinja text eol=lf
+*.jinja2 text eol=lf
+
+# PlantUML
+*.puml text eol=lf
+*.plantuml text eol=lf
+*.pu text eol=lf
+*.iuml text eol=lf
+
+# Docker
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf
+*.dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+docker-compose*.yaml text eol=lf
+.dockerignore text eol=lf
+
+# =============================================================================
+# Oscura specific
+# =============================================================================
+
+# Oscura YAML definitions
+oscura.yaml text eol=lf
+oscura.yml text eol=lf
+*.oscura.yaml text eol=lf
+*.oscura.yml text eol=lf
+
+# =============================================================================
+# Dotfiles and editor configs
+# =============================================================================
+
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.gitmodules text eol=lf
+.mailmap text eol=lf
+
+# Prettier
+.prettierrc* text eol=lf
+.prettierignore text eol=lf
+
+# ESLint
+.eslintrc* text eol=lf
+.eslintignore text eol=lf
+
+# Linters
+.markdownlint* text eol=lf
+.shellcheckrc text eol=lf
+.lycheeignore text eol=lf
+.yamllint* text eol=lf
+.stylelintrc* text eol=lf
+.htmlhintrc text eol=lf
+
+# LaTeX configs
+.latexindent* text eol=lf
+.chktexrc text eol=lf
+.latexmkrc text eol=lf
+
+# Perl configs
+.perltidyrc text eol=lf
+.perlcriticrc text eol=lf
+
+# Lua config
+.luarc.json text eol=lf
+.luacheckrc text eol=lf
+
+# HDL configs
+.vsg.yaml text eol=lf
+vhdl_ls.toml text eol=lf
+.rules.verible_lint text eol=lf
+
+# Ruby
+.ruby-version text eol=lf
+.rubocop.yml text eol=lf
+Gemfile text eol=lf
+Gemfile.lock text eol=lf
+
+# Node
+.nvmrc text eol=lf
+.npmrc text eol=lf
+.yarnrc text eol=lf
+package.json text eol=lf
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+
+# Environment
+.env text eol=lf
+.env.* text eol=lf
+
+# Claude/AI
+.claudeignore text eol=lf
+CLAUDE.md text eol=lf
+
+# Build files
+Makefile text eol=lf
+makefile text eol=lf
+GNUmakefile text eol=lf
+*.mk text eol=lf
+CMakeLists.txt text eol=lf
+*.cmake text eol=lf
+
+# =============================================================================
+# Binary files - never normalize or diff
+# =============================================================================
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.bmp binary
+*.tiff binary
+*.tif binary
+*.psd binary
+*.ai binary
+*.eps binary
+
+# Vector graphics (keep as binary to preserve exact content)
+# *.svg already defined as text above
+
+# Fonts
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.xlsm binary
+*.ppt binary
+*.pptx binary
+*.odt binary
+*.ods binary
+*.odp binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+*.tgz binary
+*.bz2 binary
+*.xz binary
+*.7z binary
+*.rar binary
+*.jar binary
+
+# Executables
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.a binary
+*.lib binary
+*.o binary
+*.obj binary
+
+# Media
+*.mp3 binary
+*.mp4 binary
+*.wav binary
+*.ogg binary
+*.flac binary
+*.avi binary
+*.mov binary
+*.mkv binary
+*.webm binary
+
+# Python compiled
+*.pyc binary
+*.pyo binary
+*.pyd binary
+
+# Database
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Oscura-specific binary files
+*.npz binary
+*.npy binary
+*.h5 binary
+*.hdf5 binary
+
+# Oscilloscope and test equipment files
+*.wfm binary
+*.tss binary
+*.set binary
+*.bin binary
+*.sr binary
+*.pcap binary
+*.pcapng binary
+
+# =============================================================================
+# Generated files - mark for linguist (GitHub stats)
+# =============================================================================
+
+# Lock files
+uv.lock text eol=lf linguist-generated=true
+package-lock.json text eol=lf linguist-generated=true
+yarn.lock text eol=lf linguist-generated=true
+Gemfile.lock text eol=lf linguist-generated=true
+poetry.lock text eol=lf linguist-generated=true
+Pipfile.lock text eol=lf linguist-generated=true
+composer.lock text eol=lf linguist-generated=true
+
+# VS Code generated
+.vscode/markdown.css linguist-generated=true
+
+# Build artifacts
+dist/** linguist-generated=true
+build/** linguist-generated=true
+node_modules/** linguist-generated=true
+__pycache__/** linguist-generated=true
+
+# MkDocs generated
+site/** linguist-generated=true
+
+# =============================================================================
+# Vendor/third-party code
+# =============================================================================
+
+vendor/** linguist-vendored=true
+third_party/** linguist-vendored=true
+external/** linguist-vendored=true
+
+# =============================================================================
+# Test data - mark for linguist
+# =============================================================================
+
+test_data/real_captures/** linguist-generated=true
+
+# =============================================================================
+# Documentation-only directories
+# =============================================================================
+
+docs/** linguist-documentation=true
+*.md linguist-documentation=true
+
+# =============================================================================
+# Export ignore (not included in archives)
+# =============================================================================
+
+.git export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+.github export-ignore
+.vscode export-ignore
+.idea export-ignore
+*.md export-ignore
+tests export-ignore
+.claude export-ignore

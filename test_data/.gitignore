@@ -1,0 +1,28 @@
+# =============================================================================
+# Test Data - General Exclusions
+# =============================================================================
+# Large binary capture files
+*.wfm
+*.tss
+*.zip
+
+# Validation outputs and logs
+*.log
+*_report.json
+*_output.log
+
+# Temporary Python scripts
+organize_test_dataset.py
+validation_suite.py
+comprehensive_validation.py
+
+# =============================================================================
+# EXCEPTION: Synthetic and Curated Data
+# =============================================================================
+# The synthetic/ directory IS version controlled
+# It contains small, reproducible test data
+!synthetic/
+!synthetic/**
+
+# README and documentation
+!README.md

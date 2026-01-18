@@ -1,0 +1,194 @@
+{
+  "model": "sonnet",
+  "cleanupPeriodDays": 30,
+  "alwaysThinkingEnabled": true,
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "60000"
+  },
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "*",
+      "Bash(uv:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)"
+    ],
+    "deny": [
+      "Read(./.claude/agent-outputs/archive/**)",
+      "Read(./.claude/archive/**)",
+      "Read(./.coordination/archive/**)",
+      "Read(./.coordination/checkpoints/**/state.json)",
+      "Read(./.git/**)",
+      "Read(./__pycache__/**)",
+      "Read(./.venv/**)",
+      "Read(./.ruff_cache/**)",
+      "Read(./.mypy_cache/**)",
+      "Read(./.pytest_cache/**)",
+      "Read(./.hypothesis/**)",
+      "Read(./.nox/**)",
+      "Read(./.cspell/.cache/**)",
+      "Read(./dist/**)",
+      "Read(./*.egg-info/**)",
+      "Read(./.coverage)",
+      "Read(./htmlcov/**)",
+      "Read(./.tox/**)",
+      "Write(./.claude/settings.json)",
+      "Write(./.claude/template.lock)",
+      "Write(**/.env*)",
+      "Write(**/*.key)",
+      "Write(**/*.pem)",
+      "Write(**/*credentials*)",
+      "Read(.env*)",
+      "Read(**/credentials*)",
+      "Bash(pip:*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/pre_compact_cleanup.sh\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || true",
+            "timeout": 30
+          }
+        ],
+        "matcher": "auto"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/post_compact_recovery.sh\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || true",
+            "timeout": 10
+          }
+        ],
+        "matcher": "compact"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/health_check.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/health.log\" || echo '{\"ok\": true}'",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cleanup_stale_agents.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "timeout": 10
+          }
+        ],
+        "matcher": "auto"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session_cleanup.sh\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || true",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/cleanup_completed_workflows.sh\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_stop.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_subagent_stop.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce_agent_limit.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Task"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate_path.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Write|Edit|NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_report_proliferation.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Write|Edit|NotebookEdit"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$COMMAND\" | grep -qE '^(pip|python) '; then\n  echo \"BLOCKED: Use uv instead of pip/python directly.\"\n  echo \"Examples: uv run python, uv add package, uv run pytest\"\n  exit 1\nfi\n",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/auto_format.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "timeout": 60
+          }
+        ],
+        "matcher": "Write|Edit|NotebookEdit"
+      }
+    ]
+  },
+  "_generated": {
+    "source": "coding-standards.yaml",
+    "source_hash": "dd534d3427e8",
+    "version": "1.0.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "file": "empty.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "Empty array (0 samples)",
+  "expected_domains": [],
+  "edge_cases": ["empty", "no_data"],
+  "expected_issues": ["all_analyses_skip"],
+  "ground_truth": {
+    "type": "empty",
+    "expected_issues": ["no_data", "all_analyses_skip"]
+  }
+}

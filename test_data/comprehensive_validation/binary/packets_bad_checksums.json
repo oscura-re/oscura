@@ -1,0 +1,18 @@
+{
+  "file": "packets_bad_checksums.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Packets with 20% invalid checksums",
+  "expected_domains": ["entropy", "statistics"],
+  "edge_cases": ["checksum_failures"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "structured_packets",
+    "packet_size": 256,
+    "num_packets": 100,
+    "corruption_rate": 0.0,
+    "sequence_gaps": [],
+    "bad_checksum_count": 22,
+    "expected_issues": ["checksum_failures"]
+  }
+}

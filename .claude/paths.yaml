@@ -1,0 +1,46 @@
+# Centralized Path Constants
+# Single source of truth for all coordination and output paths
+# Referenced by agents, hooks, and scripts
+#
+# NOTE: This file contains ONLY path definitions.
+# All behavioral settings (retention, cleanup, security) are in config.yaml
+
+# Claude configuration paths
+claude:
+  root: .claude
+  agents: .claude/agents
+  commands: .claude/commands
+  hooks: .claude/hooks
+  settings: .claude/settings.json
+  lock: .claude/template.lock
+
+  # Agent output paths
+  outputs:
+    root: .claude/agent-outputs
+    archive: .claude/agent-outputs/archive
+    # Pattern: .claude/agent-outputs/YYYY-MM-DD-HHMMSS-description-complete.json
+
+  # Temporary reports (analysis, assessments, summaries)
+  reports:
+    root: .claude/reports
+    archive: .claude/reports/archive
+    # Pattern: .claude/reports/YYYY-MM-DD-description.md
+
+  # Coordination paths
+  coordination:
+    root: .coordination
+    archive: .coordination/archive
+    checkpoints: .coordination/checkpoints
+    handoffs: .coordination/handoffs
+    locks: .coordination/locks
+    projects: .coordination/projects
+    # Pattern for intermediate files: .coordination/YYYY-MM-DD-description.md
+
+  # Module-specific coordination (created conditionally)
+  modules:
+    implementation:
+      spec: .coordination/spec
+      # Pattern: .coordination/spec/{project}/requirements.yaml
+    translation:
+      root: .coordination/translation
+      # Pattern: .coordination/translation-{task-id}/chunk-*.md

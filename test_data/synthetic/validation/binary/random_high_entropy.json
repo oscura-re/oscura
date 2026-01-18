@@ -1,0 +1,15 @@
+{
+  "file": "random_high_entropy.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Random data (high entropy ~8.0)",
+  "expected_domains": ["entropy", "statistics"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "random",
+    "size": 65536,
+    "expected_entropy": 7.99,
+    "classification": "random"
+  }
+}

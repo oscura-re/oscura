@@ -1,0 +1,37 @@
+[
+  {
+    "samples": 100000,
+    "theoretical_mb": 0.762939453125,
+    "actual_mb": 0.0,
+    "peak_mb": 0.7650184631347656,
+    "overhead_percent": -100.0
+  },
+  {
+    "samples": 500000,
+    "theoretical_mb": 3.814697265625,
+    "actual_mb": 0.0,
+    "peak_mb": 3.8163414001464844,
+    "overhead_percent": -100.0
+  },
+  {
+    "samples": 1000000,
+    "theoretical_mb": 7.62939453125,
+    "actual_mb": 0.0,
+    "peak_mb": 7.631038665771484,
+    "overhead_percent": -100.0
+  },
+  {
+    "samples": 5000000,
+    "theoretical_mb": 38.14697265625,
+    "actual_mb": 0.0,
+    "peak_mb": 38.148616790771484,
+    "overhead_percent": -100.0
+  },
+  {
+    "samples": 10000000,
+    "theoretical_mb": 76.2939453125,
+    "actual_mb": 0.0,
+    "peak_mb": 76.29558944702148,
+    "overhead_percent": -100.0
+  }
+]

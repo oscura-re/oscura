@@ -1,0 +1,16 @@
+{
+  "file": "packets_clean.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Clean structured packets",
+  "expected_domains": ["entropy", "patterns", "inference", "packet"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "structured_packets",
+    "packet_size": 256,
+    "num_packets": 100,
+    "corruption_rate": 0.0,
+    "sequence_gaps": []
+  }
+}

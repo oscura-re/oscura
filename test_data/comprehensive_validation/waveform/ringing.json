@@ -1,0 +1,14 @@
+{
+  "file": "ringing.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Square wave with ringing",
+  "expected_domains": ["waveform", "spectral"],
+  "edge_cases": ["ringing", "overshoot"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "ringing",
+    "base_freq_hz": 1000.0,
+    "ring_freq_hz": 50000.0
+  }
+}

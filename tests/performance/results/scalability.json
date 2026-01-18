@@ -1,0 +1,9 @@
+{
+  "sequential_total": 0.006653360091149807,
+  "thread_total": 0.010325956158339977,
+  "process_total": 0.04395733494311571,
+  "speedup_thread": 0.6443335599266592,
+  "speedup_process": 0.15135949665191906,
+  "efficiency_thread": 0.1610833899816648,
+  "efficiency_process": 0.037839874162979764
+}

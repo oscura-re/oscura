@@ -1,0 +1,14 @@
+{
+  "file": "uart_framing_error.vcd",
+  "category": "digital",
+  "input_type": "digital",
+  "description": "UART with framing errors",
+  "expected_domains": ["digital"],
+  "edge_cases": ["framing_error"],
+  "expected_issues": ["incomplete_frame"],
+  "ground_truth": {
+    "type": "framing_error",
+    "baud_rate": 115200,
+    "expected_issues": ["framing_error", "incomplete_frame"]
+  }
+}

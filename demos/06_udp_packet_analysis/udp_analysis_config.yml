@@ -1,0 +1,185 @@
+# UDP Packet Analysis Configuration Template
+#
+# This is an OPTIONAL configuration file for comprehensive_udp_analysis.py
+# If not provided, the script uses sensible defaults.
+#
+# Use this to:
+# - Define custom protocol mappings
+# - Tune analysis parameters
+# - Configure export settings
+
+name: "UDP Protocol Analysis Configuration"
+version: "1.0"
+description: "Optional configuration for UDP packet analysis and protocol inference"
+
+# Known protocol definitions
+# Add your custom protocols here
+protocols:
+  # Standard protocols (included in defaults)
+  - port: 53
+    name: "DNS"
+    type: "request-response"
+    description: "Domain Name System"
+
+  - port: 123
+    name: "NTP"
+    type: "synchronization"
+    description: "Network Time Protocol"
+
+  - port: 161
+    name: "SNMP"
+    type: "management"
+    description: "Simple Network Management Protocol"
+
+  - port: 514
+    name: "Syslog"
+    type: "logging"
+    description: "System Logging Protocol"
+
+  # Custom protocol example
+  - port: 5000
+    name: "Custom Binary Protocol"
+    type: "stream"
+    description: "Your custom protocol description"
+    patterns:
+      # Optional: Known patterns to look for
+      header_magic: [0xAA, 0x55] # Preamble bytes
+      footer_magic: [0xCC, 0xDD] # Terminator bytes
+      min_packet_size: 64
+      max_packet_size: 1024
+
+  # Port range example
+  - port_range: [5001, 5010]
+    name: "Custom Protocol Family"
+    type: "stream"
+    description: "Related protocols on adjacent ports"
+
+# Analysis parameters
+analysis:
+  # Clustering settings
+  clustering:
+    enabled: true
+    threshold: 0.8 # Similarity threshold (0.0-1.0)
+    max_clusters: 20
+    min_cluster_size: 3
+
+  # Pattern detection
+  pattern_detection:
+    enabled: true
+    min_occurrences: 3 # Minimum times pattern must appear
+    max_pattern_length: 16 # Maximum pattern size in bytes
+    search_depth: 1000 # How many packets to analyze
+
+  # Field inference
+  field_inference:
+    enabled: true
+    delimiter_search: true
+    type_detection: true # Infer field types (int, float, string)
+    checksum_detection: true
+    sequence_detection: true
+
+  # Jitter calculation
+  jitter:
+    method: "rfc3550" # or "simple" or "peak-to-peak"
+    percentile: 99 # For peak-to-peak method
+
+  # Traffic metrics
+  traffic:
+    calculate_throughput: true
+    calculate_jitter: true
+    calculate_loss: true
+    window_size: 1.0 # seconds for rate calculations
+
+# Export settings
+export:
+  # Which formats to generate
+  formats:
+    - "json" # Always generate
+    - "csv" # Traffic metrics
+    - "html" # Visual report
+    - "markdown" # Text report
+
+  # JSON export limits (to avoid huge files)
+  max_packets_in_json: 1000 # Truncate if more packets
+  max_payload_bytes: 256 # Truncate long payloads
+
+  # Report generation
+  reports:
+    include_visualizations: true
+    include_packet_samples: true
+    max_sample_packets: 10
+
+  # Wireshark dissector generation
+  wireshark:
+    generate_dissector: true # Auto-generate .lua file
+    include_comments: true
+    include_validation: true
+
+# Validation rules
+validation:
+  # Packet validation
+  packet:
+    min_size: 20 # Minimum valid UDP packet (headers only)
+    max_size: 65535 # Maximum UDP datagram
+
+  # Analysis validation
+  analysis:
+    min_packets_for_inference: 100 # Need enough data
+    min_unique_patterns: 3 # Need variety for analysis
+
+# Advanced settings
+advanced:
+  # Performance tuning
+  performance:
+    max_memory_mb: 1024 # Memory limit for analysis
+    chunk_size: 10000 # Packets per processing chunk
+    parallel_processing: true
+
+  # Debugging
+  debug:
+    enabled: false
+    verbose_logging: false
+    save_intermediate_results: false
+
+# Metadata
+metadata:
+  created: "2026-01-15"
+  author: "Oscura Development Team"
+  purpose: "Template for custom UDP analysis workflows"
+
+# Notes section
+notes: |
+  USAGE:
+
+  1. Copy this file and customize for your protocol:
+     cp udp_analysis_config.yml my_protocol_config.yml
+
+  2. Edit protocol definitions, analysis parameters, etc.
+
+  3. Run analysis with config:
+     python comprehensive_udp_analysis.py \
+       --pcap-file capture.pcap \
+       --config my_protocol_config.yml \
+       --output-dir analysis_output
+
+  4. Without config (uses defaults):
+     python comprehensive_udp_analysis.py \
+       --pcap-file capture.pcap \
+       --output-dir analysis_output
+
+  CUSTOMIZATION GUIDE:
+
+  - protocols: Add your custom port mappings
+  - analysis.clustering.threshold: Higher = stricter grouping
+  - analysis.pattern_detection.min_occurrences: Lower = more patterns found
+  - export.formats: Choose which outputs you need
+  - export.max_packets_in_json: Reduce for large captures
+
+  PROTOCOL PATTERNS:
+
+  For known protocols, you can specify:
+  - header_magic: Bytes that start every packet
+  - footer_magic: Bytes that end every packet
+  - min/max_packet_size: Size constraints
+
+  These help the analyzer distinguish your protocol from noise.

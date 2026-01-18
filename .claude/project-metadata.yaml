@@ -1,0 +1,81 @@
+# Project Metadata - Single Source of Truth
+# This file is the authoritative source for all project metadata
+# Version: 3.0.0 (Updated 2026-01-09)
+#
+# NOTE: This file contains ONLY project identity and validation rules.
+# All behavioral settings (maintenance, cleanup, recovery) are in config.yaml
+
+project:
+  name: "Oscura"
+  version_source: pyproject.toml # Single source for version
+  description: >-
+    Comprehensive analysis and reverse engineering of ANY signal or data capture
+    from ANY system—analog, digital, or mixed-signal. Complete framework for
+    oscilloscope/logic analyzer data, protocol decoding, and system reverse engineering.
+
+  # Author/maintainer information
+  authors:
+    - name: "lair-click-bats"
+      role: "creator"
+
+  maintainers:
+    - name: "lair-click-bats"
+      role: "maintainer"
+
+  # License
+  license: "MIT"
+
+  # Python version requirements (for Python projects)
+  python:
+    minimum: "3.12"
+    tested:
+      - "3.12"
+      - "3.13"
+
+  github:
+    org: "lair-click-bats"
+    repo: "oscura"
+    url: "https://github.com/lair-click-bats/oscura"
+
+  # Files that must reference the GitHub URL
+  url_locations:
+    - pyproject.toml
+    - README.md
+    - CHANGELOG.md
+
+  # Version must be consistent across these files
+  version_locations:
+    primary: pyproject.toml # Single source of truth
+    secondary:
+      - README.md: "Current Version: v{version}"
+      - "src/oscura/__init__.py": '__version__ = "{version}"'
+
+  # Version pattern for validation (supports pre-release)
+  version_pattern: '^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+(\.[0-9]+)?)?(\+[a-z0-9]+)?$'
+
+validation:
+  pre_commit_checks:
+    - version_consistency
+    - github_url_consistency
+    - no_unimplemented_errors
+    - ssot_compliance
+    - future_marker_validation
+
+  ci_checks:
+    - readme_examples
+    - internal_links
+    - documentation_structure
+
+# Configuration file relationships (for validation)
+configuration_files:
+  ssot:
+    project_metadata: ".claude/project-metadata.yaml"
+    coding_standards: ".claude/coding-standards.yaml"
+    orchestration_config: ".claude/config.yaml"
+    paths: ".claude/paths.yaml"
+
+  generated:
+    settings_json:
+      source: ".claude/coding-standards.yaml"
+      target: ".claude/settings.json"
+      generator: ".claude/hooks/generate_settings.py"

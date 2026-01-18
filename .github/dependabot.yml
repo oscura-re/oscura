@@ -1,0 +1,140 @@
+# Dependabot configuration for automated dependency updates
+# Manages security and version updates across all ecosystems
+# Documentation: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+
+registries: {}
+
+updates:
+  # ============================================================================
+  # Python dependencies (pip/uv)
+  # ============================================================================
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "python"
+    reviewers: []
+    assignees: []
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Prefer increasing versions over replacing
+    versioning-strategy: increase
+    # Ignore major version updates for stability-critical packages
+    ignore:
+      - dependency-name: "numpy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "scipy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pandas"
+        update-types: ["version-update:semver-major"]
+    # Group related dependencies for cleaner PRs
+    groups:
+      # Security-critical dependencies - update together
+      security-critical:
+        patterns:
+          - "cryptography"
+          - "pyyaml"
+          - "jinja2"
+          - "scapy"
+        update-types:
+          - "minor"
+          - "patch"
+      # Core scientific stack
+      scientific:
+        patterns:
+          - "numpy"
+          - "scipy"
+          - "pandas"
+          - "matplotlib"
+        update-types:
+          - "minor"
+          - "patch"
+      # Visualization libraries
+      visualization:
+        patterns:
+          - "plotly"
+          - "bokeh"
+          - "reportlab"
+        update-types:
+          - "minor"
+          - "patch"
+      # Testing tools
+      testing:
+        patterns:
+          - "pytest"
+          - "pytest-*"
+          - "hypothesis"
+          - "coverage"
+        update-types:
+          - "minor"
+          - "patch"
+      # Development/linting tools
+      development:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "pre-commit"
+          - "bandit"
+          - "safety"
+        update-types:
+          - "minor"
+          - "patch"
+      # Documentation tools
+      documentation:
+        patterns:
+          - "mkdocs"
+          - "mkdocs-*"
+          - "mkdocstrings"
+          - "mkdocstrings-*"
+          - "interrogate"
+        update-types:
+          - "minor"
+          - "patch"
+      # Type stubs
+      type-stubs:
+        patterns:
+          - "types-*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ============================================================================
+  # GitHub Actions
+  # ============================================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "ci"
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      # Group all GitHub Actions updates
+      actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Separate major updates for review
+      actions-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"

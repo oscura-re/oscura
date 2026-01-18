@@ -1,0 +1,15 @@
+{
+  "file": "english_text.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "English text (medium entropy ~4.5)",
+  "expected_domains": ["entropy", "statistics"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "text",
+    "size": 65536,
+    "expected_entropy": 4.5,
+    "classification": "text"
+  }
+}

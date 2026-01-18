@@ -1,0 +1,128 @@
+# Prettier ignore file for Oscura
+# Files and directories to skip during formatting
+#
+# Prettier handles: JSON, YAML, Markdown, HTML, CSS
+# Python is formatted by ruff (not Prettier)
+
+# =============================================================================
+# Python Environment and Build
+# =============================================================================
+.venv/
+__pycache__/
+*.egg-info/
+dist/
+build/
+*.pyc
+*.pyo
+
+# =============================================================================
+# Dependencies
+# =============================================================================
+node_modules/
+
+# =============================================================================
+# Lock Files (auto-generated, should not be formatted)
+# =============================================================================
+uv.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# =============================================================================
+# Tool Caches
+# =============================================================================
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.cspell/
+
+# =============================================================================
+# Generated Documentation
+# =============================================================================
+site/
+
+# =============================================================================
+# Coordination and Agent Files (machine-generated)
+# =============================================================================
+.coordination/
+.claude/agent-outputs/
+.claude/checkpoints/
+.claude/summaries/
+
+# =============================================================================
+# Documentation Generated Files
+# =============================================================================
+# Hypothesis testing data
+.hypothesis/
+
+# Changelog Fragments (towncrier managed)
+changelog.d/
+
+# =============================================================================
+# VS Code Generated Files
+# =============================================================================
+.vscode/markdown.css
+
+# =============================================================================
+# Git
+# =============================================================================
+.git/
+
+# =============================================================================
+# Log Files
+# =============================================================================
+*.log
+.claude/hooks/*.log
+
+# =============================================================================
+# Template Files (have special formatting needs)
+# =============================================================================
+*.j2
+
+# =============================================================================
+# Markdown Files (use markdownlint + compact tables, not Prettier)
+# =============================================================================
+# Prettier reformats tables to aligned format, conflicting with Oscura standard
+# Oscura uses compact (unaligned) tables for emoji compatibility
+# Markdown formatting handled by markdownlint and Markdown All in One extension
+*.md
+
+# =============================================================================
+# Configuration Files Without Prettier Plugin
+# =============================================================================
+# TOML files - no built-in Prettier support, handled by taplo or manual
+*.toml
+
+# =============================================================================
+# Binary and Non-Text Files
+# =============================================================================
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.svg
+*.webp
+
+# Documents
+*.pdf
+
+# Archives
+*.zip
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# Oscura-specific output files
+*.npz
+*.npy
+*.h5
+*.hdf5
+
+# =============================================================================
+# Test Fixtures (intentionally malformed files for testing)
+# =============================================================================
+tests/stress/fixtures/corrupt_registry.json

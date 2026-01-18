@@ -1,0 +1,213 @@
+# Documentation build and deployment workflow
+# Builds MkDocs documentation and deploys to GitHub Pages
+# Runs on: push to main, PRs, manual trigger
+
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "src/**/*.py"
+      - "mkdocs.yml"
+      - "pyproject.toml"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "src/**/*.py"
+      - "mkdocs.yml"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # ============================================================================
+  # Build documentation
+  # ============================================================================
+
+  build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Full history for git-revision-date plugin
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Install graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Cache MkDocs
+        uses: actions/cache@v5
+        with:
+          path: .cache
+          key: mkdocs-${{ runner.os }}-${{ hashFiles('mkdocs.yml', 'docs/**') }}
+          restore-keys: |
+            mkdocs-${{ runner.os }}-
+
+      # Note: Docstring coverage check moved to ci.yml (pre-commit)
+      # Badge generation happens in docstring-lint job below
+
+      - name: Validate API documentation
+        continue-on-error: true
+        run: |
+          echo "::group::API Documentation Validation"
+          uv run python scripts/docs/validate_api_docs.py --verbose || \
+            echo "::warning::Some API items lack documentation references"
+          echo "::endgroup::"
+
+      - name: Validate documentation links
+        continue-on-error: true
+        run: |
+          echo "::group::Documentation Link Validation"
+          uv run python scripts/docs/validate_docs.py || \
+            echo "::warning::Some documentation links may be broken"
+          echo "::endgroup::"
+
+      - name: Generate architecture diagrams
+        run: |
+          echo "::group::Generating Architecture Diagrams"
+          uv run python scripts/docs/generate_diagrams.py || echo "::warning::Diagram generation failed (non-blocking)"
+          echo "::endgroup::"
+
+      - name: Build documentation
+        run: |
+          uv run mkdocs build --strict
+        env:
+          # Enable warnings as errors for strict mode
+          PYTHONWARNINGS: "error::DeprecationWarning"
+
+      - name: Check for broken links (internal)
+        run: |
+          echo "::group::Internal Link Check"
+          # Simple internal link validation
+          find site/ -name "*.html" -exec grep -l 'href="#' {} \; | head -20 || true
+          echo "::endgroup::"
+
+      - name: Upload documentation artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+  # ============================================================================
+  # Docstring style check
+  # ============================================================================
+
+  docstring-lint:
+    name: Docstring Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Check docstring style (pydocstyle rules via ruff)
+        run: |
+          echo "::group::Docstring Style Check"
+          uv run ruff check --select=D src/ || true
+          echo "::endgroup::"
+
+      - name: Generate docstring coverage report
+        run: |
+          echo "::group::Docstring Coverage"
+          uv run interrogate src/oscura/ -v --generate-badge docs/assets/interrogate_badge.svg || true
+          echo "::endgroup::"
+
+  # ============================================================================
+  # Spell check documentation
+  # ============================================================================
+
+  spell-check:
+    name: Spell Check Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install cSpell
+        run: npm install -g cspell
+
+      - name: Run spell check
+        run: |
+          echo "::group::Spell Check Results"
+          cspell "docs/**/*.md" "*.md" --config cspell.json || true
+          echo "::endgroup::"
+
+  # ============================================================================
+  # Deploy to GitHub Pages
+  # ============================================================================
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    continue-on-error: true # Pages may not be enabled yet
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+  # ============================================================================
+  # Summary job
+  # ============================================================================
+
+  docs-summary:
+    name: Documentation Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [build, docstring-lint, spell-check]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Documentation Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docstring Lint | ${{ needs.docstring-lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Spell Check | ${{ needs.spell-check.result }} |" >> $GITHUB_STEP_SUMMARY

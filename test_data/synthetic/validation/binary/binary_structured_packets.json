@@ -1,0 +1,14 @@
+{
+  "file": "binary_structured_packets.bin",
+  "input_type": "binary",
+  "expected_domains": ["entropy", "patterns", "inference"],
+  "expected_metrics": {
+    "packet_size": 256,
+    "num_packets": 100,
+    "sync_pattern": "aa55aa55",
+    "has_sequence": true,
+    "has_timestamp": true,
+    "has_crc": true
+  },
+  "description": "Structured binary packets with known format"
+}

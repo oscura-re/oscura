@@ -1,0 +1,66 @@
+# CODEOWNERS - Defines code ownership for automatic review requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Each line is a file pattern followed by one or more owners.
+# Order matters: later patterns take precedence over earlier ones.
+# Use @username or @org/team-name
+
+# =============================================================================
+# Default owners (applied to all files unless overridden)
+# =============================================================================
+*                                   @lair-click-bats
+
+# =============================================================================
+# Core library code
+# =============================================================================
+/src/oscura/                      @lair-click-bats
+/src/oscura/analyzers/            @lair-click-bats
+/src/oscura/loaders/              @lair-click-bats
+/src/oscura/inference/            @lair-click-bats
+
+# =============================================================================
+# API and CLI
+# =============================================================================
+/src/oscura/api/                  @lair-click-bats
+/src/oscura/cli/                  @lair-click-bats
+
+# =============================================================================
+# Configuration and build
+# =============================================================================
+pyproject.toml                      @lair-click-bats
+uv.lock                             @lair-click-bats
+mkdocs.yml                          @lair-click-bats
+
+# =============================================================================
+# CI/CD and GitHub configuration
+# =============================================================================
+/.github/                           @lair-click-bats
+/.github/workflows/                 @lair-click-bats
+
+# =============================================================================
+# Documentation
+# =============================================================================
+/docs/                              @lair-click-bats
+README.md                           @lair-click-bats
+CONTRIBUTING.md                     @lair-click-bats
+CHANGELOG.md                        @lair-click-bats
+
+# =============================================================================
+# Tests
+# =============================================================================
+/tests/                             @lair-click-bats
+
+# =============================================================================
+# Development tooling configuration
+# =============================================================================
+.pre-commit-config.yaml             @lair-click-bats
+.markdownlint.yaml                  @lair-click-bats
+.yamllint.yaml                      @lair-click-bats
+cspell.json                         @lair-click-bats
+/.cspell/                           @lair-click-bats
+
+# =============================================================================
+# Claude Code configuration
+# =============================================================================
+/.claude/                           @lair-click-bats
+CLAUDE.md                           @lair-click-bats

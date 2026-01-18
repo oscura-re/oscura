@@ -1,0 +1,8 @@
+{
+  "format": "tektronix_wfm",
+  "sample_rate": 10000000.0,
+  "num_points": 10000,
+  "channel": "CH1",
+  "signal_type": "square",
+  "frequency_hz": 1000
+}

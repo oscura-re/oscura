@@ -1,0 +1,144 @@
+{
+  "top_functions": [
+    {
+      "function_name": "<method 'decode' of 'bytes' objects> (~:0)",
+      "total_time": 2.0565e-5,
+      "cumulative_time": 3.282e-5,
+      "call_count": 8,
+      "time_per_call": 2.570625e-6
+    },
+    {
+      "function_name": "<method 'startswith' of 'bytes' objects> (~:0)",
+      "total_time": 9.29e-7,
+      "cumulative_time": 9.29e-7,
+      "call_count": 1,
+      "time_per_call": 9.29e-7
+    },
+    {
+      "function_name": "<method 'append' of 'list' objects> (~:0)",
+      "total_time": 1.6930000000000001e-6,
+      "cumulative_time": 1.6930000000000001e-6,
+      "call_count": 6,
+      "time_per_call": 2.8216666666666667e-7
+    },
+    {
+      "function_name": "<method 'extend' of 'list' objects> (~:0)",
+      "total_time": 1.3040000000000001e-6,
+      "cumulative_time": 1.3040000000000001e-6,
+      "call_count": 2,
+      "time_per_call": 6.520000000000001e-7
+    },
+    {
+      "function_name": "<method 'get' of 'dict' objects> (~:0)",
+      "total_time": 4.755e-6,
+      "cumulative_time": 4.755e-6,
+      "call_count": 8,
+      "time_per_call": 5.94375e-7
+    },
+    {
+      "function_name": "<method 'keys' of 'dict' objects> (~:0)",
+      "total_time": 1.1660000000000001e-6,
+      "cumulative_time": 1.1660000000000001e-6,
+      "call_count": 2,
+      "time_per_call": 5.830000000000001e-7
+    },
+    {
+      "function_name": "<method 'items' of 'dict' objects> (~:0)",
+      "total_time": 2.669e-6,
+      "cumulative_time": 2.669e-6,
+      "call_count": 5,
+      "time_per_call": 5.338000000000001e-7
+    },
+    {
+      "function_name": "<built-in method __new__ of type object at 0xa43b40> (~:0)",
+      "total_time": 1.608e-6,
+      "cumulative_time": 1.608e-6,
+      "call_count": 2,
+      "time_per_call": 8.04e-7
+    },
+    {
+      "function_name": "<method 'split' of 'str' objects> (~:0)",
+      "total_time": 1.912e-6,
+      "cumulative_time": 1.912e-6,
+      "call_count": 2,
+      "time_per_call": 9.56e-7
+    },
+    {
+      "function_name": "<method 'join' of 'str' objects> (~:0)",
+      "total_time": 1.182e-6,
+      "cumulative_time": 1.182e-6,
+      "call_count": 2,
+      "time_per_call": 5.91e-7
+    },
+    {
+      "function_name": "<method 'find' of 'str' objects> (~:0)",
+      "total_time": 9.72e-7,
+      "cumulative_time": 9.72e-7,
+      "call_count": 2,
+      "time_per_call": 4.86e-7
+    },
+    {
+      "function_name": "<method 'lower' of 'str' objects> (~:0)",
+      "total_time": 4.587e-6,
+      "cumulative_time": 4.587e-6,
+      "call_count": 22,
+      "time_per_call": 2.0850000000000002e-7
+    },
+    {
+      "function_name": "<method 'lstrip' of 'str' objects> (~:0)",
+      "total_time": 9.140000000000001e-7,
+      "cumulative_time": 9.140000000000001e-7,
+      "call_count": 2,
+      "time_per_call": 4.5700000000000003e-7
+    },
+    {
+      "function_name": "<method 'rfind' of 'str' objects> (~:0)",
+      "total_time": 1.153e-6,
+      "cumulative_time": 1.153e-6,
+      "call_count": 1,
+      "time_per_call": 1.153e-6
+    },
+    {
+      "function_name": "<method 'startswith' of 'str' objects> (~:0)",
+      "total_time": 2.052e-6,
+      "cumulative_time": 2.052e-6,
+      "call_count": 4,
+      "time_per_call": 5.13e-7
+    },
+    {
+      "function_name": "<method 'endswith' of 'str' objects> (~:0)",
+      "total_time": 1.881e-6,
+      "cumulative_time": 1.881e-6,
+      "call_count": 6,
+      "time_per_call": 3.135e-7
+    },
+    {
+      "function_name": "<built-in method builtins.all> (~:0)",
+      "total_time": 2.796e-6,
+      "cumulative_time": 3.915000000000001e-6,
+      "call_count": 2,
+      "time_per_call": 1.398e-6
+    },
+    {
+      "function_name": "<built-in method builtins.chr> (~:0)",
+      "total_time": 6.22e-7,
+      "cumulative_time": 6.22e-7,
+      "call_count": 2,
+      "time_per_call": 3.11e-7
+    },
+    {
+      "function_name": "<built-in method builtins.compile> (~:0)",
+      "total_time": 8.581000000000001e-5,
+      "cumulative_time": 8.581000000000001e-5,
+      "call_count": 2,
+      "time_per_call": 4.2905000000000003e-5
+    },
+    {
+      "function_name": "<built-in method builtins.getattr> (~:0)",
+      "total_time": 3.6750000000000004e-6,
+      "cumulative_time": 3.6750000000000004e-6,
+      "call_count": 4,
+      "time_per_call": 9.187500000000001e-7
+    }
+  ]
+}

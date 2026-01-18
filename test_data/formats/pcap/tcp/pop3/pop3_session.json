@@ -1,0 +1,7 @@
+{
+  "packet_count": 11,
+  "protocol": "tcp",
+  "src_port": 12345,
+  "dst_port": 110,
+  "service": "pop3"
+}

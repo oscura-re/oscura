@@ -1,0 +1,13 @@
+{
+  "file": "extreme_small.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "Extremely small values (1e-300)",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["extreme_small", "near_zero"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "extreme_small",
+    "amplitude": 1e-300
+  }
+}
