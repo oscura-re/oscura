@@ -23,6 +23,11 @@ permissions:
   contents: write
   id-token: write
 
+# Prevent concurrent releases
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 env:
   # Artifact retention policy (days)
   RETENTION_MEDIUM: 30 # Build artifacts
@@ -75,6 +80,27 @@ jobs:
             exit 1
           fi
           echo "Version format valid: $VERSION"
+
+      - name: Validate CHANGELOG.md entry
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Checking for version $VERSION in CHANGELOG.md"
+
+          # Check if CHANGELOG.md has an entry for this version
+          if ! grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md missing entry for version ${VERSION}"
+            echo "::error::Add a changelog entry under ## [${VERSION}] - $(date +%Y-%m-%d)"
+            echo "::error::Rename [Unreleased] section to [${VERSION}] before releasing"
+            exit 1
+          fi
+
+          # Check that [Unreleased] section exists (for future releases)
+          if ! grep -q "## \[Unreleased\]" CHANGELOG.md; then
+            echo "::warning::CHANGELOG.md missing [Unreleased] section"
+            echo "::warning::Add ## [Unreleased] section after releasing"
+          fi
+
+          echo "✅ CHANGELOG.md validation passed"
 
       - name: Validate CI passed on this commit
         uses: actions/github-script@v8
@@ -134,14 +160,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          install-deps: "false"
 
       - name: Build package
         run: uv build
@@ -166,7 +189,7 @@ jobs:
 
           echo "::group::Running minimal test suite"
           /tmp/test-venv/bin/pip install --quiet pytest
-          /tmp/test-venv/bin/pytest tests/unit/core/test_types.py -v --maxfail=1 --tb=short || true
+          /tmp/test-venv/bin/pytest tests/unit/core/test_types.py -v --maxfail=1 --tb=short
           echo "::endgroup::"
 
           echo "✅ Smoke tests passed!"

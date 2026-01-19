@@ -113,13 +113,13 @@ hdf5 = [
 jupyter = [
     "ipython>=8.0.0,<9.0.0",             # Enhanced Python shell
     "jupyter>=1.0.0,<2.0.0",             # Jupyter notebook support
-    "nbconvert>=7.0.0,<8.0.0",           # Explicit constraint for CVE mitigation
+    "nbconvert>=7.0.0,<8.0.0",           # CVE-2025-53000 (<=7.16.6) tracked, fix pending release
 ]
 
 # Automotive protocol analysis (CAN, J1939, OBD-II, UDS)
 automotive = [
     "cantools>=39.4.0,<40.0.0",          # DBC parsing and CAN message encoding/decoding
-    "asammdf>=7.4.0,<8.0.0",             # MDF4/MF4 automotive data logging files
+    "asammdf>=8.0.0,<9.0.0",             # MDF4/MF4 automotive data logging files (8.x required for Python 3.12+)
     "python-can>=4.4.0,<5.0.0",          # CAN interface and file formats (BLF, ASC)
     "scapy>=2.5.0,<3.0.0",               # PCAP parsing for SocketCAN frames
 ]
@@ -305,7 +305,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 75  # Temporarily lowered from 80% for infrastructure code
+fail_under = 80  # Minimum coverage threshold enforced in CI and locally
 precision = 1
 show_missing = true
 skip_empty = true

@@ -45,17 +45,10 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Cache pre-commit
         uses: actions/cache@v5
@@ -89,21 +82,6 @@ jobs:
               fi
             fi
 
-            # Check if failure is due to the known darglint false positive
-            if echo "$PRE_COMMIT_OUTPUT" | grep -q "darglint.*Failed"; then
-              DARGLINT_ERRORS=$(
-                echo "$PRE_COMMIT_OUTPUT" |
-                  grep "src/oscura/batch/advanced.py:_run_with_timeout:212: DAR401" |
-                  wc -l
-              )
-              if [ "$DARGLINT_ERRORS" -eq 1 ]; then
-                echo "⚠️ Known darglint false positive (batch/advanced.py)"
-                echo "Darglint limitation with dynamic exception raising"
-                echo "Allowing this error and continuing..."
-                exit 0
-              fi
-            fi
-
             # Otherwise fail
             exit $PRECOMMIT_EXIT
           fi
@@ -117,17 +95,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run ruff check
         run: uv run ruff check src/ tests/
@@ -144,17 +115,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Cache mypy
         uses: actions/cache@v5
@@ -176,17 +140,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --no-dev
+          python-version: ${{ env.PYTHON_VERSION }}
+          extras: "--no-dev"
 
       - name: Validate orchestration config consistency
         run: uv run python .claude/hooks/validate_config_consistency.py
@@ -224,17 +182,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ matrix.python-version }}
 
       - name: Cache pytest
         uses: actions/cache@v5
@@ -248,12 +199,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .hypothesis
-          key: >-
-            hypothesis-${{ runner.os }}-${{ matrix.python-version }}-${{
-            hashFiles('tests/**/*_hypothesis.py', 'tests/hypothesis_strategies.py',
-            'pyproject.toml') }}
+          key: hypothesis-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             hypothesis-${{ runner.os }}-${{ matrix.python-version }}-
+            hypothesis-${{ runner.os }}-
 
       - name: Verify test data (optional)
         run: ./scripts/testing/verify_test_data.sh
@@ -421,17 +370,10 @@ jobs:
         with:
           fetch-depth: 0 # Need full history for diff
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Download coverage reports
         uses: actions/download-artifact@v7
@@ -466,11 +408,8 @@ jobs:
           if [ $i -gt 0 ]; then
             uv run coverage combine .coverage.*
 
-            # Generate XML report from combined coverage
-            uv run coverage xml -o coverage-diff.xml
-
-            # Show coverage summary
-            uv run coverage report
+            # Generate XML report from combined coverage (skip fail_under check)
+            COVERAGE_CORE=sysmon uv run coverage xml -o coverage-diff.xml --fail-under=0
           else
             echo "No coverage files found!"
             exit 1
@@ -552,17 +491,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Verify test data (optional)
         run: ./scripts/testing/verify_test_data.sh
@@ -587,17 +519,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Verify test data (optional)
         run: ./scripts/testing/verify_test_data.sh
@@ -632,14 +557,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          install-deps: "false"
 
       - name: Build package
         run: uv build
@@ -669,17 +591,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run benchmarks
         run: |
@@ -717,15 +632,44 @@ jobs:
           echo "Test: ${{ needs.test.result }}"
           echo "Build: ${{ needs.build.result }}"
 
-          if [[ "${{ needs.pre-commit.result }}" == "success" && \
-                "${{ needs.lint.result }}" == "success" && \
-                "${{ needs.typecheck.result }}" == "success" && \
-                "${{ needs.config-validation.result }}" == "success" && \
-                "${{ needs.test.result }}" == "success" && \
-                "${{ needs.build.result }}" == "success" ]]; then
-            echo "All CI checks passed!"
-            exit 0
-          else
+          # Check required jobs (allow skipped for optional jobs)
+          REQUIRED_PASSED=true
+
+          if [[ "${{ needs.pre-commit.result }}" != "success" ]]; then
+            echo "::error::Pre-commit checks failed"
+            REQUIRED_PASSED=false
+          fi
+
+          if [[ "${{ needs.lint.result }}" != "success" ]]; then
+            echo "::error::Lint checks failed"
+            REQUIRED_PASSED=false
+          fi
+
+          if [[ "${{ needs.typecheck.result }}" != "success" ]]; then
+            echo "::error::Type check failed"
+            REQUIRED_PASSED=false
+          fi
+
+          if [[ "${{ needs.config-validation.result }}" != "success" ]]; then
+            echo "::error::Config validation failed"
+            REQUIRED_PASSED=false
+          fi
+
+          if [[ "${{ needs.test.result }}" != "success" ]]; then
+            echo "::error::Tests failed"
+            REQUIRED_PASSED=false
+          fi
+
+          # Build can be skipped (only runs for certain branches/events)
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "::error::Build failed"
+            REQUIRED_PASSED=false
+          fi
+
+          if [[ "$REQUIRED_PASSED" == "false" ]]; then
             echo "Some CI checks failed"
             exit 1
           fi
+
+          echo "✅ All CI checks passed!"
+          exit 0

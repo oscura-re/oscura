@@ -124,7 +124,7 @@ repos:
         name: Sync version numbers across files
         entry: uv run python .claude/hooks/sync_versions.py
         language: system
-        files: '^(pyproject\.toml|src/oscura/__init__\.py|src/oscura/automotive/__init__\.py|docs/.*\.md)$'
+        files: '^(pyproject\.toml|src/oscura/__init__\.py|src/oscura/automotive/__init__\.py|docs/(index|cli)\.md|docs/api/index\.md)$'
         pass_filenames: false
 
 # ==========================================================================

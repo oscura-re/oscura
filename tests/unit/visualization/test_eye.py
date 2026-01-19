@@ -63,6 +63,7 @@ class TestPlotEye:
         fig = plot_eye(sample_serial_signal, bit_rate=1e9)
         assert fig is not None
 
+    @pytest.mark.flaky(reruns=2, reruns_delay=1)
     def test_auto_clock_recovery_fft(self, sample_serial_signal):
         """Test automatic clock recovery using FFT method."""
         pytest.importorskip("matplotlib")

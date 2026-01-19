@@ -66,17 +66,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --dev
+          python-version: ${{ env.PYTHON_VERSION }}
+          extras: "--dev"
 
       - name: Validate markers
         run: |
@@ -102,17 +96,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Check isolation (sample 15 files)
         run: |
@@ -143,14 +130,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          install-deps: "false"
 
       - name: Check marker distribution
         run: |
@@ -185,17 +169,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run tests with random order (run 1)
         run: |

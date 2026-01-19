@@ -9,6 +9,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastructure
 
+- **CI/CD Workflow Optimizations** (`.github/workflows/*.yml`, `.github/actions/setup-python-env/`):
+  - **Composite Action Migration**: Migrated all 6 workflows to use shared `setup-python-env` composite action
+    - Eliminated 78 lines of duplicate Python/uv setup code across workflows
+    - Standardized environment setup with consistent caching and verification
+    - Converted ci.yml (10 instances), docs.yml (2), test-quality.yml (4), tests-chunked.yml (5), code-quality.yml (4), release.yml (1)
+  - **Concurrency Groups**: Fixed workflow concurrency to prevent resource conflicts
+    - docs.yml: Changed from broad `"pages"` to per-ref `${{ github.workflow }}-${{ github.ref }}`
+    - release.yml: Added `release` concurrency group to prevent simultaneous releases
+  - **Path Filters**: Optimized workflow triggers to reduce unnecessary runs
+    - docs.yml: Removed overly broad `src/**/*.py` trigger (docs now build on explicit doc changes only)
+  - **Hypothesis Cache**: Simplified cache key from complex file hashing to simple `pyproject.toml` hash
+  - **Coverage Thresholds**: Aligned all coverage configs to 80% (codecov.yml, pyproject.toml, ci.yml)
+  - **Cleanup**: Removed obsolete darglint workaround from ci.yml (darglint is disabled)
+  - Result: Faster workflows, reduced duplication, improved maintainability
+
+- **Release Workflow Improvements** (`.github/workflows/release.yml`):
+  - **CHANGELOG Validation**: Added automated check for version entry in CHANGELOG.md before release
+    - Fails release if `## [X.Y.Z]` section missing
+    - Warns if `## [Unreleased]` section missing
+  - **Smoke Test Enforcement**: Removed `|| true` from package smoke tests (failures now block release)
+  - **Concurrency Control**: Added release concurrency group to prevent parallel releases
+
+- **Badge Auto-Update Architecture** (`.github/workflows/docs.yml`):
+  - **Removed CI Commit Anti-Pattern**: Replaced automatic git commits with artifact uploads
+    - Badge generation still runs but uploads to artifacts instead of committing
+    - Changed permissions from `contents: write` back to `contents: read`
+    - Developers can review and commit badge changes manually via artifacts
+  - Result: Eliminates CI-modifies-repo pattern, improves review process
+
+- **Security Enhancements**:
+  - **CodeQL Scanning** (`.github/workflows/codeql.yml`): Added GitHub CodeQL security analysis
+    - Runs weekly on Monday 6 AM UTC + on main branch pushes
+    - Uses security-extended and security-and-quality query sets
+    - Results appear in GitHub Security tab
+  - **nbconvert CVE Tracking** (`pyproject.toml`): Documented CVE-2025-53000 (<=7.16.6)
+    - Added comment explaining vulnerability (Windows PDF+SVG code execution)
+    - Constraint remains permissive (>=7.0.0) until patched version releases
+
+- **Test Quality Improvements**:
+  - **Nightly Failure Notifications** (`.github/workflows/tests-chunked.yml`):
+    - Added automatic GitHub issue creation when nightly tests fail
+    - Creates one issue per day with workflow run link and failed job details
+    - Only triggers on scheduled runs (not manual or PR runs)
+  - **Pre-Commit Optimizations** (`.pre-commit-config.yaml`):
+    - Narrowed version sync trigger from all `docs/*.md` to specific files only
+    - Now triggers only on: `docs/index.md`, `docs/cli.md`, `docs/api/index.md`
+    - Reduces unnecessary hook executions on doc-only changes
+
 - **Badge Auto-Update System** (`.github/workflows/docs.yml`, `codecov.yml`):
   - Fixed interrogate badge path mismatch (`docs/assets/` → `docs/badges/`)
   - Added automatic git commit/push for badge updates with `[skip ci]` tag
@@ -38,6 +86,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Python 3.12+ Compatibility** (`pyproject.toml`):
+  - Updated asammdf constraint from `>=7.4.0,<8.0.0` to `>=8.0.0,<9.0.0`
+  - Fixes SyntaxError on Python 3.12+ caused by invalid escape sequences in asammdf 7.x
+  - Allows test isolation checks to pass on Python 3.12/3.13
+- **Flaky Test** (`tests/unit/visualization/test_eye.py`):
+  - Added `@pytest.mark.flaky(reruns=2, reruns_delay=1)` to `test_auto_clock_recovery_fft`
+  - Test occasionally fails on Python 3.13 due to FFT-based clock recovery randomness
 - **CHANGELOG.md**: Removed duplicate `## [0.1.2]` header (line 256)
 - **Workspace Policy**: Moved `VALIDATION_REPORT_v0.1.2.md` to `.claude/reports/`
 - **Coverage Threshold**: Restored diff-cover threshold from 75% → 80% in CI workflow

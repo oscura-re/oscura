@@ -15,14 +15,14 @@ env:
   PYTHON_VERSION: "3.12"
 
 permissions:
-  contents: write # Changed from read to write for badge auto-commit
+  contents: read
   pages: write
   id-token: write
 
 # Allow only one concurrent deployment
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ============================================================================
@@ -45,10 +45,10 @@ jobs:
           filters: |
             docs:
               - 'docs/**'
-              - 'src/**/*.py'
               - 'mkdocs.yml'
               - 'pyproject.toml'
               - '.github/workflows/docs.yml'
+              - 'README.md'
 
   # ============================================================================
   # Build documentation
@@ -65,17 +65,10 @@ jobs:
         with:
           fetch-depth: 0 # Full history for git-revision-date plugin
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
@@ -145,17 +138,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Check docstring style (pydocstyle rules via ruff)
         run: |
@@ -169,21 +155,13 @@ jobs:
           uv run python -m interrogate src/oscura -vv -f 95 --generate-badge docs/badges/interrogate_badge.svg || true
           echo "::endgroup::"
 
-      - name: Commit and push badge updates
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
-          # Check if badge file changed
-          if git diff --quiet docs/badges/interrogate_badge.svg; then
-            echo "Badge unchanged, skipping commit"
-          else
-            echo "Badge updated, committing changes"
-            git add docs/badges/interrogate_badge.svg
-            git commit -m "chore: update docstring coverage badge [skip ci]"
-            git push
-          fi
+      - name: Upload badge artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: interrogate-badge
+          path: docs/badges/interrogate_badge.svg
+          retention-days: 30
+          if-no-files-found: warn
 
   # ============================================================================
   # Spell check documentation

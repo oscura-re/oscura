@@ -105,25 +105,55 @@ wheels = [
 
 [[package]]
 name = "asammdf"
-version = "7.4.2"
+version = "8.1.2"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "canmatrix", extra = ["arxml"] },
-    { name = "isal", marker = "platform_machine == 'AMD64' or platform_machine == 'x86_64'" },
-    { name = "lxml" },
-    { name = "lz4" },
-    { name = "numexpr" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
-    { name = "pandas" },
-    { name = "python-dateutil" },
-    { name = "typing-extensions" },
+resolution-markers = [
+    "python_full_version < '3.13'",
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/18/0b/c2f92b10b4cc63dc1c55cb6f071d5b82d58713946334e2e9411d1191d86a/asammdf-7.4.2.tar.gz", hash = "sha256:8c720cbe5d47cc424271c9fc3b320376071ded25a4e281fc22e12cbeaacddde2", size = 751420, upload-time = "2024-03-12T13:14:11.998Z" }
+dependencies = [
+    { name = "canmatrix", extra = ["arxml"], marker = "python_full_version < '3.13'" },
+    { name = "isal", marker = "(python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'x86_64')" },
+    { name = "lxml", marker = "python_full_version < '3.13'" },
+    { name = "lz4", marker = "python_full_version < '3.13'" },
+    { name = "numexpr", marker = "python_full_version < '3.13'" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "pandas", marker = "python_full_version < '3.13'" },
+    { name = "python-dateutil", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/30/a9/e3d63d4a2ab292d0a61160190ba3d292088cc5fc76d3805d446978b08309/asammdf-8.1.2.tar.gz", hash = "sha256:abc4219ef0a27fc9f42e06c7d83cc9a4e0ee27806606e47284f5c0022b8155a2", size = 8559447, upload-time = "2025-02-26T07:37:45.935Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/f0/7ef4ac1c348272707f387a66eadc55c4699e46eff7d995f9f963693ac725/asammdf-7.4.2-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:8ca49b3b964d050a20a2a8f32d821089be111d8e5968033f067f5cfea5263f10", size = 827203, upload-time = "2024-03-12T13:13:35.104Z" },
-    { url = "https://files.pythonhosted.org/packages/d5/82/ac581d51c6d175c4b0be361df37c886cab38312f9fa53889a94e2c1b66ad/asammdf-7.4.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bc80326c3e01e0a1b11ddda1cb3636debce1382cc63a8ef387b91b5f88d111fe", size = 858091, upload-time = "2024-03-12T13:13:39.485Z" },
-    { url = "https://files.pythonhosted.org/packages/6e/79/1bf769746cb96aa414fd20573a817a9d306584a4ee2070c38a556ab8a57e/asammdf-7.4.2-cp312-cp312-win_amd64.whl", hash = "sha256:88c486648822dca448c04b70aa024ce838b402cb0fb860dd6f5ccbc89054d2e5", size = 833090, upload-time = "2024-03-12T13:13:43.013Z" },
+    { url = "https://files.pythonhosted.org/packages/95/59/5572538bf91233da567571c5d4570314176930b83a485af02d6e2983cb90/asammdf-8.1.2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:b017880976f1fb1f57ac6b570aa9fc3bf1097c90d7a174ac92166b59f415d934", size = 1137748, upload-time = "2025-02-26T07:37:19.699Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/3c/dfbe641ca89a13cb543fb0e7cef493a8f2958e87aa6a659d8fc2881335e2/asammdf-8.1.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0b17ea1affb58f85afb71aec60605881564ea3cd8bd4bcc9a33a6e8e5dbbe8b1", size = 1144132, upload-time = "2025-02-26T07:37:23.67Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/ce/02bbb8edf1ec04c5f131570302f60a5ba6be86fd8cf6066f3fb4f14a43ac/asammdf-8.1.2-cp39-abi3-win_amd64.whl", hash = "sha256:bec15b1b551f4d611c256f63b05689e50555a4e66c38806ac9e4809bf34d4706", size = 1144151, upload-time = "2025-02-26T07:37:27.849Z" },
+]
+
+[[package]]
+name = "asammdf"
+version = "8.7.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version == '3.13.*'",
+]
+dependencies = [
+    { name = "canmatrix", extra = ["arxml"], marker = "python_full_version >= '3.13'" },
+    { name = "isal", marker = "(python_full_version >= '3.13' and platform_machine == 'AMD64') or (python_full_version >= '3.13' and platform_machine == 'x86_64')" },
+    { name = "lxml", marker = "python_full_version >= '3.13'" },
+    { name = "lz4", marker = "python_full_version >= '3.13'" },
+    { name = "numexpr", marker = "python_full_version >= '3.13'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
+    { name = "pandas", marker = "python_full_version >= '3.13'" },
+    { name = "python-dateutil", marker = "python_full_version >= '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version >= '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6e/c8/1572ba1d3712fdbf768ca8da257711120533fcd07d8fb2fa6f75ecaf70af/asammdf-8.7.2.tar.gz", hash = "sha256:68b99af6f2e1160aaae508ab81aa058388504221412126d06d7354415d16bd83", size = 9153833, upload-time = "2025-11-06T13:00:45.274Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/68/28/001695a2142313af2595a2c607c29144f554d89228b4340aa20f7beab230/asammdf-8.7.2-cp310-abi3-macosx_10_9_x86_64.whl", hash = "sha256:8d35e1fbbd92f24877315076fd855b56c3977d51e37333ac35483a9eeb168ad8", size = 1179484, upload-time = "2025-11-06T13:00:37.957Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/39/94fcb57475756620f8368a491373862b91045b07c00a936de1360ce3aef9/asammdf-8.7.2-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:76333378d6f16079c049c6c71ec423311565a06ed9f592e3cb82229928001700", size = 1170245, upload-time = "2025-11-06T13:00:40.268Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/7d/3990dcb20f3ad89ac23f4fede500fe3442590274393167807388d595d4e9/asammdf-8.7.2-cp310-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4d8d28038ab743b9063e3e70785df4c699dad5cac5f0a38a888b515d9348c052", size = 1174501, upload-time = "2025-11-06T13:00:41.405Z" },
+    { url = "https://files.pythonhosted.org/packages/10/1c/2d0ee3fdf3af097b8df7758bd5fcf6a966b3396b2e7b1a8408849850cc1f/asammdf-8.7.2-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a43b5bf8d5017cf6b78668725cb3f44c7cd97920b7f4677727e63af6938d5d5c", size = 1177266, upload-time = "2025-11-06T13:00:42.718Z" },
+    { url = "https://files.pythonhosted.org/packages/02/ce/4aedbea86ac5c8d1c6bc7225f1dee2eaac187212ce1e16961bc4c627e433/asammdf-8.7.2-cp310-abi3-win_amd64.whl", hash = "sha256:d88a9dc83ea998dcc85e91cd966fdc8448eec7f212d8c8b285eebad78996dbdf", size = 1176988, upload-time = "2025-11-06T13:00:43.882Z" },
 ]
 
 [[package]]
@@ -2732,7 +2762,8 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
-    { name = "asammdf" },
+    { name = "asammdf", version = "8.1.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "asammdf", version = "8.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "cantools" },
     { name = "check-jsonschema" },
     { name = "h5py" },
@@ -2762,7 +2793,8 @@ analysis = [
     { name = "pywavelets" },
 ]
 automotive = [
-    { name = "asammdf" },
+    { name = "asammdf", version = "8.1.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "asammdf", version = "8.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "cantools" },
     { name = "python-can" },
     { name = "scapy" },
@@ -2840,7 +2872,7 @@ reporting = [
 
 [package.metadata]
 requires-dist = [
-    { name = "asammdf", marker = "extra == 'automotive'", specifier = ">=7.4.0,<8.0.0" },
+    { name = "asammdf", marker = "extra == 'automotive'", specifier = ">=8.0.0,<9.0.0" },
     { name = "cantools", marker = "extra == 'automotive'", specifier = ">=39.4.0,<40.0.0" },
     { name = "check-jsonschema", marker = "extra == 'dev'", specifier = ">=0.29.0,<1.0.0" },
     { name = "click", specifier = ">=8.1.0,<9.0.0" },
