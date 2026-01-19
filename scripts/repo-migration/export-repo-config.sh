@@ -28,7 +28,7 @@ gh api repos/$REPO --jq '{
   default_branch: .default_branch,
   is_template: .is_template,
   license: .license.spdx_id
-}' >"$OUTPUT_DIR/basic-settings.json"
+}' > "$OUTPUT_DIR/basic-settings.json"
 
 # 2. FEATURES (fully exportable)
 echo "[2/10] Exporting feature toggles..."
@@ -39,7 +39,7 @@ gh api repos/$REPO --jq '{
   has_discussions: .has_discussions,
   has_downloads: .has_downloads,
   allow_forking: .allow_forking
-}' >"$OUTPUT_DIR/features.json"
+}' > "$OUTPUT_DIR/features.json"
 
 # 3. MERGE SETTINGS (fully exportable)
 echo "[3/10] Exporting merge settings..."
@@ -54,63 +54,63 @@ gh api repos/$REPO --jq '{
   squash_merge_commit_message: .squash_merge_commit_message,
   merge_commit_title: .merge_commit_title,
   merge_commit_message: .merge_commit_message
-}' >"$OUTPUT_DIR/merge-settings.json"
+}' > "$OUTPUT_DIR/merge-settings.json"
 
 # 4. TOPICS (fully exportable)
 echo "[4/10] Exporting topics..."
-gh api repos/$REPO/topics --jq '.names' >"$OUTPUT_DIR/topics.json"
+gh api repos/$REPO/topics --jq '.names' > "$OUTPUT_DIR/topics.json"
 
 # 5. BRANCH PROTECTION (fully exportable)
 echo "[5/10] Exporting branch protection..."
 DEFAULT_BRANCH=$(gh api repos/$REPO --jq '.default_branch')
-gh api repos/$REPO/branches/$DEFAULT_BRANCH/protection 2>/dev/null \
-  >"$OUTPUT_DIR/branch-protection.json" ||
-  echo '{"error": "No protection or insufficient permissions"}' >"$OUTPUT_DIR/branch-protection.json"
+gh api repos/$REPO/branches/$DEFAULT_BRANCH/protection 2> /dev/null \
+  > "$OUTPUT_DIR/branch-protection.json" \
+  || echo '{"error": "No protection or insufficient permissions"}' > "$OUTPUT_DIR/branch-protection.json"
 
 # 6. RULESETS (fully exportable, if using)
 echo "[6/10] Exporting rulesets..."
-gh api repos/$REPO/rulesets 2>/dev/null \
-  >"$OUTPUT_DIR/rulesets.json" ||
-  echo '[]' >"$OUTPUT_DIR/rulesets.json"
+gh api repos/$REPO/rulesets 2> /dev/null \
+  > "$OUTPUT_DIR/rulesets.json" \
+  || echo '[]' > "$OUTPUT_DIR/rulesets.json"
 
 # 7. COLLABORATORS (fully exportable)
 echo "[7/10] Exporting collaborators..."
-gh api repos/$REPO/collaborators --jq '[.[] | {login: .login, role: .role_name, permissions: .permissions}]' 2>/dev/null \
-  >"$OUTPUT_DIR/collaborators.json" ||
-  echo '{"error": "Insufficient permissions"}' >"$OUTPUT_DIR/collaborators.json"
+gh api repos/$REPO/collaborators --jq '[.[] | {login: .login, role: .role_name, permissions: .permissions}]' 2> /dev/null \
+  > "$OUTPUT_DIR/collaborators.json" \
+  || echo '{"error": "Insufficient permissions"}' > "$OUTPUT_DIR/collaborators.json"
 
 # 8. WEBHOOKS (fully exportable)
 echo "[8/10] Exporting webhooks..."
-gh api repos/$REPO/hooks 2>/dev/null \
-  >"$OUTPUT_DIR/webhooks.json" ||
-  echo '{"error": "Insufficient permissions"}' >"$OUTPUT_DIR/webhooks.json"
+gh api repos/$REPO/hooks 2> /dev/null \
+  > "$OUTPUT_DIR/webhooks.json" \
+  || echo '{"error": "Insufficient permissions"}' > "$OUTPUT_DIR/webhooks.json"
 
 # 9. SECRETS (NAMES ONLY - values cannot be exported)
 echo "[9/10] Exporting secret names (values CANNOT be exported)..."
-gh secret list -R $REPO 2>/dev/null | awk '{print $1}' | grep -v "^NAME$" \
-  >"$OUTPUT_DIR/secret-names.txt" ||
-  echo "# No secrets or insufficient permissions" >"$OUTPUT_DIR/secret-names.txt"
+gh secret list -R $REPO 2> /dev/null | awk '{print $1}' | grep -v "^NAME$" \
+  > "$OUTPUT_DIR/secret-names.txt" \
+  || echo "# No secrets or insufficient permissions" > "$OUTPUT_DIR/secret-names.txt"
 
 # 10. VARIABLES (fully exportable)
 echo "[10/10] Exporting variables..."
-gh variable list -R $REPO --json name,value 2>/dev/null \
-  >"$OUTPUT_DIR/variables.json" ||
-  echo '[]' >"$OUTPUT_DIR/variables.json"
+gh variable list -R $REPO --json name,value 2> /dev/null \
+  > "$OUTPUT_DIR/variables.json" \
+  || echo '[]' > "$OUTPUT_DIR/variables.json"
 
 # BONUS: GitHub Pages (if enabled)
 echo "[BONUS] Exporting GitHub Pages config..."
-gh api repos/$REPO/pages 2>/dev/null \
-  >"$OUTPUT_DIR/pages-config.json" ||
-  echo '{"error": "Pages not enabled"}' >"$OUTPUT_DIR/pages-config.json"
+gh api repos/$REPO/pages 2> /dev/null \
+  > "$OUTPUT_DIR/pages-config.json" \
+  || echo '{"error": "Pages not enabled"}' > "$OUTPUT_DIR/pages-config.json"
 
 # BONUS: Deploy keys (metadata only, private keys cannot be exported)
 echo "[BONUS] Exporting deploy key metadata..."
-gh api repos/$REPO/keys --jq '[.[] | {id: .id, title: .title, read_only: .read_only, created_at: .created_at}]' 2>/dev/null \
-  >"$OUTPUT_DIR/deploy-keys.json" ||
-  echo '[]' >"$OUTPUT_DIR/deploy-keys.json"
+gh api repos/$REPO/keys --jq '[.[] | {id: .id, title: .title, read_only: .read_only, created_at: .created_at}]' 2> /dev/null \
+  > "$OUTPUT_DIR/deploy-keys.json" \
+  || echo '[]' > "$OUTPUT_DIR/deploy-keys.json"
 
 # Create summary
-cat >"$OUTPUT_DIR/README.md" <<EOF
+cat > "$OUTPUT_DIR/README.md" << EOF
 # Repository Configuration Export
 
 **Source Repository**: $REPO

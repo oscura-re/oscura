@@ -138,6 +138,39 @@ See `docs/testing/test-suite-guide.md` for complete strategy.
 - **Standards**: Follow IEEE standards where applicable (181, 1241, 1459, 2414)
 - **Commits**: Update CHANGELOG.md in every PR (see protocol above)
 
+## Workspace File Creation Policy
+
+**CRITICAL**: Do NOT create intermediate reports, summaries, or analysis files in version-controlled workspace.
+
+### Allowed File Creation
+
+✅ **User-facing documentation**: README, CONTRIBUTING, docs/, tutorials
+✅ **Source code**: src/, tests/, configuration files
+✅ **CI/CD**: .github/workflows/, scripts/
+
+### Forbidden File Patterns
+
+❌ **Intermediate files**: `*_ANALYSIS*.md`, `*_REPORT*.md`, `*_AUDIT*.md`, `*_FIXES*.md`, `*_SUMMARY*.md`
+❌ **Working papers**: `COMPREHENSIVE_*.md`, `FINAL_*.md`, `COMPLETE_*.md`
+
+### Where to Put Working Papers
+
+- **Analysis/research**: `.claude/reports/YYYY-MM-DD-topic.md` (gitignored, auto-archived)
+- **Agent outputs**: `.claude/agent-outputs/[id]-complete.json` (gitignored)
+- **Coordination**: `.coordination/` (gitignored, auto-cleaned)
+- **User communication**: Communicate directly, do NOT create file
+
+### Single Source of Truth
+
+| Information Type | SSOT Location | NOT Here |
+|-----------------|---------------|----------|
+| What changed when | `CHANGELOG.md` | `*_CHANGES.md` |
+| How to develop | `CONTRIBUTING.md`, `CLAUDE.md` | `DEVELOPMENT_GUIDE.md` |
+| Project info | `README.md` | `PROJECT_SUMMARY.md` |
+| Badge maintenance | `.github/BADGE_MAINTENANCE.md` | `BADGE_GUIDE.md` |
+
+**See**: `.claude/WORKSPACE_POLICY.md` for complete policy and decision trees.
+
 ## Quick Reference
 
 | Task | Command/Location |

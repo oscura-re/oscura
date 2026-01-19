@@ -193,6 +193,40 @@ enforcement:
     health_check: ".claude/hooks/health_check.py"
 
 # ═══════════════════════════════════════════════════════════════════════════
+# HOOK-SPECIFIC CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+hooks:
+  # cleanup_stale_agents.py - SessionStart cleanup
+  cleanup_stale_agents:
+    stale_threshold_hours: 24 # Mark agents stale after 24h of inactivity
+    activity_check_hours: 1 # Check for file updates in last 1h
+    max_age_days: 30 # Remove agents older than 30 days (uses retention.agent_registry)
+
+  # check_stop.py - Stop hook validation
+  check_stop:
+    max_stale_hours: 2 # Allow stop if work older than 2 hours
+
+  # check_subagent_stop.py - Subagent completion
+  check_subagent_stop:
+    output_size_threshold_bytes: 204800 # 200KB - summarize outputs larger than this
+    recent_window_minutes: 5 # Check for reports in last 5 minutes
+
+  # pre_compact_cleanup.sh - Pre-compaction cleanup
+  pre_compact_cleanup:
+    large_json_size_bytes: 102400 # 100KB - compress JSON files larger than this
+    old_report_days: 7 # Archive reports older than 7 days (uses retention.reports)
+
+  # health_check.py - System health validation
+  health_check:
+    disk_space_critical_percent: 5 # Critical threshold
+    disk_space_warning_percent: 10 # Warning threshold
+
+  # session_cleanup.sh - SessionEnd cleanup (uses retention.locks_stale_minutes)
+
+  # enforce_agent_limit.py - Agent limit enforcement (uses orchestration.agents.max_concurrent)
+
+# ═══════════════════════════════════════════════════════════════════════════
 # LOGGING & METRICS
 # ═══════════════════════════════════════════════════════════════════════════
 

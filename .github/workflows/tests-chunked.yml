@@ -230,7 +230,7 @@ jobs:
       - name: Run fast unit tests (${{ matrix.test-group }})
         run: |
           echo "Running tests with ${{ steps.test-config.outputs.workers }} workers"
-          uv run pytest ${{ steps.test-config.outputs.paths }} \
+          uv run python -m pytest ${{ steps.test-config.outputs.paths }} \
             -m "unit and not memory_intensive and not slow and not performance" \
             -n ${{ steps.test-config.outputs.workers }} \
             --maxprocesses=${{ steps.test-config.outputs.workers }} \
@@ -292,7 +292,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          uv run pytest tests/integration \
+          uv run python -m pytest tests/integration \
             -m "integration" \
             -n 2 \
             --maxprocesses=2 \
@@ -349,7 +349,7 @@ jobs:
 
       - name: Run validation tests
         run: |
-          uv run pytest tests/validation \
+          uv run python -m pytest tests/validation \
             -m "validation" \
             -n 2 \
             --maxprocesses=2 \
@@ -404,7 +404,7 @@ jobs:
 
       - name: Run stress tests
         run: |
-          uv run pytest tests/stress \
+          uv run python -m pytest tests/stress \
             -m "stress" \
             -n 2 \
             --maxprocesses=2 \
@@ -459,7 +459,7 @@ jobs:
 
       - name: Run performance tests
         run: |
-          uv run pytest tests/performance \
+          uv run python -m pytest tests/performance \
             -m "performance or benchmark" \
             -n 2 \
             --maxprocesses=2 \

@@ -49,10 +49,12 @@ from __future__ import annotations
 import functools
 import threading
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+T = TypeVar("T")
 
 
 @dataclass
@@ -149,7 +151,7 @@ def reset_lazy_stats() -> None:
         _global_stats = LazyComputeStats()
 
 
-class LazyResult[T]:
+class LazyResult(Generic[T]):
     """Deferred computation wrapper with thread-safe compute-once semantics.
 
     Wraps a computation function that will be called only when the result is
@@ -557,7 +559,7 @@ class LazyDict(dict[str, Any]):
         ]
 
 
-def lazy[T](fn: Callable[..., T]) -> Callable[..., LazyResult[T]]:
+def lazy(fn: Callable[..., T]) -> Callable[..., LazyResult[T]]:
     """Decorator to make a function return a LazyResult.
 
     Wraps a function so it returns a LazyResult instead of computing

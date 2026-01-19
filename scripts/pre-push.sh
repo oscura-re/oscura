@@ -41,6 +41,7 @@ VERBOSE=false
 RUN_TESTS=true
 PARALLEL_WORKERS=""
 PROFILE_TESTS=false
+SKIP_HOOKS=false
 
 # Track results
 declare -A CHECK_RESULTS
@@ -57,7 +58,7 @@ START_TIME=$(date +%s)
 # =============================================================================
 
 show_help() {
-  cat <<'EOF'
+  cat << 'EOF'
 Comprehensive Local CI Verification for Oscura
 
 This script mirrors the GitHub Actions CI pipeline to catch all issues
@@ -73,6 +74,7 @@ OPTIONS:
     --parallel N  Use N parallel workers for tests (default: auto-detected)
     --no-tests    Skip test execution (lint/format only) - ~3 minutes
     --profile     Enable test profiling (shows 20 slowest tests)
+    --skip-hooks  Skip pre-commit hooks (use if you just committed)
     --verbose     Show detailed output from each check
     -h, --help    Show this help message
 
@@ -92,9 +94,14 @@ WHAT IT CHECKS (matching CI workflows):
       * Integration tests
       * Compliance tests
 
-    Stage 3 - Build Verification:
+    Stage 3 - Build Verification & Quality Gates:
       * MkDocs build (--strict)
       * Package build (uv build)
+      * CLI commands validation
+      * Docstring coverage (interrogate)
+      * CRITICAL: Diff coverage (≥80% on changed lines)
+      * Code quality (pydocstyle, vulture, radon, import-linter)
+      * Documentation spell check (cspell)
 
 EXIT CODES:
     0 - All checks passed, safe to push
@@ -117,8 +124,9 @@ EXAMPLES:
 TIPS:
     1. Run with --fix first to auto-correct formatting issues
     2. Use --quick during development, --full before final push
-    3. If tests fail, run: uv run pytest <failing_test> -v --tb=long
-    4. Check CI logs for exact error messages if local passes but CI fails
+    3. Use --skip-hooks if you just committed (pre-commit already ran)
+    4. If tests fail, run: uv run pytest <failing_test> -v --tb=long
+    5. Check CI logs for exact error messages if local passes but CI fails
 
 EOF
 }
@@ -129,43 +137,47 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  --quick)
-    MODE="quick"
-    shift
-    ;;
-  --full)
-    MODE="full"
-    shift
-    ;;
-  --fix)
-    FIX_MODE=true
-    shift
-    ;;
-  --parallel)
-    PARALLEL_WORKERS="$2"
-    shift 2
-    ;;
-  --no-tests)
-    RUN_TESTS=false
-    shift
-    ;;
-  --profile)
-    PROFILE_TESTS=true
-    shift
-    ;;
-  --verbose | -v)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    show_help
-    exit 0
-    ;;
-  *)
-    echo "Unknown option: $1" >&2
-    echo "Use --help for usage information" >&2
-    exit 2
-    ;;
+    --quick)
+      MODE="quick"
+      shift
+      ;;
+    --full)
+      MODE="full"
+      shift
+      ;;
+    --fix)
+      FIX_MODE=true
+      shift
+      ;;
+    --parallel)
+      PARALLEL_WORKERS="$2"
+      shift 2
+      ;;
+    --no-tests)
+      RUN_TESTS=false
+      shift
+      ;;
+    --profile)
+      PROFILE_TESTS=true
+      shift
+      ;;
+    --skip-hooks)
+      SKIP_HOOKS=true
+      shift
+      ;;
+    --verbose | -v)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Use --help for usage information" >&2
+      exit 2
+      ;;
   esac
 done
 
@@ -235,7 +247,7 @@ run_check() {
   local output_file
   output_file=$(mktemp)
 
-  if "${cmd[@]}" >"${output_file}" 2>&1; then
+  if "${cmd[@]}" > "${output_file}" 2>&1; then
     local check_end
     check_end=$(date +%s)
     local duration=$((check_end - check_start))
@@ -255,7 +267,7 @@ run_check() {
       echo -e "    ${DIM}--- Output ---${NC}"
       head -50 "${output_file}" | sed 's/^/    /'
       local lines
-      lines=$(wc -l <"${output_file}")
+      lines=$(wc -l < "${output_file}")
       if [[ ${lines} -gt 50 ]]; then
         echo -e "    ${DIM}... (${lines} total lines, showing first 50)${NC}"
       fi
@@ -272,6 +284,12 @@ run_check() {
 # =============================================================================
 
 check_pre_commit() {
+  # Skip if explicitly requested (hooks already ran on commit)
+  if [[ "${SKIP_HOOKS}" == "true" ]]; then
+    log_check_start "Pre-commit hooks"
+    log_check_skip "Pre-commit hooks" "skipped via --skip-hooks (already ran on commit)"
+    return 0
+  fi
   run_check "Pre-commit hooks" pre-commit run --all-files
 }
 
@@ -327,7 +345,7 @@ check_unit_tests() {
   else
     # AGGRESSIVE: Use ALL available cores (no cap) for sub-2-min target
     local workers
-    workers=$(nproc 2>/dev/null || echo 4)
+    workers=$(nproc 2> /dev/null || echo 4)
     # No cap - use all cores for maximum parallelization
     pytest_args+=("-n" "${workers}" "--dist=worksteal")
   fi
@@ -349,7 +367,7 @@ check_integration_tests() {
   # Use modest parallelization (half of available cores, min 2)
   # Integration tests may share resources, so we're conservative
   local workers
-  workers=$(nproc 2>/dev/null || echo 4)
+  workers=$(nproc 2> /dev/null || echo 4)
   workers=$((workers / 2))
   if [[ ${workers} -lt 2 ]]; then
     workers=2
@@ -382,13 +400,13 @@ check_mkdocs_build() {
 
   # Compute hash of docs/ directory and mkdocs.yml
   local current_hash
-  if command -v sha256sum >/dev/null 2>&1; then
-    current_hash=$(find docs/ mkdocs.yml -type f 2>/dev/null |
-      sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1)
+  if command -v sha256sum > /dev/null 2>&1; then
+    current_hash=$(find docs/ mkdocs.yml -type f 2> /dev/null \
+      | sort | xargs sha256sum 2> /dev/null | sha256sum | cut -d' ' -f1)
   else
     # Fallback for macOS (uses shasum)
-    current_hash=$(find docs/ mkdocs.yml -type f 2>/dev/null |
-      sort | xargs shasum -a 256 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
+    current_hash=$(find docs/ mkdocs.yml -type f 2> /dev/null \
+      | sort | xargs shasum -a 256 2> /dev/null | shasum -a 256 | cut -d' ' -f1)
   fi
 
   # Check if hash matches cached version
@@ -407,7 +425,7 @@ check_mkdocs_build() {
   # Hash changed or no cache - rebuild
   if run_check "MkDocs build" uv run mkdocs build --strict --clean; then
     # Save new hash on success
-    echo "${current_hash}" >"${cache_file}"
+    echo "${current_hash}" > "${cache_file}"
     return 0
   else
     return 1
@@ -425,13 +443,13 @@ check_package_build() {
 
   # Compute hash of pyproject.toml and src/ directory
   local current_hash
-  if command -v sha256sum >/dev/null 2>&1; then
-    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2>/dev/null |
-      sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1)
+  if command -v sha256sum > /dev/null 2>&1; then
+    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2> /dev/null \
+      | sort | xargs sha256sum 2> /dev/null | sha256sum | cut -d' ' -f1)
   else
     # Fallback for macOS (uses shasum)
-    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2>/dev/null |
-      sort | xargs shasum -a 256 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
+    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2> /dev/null \
+      | sort | xargs shasum -a 256 2> /dev/null | shasum -a 256 | cut -d' ' -f1)
   fi
 
   # Check if hash matches cached version
@@ -450,7 +468,7 @@ check_package_build() {
   # Hash changed or no cache - rebuild
   if run_check "Package build" uv build; then
     # Save new hash on success
-    echo "${current_hash}" >"${cache_file}"
+    echo "${current_hash}" > "${cache_file}"
     return 0
   else
     return 1
@@ -492,7 +510,110 @@ sys.exit(0)
 
 check_docstring_coverage() {
   # CI uses -f 95 threshold
-  run_check "Docstring coverage" uv run interrogate src/oscura -vv -f 95
+  run_check "Docstring coverage" uv run python -m interrogate src/oscura -vv -f 95
+}
+
+check_diff_coverage() {
+  # Check coverage on changed lines only (matches CI diff-coverage job)
+  # This is the CRITICAL check that ensures only well-tested code is merged
+
+  # Skip if not on a branch (can't compare to main)
+  current_branch=$(git branch --show-current)
+  if [[ -z "${current_branch}" ]] || [[ "${current_branch}" == "main" ]]; then
+    log_check_start "Diff coverage"
+    log_check_skip "Diff coverage" "not on a feature branch"
+    return 0
+  fi
+
+  # Check if we have coverage data from tests
+  if [[ ! -f ".coverage" ]] && [[ ! -f "coverage.xml" ]]; then
+    log_check_start "Diff coverage"
+    log_check_skip "Diff coverage" "no coverage data (run tests with --cov first)"
+    return 0
+  fi
+
+  log_check_start "Diff coverage"
+
+  # Generate XML coverage report if not exists
+  if [[ ! -f "coverage.xml" ]]; then
+    uv run python -m coverage xml > /dev/null 2>&1 || true
+  fi
+
+  # Verify XML was generated
+  if [[ ! -f "coverage.xml" ]]; then
+    log_check_skip "Diff coverage" "failed to generate coverage.xml"
+    return 0
+  fi
+
+  # Install diff-cover if needed
+  if ! uv run python -c "import diff_cover" > /dev/null 2>&1; then
+    uv pip install diff-cover > /dev/null 2>&1
+  fi
+
+  # Run diff-cover (80% threshold like CI)
+  local output_file
+  output_file=$(mktemp)
+
+  if uv run python -m diff_cover.diff_cover_tool coverage.xml \
+    --compare-branch=origin/main \
+    --fail-under=80 \
+    --quiet > "${output_file}" 2>&1; then
+    log_check_pass "Diff coverage" "0"
+    rm -f "${output_file}"
+    return 0
+  else
+    log_check_fail "Diff coverage" "0"
+
+    # Show failure details
+    if [[ -s "${output_file}" ]]; then
+      echo ""
+      echo -e "    ${DIM}--- Diff Coverage Report ---${NC}"
+      cat "${output_file}" | sed 's/^/    /'
+      echo -e "    ${DIM}--- End Report ---${NC}"
+      echo ""
+      echo -e "    ${YELLOW}Coverage on changed lines must be ≥80%${NC}"
+      echo -e "    ${DIM}Tip: Add tests for your changes or mark untestable code${NC}"
+    fi
+
+    rm -f "${output_file}"
+    return 1
+  fi
+}
+
+check_pydocstyle() {
+  # Check docstring style (matches code-quality.yml)
+  # This is informational - violations don't fail the build
+  run_check "Docstring style (pydocstyle)" uv run python -m pydocstyle src/oscura
+}
+
+check_dead_code() {
+  # Dead code detection with vulture (matches code-quality.yml)
+  # Informational only - doesn't fail build
+  run_check "Dead code detection (vulture)" uv run python -m vulture src/oscura --min-confidence 80
+}
+
+check_complexity() {
+  # Code complexity analysis with radon (matches code-quality.yml)
+  # Informational only - warns on high complexity
+  run_check "Code complexity (radon)" uv run python -m radon cc src/oscura --min B --show-complexity
+}
+
+check_import_architecture() {
+  # Import architecture validation (matches code-quality.yml)
+  # Ensures import contracts are followed
+  run_check "Import architecture (lint-imports)" uv run python -m lint_imports
+}
+
+check_spell() {
+  # Spell check documentation with cspell (matches docs.yml)
+  # Requires Node.js and npm to be installed
+  if ! command -v cspell > /dev/null 2>&1; then
+    log_check_start "Spell check (cspell)"
+    log_check_skip "Spell check (cspell)" "cspell not installed (npm install -g cspell)"
+    return 0
+  fi
+
+  run_check "Spell check (cspell)" cspell "docs/**/*.md" "*.md" --config cspell.json
 }
 
 # =============================================================================
@@ -599,6 +720,20 @@ if [[ "${MODE}" != "quick" ]]; then
 
   # Docstring coverage (matches code-quality.yml)
   check_docstring_coverage || true
+
+  # Diff coverage (matches ci.yml diff-coverage job) - CRITICAL
+  # This check ensures coverage on changed lines is ≥80%
+  check_diff_coverage || true
+
+  # Code quality checks (matches code-quality.yml) - INFORMATIONAL
+  # These don't fail the build but provide valuable insights
+  check_pydocstyle || true
+  check_dead_code || true
+  check_complexity || true
+  check_import_architecture || true
+
+  # Documentation spell check (matches docs.yml) - INFORMATIONAL
+  check_spell || true
 else
   print_header "STAGE 3: Build Verification"
   log_check_start "Build checks"

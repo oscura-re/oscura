@@ -96,4 +96,4 @@ Unknown signal? Need to discover the protocol?
 - **All Demos**: [Browse 19 comprehensive demos](https://github.com/lair-click-bats/oscura/tree/main/demos)
 - **API Reference**: [Complete function documentation](../api/index.md)
 - **Error Codes**: [Troubleshooting guide](../error-codes.md)
-- **Contributing**: [How to contribute](../contributing.md)
+- **Contributing**: [How to contribute](https://github.com/oscura-re/oscura/blob/main/CONTRIBUTING.md)

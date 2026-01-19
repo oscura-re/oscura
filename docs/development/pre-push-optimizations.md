@@ -418,7 +418,7 @@ grep "slowest" test-profile.txt -A 25
 
 ## See Also
 
-- [Contributing Guide](../contributing.md)
+- [Contributing Guide](https://github.com/oscura-re/oscura/blob/main/CONTRIBUTING.md)
 - [Test Suite Guide](../testing/test-suite-guide.md)
 - [Coding Standards](https://github.com/lair-click-bats/oscura/blob/main/.claude/coding-standards.yaml)
 

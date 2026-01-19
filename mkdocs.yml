@@ -104,7 +104,6 @@ nav:
       - Pre-Push Optimizations: development/pre-push-optimizations.md
   - CLI Reference: cli.md
   - Error Codes: error-codes.md
-  - Contributing: contributing.md
   - Code of Conduct: code-of-conduct.md
   - Changelog: changelog.md
 

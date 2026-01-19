@@ -20,7 +20,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import numpy as np
 
@@ -664,7 +664,7 @@ T = TypeVar("T")
 
 
 @dataclass
-class CacheEntry[T]:
+class CacheEntry(Generic[T]):
     """Cache entry with metadata.
 
     Attributes:

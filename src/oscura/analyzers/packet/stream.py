@@ -282,7 +282,7 @@ def pipeline(
     yield from result
 
 
-def batch[T](
+def batch(
     source: Iterator[T],
     size: int,
 ) -> Iterator[list[T]]:
@@ -311,7 +311,7 @@ def batch[T](
         yield current_batch
 
 
-def take[T](source: Iterator[T], n: int) -> Iterator[T]:
+def take(source: Iterator[T], n: int) -> Iterator[T]:
     """Take first n items.
 
     Args:
@@ -329,7 +329,7 @@ def take[T](source: Iterator[T], n: int) -> Iterator[T]:
         count += 1  # noqa: SIM113
 
 
-def skip[T](source: Iterator[T], n: int) -> Iterator[T]:
+def skip(source: Iterator[T], n: int) -> Iterator[T]:
     """Skip first n items.
 
     Args:

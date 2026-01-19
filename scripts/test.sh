@@ -183,6 +183,7 @@ if [[ "${MODE}" == "coverage" ]]; then
     --cov=src/oscura
     --cov-report=term-missing
     --cov-report=html
+    --cov-report=xml # For diff-cover tool
   )
 fi
 

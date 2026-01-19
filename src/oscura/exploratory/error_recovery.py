@@ -547,7 +547,7 @@ class RetryResult:
     adjustments_made: list[str]
 
 
-def retry_with_adjustment[T](
+def retry_with_adjustment(
     func: Callable[..., T],
     trace: WaveformTrace,
     initial_params: dict[str, Any],

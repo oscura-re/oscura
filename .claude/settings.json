@@ -94,17 +94,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session_cleanup.sh\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || true",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_end_cleanup.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
             "timeout": 30
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/cleanup_completed_workflows.sh\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || true",
-            "timeout": 10
           }
         ]
       }
@@ -114,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_stop.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate_stop.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
             "timeout": 10
           }
         ]
@@ -125,7 +116,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_subagent_stop.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate_stop.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
             "timeout": 30
           }
         ]
@@ -136,7 +127,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce_agent_limit.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce_agent_limit.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\"",
             "timeout": 5
           }
         ],
@@ -146,7 +137,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate_path.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\" || echo '{\"ok\": true}'",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate_path.py\" 2>>\"$CLAUDE_PROJECT_DIR/.claude/hooks/errors.log\"",
             "timeout": 5
           }
         ],

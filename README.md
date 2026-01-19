@@ -14,8 +14,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/oscura)](https://pypi.org/project/oscura/)
 
-**Documentation:**
+**Code Quality:**
+[![codecov](https://codecov.io/gh/oscura-re/oscura/branch/main/graph/badge.svg)](https://codecov.io/gh/oscura-re/oscura)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Docstring Coverage](https://raw.githubusercontent.com/oscura-re/oscura/main/docs/badges/interrogate_badge.svg)](https://github.com/oscura-re/oscura/tree/main/docs)
+
+**Project Status:**
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/oscura-re/oscura/graphs/commit-activity)
+[![Last Commit](https://img.shields.io/github/last-commit/oscura-re/oscura)](https://github.com/oscura-re/oscura/commits/main)
 
 ---
 

@@ -71,7 +71,7 @@ All demos are in the [GitHub repository demos/ directory](https://github.com/lai
 
 - **[Testing Guide](testing/index.md)** - Test suite documentation
 - **[Error Codes](error-codes.md)** - Error reference
-- **[Contributing](contributing.md)** - How to contribute
+- **[Contributing](https://github.com/oscura-re/oscura/blob/main/CONTRIBUTING.md)** - How to contribute
 - **[Code of Conduct](code-of-conduct.md)** - Community guidelines
 
 ---

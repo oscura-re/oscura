@@ -138,14 +138,14 @@
   },
 
   // Python Testing: pytest configuration for team consistency
+  // Note: --strict-markers and --strict-config are in pyproject.toml addopts (SSOT)
+  // Only UI-focused args here: --tb=short for readable tracebacks, -v for verbosity
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "python.testing.pytestArgs": [
     "tests",
-    "--tb=short",
-    "-v",
-    "--strict-markers",
-    "--strict-config"
+    "--tb=short", // Short traceback format for readability in UI
+    "-v" // Verbose output for test discovery
   ],
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
 

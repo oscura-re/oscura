@@ -18,7 +18,7 @@ References:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class LazyProxy[T](ABC):
+class LazyProxy(ABC, Generic[T]):
     """Abstract base class for lazy evaluation proxies.
 
     Defers computation until explicitly requested via .compute().
@@ -169,7 +169,7 @@ class LazyOperation(LazyProxy[Any]):
         return self._operation(*evaluated_operands, **self._kwargs)
 
 
-def lazy_operation[T](
+def lazy_operation(
     func: Callable[..., T],
     *args: Any,
     **kwargs: Any,

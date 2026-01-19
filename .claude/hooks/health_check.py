@@ -25,19 +25,21 @@ from typing import Any
 
 # Add shared module to path
 sys.path.insert(0, str(Path(__file__).parent))
+from shared.config import load_config
+from shared.logging_utils import get_hook_logger
 from shared.paths import PATHS, get_absolute_path
 
-# Configuration
+# Load configuration
 PROJECT_DIR = Path(os.getenv("CLAUDE_PROJECT_DIR", "."))
-LOG_FILE = get_absolute_path("claude.hooks", PROJECT_DIR) / "health.log"
+CONFIG = load_config(PROJECT_DIR)
+HOOK_CONFIG = CONFIG.get("hooks", {}).get("health_check", {})
 
+# Get config values with fallbacks
+DISK_SPACE_CRITICAL_PERCENT = HOOK_CONFIG.get("disk_space_critical_percent", 5)
+DISK_SPACE_WARNING_PERCENT = HOOK_CONFIG.get("disk_space_warning_percent", 10)
 
-def log_health(status: str, message: str) -> None:
-    """Log health check results."""
-    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(UTC).isoformat()
-    with open(LOG_FILE, "a") as f:
-        f.write(f"[{timestamp}] [{status}] {message}\n")
+# Initialize logger
+logger = get_hook_logger(__name__)
 
 
 def check_directories() -> tuple[bool, str]:
@@ -124,9 +126,9 @@ def check_disk_space() -> tuple[bool, str]:
         free_gb = stats.free / (1024**3)
         percent_free = (stats.free / stats.total) * 100
 
-        if percent_free < 5:
+        if percent_free < DISK_SPACE_CRITICAL_PERCENT:
             return False, f"Critical: Only {free_gb:.1f}GB ({percent_free:.1f}%) free"
-        elif percent_free < 10:
+        elif percent_free < DISK_SPACE_WARNING_PERCENT:
             return (
                 True,
                 f"Warning: Only {free_gb:.1f}GB ({percent_free:.1f}%) free (consider cleanup)",
@@ -194,7 +196,10 @@ def run_health_check() -> dict[str, Any]:
             results["status"] = "degraded"
             recommendations.append(f"{check_name}: {message}")
 
-        log_health("PASS" if passed else "FAIL", f"{check_name}: {message}")
+        if passed:
+            logger.info(f"{check_name}: {message}")
+        else:
+            logger.error(f"{check_name}: {message}")
 
     # Add general recommendations
     if results["status"] == "healthy":
@@ -219,7 +224,7 @@ def main() -> None:
             "error": str(e),
         }
         print(json.dumps(error_result, indent=2), file=sys.stderr)
-        log_health("ERROR", f"Health check failed: {e}")
+        logger.error(f"Health check failed: {e}", exc_info=True)
         sys.exit(2)
 
 

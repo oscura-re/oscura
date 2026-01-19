@@ -199,7 +199,7 @@ jobs:
 
       - name: Run tests with random order (run 1)
         run: |
-          uv run pytest tests/unit \
+          uv run python -m pytest tests/unit \
             -v \
             -m "unit and not slow and not memory_intensive" \
             -n 4 \
@@ -214,7 +214,7 @@ jobs:
 
       - name: Run tests with random order (run 2)
         run: |
-          uv run pytest tests/unit \
+          uv run python -m pytest tests/unit \
             -v \
             -m "unit and not slow and not memory_intensive" \
             -n 4 \
@@ -229,7 +229,7 @@ jobs:
 
       - name: Run tests with random order (run 3)
         run: |
-          uv run pytest tests/unit \
+          uv run python -m pytest tests/unit \
             -v \
             -m "unit and not slow and not memory_intensive" \
             -n 4 \

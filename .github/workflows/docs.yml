@@ -115,7 +115,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          uv run mkdocs build --strict
+          uv run mkdocs build --strict --clean
         env:
           # Enable warnings as errors for strict mode
           PYTHONWARNINGS: "error::DeprecationWarning"
@@ -166,7 +166,7 @@ jobs:
       - name: Generate docstring coverage report
         run: |
           echo "::group::Docstring Coverage"
-          uv run interrogate src/oscura/ -v --generate-badge docs/assets/interrogate_badge.svg || true
+          uv run python -m interrogate src/oscura -vv -f 95 --generate-badge docs/assets/interrogate_badge.svg || true
           echo "::endgroup::"
 
   # ============================================================================
