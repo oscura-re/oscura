@@ -42,7 +42,7 @@ def run_test_file(test_file: Path) -> tuple[bool, str]:
     """Run a single test file and return success status and output."""
     try:
         result = subprocess.run(
-            ["pytest", str(test_file), "-v", "--tb=short"],
+            [sys.executable, "-m", "pytest", str(test_file), "-v", "--tb=short"],
             capture_output=True,
             text=True,
             timeout=60,
