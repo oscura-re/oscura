@@ -1,0 +1,49 @@
+# Example protocol definition
+# Defines message structure for automatic decoder generation
+
+name: example_protocol
+version: "1.0"
+description: "Simple example protocol with fixed-length messages"
+
+settings:
+  endian: little
+  alignment: 1
+  strict: true
+
+framing:
+  type: fixed
+  sync:
+    pattern: [0xAA, 0x55]
+    required: true
+
+fields:
+  - name: message_type
+    offset: 2
+    size: 1
+    type: uint8
+    description: "Message type identifier"
+
+  - name: sequence
+    offset: 3
+    size: 2
+    type: uint16
+    description: "Message sequence number"
+
+  - name: payload_length
+    offset: 5
+    size: 1
+    type: uint8
+    description: "Payload size in bytes"
+
+  - name: payload
+    offset: 6
+    size: variable
+    type: bytes
+    size_field: payload_length
+    description: "Variable-length payload data"
+
+  - name: checksum
+    offset: variable
+    size: 2
+    type: uint16
+    description: "CRC-16 checksum"

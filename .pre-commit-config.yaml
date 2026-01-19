@@ -120,6 +120,13 @@ repos:
         files: '^tests/.*test_.*\.py$'
         pass_filenames: false
 
+      - id: sync-versions
+        name: Sync version numbers across files
+        entry: uv run python .claude/hooks/sync_versions.py
+        language: system
+        files: '^(pyproject\.toml|src/oscura/__init__\.py|src/oscura/automotive/__init__\.py|docs/.*\.md)$'
+        pass_filenames: false
+
 # ==========================================================================
 # CI configuration
 # ==========================================================================

@@ -246,6 +246,10 @@ class TestDiscoveryWorkflow:
 
 
 @pytest.mark.integration
+@pytest.mark.skipif(
+    not DBC_AVAILABLE,
+    reason="cantools not available (install with: pip install 'oscura[automotive]')",
+)
 class TestDBCRoundtrip:
     """Test DBC file generation and round-trip."""
 
@@ -394,6 +398,10 @@ class TestDBCRoundtrip:
 
 
 @pytest.mark.integration
+@pytest.mark.skipif(
+    not (DBC_AVAILABLE and CSV_AVAILABLE),
+    reason="cantools or CSV loader not available (install with: pip install 'oscura[automotive]')",
+)
 class TestMultipleFormatLoading:
     """Test loading from different file formats."""
 

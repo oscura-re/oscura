@@ -1,6 +1,6 @@
 # CLI Reference
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08 | **Applies to**: Oscura 0.1.0
+> **Version**: 0.1.2 | **Last Updated**: 2026-01-19 | **Applies to**: Oscura 0.1.2
 
 Command-line interface documentation for Oscura.
 
@@ -462,7 +462,7 @@ oscura version [OPTIONS]
 **Example Output:**
 
 ```
-Oscura 0.1.0
+Oscura 0.1.2
 
 Python:     3.12.1
 Platform:   Linux-6.8.0-88-generic-x86_64

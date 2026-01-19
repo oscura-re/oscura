@@ -28,8 +28,12 @@ def find_test_files() -> list[Path]:
 
     # Exclude test files that depend on dependencies with known Python 3.12+ issues
     # asammdf has SyntaxError in Python 3.12+ due to invalid escape sequences
+    #
+    # Also exclude tests that apply resource limits, which can interfere with
+    # isolation testing (tests timeout when run individually without pytest-xdist)
     excluded_patterns = [
         "tests/automotive/loaders/test_mdf_loader.py",
+        "tests/unit/plugins/test_isolation.py",  # Resource limits cause timeouts
     ]
     test_files = [
         f for f in test_files if not any(str(f).endswith(pattern) for pattern in excluded_patterns)

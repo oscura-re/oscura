@@ -481,11 +481,10 @@ jobs:
           # Install diff-cover
           uv pip install diff-cover
 
-          # Run diff-cover with 75% threshold for changed lines
-          # Note: Temporarily lowered from 80% for infrastructure code PR
+          # Run diff-cover with 80% threshold for changed lines
           uv run diff-cover coverage-diff.xml \
             --compare-branch=origin/${{ github.base_ref }} \
-            --fail-under=75 \
+            --fail-under=80 \
             --html-report=diff-coverage.html \
             --markdown-report=diff-coverage.md
 

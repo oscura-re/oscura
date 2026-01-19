@@ -23,7 +23,7 @@ echo -e "${CYAN}${BOLD}Development Environment Verification${NC}"
 echo ""
 
 # Check 1: Git hooks
-if [[ -f ".git/hooks/pre-push" ]] && grep -q "pre-push.sh" ".git/hooks/pre-push" 2>/dev/null; then
+if [[ -f ".git/hooks/pre-push" ]] && grep -q "pre-push.sh" ".git/hooks/pre-push" 2> /dev/null; then
   echo -e "  ${GREEN}✓${NC} Pre-push hook installed"
 else
   echo -e "  ${RED}✗${NC} Pre-push hook NOT installed"
@@ -31,7 +31,7 @@ else
   ((issues++))
 fi
 
-if [[ -f ".git/hooks/pre-commit" ]] && grep -q "pre-commit" ".git/hooks/pre-commit" 2>/dev/null; then
+if [[ -f ".git/hooks/pre-commit" ]] && grep -q "pre-commit" ".git/hooks/pre-commit" 2> /dev/null; then
   echo -e "  ${GREEN}✓${NC} Pre-commit hook installed"
 else
   echo -e "  ${RED}✗${NC} Pre-commit hook NOT installed"

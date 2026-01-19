@@ -1,6 +1,6 @@
 # Error Code Reference
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08 | **Applies to**: Oscura 0.1.0
+> **Version**: 0.1.2 | **Last Updated**: 2026-01-19 | **Applies to**: Oscura 0.1.2
 
 This document provides a complete reference for all error codes used by Oscura.
 

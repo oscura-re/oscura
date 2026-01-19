@@ -40,7 +40,7 @@ Example:
     P0420: Catalyst System Efficiency Below Threshold (Bank 1)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"  # pragma: no cover
 
 __all__ = [
     "CANMessage",

@@ -15,7 +15,7 @@ env:
   PYTHON_VERSION: "3.12"
 
 permissions:
-  contents: read
+  contents: write # Changed from read to write for badge auto-commit
   pages: write
   id-token: write
 
@@ -166,8 +166,24 @@ jobs:
       - name: Generate docstring coverage report
         run: |
           echo "::group::Docstring Coverage"
-          uv run python -m interrogate src/oscura -vv -f 95 --generate-badge docs/assets/interrogate_badge.svg || true
+          uv run python -m interrogate src/oscura -vv -f 95 --generate-badge docs/badges/interrogate_badge.svg || true
           echo "::endgroup::"
+
+      - name: Commit and push badge updates
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Check if badge file changed
+          if git diff --quiet docs/badges/interrogate_badge.svg; then
+            echo "Badge unchanged, skipping commit"
+          else
+            echo "Badge updated, committing changes"
+            git add docs/badges/interrogate_badge.svg
+            git commit -m "chore: update docstring coverage badge [skip ci]"
+            git push
+          fi
 
   # ============================================================================
   # Spell check documentation

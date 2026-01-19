@@ -206,7 +206,6 @@ jobs:
             --maxprocesses=4 \
             --dist loadscope \
             --hypothesis-profile=ci \
-            --randomly-seed=auto \
             --benchmark-disable \
             --tb=short \
             --maxfail=20 \
@@ -221,7 +220,6 @@ jobs:
             --maxprocesses=4 \
             --dist loadscope \
             --hypothesis-profile=ci \
-            --randomly-seed=auto \
             --benchmark-disable \
             --tb=short \
             --maxfail=20 \
@@ -236,7 +234,6 @@ jobs:
             --maxprocesses=4 \
             --dist loadscope \
             --hypothesis-profile=ci \
-            --randomly-seed=auto \
             --benchmark-disable \
             --tb=short \
             --maxfail=20 \

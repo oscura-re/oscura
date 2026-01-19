@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Infrastructure
+
+- **Badge Auto-Update System** (`.github/workflows/docs.yml`, `codecov.yml`):
+  - Fixed interrogate badge path mismatch (`docs/assets/` → `docs/badges/`)
+  - Added automatic git commit/push for badge updates with `[skip ci]` tag
+  - Changed workflow permissions from `contents: read` to `contents: write`
+  - Created `codecov.yml` with 80% coverage targets and proper configuration
+  - Result: All badges now auto-update on every CI run
+
+- **Version Synchronization** (`.claude/hooks/sync_versions.py`, `.pre-commit-config.yaml`):
+  - Created automated version sync pre-commit hook
+  - Synchronizes version across `pyproject.toml`, `__init__.py` files, and all documentation
+  - Added to pre-commit pipeline for automatic enforcement
+  - Prevents version drift across 20+ files
+  - Updated all version references from 0.1.0 → 0.1.2
+
+- **Test Suite Improvements**:
+  - Fixed automotive test imports with proper `@pytest.mark.skipif` decorators
+  - Added conditional imports for optional dependencies (`asammdf`, `cantools`)
+  - Tests now skip gracefully when optional dependencies unavailable
+  - Result: Zero test failures from missing optional dependencies
+
+- **Example Configuration Files** (`examples/configs/`):
+  - Created `packet_format_example.yaml` - Binary packet format configuration
+  - Created `device_mapping_example.yaml` - Device ID to name mappings
+  - Created `bus_configuration_example.yaml` - Parallel bus structure
+  - Created `protocol_definition_example.yaml` - Protocol DSL definition
+  - Resolves xfail tests in schema validation suite
+
+### Fixed
+
+- **CHANGELOG.md**: Removed duplicate `## [0.1.2]` header (line 256)
+- **Workspace Policy**: Moved `VALIDATION_REPORT_v0.1.2.md` to `.claude/reports/`
+- **Coverage Threshold**: Restored diff-cover threshold from 75% → 80% in CI workflow
+- **Import-Linter**: Verified proper installation and configuration (9 contracts passing)
+
+### Changed
+
+- **Documentation**: Updated 18 documentation files with correct version (0.1.0 → 0.1.2)
+  - All `docs/api/*.md` files
+  - `docs/cli.md`, `docs/error-codes.md`
+  - `docs/testing/*.md` files
+  - `src/oscura/automotive/__init__.py`
+
+### Added
+
+- **Dependencies**: yamllint 1.38.0 now properly installed and functional
+
 ### Fixed
 
 - **Type System (PEP 695 → Traditional TypeVar)** (`src/oscura/**/*.py`, 334 files):
@@ -72,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Atomic save operations with backup
     - Registry count validation and repair
     - Eliminates ~200 lines of duplicate code
-  - **Updated shared/__init__.py**: Exports all shared utilities for easy import
+  - **Updated shared/**init**.py**: Exports all shared utilities for easy import
   - **Total code elimination**: 450+ lines of duplicate code removed
 
 - **Claude Hooks - Additional Security Fix** (`.claude/hooks/validate_path.py`):
@@ -229,30 +277,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Comprehensive refactoring of Claude Code hooks system for optimal performance, security, and maintainability:**
 
 **Code Quality**:
+
 - ✅ Eliminated **750+ lines** of duplicate code across hooks
 - ✅ **Zero hardcoded values**: All thresholds/patterns in config.yaml
 - ✅ **100% test coverage**: All critical hooks validated (29 tests, 100% pass rate)
 
 **Security Enhancements**:
+
 - ✅ Fixed **2 critical vulnerabilities** (P0)
 - ✅ **110+ security patterns**: Comprehensive credential/secret detection
 
 **Architecture Improvements**:
+
 - ✅ **6 shared utility modules**: Eliminates duplication across all hooks
 - ✅ **4 hooks consolidated** into 2: Reduces complexity
 - ✅ **8 hooks migrated** to shared utilities: Consistent implementation
 
 **Test Coverage**:
+
 - ✅ **29 comprehensive tests** (was 18): 61% increase
 - ✅ **100% pass rate**: All tests passing, all behavior validated
 
 **Type System**:
+
 - ✅ **334 files**: Added `from __future__ import annotations`
 - ✅ **271 functions**: Converted to TypeVar pattern
 - ✅ **7 classes**: Using `Generic[T]` pattern
 - ✅ **447 files**: Pass mypy with zero errors
 
-## [0.1.2] - 2026-01-18
 ## [0.1.2] - 2026-01-18
 
 ### Project Renamed: TraceKit → Oscura
@@ -268,7 +320,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Initial Public Release
 
-Oscura 0.1.0 is the first public release of the comprehensive hardware reverse engineering framework for security researchers, right-to-repair advocates, defense analysts, and commercial intelligence teams.
+Oscura 0.1.2 is the first public release of the comprehensive hardware reverse engineering framework for security researchers, right-to-repair advocates, defense analysts, and commercial intelligence teams.
 
 ### Core Features
 

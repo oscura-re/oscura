@@ -106,8 +106,23 @@ class TestStructuredFormatter:
         assert "Test message" in output
 
 
+@pytest.mark.no_cover  # Test modifies global logging state
 class TestConfigureLogging:
     """Test configure_logging function."""
+
+    @pytest.fixture(autouse=True)
+    def reset_logging(self):
+        """Reset logging configuration before and after each test."""
+        # Store original state
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        original_handlers = root_logger.handlers[:]
+
+        yield
+
+        # Restore original state
+        root_logger.setLevel(original_level)
+        root_logger.handlers = original_handlers
 
     def test_configure_console_only(self) -> None:
         """Test configuring console-only logging."""
