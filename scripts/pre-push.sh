@@ -41,7 +41,6 @@ VERBOSE=false
 RUN_TESTS=true
 PARALLEL_WORKERS=""
 PROFILE_TESTS=false
-SKIP_HOOKS=false
 
 # Track results
 declare -A CHECK_RESULTS
@@ -74,7 +73,6 @@ OPTIONS:
     --parallel N  Use N parallel workers for tests (default: auto-detected)
     --no-tests    Skip test execution (lint/format only) - ~3 minutes
     --profile     Enable test profiling (shows 20 slowest tests)
-    --skip-hooks  Skip pre-commit hooks (use if you just committed)
     --verbose     Show detailed output from each check
     -h, --help    Show this help message
 
@@ -94,14 +92,9 @@ WHAT IT CHECKS (matching CI workflows):
       * Integration tests
       * Compliance tests
 
-    Stage 3 - Build Verification & Quality Gates:
+    Stage 3 - Build Verification:
       * MkDocs build (--strict)
       * Package build (uv build)
-      * CLI commands validation
-      * Docstring coverage (interrogate)
-      * CRITICAL: Diff coverage (≥80% on changed lines)
-      * Code quality (pydocstyle, vulture, radon, import-linter)
-      * Documentation spell check (cspell)
 
 EXIT CODES:
     0 - All checks passed, safe to push
@@ -124,9 +117,8 @@ EXAMPLES:
 TIPS:
     1. Run with --fix first to auto-correct formatting issues
     2. Use --quick during development, --full before final push
-    3. Use --skip-hooks if you just committed (pre-commit already ran)
-    4. If tests fail, run: uv run pytest <failing_test> -v --tb=long
-    5. Check CI logs for exact error messages if local passes but CI fails
+    3. If tests fail, run: uv run python -m pytest <failing_test> -v --tb=long
+    4. Check CI logs for exact error messages if local passes but CI fails
 
 EOF
 }
@@ -159,10 +151,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --profile)
       PROFILE_TESTS=true
-      shift
-      ;;
-    --skip-hooks)
-      SKIP_HOOKS=true
       shift
       ;;
     --verbose | -v)
@@ -284,12 +272,6 @@ run_check() {
 # =============================================================================
 
 check_pre_commit() {
-  # Skip if explicitly requested (hooks already ran on commit)
-  if [[ "${SKIP_HOOKS}" == "true" ]]; then
-    log_check_start "Pre-commit hooks"
-    log_check_skip "Pre-commit hooks" "skipped via --skip-hooks (already ran on commit)"
-    return 0
-  fi
   run_check "Pre-commit hooks" pre-commit run --all-files
 }
 
@@ -350,7 +332,7 @@ check_unit_tests() {
     pytest_args+=("-n" "${workers}" "--dist=worksteal")
   fi
 
-  run_check "Unit tests" uv run pytest "${pytest_args[@]}"
+  run_check "Unit tests" uv run python -m pytest "${pytest_args[@]}"
 }
 
 check_integration_tests() {
@@ -375,7 +357,7 @@ check_integration_tests() {
 
   pytest_args+=("-n" "${workers}" "--dist=loadgroup")
 
-  run_check "Integration tests" uv run pytest "${pytest_args[@]}"
+  run_check "Integration tests" uv run python -m pytest "${pytest_args[@]}"
 }
 
 check_compliance_tests() {
@@ -386,7 +368,7 @@ check_compliance_tests() {
     "--maxfail=5"
   )
 
-  run_check "Compliance tests" uv run pytest "${pytest_args[@]}"
+  run_check "Compliance tests" uv run python -m pytest "${pytest_args[@]}"
 }
 
 check_mkdocs_build() {
@@ -423,7 +405,7 @@ check_mkdocs_build() {
   fi
 
   # Hash changed or no cache - rebuild
-  if run_check "MkDocs build" uv run mkdocs build --strict --clean; then
+  if run_check "MkDocs build" uv run python -m mkdocs build --strict --clean; then
     # Save new hash on success
     echo "${current_hash}" > "${cache_file}"
     return 0
@@ -511,109 +493,6 @@ sys.exit(0)
 check_docstring_coverage() {
   # CI uses -f 95 threshold
   run_check "Docstring coverage" uv run python -m interrogate src/oscura -vv -f 95
-}
-
-check_diff_coverage() {
-  # Check coverage on changed lines only (matches CI diff-coverage job)
-  # This is the CRITICAL check that ensures only well-tested code is merged
-
-  # Skip if not on a branch (can't compare to main)
-  current_branch=$(git branch --show-current)
-  if [[ -z "${current_branch}" ]] || [[ "${current_branch}" == "main" ]]; then
-    log_check_start "Diff coverage"
-    log_check_skip "Diff coverage" "not on a feature branch"
-    return 0
-  fi
-
-  # Check if we have coverage data from tests
-  if [[ ! -f ".coverage" ]] && [[ ! -f "coverage.xml" ]]; then
-    log_check_start "Diff coverage"
-    log_check_skip "Diff coverage" "no coverage data (run tests with --cov first)"
-    return 0
-  fi
-
-  log_check_start "Diff coverage"
-
-  # Generate XML coverage report if not exists
-  if [[ ! -f "coverage.xml" ]]; then
-    uv run python -m coverage xml > /dev/null 2>&1 || true
-  fi
-
-  # Verify XML was generated
-  if [[ ! -f "coverage.xml" ]]; then
-    log_check_skip "Diff coverage" "failed to generate coverage.xml"
-    return 0
-  fi
-
-  # Install diff-cover if needed
-  if ! uv run python -c "import diff_cover" > /dev/null 2>&1; then
-    uv pip install diff-cover > /dev/null 2>&1
-  fi
-
-  # Run diff-cover (80% threshold like CI)
-  local output_file
-  output_file=$(mktemp)
-
-  if uv run python -m diff_cover.diff_cover_tool coverage.xml \
-    --compare-branch=origin/main \
-    --fail-under=80 \
-    --quiet > "${output_file}" 2>&1; then
-    log_check_pass "Diff coverage" "0"
-    rm -f "${output_file}"
-    return 0
-  else
-    log_check_fail "Diff coverage" "0"
-
-    # Show failure details
-    if [[ -s "${output_file}" ]]; then
-      echo ""
-      echo -e "    ${DIM}--- Diff Coverage Report ---${NC}"
-      cat "${output_file}" | sed 's/^/    /'
-      echo -e "    ${DIM}--- End Report ---${NC}"
-      echo ""
-      echo -e "    ${YELLOW}Coverage on changed lines must be ≥80%${NC}"
-      echo -e "    ${DIM}Tip: Add tests for your changes or mark untestable code${NC}"
-    fi
-
-    rm -f "${output_file}"
-    return 1
-  fi
-}
-
-check_pydocstyle() {
-  # Check docstring style (matches code-quality.yml)
-  # This is informational - violations don't fail the build
-  run_check "Docstring style (pydocstyle)" uv run python -m pydocstyle src/oscura
-}
-
-check_dead_code() {
-  # Dead code detection with vulture (matches code-quality.yml)
-  # Informational only - doesn't fail build
-  run_check "Dead code detection (vulture)" uv run python -m vulture src/oscura --min-confidence 80
-}
-
-check_complexity() {
-  # Code complexity analysis with radon (matches code-quality.yml)
-  # Informational only - warns on high complexity
-  run_check "Code complexity (radon)" uv run python -m radon cc src/oscura --min B --show-complexity
-}
-
-check_import_architecture() {
-  # Import architecture validation (matches code-quality.yml)
-  # Ensures import contracts are followed
-  run_check "Import architecture (lint-imports)" uv run python -m lint_imports
-}
-
-check_spell() {
-  # Spell check documentation with cspell (matches docs.yml)
-  # Requires Node.js and npm to be installed
-  if ! command -v cspell > /dev/null 2>&1; then
-    log_check_start "Spell check (cspell)"
-    log_check_skip "Spell check (cspell)" "cspell not installed (npm install -g cspell)"
-    return 0
-  fi
-
-  run_check "Spell check (cspell)" cspell "docs/**/*.md" "*.md" --config cspell.json
 }
 
 # =============================================================================
@@ -720,20 +599,6 @@ if [[ "${MODE}" != "quick" ]]; then
 
   # Docstring coverage (matches code-quality.yml)
   check_docstring_coverage || true
-
-  # Diff coverage (matches ci.yml diff-coverage job) - CRITICAL
-  # This check ensures coverage on changed lines is ≥80%
-  check_diff_coverage || true
-
-  # Code quality checks (matches code-quality.yml) - INFORMATIONAL
-  # These don't fail the build but provide valuable insights
-  check_pydocstyle || true
-  check_dead_code || true
-  check_complexity || true
-  check_import_architecture || true
-
-  # Documentation spell check (matches docs.yml) - INFORMATIONAL
-  check_spell || true
 else
   print_header "STAGE 3: Build Verification"
   log_check_start "Build checks"

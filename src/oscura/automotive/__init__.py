@@ -40,8 +40,6 @@ Example:
     P0420: Catalyst System Efficiency Below Threshold (Bank 1)
 """
 
-from __future__ import annotations
-
 __version__ = "0.1.0"
 
 __all__ = [

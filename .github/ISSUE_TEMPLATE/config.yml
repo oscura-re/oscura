@@ -5,17 +5,17 @@ blank_issues_enabled: false
 
 contact_links:
   - name: Documentation
-    url: https://github.com/lair-click-bats/oscura/wiki
+    url: https://github.com/oscura-re/oscura/wiki
     about: Check the documentation for guides and examples before opening an issue
 
   - name: Discussions
-    url: https://github.com/lair-click-bats/oscura/discussions
+    url: https://github.com/oscura-re/oscura/discussions
     about: Ask questions and discuss ideas with the community
 
   - name: IEEE/JEDEC Standards Reference
-    url: https://github.com/lair-click-bats/oscura/blob/main/docs/reference/standards-compliance.md
+    url: https://github.com/oscura-re/oscura/blob/main/docs/reference/standards-compliance.md
     about: Information about supported IEEE and JEDEC standards
 
   - name: Security Vulnerabilities
-    url: https://github.com/lair-click-bats/oscura/security/advisories/new
+    url: https://github.com/oscura-re/oscura/security/advisories/new
     about: Report security vulnerabilities privately (do not use public issues)

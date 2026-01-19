@@ -61,6 +61,13 @@ uv run pytest tests/unit -x          # Verify installation
 
 **IMPORTANT**: Use these scripts (SSOT for test configuration). Don't run pytest/ruff/mypy manually.
 
+**Quality Check Strategy**:
+
+- **Pre-commit hooks** (`.pre-commit-config.yaml`): Run on `git commit` for fast, essential checks (yaml, json, trailing whitespace, etc.)
+- **./scripts/check.sh**: Manual quality verification (ruff, mypy, shellcheck, markdown, etc.) - run during development
+- **./scripts/pre-push.sh**: Comprehensive CI simulation - run before pushing (includes all checks + tests + build)
+- **Purpose**: Pre-commit catches basic issues early; check.sh for development iteration; pre-push for final verification
+
 ### Commit Workflow
 
 - **Format**: Conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
@@ -122,6 +129,16 @@ Every PR MUST update CHANGELOG.md under `## [Unreleased]`:
 3. Bump version in `pyproject.toml`
 4. Create git tag `vX.Y.Z`
 5. Push tag to trigger release workflow
+6. Deploy documentation: `mike deploy X.Y.Z latest --update-aliases && mike set-default latest`
+
+#### Documentation Versioning
+
+- **Tool**: Mike (MkDocs versioning plugin)
+- **Strategy**: Documentation is versioned per release (e.g., 0.1.2, 0.2.0)
+- **Latest**: The most recent stable release is aliased as 'latest'
+- **Deployment**: Automated via GitHub Actions on tag push
+- **Manual deploy**: `mike deploy <version> latest --update-aliases`
+- **Site URL**: https://oscura-re.github.io/oscura
 
 ### Test Strategy
 

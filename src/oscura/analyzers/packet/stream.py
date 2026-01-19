@@ -22,10 +22,10 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
 
 from oscura.analyzers.packet.parser import BinaryParser
 
+T = TypeVar("T")
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
-
-T = TypeVar("T")
 
 
 @dataclass

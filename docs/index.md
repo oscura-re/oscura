@@ -1,6 +1,6 @@
 # Oscura Documentation
 
-> **Primary Documentation**: See [demos/](https://github.com/lair-click-bats/oscura/tree/main/demos) for working code examples with comprehensive READMEs.
+> **Primary Documentation**: See [demos/](https://github.com/oscura-re/oscura/tree/main/demos) for working code examples with comprehensive READMEs.
 
 ---
 
@@ -8,7 +8,7 @@
 
 |Resource|Purpose|
 |---|---|
-|**[Demos](https://github.com/lair-click-bats/oscura/tree/main/demos)**|Production-ready examples (START HERE)|
+|**[Demos](https://github.com/oscura-re/oscura/tree/main/demos)**|Production-ready examples (START HERE)|
 |[API Reference](api/)|Generated function/class reference|
 |[CLI Reference](cli.md)|Command-line interface|
 |[Error Codes](error-codes.md)|Error reference|
@@ -29,7 +29,7 @@ Tutorials and user guides have been consolidated into demo READMEs to maintain a
 
 ## Demo Categories
 
-All demos are in the [GitHub repository demos/ directory](https://github.com/lair-click-bats/oscura/tree/main/demos):
+All demos are in the [GitHub repository demos/ directory](https://github.com/oscura-re/oscura/tree/main/demos):
 
 |Category|What You'll Learn|
 |---|---|

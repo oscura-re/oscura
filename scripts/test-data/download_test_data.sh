@@ -155,7 +155,7 @@ echo
 echo "📖 Next steps:"
 echo "  1. Review manifest: cat ${TEST_DATA_DIR}/manifest.yaml"
 echo "  2. Check README: cat ${TEST_DATA_DIR}/README.md"
-echo "  3. Run validation tests: uv run pytest tests/"
+echo "  3. Run validation tests: uv run python -m pytest tests/"
 echo
 
 # Cleanup temporary files

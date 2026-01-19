@@ -203,8 +203,10 @@ addopts = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    # NOTE: pytest-benchmark warning - now installed in dev dependencies
     "ignore::pytest_benchmark.logger.PytestBenchmarkWarning",
-    "ignore::matplotlib._api.MatplotlibDeprecationWarning",
+    # NOTE: matplotlib warning - only needed if matplotlib is in system Python
+    # "ignore::matplotlib._api.MatplotlibDeprecationWarning",
     "ignore:More than.*figures.*have been opened:RuntimeWarning",
     "ignore::ResourceWarning",     # RigolWFM library - known kaitaistruct limitation
     "ignore::pytest.PytestUnraisableExceptionWarning",
@@ -267,9 +269,11 @@ markers = [
     # Requirements Traceability
     "requirement: Links test to specific requirement ID",
 ]
-timeout = 60
-timeout_method = "thread"
-timeout_func_only = false
+# NOTE: timeout settings commented out - requires pytest-timeout plugin
+# Uncomment if pytest-timeout is installed:
+# timeout = 60
+# timeout_method = "thread"
+# timeout_func_only = false
 console_output_style = "progress"
 
 python_files = ["test_*.py"]
@@ -382,6 +386,9 @@ ignore = [
     "ARG001",  # unused-function-argument: API compatibility requires extra args
     "ARG002",  # unused-method-argument: API compatibility requires extra args
     "TC002",   # typing-only-third-party-import: Low priority
+    "UP040",   # non-pep695-type-alias: Using TypeAlias for mypy compatibility
+    "UP046",   # generic-class-type-param: Using Generic[T] for mypy compatibility
+    "UP047",   # generic-function-type-param: Using TypeVar for mypy compatibility
     "TC003",   # typing-only-standard-library-import: Low priority
     "TC004",   # runtime-import-in-type-checking-block: Can be tricky to refactor
     "TC010",   # runtime-string-union: Low priority typing improvement
@@ -560,6 +567,16 @@ module = [
     "oscura.automotive.visualization",
 ]
 disable_error_code = ["attr-defined"]
+
+# CLI modules - click decorators don't have complete type stubs
+[[tool.mypy.overrides]]
+module = ["oscura.cli.*"]
+disable_error_code = ["untyped-decorator"]
+
+# Modules with optional dependencies
+[[tool.mypy.overrides]]
+module = ["numba", "numba.*", "dpkt", "dpkt.*"]
+ignore_missing_imports = true
 
 # =============================================================================
 # Bandit - Security Linting

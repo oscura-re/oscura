@@ -17,6 +17,8 @@ Requirements:
 - RE-ENT-002: Byte Frequency Distribution
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
@@ -134,9 +136,7 @@ entropy = shannon_entropy
 DataType = Union[bytes, bytearray, "NDArray[np.uint8]"]
 
 
-def entropy_windowed(
-    data: DataType, window_size: int = 256, step: int = 1
-) -> "NDArray[np.float64]":
+def entropy_windowed(data: DataType, window_size: int = 256, step: int = 1) -> NDArray[np.float64]:
     """Windowed entropy calculation (alias for sliding_entropy)."""
     return sliding_entropy(data, window_size=window_size, step=step)
 

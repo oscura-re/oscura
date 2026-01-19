@@ -4,8 +4,6 @@ This module implements compose() and pipe() functions for functional-style
 trace processing, with support for operator overloading.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from functools import reduce, wraps
 from typing import Any, TypeVar

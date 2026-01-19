@@ -23,10 +23,10 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 import numpy as np
 from numpy.typing import NDArray
 
+T = TypeVar("T")
+
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-T = TypeVar("T")
 
 
 class LazyProxy(ABC, Generic[T]):

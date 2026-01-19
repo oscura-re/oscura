@@ -490,6 +490,6 @@ def analyze_signal(trace: WaveformTrace) -> dict[str, float]:
 
 ## See Also
 
-- [Demos](https://github.com/lair-click-bats/oscura/tree/main/demos) - Working code examples
+- [Demos](https://github.com/oscura-re/oscura/tree/main/demos) - Working code examples
 - [CLI Reference](../cli.md) - Command-line tools
 - [CLI Reference](../cli.md) - Command-line interface

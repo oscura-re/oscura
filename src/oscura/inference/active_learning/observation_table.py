@@ -8,8 +8,6 @@ References:
     Information and Computation, 75(2), 87-106.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 from oscura.inference.state_machine import FiniteAutomaton, State, Transition

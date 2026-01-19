@@ -904,8 +904,8 @@ pytest --randomly-dont-shuffle
 
 - [OOM Prevention Guide](./oom-prevention.md) - Getting started with testing
 - [OOM Prevention](./oom-prevention.md) - Preventing out-of-memory issues
-- [Hypothesis Testing Guide](https://github.com/lair-click-bats/oscura/blob/main/tests/HYPOTHESIS_TESTING_GUIDE.md) - Property-based testing
-- [Contributing Guide](https://github.com/lair-click-bats/oscura/blob/main/CONTRIBUTING.md) - Contribution guidelines
+- [Hypothesis Testing Guide](https://github.com/oscura-re/oscura/blob/main/tests/HYPOTHESIS_TESTING_GUIDE.md) - Property-based testing
+- [Contributing Guide](https://github.com/oscura-re/oscura/blob/main/CONTRIBUTING.md) - Contribution guidelines
 - [pytest Documentation](https://docs.pytest.org/)
 - [pytest-testmon Documentation](https://testmon.org/)
 - [pytest-randomly Documentation](https://github.com/pytest-dev/pytest-randomly)

@@ -18,6 +18,8 @@ References:
     Discoverer: Automatic Protocol Reverse Engineering. USENIX Security 2007.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from typing import Any, Literal

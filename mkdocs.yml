@@ -1,7 +1,7 @@
 site_name: Oscura
-site_url: https://lair-click-bats.github.io/oscura
+site_url: https://oscura-re.github.io/oscura
 site_description: Signal analysis and reverse engineering for oscilloscopes, logic analyzers, and DAQ systems
-site_author: lair-click-bats
+site_author: Oscura Contributors
 
 repo_name: oscura-re/oscura
 repo_url: https://github.com/oscura-re/oscura
@@ -30,6 +30,10 @@ theme:
 
 plugins:
   - search
+  # Documentation versioning with mike
+  # Docs are versioned per release (e.g., 0.1.2, 0.2.0)
+  # Latest stable version is marked as 'latest'
+  # Use: mike deploy <version> latest --update-aliases
   - mike:
       version_selector: true
       css_dir: css

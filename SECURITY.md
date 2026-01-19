@@ -11,9 +11,9 @@
 
 ### How to Report
 
-**Preferred**: [Private security advisory](https://github.com/lair-click-bats/oscura/security/advisories/new) on GitHub
+**Preferred**: [Private security advisory](https://github.com/oscura-re/oscura/security/advisories/new) on GitHub
 
-**Alternative**: Email security@lair-click-bats.dev
+**Alternative**: Email security@oscura-re.dev
 
 **Do not** report vulnerabilities through public issues unless already disclosed.
 
@@ -211,7 +211,7 @@ pip-audit
 **Tracking**:
 
 - GitHub Advisory: [GHSA-xm59-rqc7-hhvf](https://github.com/advisories/GHSA-xm59-rqc7-hhvf)
-- Oscura Issue: https://github.com/lair-click-bats/oscura/security/dependabot/1
+- Oscura Issue: https://github.com/oscura-re/oscura/security/dependabot/1
 
 **Resolution**: Will update to patched version when available.
 
@@ -249,8 +249,8 @@ Incorrect measurements from malformed input data is a **data quality issue**, no
 
 ## Security Contact
 
-- **GitHub Security Advisories**: [Create advisory](https://github.com/lair-click-bats/oscura/security/advisories/new)
-- **Email**: security@lair-click-bats.dev
+- **GitHub Security Advisories**: [Create advisory](https://github.com/oscura-re/oscura/security/advisories/new)
+- **Email**: security@oscura-re.dev
 - **Issues**: Use "security" label for non-sensitive issues
 
 ---

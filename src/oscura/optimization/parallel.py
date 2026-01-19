@@ -20,13 +20,13 @@ import numpy as np
 
 from oscura.core.exceptions import AnalysisError
 
+T = TypeVar("T")
+R = TypeVar("R")
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from numpy.typing import NDArray
-
-T = TypeVar("T")
-R = TypeVar("R")
 
 logger = logging.getLogger(__name__)
 

@@ -212,7 +212,7 @@ fi
 print_section "Executing tests"
 
 # Run pytest via uv
-if uv run pytest "${PYTEST_ARGS[@]}"; then
+if uv run python -m pytest "${PYTEST_ARGS[@]}"; then
   EXIT_CODE=0
   print_pass "Tests completed successfully"
 else

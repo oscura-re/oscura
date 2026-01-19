@@ -20,14 +20,14 @@ import numpy as np
 
 from oscura.core.types import WaveformTrace
 
+T = TypeVar("T")
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from numpy.typing import NDArray
-
-T = TypeVar("T")
 
 
 @dataclass

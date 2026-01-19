@@ -13,8 +13,6 @@ References:
     See oscura.config.memory for global memory configuration.
 """
 
-from __future__ import annotations
-
 import warnings
 from typing import Any
 

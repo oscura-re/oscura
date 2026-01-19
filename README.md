@@ -112,7 +112,7 @@ messages = decoder.decode(trace)
 
 ```bash
 # Generate demo data
-python demos/data_generation/generate_all_demo_data.py
+python demos/generate_all_demo_data.py
 
 # Run a demo
 uv run python demos/01_waveform_analysis/comprehensive_wfm_analysis.py

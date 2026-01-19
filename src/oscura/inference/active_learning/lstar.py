@@ -26,11 +26,9 @@ Complexity:
     - Produces minimal DFA (fewest states)
 """
 
-from __future__ import annotations
-
 from oscura.inference.active_learning.observation_table import ObservationTable
-from oscura.inference.active_learning.oracle import Oracle  # noqa: TC001
-from oscura.inference.state_machine import FiniteAutomaton  # noqa: TC001
+from oscura.inference.active_learning.oracle import Oracle
+from oscura.inference.state_machine import FiniteAutomaton
 
 
 class LStarLearner:

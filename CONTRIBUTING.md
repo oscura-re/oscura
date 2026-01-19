@@ -312,7 +312,7 @@ Before submitting a PR that includes new code, ensure:
 
 ### Docstring Format
 
-Use NumPy-style docstrings:
+Use Google-style docstrings (as configured in pyproject.toml):
 
 ```python
 def example_function(param1: str, param2: int = 0) -> bool:
@@ -321,37 +321,26 @@ def example_function(param1: str, param2: int = 0) -> bool:
     Extended description if needed. Can span multiple lines
     and provide additional context.
 
-    Parameters
-    ----------
-    param1 : str
-        Description of first parameter.
-    param2 : int, optional
-        Description of second parameter. Default is 0.
+    Args:
+        param1: Description of first parameter.
+        param2: Description of second parameter. Defaults to 0.
 
-    Returns
-    -------
-    bool
+    Returns:
         Description of return value.
 
-    Raises
-    ------
-    ValueError
-        When param1 is empty.
-    TypeError
-        When param2 is not an integer.
+    Raises:
+        ValueError: When param1 is empty.
+        TypeError: When param2 is not an integer.
 
-    Examples
-    --------
-    >>> example_function("value", 10)
-    True
+    Examples:
+        >>> example_function("value", 10)
+        True
 
-    Notes
-    -----
-    Additional implementation notes if needed.
+    Note:
+        Additional implementation notes if needed.
 
-    References
-    ----------
-    IEEE 181-2011 Section X.X (if applicable)
+    References:
+        IEEE 181-2011 Section X.X (if applicable)
     """
 ```
 

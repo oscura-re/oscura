@@ -15,11 +15,11 @@ project:
 
   # Author/maintainer information
   authors:
-    - name: "lair-click-bats"
+    - name: "oscura-re"
       role: "creator"
 
   maintainers:
-    - name: "lair-click-bats"
+    - name: "oscura-re"
       role: "maintainer"
 
   # License
@@ -33,9 +33,9 @@ project:
       - "3.13"
 
   github:
-    org: "lair-click-bats"
+    org: "oscura-re"
     repo: "oscura"
-    url: "https://github.com/lair-click-bats/oscura"
+    url: "https://github.com/oscura-re/oscura"
 
   # Files that must reference the GitHub URL
   url_locations:
