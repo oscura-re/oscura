@@ -702,7 +702,7 @@ jobs:
   # ============================================================================
 
   ci-success:
-    name: CI Success
+    name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [pre-commit, lint, typecheck, config-validation, test, build]

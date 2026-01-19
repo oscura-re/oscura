@@ -7,19 +7,8 @@ name: Documentation
 on:
   push:
     branches: [main]
-    paths:
-      - "docs/**"
-      - "src/**/*.py"
-      - "mkdocs.yml"
-      - "pyproject.toml"
-      - ".github/workflows/docs.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "docs/**"
-      - "src/**/*.py"
-      - "mkdocs.yml"
-      - "pyproject.toml"
   workflow_dispatch:
 
 env:
@@ -37,6 +26,31 @@ concurrency:
 
 jobs:
   # ============================================================================
+  # Path Detection - Check if documentation should be built
+  # ============================================================================
+  detect-changes:
+    name: Detect Documentation Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-run: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - 'src/**/*.py'
+              - 'mkdocs.yml'
+              - 'pyproject.toml'
+              - '.github/workflows/docs.yml'
+
+  # ============================================================================
   # Build documentation
   # ============================================================================
 
@@ -44,6 +58,8 @@ jobs:
     name: Build Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -124,6 +140,8 @@ jobs:
     name: Docstring Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
 
@@ -159,6 +177,8 @@ jobs:
     name: Spell Check Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
 
@@ -196,18 +216,53 @@ jobs:
   # ============================================================================
 
   docs-summary:
-    name: Documentation Summary
+    name: Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [build, docstring-lint, spell-check]
+    needs: [detect-changes, build, docstring-lint, spell-check]
     if: always()
     steps:
+      - name: Check documentation results
+        run: |
+          echo "Detect Changes: ${{ needs.detect-changes.result }}"
+          echo "Should Run: ${{ needs.detect-changes.outputs.should-run }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Docstring Lint: ${{ needs.docstring-lint.result }}"
+          echo "Spell Check: ${{ needs.spell-check.result }}"
+
+          # If no documentation changes, all checks will be skipped (not failed)
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "No documentation changes detected - checks skipped"
+            echo "✅ Documentation checks passed (no changes to check)"
+            exit 0
+          fi
+
+          # Check if any required jobs failed (skipped is OK, cancelled is treated as skip)
+          if [[ "${{ needs.build.result }}" == "failure" || \
+                "${{ needs.docstring-lint.result }}" == "failure" || \
+                "${{ needs.spell-check.result }}" == "failure" ]]; then
+            echo "Some documentation checks failed"
+            exit 1
+          fi
+
+          echo "✅ All documentation checks passed!"
+          exit 0
+
       - name: Generate summary
+        if: always()
         run: |
           echo "# Documentation Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docstring Lint | ${{ needs.docstring-lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Spell Check | ${{ needs.spell-check.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "✅ **No documentation changes detected - checks skipped**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Documentation checks only run when docs, source files," \
+              "or mkdocs.yml change." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Docstring Lint | ${{ needs.docstring-lint.result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Spell Check | ${{ needs.spell-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          fi
