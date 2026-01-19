@@ -346,6 +346,7 @@ jobs:
         uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.12'
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           flags: unittests
           name: codecov-${{ matrix.python-version }}-${{ matrix.test-group }}

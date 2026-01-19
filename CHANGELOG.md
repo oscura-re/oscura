@@ -93,6 +93,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flaky Test** (`tests/unit/visualization/test_eye.py`):
   - Added `@pytest.mark.flaky(reruns=2, reruns_delay=1)` to `test_auto_clock_recovery_fft`
   - Test occasionally fails on Python 3.13 due to FFT-based clock recovery randomness
+- **Codecov Badge** (`.github/workflows/ci.yml`):
+  - Added `token: ${{ secrets.CODECOV_TOKEN }}` to codecov upload step
+  - Fixes "Token required - not valid tokenless upload" error (codecov v5 requirement)
+  - Badge will show coverage once CODECOV_TOKEN secret is configured
 - **CHANGELOG.md**: Removed duplicate `## [0.1.2]` header (line 256)
 - **Workspace Policy**: Moved `VALIDATION_REPORT_v0.1.2.md` to `.claude/reports/`
 - **Coverage Threshold**: Restored diff-cover threshold from 75% → 80% in CI workflow
