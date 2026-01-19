@@ -35,6 +35,31 @@ from oscura.utils.memory import (
 pytestmark = pytest.mark.unit
 
 
+@pytest.fixture(autouse=True)
+def reset_memory_config():
+    """Reset global memory config to defaults before each test.
+
+    Tests in TestMemoryConfig modify global _memory_config state.
+    Without cleanup, test ordering can cause failures when one test
+    leaves config in invalid state affecting subsequent tests.
+    """
+    # Reset to defaults before test
+    configure_memory(
+        max_memory=None,
+        warn_threshold=0.7,
+        critical_threshold=0.9,
+        auto_degrade=False,
+    )
+    yield
+    # Reset to defaults after test
+    configure_memory(
+        max_memory=None,
+        warn_threshold=0.7,
+        critical_threshold=0.9,
+        auto_degrade=False,
+    )
+
+
 class TestMemoryEstimation:
     """Tests for memory estimation (MEM-001)."""
 

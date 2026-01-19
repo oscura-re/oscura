@@ -2,10 +2,20 @@
 
 **Unified hardware reverse engineering framework. Extract all information from any system through signals and data.**
 
-[![PyPI version](https://badge.fury.io/py/oscura.svg)](https://badge.fury.io/py/oscura)
+**Build Status:**
+[![CI](https://github.com/oscura-re/oscura/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/oscura-re/oscura/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/oscura-re/oscura/actions/workflows/code-quality.yml/badge.svg?branch=main)](https://github.com/oscura-re/oscura/actions/workflows/code-quality.yml)
+[![Documentation](https://github.com/oscura-re/oscura/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/oscura-re/oscura/actions/workflows/docs.yml)
+[![Test Quality](https://github.com/oscura-re/oscura/actions/workflows/test-quality.yml/badge.svg?branch=main)](https://github.com/oscura-re/oscura/actions/workflows/test-quality.yml)
+
+**Package:**
+[![PyPI version](https://img.shields.io/pypi/v/oscura)](https://pypi.org/project/oscura/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/oscura-re/oscura/workflows/CI/badge.svg)](https://github.com/oscura-re/oscura/actions)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/oscura)](https://pypi.org/project/oscura/)
+
+**Documentation:**
+[![Docstring Coverage](https://raw.githubusercontent.com/oscura-re/oscura/main/docs/badges/interrogate_badge.svg)](https://github.com/oscura-re/oscura/tree/main/docs)
 
 ---
 
