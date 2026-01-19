@@ -44,6 +44,13 @@ scripts/               # Development utilities (test, check, fix)
 ### Setup
 
 ```bash
+./scripts/setup.sh                   # Complete setup (dependencies + hooks)
+./scripts/verify-setup.sh            # Verify setup is correct
+```
+
+**Alternative (manual steps):**
+
+```bash
 uv sync --all-extras                 # Install all dependencies
 ./scripts/setup/install-hooks.sh     # Install git hooks (REQUIRED)
 uv run pytest tests/unit -x          # Verify installation

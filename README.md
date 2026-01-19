@@ -46,11 +46,11 @@ uv pip install oscura
 # Or with pip
 pip install oscura
 
-# Development install
+# Development install (RECOMMENDED)
 git clone https://github.com/oscura-re/oscura.git
 cd oscura
-uv sync --all-extras
-./scripts/setup/install-hooks.sh
+./scripts/setup.sh            # Complete setup (dependencies + hooks)
+./scripts/verify-setup.sh     # Verify environment is ready
 ```
 
 ---

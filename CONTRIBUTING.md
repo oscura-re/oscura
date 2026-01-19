@@ -90,7 +90,17 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 git clone https://github.com/YOUR-USERNAME/oscura.git
 cd oscura
 
-# Install all dependencies (REQUIRED)
+# Complete setup (RECOMMENDED - does everything)
+./scripts/setup.sh
+
+# Verify setup
+./scripts/verify-setup.sh
+```
+
+**Alternative (manual steps):**
+
+```bash
+# Install all dependencies
 uv sync --all-extras
 
 # Install git hooks (REQUIRED - prevents CI failures)
