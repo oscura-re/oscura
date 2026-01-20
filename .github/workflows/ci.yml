@@ -534,6 +534,7 @@ jobs:
           uv run python -m pytest tests/integration/ \
             -v \
             -m integration \
+            -p no:benchmark \
             --maxfail=10 \
             --tb=short \
             --reruns 2 \

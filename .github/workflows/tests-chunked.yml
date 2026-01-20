@@ -285,6 +285,7 @@ jobs:
             --dist loadscope \
             --hypothesis-profile=ci \
             --benchmark-disable \
+            -p no:benchmark \
             --tb=short \
             --maxfail=10 \
             --reruns 2 \
