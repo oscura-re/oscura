@@ -3,7 +3,7 @@
 
 name: example_protocol
 version: "1.0"
-description: "Simple example protocol with fixed-length messages"
+description: "Simple example protocol with delimiter framing"
 
 settings:
   endian: little
@@ -11,39 +11,46 @@ settings:
   strict: true
 
 framing:
-  type: fixed
-  sync:
-    pattern: [0xAA, 0x55]
-    required: true
+  type: delimiter
+  delimiter:
+    pattern: [0x0A] # Newline delimiter
+    escape: 0x5C # Backslash escape
 
 fields:
   - name: message_type
-    offset: 2
-    size: 1
     type: uint8
     description: "Message type identifier"
+    enum:
+      "0":
+        name: "STATUS"
+        description: "Status message"
+      "1":
+        name: "DATA"
+        description: "Data message"
 
   - name: sequence
-    offset: 3
-    size: 2
     type: uint16
     description: "Message sequence number"
 
   - name: payload_length
-    offset: 5
-    size: 1
     type: uint8
     description: "Payload size in bytes"
 
   - name: payload
-    offset: 6
-    size: variable
     type: bytes
-    size_field: payload_length
+    size: payload_length
     description: "Variable-length payload data"
 
   - name: checksum
-    offset: variable
-    size: 2
     type: uint16
     description: "CRC-16 checksum"
+    validation:
+      algorithm: crc16_ccitt
+      scope: all_prior
+      on_mismatch: error
+
+decoding:
+  min_header_size: 4
+  max_message_size: 1024
+  resync_on_error: true
+  max_resync_distance: 256

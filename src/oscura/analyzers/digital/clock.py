@@ -24,7 +24,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 import numpy as np
-from scipy import signal
 
 from oscura.core.exceptions import InsufficientDataError, ValidationError
 
@@ -275,6 +274,9 @@ class ClockRecovery:
             # Use PLL tracking for robust recovery
             return self._pll_track(data_trace, freq)
         else:
+            # Lazy import to avoid loading scipy at module import time
+            from scipy import signal
+
             # Generate ideal square wave at detected frequency
             _period_samples = self.sample_rate / freq
             n_samples = len(data_trace)
@@ -498,6 +500,9 @@ class ClockRecovery:
         Raises:
             ValidationError: If sample rate is not set.
         """
+        # Lazy import to avoid loading scipy at module import time
+        from scipy import signal
+
         # Remove DC component
         trace_ac = trace - np.mean(trace)
 
@@ -539,6 +544,9 @@ class ClockRecovery:
         Raises:
             ValidationError: If no periodic pattern detected or sample rate not set.
         """
+        # Lazy import to avoid loading scipy at module import time
+        from scipy import signal
+
         # Remove mean
         trace_centered = trace - np.mean(trace)
 

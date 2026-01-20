@@ -283,6 +283,7 @@ class InsufficientDataError(AnalysisError):
         required: int | None = None,
         available: int | None = None,
         analysis_type: str | None = None,
+        fix_hint: str | None = None,
     ) -> None:
         """Initialize InsufficientDataError.
 
@@ -291,6 +292,7 @@ class InsufficientDataError(AnalysisError):
             required: Minimum number of samples or features required.
             available: Actual number available.
             analysis_type: Type of analysis that failed.
+            fix_hint: Optional custom fix suggestion (overrides default).
         """
         self.required = required
         self.available = available
@@ -301,7 +303,9 @@ class InsufficientDataError(AnalysisError):
         elif required is not None:
             details = f"Minimum required: {required}"
 
-        fix_hint = "Acquire more data or reduce analysis window."
+        # Use default fix hint if not provided
+        if fix_hint is None:
+            fix_hint = "Acquire more data or reduce analysis window."
 
         super().__init__(
             message,
