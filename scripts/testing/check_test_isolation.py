@@ -34,6 +34,9 @@ def find_test_files() -> list[Path]:
     excluded_patterns = [
         "tests/automotive/loaders/test_mdf_loader.py",
         "tests/unit/plugins/test_isolation.py",  # Resource limits cause timeouts
+        "tests/unit/search/test_performance.py",  # Only performance tests (all filtered by markers)
+        "tests/performance/test_benchmarks.py",  # Only performance/benchmark tests (all filtered)
+        "tests/stress/test_protocol_decoder_load.py",  # Only stress/slow tests (all filtered)
     ]
     test_files = [
         f for f in test_files if not any(str(f).endswith(pattern) for pattern in excluded_patterns)
