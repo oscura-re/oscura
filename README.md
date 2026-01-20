@@ -15,7 +15,7 @@
 [![PyPI Downloads](https://img.shields.io/pypi/dm/oscura)](https://pypi.org/project/oscura/)
 
 **Code Quality:**
-[![codecov](https://codecov.io/gh/oscura-re/oscura/branch/main/graph/badge.svg)](https://codecov.io/gh/oscura-re/oscura)
+[![codecov](https://codecov.io/gh/oscura-re/oscura/graph/badge.svg)](https://codecov.io/gh/oscura-re/oscura)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Docstring Coverage](https://raw.githubusercontent.com/oscura-re/oscura/main/docs/badges/interrogate_badge.svg)](https://github.com/oscura-re/oscura/tree/main/docs)
 
