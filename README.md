@@ -145,17 +145,20 @@ Tektronix WFM • Rigol WFM • LeCroy TRC • Sigrok • VCD • CSV • NumPy 
 ## Command Line Interface
 
 ```bash
-# Analyze a waveform
-oscura analyze capture.wfm
+# Characterize signal measurements
+oscura characterize capture.wfm
 
 # Decode protocol
-oscura decode capture.wfm --protocol uart --baud 115200
+oscura decode uart.wfm --protocol uart
 
-# Generate report
-oscura report capture.wfm -o report.pdf
+# Batch process multiple files
+oscura batch '*.wfm' --analysis characterize
 
-# Convert formats
-oscura convert input.wfm output.csv
+# Compare two signals
+oscura compare before.wfm after.wfm
+
+# Interactive shell
+oscura shell
 ```
 
 See [CLI Reference](docs/cli.md) for complete documentation.

@@ -62,6 +62,45 @@ Oscura implements the following security practices:
 - Memory limits enforced for large file processing
 - No network operations in core library
 
+### Session File Security
+
+**Session files (.tks) use HMAC-SHA256 signatures** for integrity verification:
+
+- **New format (v0.2.0+)**: All session files include cryptographic signatures
+- **Integrity check**: HMAC signature verified on load (detects tampering)
+- **Backward compatible**: Legacy files load with warning
+- **Security note**: Session files still use pickle serialization - only load from trusted sources
+
+**Best practices**:
+
+```python
+from oscura.session import Session, load_session
+
+# Save with signature (default)
+session.save('analysis.tks')  # Includes HMAC signature
+
+# Load with verification (default)
+session = load_session('analysis.tks')  # Verifies signature
+
+# Legacy files trigger warning
+session = load_session('old_file.tks')  # UserWarning: no signature
+```
+
+**Security warnings**:
+
+- ⚠️ **Only load .tks files from trusted sources** (pickle deserialization)
+- ✅ Signature verification prevents tampering but not malicious content
+- 🔄 Re-save legacy files to add signatures: `session.save('updated.tks')`
+- 🚫 Never load .tks files from untrusted or unknown sources
+
+For **secure data exchange**, use alternative formats:
+
+```python
+# Instead of pickle-based .tks files
+session.export_to_json('safe_export.json')  # Human-readable, safe
+session.export_to_hdf5('safe_export.h5')    # Efficient, safe
+```
+
 ---
 
 ## Threat Model
@@ -79,8 +118,11 @@ Oscura treats the following as untrusted:
 
 1. **Malformed files**: Buffer overflows, memory exhaustion
 2. **Path traversal**: Unsanitized file paths
-3. **DoS**: Large files, complex patterns, memory exhaustion
-4. **Dependency vulnerabilities**: Third-party package issues
+3. **Session file deserialization**: Malicious .tks files (pickle-based)
+   - **Mitigation**: HMAC signatures detect tampering
+   - **Limitation**: Only load from trusted sources
+4. **DoS**: Large files, complex patterns, memory exhaustion
+5. **Dependency vulnerabilities**: Third-party package issues
 
 ---
 

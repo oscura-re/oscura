@@ -20,10 +20,73 @@ from __future__ import annotations
 import logging
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from oscura.core.exceptions import LoaderError, UnsupportedFormatError
-from oscura.core.types import DigitalTrace, WaveformTrace
+from oscura.core.types import DigitalTrace, IQTrace, WaveformTrace
+
+# Loader registry for cleaner dispatch
+_LOADER_REGISTRY: dict[str, tuple[str, str]] = {
+    "tektronix": ("oscura.loaders.tektronix", "load_tektronix_wfm"),
+    "tek": ("oscura.loaders.tektronix", "load_tektronix_wfm"),
+    "rigol": ("oscura.loaders.rigol", "load_rigol_wfm"),
+    "numpy": ("oscura.loaders.numpy_loader", "load_npz"),
+    "csv": ("oscura.loaders.csv_loader", "load_csv"),
+    "hdf5": ("oscura.loaders.hdf5_loader", "load_hdf5"),
+    "sigrok": ("oscura.loaders.sigrok", "load_sigrok"),
+    "vcd": ("oscura.loaders.vcd", "load_vcd"),
+    "pcap": ("oscura.loaders.pcap", "load_pcap"),
+    "wav": ("oscura.loaders.wav", "load_wav"),
+    "tdms": ("oscura.loaders.tdms", "load_tdms"),
+    "touchstone": ("oscura.loaders.touchstone", "load_touchstone"),
+}
+
+
+def _dispatch_loader(
+    loader_name: str, path: Path, **kwargs: Any
+) -> WaveformTrace | DigitalTrace | IQTrace:
+    """Dispatch to registered loader.
+
+    Args:
+        loader_name: Name of loader to use.
+        path: Path to file.
+        **kwargs: Additional arguments for loader.
+
+    Returns:
+        Loaded data.
+
+    Raises:
+        UnsupportedFormatError: If loader not registered.
+    """
+    if loader_name not in _LOADER_REGISTRY:
+        raise UnsupportedFormatError(
+            loader_name,
+            list(_LOADER_REGISTRY.keys()),
+            file_path=str(path),
+        )
+
+    module_path, func_name = _LOADER_REGISTRY[loader_name]
+
+    # Dynamically import the module
+    import importlib
+    import inspect
+
+    module = importlib.import_module(module_path)
+    loader_func = getattr(module, func_name)
+
+    # Filter kwargs to only include parameters the function accepts
+    sig = inspect.signature(loader_func)
+    valid_kwargs = {}
+    for key, value in kwargs.items():
+        if key in sig.parameters or any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+        ):
+            valid_kwargs[key] = value
+
+    # Call loader with appropriate arguments
+    result = loader_func(path, **valid_kwargs)
+    return cast("WaveformTrace | DigitalTrace | IQTrace", result)
+
 
 # Import alias modules for DSL compatibility
 from oscura.loaders import (
@@ -180,56 +243,9 @@ def load(
     # Dispatch to appropriate loader
     if loader_name == "auto_wfm":
         return _load_wfm_auto(path, channel=channel, **kwargs)
-    elif loader_name in ("tektronix", "tek"):
-        from oscura.loaders.tektronix import load_tektronix_wfm
-
-        return load_tektronix_wfm(path, **kwargs)
-    elif loader_name == "rigol":
-        from oscura.loaders.rigol import load_rigol_wfm
-
-        return load_rigol_wfm(path, **kwargs)
-    elif loader_name == "numpy":
-        from oscura.loaders.numpy_loader import load_npz
-
-        return load_npz(path, channel=channel, **kwargs)
-    elif loader_name == "csv":
-        from oscura.loaders.csv_loader import load_csv
-
-        return load_csv(path, **kwargs)  # type: ignore[return-value]
-    elif loader_name == "hdf5":
-        from oscura.loaders.hdf5_loader import load_hdf5
-
-        return load_hdf5(path, channel=channel, **kwargs)  # type: ignore[return-value]
-    elif loader_name == "sigrok":
-        from oscura.loaders.sigrok import load_sigrok
-
-        return load_sigrok(path, channel=channel, **kwargs)
-    elif loader_name == "vcd":
-        from oscura.loaders.vcd import load_vcd
-
-        return load_vcd(path, **kwargs)
-    elif loader_name == "pcap":
-        from oscura.loaders.pcap import load_pcap
-
-        return load_pcap(path, **kwargs)  # type: ignore[return-value]
-    elif loader_name == "wav":
-        from oscura.loaders.wav import load_wav
-
-        return load_wav(path, channel=channel, **kwargs)
-    elif loader_name == "tdms":
-        from oscura.loaders.tdms import load_tdms
-
-        return load_tdms(path, channel=channel, **kwargs)
-    elif loader_name == "touchstone":
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
-
-        return load_touchstone(path)  # type: ignore[return-value]
     else:
-        raise UnsupportedFormatError(
-            loader_name,
-            list(SUPPORTED_FORMATS.keys()),
-            file_path=str(path),
-        )
+        # Use registry-based dispatch for all other loaders
+        return _dispatch_loader(loader_name, path, channel=channel, **kwargs)
 
 
 def _load_wfm_auto(

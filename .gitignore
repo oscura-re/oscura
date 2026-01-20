@@ -165,6 +165,8 @@ work-obj*.cf
 # Orchestration activity log (debugging)
 .claude/orchestration.log
 .claude/orchestration.log.*
+.claude/reports/
+.coordination/
 
 # =============================================================================
 # Documentation Generated Files

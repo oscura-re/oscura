@@ -116,13 +116,13 @@ jobs:
               per_page: 100
             });
 
-            // Look for CI Success check
+            // Look for CI check
             const ciCheck = checkRuns.check_runs.find(
-              check => check.name === 'CI Success'
+              check => check.name === 'CI'
             );
 
             if (!ciCheck) {
-              core.setFailed('CI Success check not found on this commit. Ensure CI completed before releasing.');
+              core.setFailed('CI check not found on this commit. Ensure CI completed before releasing.');
               return;
             }
 

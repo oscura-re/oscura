@@ -359,3 +359,148 @@ class TestSession:
         traces = session.list_traces()
         assert "ch1" in traces
         assert "ch2" in traces
+
+    def test_save_with_hmac_signature(self):
+        """Test session saves with HMAC signature (SECURITY-01)."""
+        import gzip
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create and save session (uncompressed for easy verification)
+            session = Session(name="Signed Session")
+            session.annotate("Test", time=1.0)
+
+            save_path = Path(tmpdir) / "signed.tks"
+            session.save(save_path, compress=False)
+
+            # Verify file contains signature (magic bytes + signature)
+            with open(save_path, "rb") as f:
+                magic = f.read(4)
+                assert magic == b"OSC1", "Session file should start with OSC1 magic bytes"
+
+            # Load should succeed with signature verification
+            loaded = load_session(save_path)
+            assert loaded.name == "Signed Session"
+
+            # Test with compression
+            compressed_path = Path(tmpdir) / "signed_compressed.tks"
+            session.save(compressed_path, compress=True)
+
+            # Verify compressed file can be loaded
+            with gzip.open(compressed_path, "rb") as f:
+                magic = f.read(4)
+                assert magic == b"OSC1", (
+                    "Compressed session should have OSC1 magic after decompression"
+                )
+
+            loaded_compressed = load_session(compressed_path)
+            assert loaded_compressed.name == "Signed Session"
+
+    def test_signature_verification_detects_tampering(self):
+        """Test HMAC verification detects tampered files (SECURITY-01)."""
+        from oscura.core.exceptions import SecurityError
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Save session (uncompressed to avoid gzip errors)
+            session = Session(name="Original")
+            save_path = Path(tmpdir) / "tampered.tks"
+            session.save(save_path, compress=False)
+
+            # Tamper with file (corrupt a byte in the data)
+            with open(save_path, "rb") as f:
+                content = f.read()
+
+            # Flip a bit in the pickled data (after magic + signature)
+            tampered = bytearray(content)
+            tampered[40] ^= 0xFF  # Flip bits at position 40
+
+            with open(save_path, "wb") as f:
+                f.write(tampered)
+
+            # Loading should fail with SecurityError
+            with pytest.raises(SecurityError, match="signature verification failed"):
+                load_session(save_path)
+
+    def test_legacy_session_loads_with_warning(self):
+        """Test legacy session files (no signature) load with warning (SECURITY-01)."""
+        import pickle
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create legacy session file (old format without signature)
+            session_data = {
+                "version": "1.0",
+                "name": "Legacy Session",
+                "created_at": "2024-01-01T00:00:00",
+                "modified_at": "2024-01-01T00:00:00",
+                "annotation_layers": {},
+                "measurements": {},
+                "history": {"entries": []},
+                "metadata": {},
+                "traces": {},
+            }
+
+            save_path = Path(tmpdir) / "legacy.tks"
+            with open(save_path, "wb") as f:
+                pickle.dump(session_data, f)
+
+            # Load should succeed with warning
+            with pytest.warns(UserWarning, match="legacy session file"):
+                loaded = load_session(save_path)
+
+            assert loaded.name == "Legacy Session"
+
+    def test_signature_verification_can_be_disabled(self):
+        """Test signature verification can be disabled for legacy files (SECURITY-01)."""
+        import pickle
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create legacy session
+            session_data = {
+                "version": "1.0",
+                "name": "No Verify",
+                "created_at": "2024-01-01T00:00:00",
+                "modified_at": "2024-01-01T00:00:00",
+                "annotation_layers": {},
+                "measurements": {},
+                "history": {"entries": []},
+                "metadata": {},
+                "traces": {},
+            }
+
+            save_path = Path(tmpdir) / "no_verify.tks"
+            with open(save_path, "wb") as f:
+                pickle.dump(session_data, f)
+
+            # Load with verification disabled (warning still appears for legacy files)
+            with pytest.warns(UserWarning, match="legacy session file"):
+                loaded = load_session(save_path, verify_signature=False)
+            assert loaded.name == "No Verify"
+
+    def test_compressed_session_with_signature(self):
+        """Test compressed sessions work with signatures (SECURITY-01)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Save compressed session
+            session = Session(name="Compressed")
+            session.annotate("Test", time=1.0)
+
+            save_path = Path(tmpdir) / "compressed.tks"
+            session.save(save_path, compress=True)
+
+            # Load and verify
+            loaded = load_session(save_path)
+            assert loaded.name == "Compressed"
+            assert len(loaded.get_annotations()) == 1
+
+    def test_uncompressed_session_with_signature(self):
+        """Test uncompressed sessions work with signatures (SECURITY-01)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Save uncompressed session
+            session = Session(name="Uncompressed")
+            session.annotate("Test", time=1.0)
+
+            save_path = Path(tmpdir) / "uncompressed.tks"
+            session.save(save_path, compress=False)
+
+            # Load and verify
+            loaded = load_session(save_path)
+            assert loaded.name == "Uncompressed"
+            assert len(loaded.get_annotations()) == 1

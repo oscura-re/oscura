@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-20
+
+### Security
+
+- **Session File Integrity Verification** (`src/oscura/session/session.py`, `src/oscura/core/exceptions.py`):
+  - Added HMAC-SHA256 signature verification to all session files (.tks)
+  - New session format (OSC1) includes cryptographic signatures for tamper detection
+  - Backward compatible: Legacy files load with warning, signature verification optional
+  - Added `SecurityError` exception class for security validation failures
+  - Updated `SECURITY.md` with comprehensive session file security documentation
+  - Test coverage: 6 new security tests (signature verification, tampering detection, legacy compatibility)
+  - **Breaking Change**: New .tks format (backward compatible with opt-in verification)
+
+### Added
+
+- **pytest-benchmark Support** (`pyproject.toml`):
+  - Added pytest-benchmark>=4.0.0 to dev dependencies
+  - Enables performance regression testing and benchmarking
+  - Resolves pytest configuration warnings
+
+### Changed
+
+- **DTC Database Optimization** (`src/oscura/automotive/dtc/database.py`, `src/oscura/automotive/dtc/data.json`):
+  - **Massive code reduction: 3,036 lines → 304 lines (90% reduction, 2,732 LOC removed)**
+  - Extracted 210 DTC codes from inline Python dict to structured JSON file
+  - Created extraction script: `scripts/data/extract_dtc_database.py`
+  - Lazy-loads JSON data at module import (negligible performance impact <10ms)
+  - All 30 DTC tests passing, backward compatible API
+  - JSON structure: 80KB data file with metadata, categories, and standardized format
+
+- **Loader Dispatch Refactoring** (`src/oscura/loaders/__init__.py`):
+  - Refactored 12-branch if-elif chain to registry pattern
+  - New `_LOADER_REGISTRY` dict maps loader names to (module, function) tuples
+  - Added `_dispatch_loader()` with dynamic import and parameter filtering
+  - Cleaner, more extensible architecture for adding new loaders
+  - Parameter inspection prevents passing unsupported kwargs to loaders
+  - All 50+ loader tests passing
+
+- **Architecture: Touchstone Loader** (`src/oscura/loaders/touchstone.py`):
+  - Moved `load_touchstone()` from `analyzers/signal_integrity/sparams.py` to `loaders/touchstone.py`
+  - Proper separation of concerns: loaders load, analyzers analyze
+  - Added deprecation warning at old location for backward compatibility
+  - Updated all imports in `loaders/__init__.py`
+  - All 50 S-parameter and Touchstone tests passing
+  - **Non-breaking change**: Deprecation warning guides users to new import location
+
+### Fixed
+
+- **CLI Documentation Accuracy** (`docs/cli.md`, `README.md`, `scripts/generate_cli_docs.py`):
+  - Auto-generated fresh CLI documentation from actual Click commands
+  - Fixed outdated README examples (removed non-existent commands: analyze, report, convert, config, version)
+  - Corrected to actual 6 commands: batch, characterize, compare, decode, shell, tutorial
+  - Documentation now matches implementation 100%
+
+- **Demo README Consistency** (`demos/*/README.md`):
+  - Audited and fixed all 19 demo category READMEs
+  - Fixed 10 version mismatches (0.3.x → 0.1.2)
+  - Created audit script: `scripts/docs/audit_demo_readmes.py`
+  - All demo READMEs now consistent and accurate
+
 ### Infrastructure
 
 - **CI/CD Workflow Optimizations** (`.github/workflows/*.yml`, `.github/actions/setup-python-env/`):
@@ -379,7 +439,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Initial Public Release
 
-Oscura 0.1.2 is the first public release of the comprehensive hardware reverse engineering framework for security researchers, right-to-repair advocates, defense analysts, and commercial intelligence teams.
+Oscura 0.3.0 is the first public release of the comprehensive hardware reverse engineering framework for security researchers, right-to-repair advocates, defense analysts, and commercial intelligence teams.
 
 ### Core Features
 

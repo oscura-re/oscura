@@ -2744,7 +2744,7 @@ wheels = [
 
 [[package]]
 name = "oscura"
-version = "0.1.2"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -2776,6 +2776,7 @@ all = [
     { name = "nptdms" },
     { name = "openpyxl" },
     { name = "pytest" },
+    { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
     { name = "python-can" },
@@ -2804,6 +2805,7 @@ dev = [
     { name = "hypothesis" },
     { name = "interrogate" },
     { name = "pytest" },
+    { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
     { name = "types-pyyaml" },
@@ -2893,6 +2895,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.0.0,<3.0.0" },
     { name = "psutil", specifier = ">=5.9.0,<7.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0,<10.0.0" },
+    { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = ">=4.0.0,<6.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0,<8.0.0" },
     { name = "pytest-timeout", marker = "extra == 'dev'", specifier = ">=2.3.0,<3.0.0" },
     { name = "python-can", marker = "extra == 'automotive'", specifier = ">=4.4.0,<5.0.0" },

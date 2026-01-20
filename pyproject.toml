@@ -6,7 +6,7 @@
 
 [project]
 name = "oscura"
-version = "0.1.2"
+version = "0.3.0"
 description = "Unified hardware reverse engineering framework. Extract all information from any system through signals and data. Unknown protocol discovery, state machine extraction, CRC recovery, security analysis. 16+ protocols, IEEE-compliant measurements."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -88,6 +88,7 @@ dev = [
     "pytest>=8.0,<10.0.0",              # Testing framework
     "pytest-cov>=6.0,<8.0.0",           # Coverage reporting
     "pytest-timeout>=2.3.0,<3.0.0",     # Test timeout enforcement
+    "pytest-benchmark>=4.0.0,<6.0.0",   # Performance benchmarking
     "hypothesis>=6.0.0,<7.0.0",         # Property-based testing
     "types-PyYAML>=6.0,<7.0.0",         # Type stubs for mypy
     "yamllint>=1.35,<2.0.0",            # YAML linting
@@ -203,8 +204,9 @@ addopts = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
-    # NOTE: pytest-benchmark warning - now installed in dev dependencies
-    "ignore::pytest_benchmark.logger.PytestBenchmarkWarning",
+    # NOTE: pytest-benchmark warning filter removed - causes ModuleNotFoundError
+    # when pytest-benchmark is not installed (e.g., in release smoke tests)
+    # "ignore::pytest_benchmark.logger.PytestBenchmarkWarning",
     # NOTE: matplotlib warning - only needed if matplotlib is in system Python
     # "ignore::matplotlib._api.MatplotlibDeprecationWarning",
     "ignore:More than.*figures.*have been opened:RuntimeWarning",

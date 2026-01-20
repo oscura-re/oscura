@@ -15,16 +15,25 @@ Example:
 from __future__ import annotations
 
 import gzip
+import hashlib
+import hmac
 import pickle
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
+from oscura.core.exceptions import SecurityError
 from oscura.session.annotations import AnnotationLayer
 from oscura.session.history import OperationHistory
+
+# Session file format constants
+_SESSION_MAGIC = b"OSC1"  # Magic bytes for new format with signature
+_SESSION_SIGNATURE_SIZE = 32  # SHA256 hash size in bytes
+_SECURITY_KEY = hashlib.sha256(b"oscura-session-v1").digest()
 
 
 @dataclass
@@ -273,7 +282,7 @@ class Session:
         include_traces: bool = True,
         compress: bool = True,
     ) -> Path:
-        """Save session to file.
+        """Save session to file with HMAC signature for integrity verification.
 
         Args:
             path: Output path (default: use existing or generate).
@@ -287,9 +296,10 @@ class Session:
             >>> session.save('analysis.tks')
 
         Security Note:
-            Session files use pickle serialization for flexibility. Share
-            session files only with trusted parties. For secure data exchange
-            with untrusted parties, use JSON or HDF5 export formats instead.
+            Session files now include HMAC signatures for integrity verification.
+            Files are still pickle-based - only load from trusted sources.
+            For secure data exchange with untrusted parties, use JSON or HDF5
+            export formats instead.
         """
         if path is None:
             path = self._file_path or Path(f"{self.name.replace(' ', '_')}.tks")
@@ -302,13 +312,23 @@ class Session:
         # Build session data
         data = self._to_dict(include_traces=include_traces)
 
-        # Serialize
+        # Serialize with pickle
+        serialized = pickle.dumps(data, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # Compute HMAC signature
+        signature = hmac.new(_SECURITY_KEY, serialized, hashlib.sha256).digest()
+
+        # Write: magic bytes + signature + pickled data
         if compress:
             with gzip.open(path, "wb") as f:
-                pickle.dump(data, f)
+                f.write(_SESSION_MAGIC)
+                f.write(signature)
+                f.write(serialized)
         else:
             with open(path, "wb") as f:
-                pickle.dump(data, f)
+                f.write(_SESSION_MAGIC)
+                f.write(signature)
+                f.write(serialized)
 
         self.history.record("save", {"path": str(path)})
 
@@ -401,14 +421,19 @@ class Session:
         return "\n".join(lines)
 
 
-def load_session(path: str | Path) -> Session:
-    """Load session from file.
+def load_session(path: str | Path, *, verify_signature: bool = True) -> Session:
+    """Load session from file with optional signature verification.
 
     Args:
         path: Path to session file (.tks).
+        verify_signature: Verify HMAC signature (default: True). Set to False
+            only when loading legacy session files without signatures.
 
     Returns:
         Loaded Session object.
+
+    Raises:
+        SecurityError: If signature verification fails.
 
     Example:
         >>> session = load_session('debug_session.tks')
@@ -419,19 +444,61 @@ def load_session(path: str | Path) -> Session:
         trusted sources. Loading a malicious .tks file could execute arbitrary
         code. Never load session files from untrusted or unknown sources.
 
+        New session files include HMAC signatures for integrity verification.
+        Legacy files without signatures will trigger a warning.
+
         For secure data exchange, consider exporting to JSON or HDF5 formats
         instead of using pickle-based session files.
     """
     path = Path(path)
 
+    # Helper to load with signature verification
+    def _load_with_verification(f: Any, is_compressed: bool = False) -> dict[str, Any]:
+        # Read magic bytes to detect format
+        magic = f.read(len(_SESSION_MAGIC))
+
+        if magic == _SESSION_MAGIC:
+            # New format with signature
+            signature = f.read(_SESSION_SIGNATURE_SIZE)
+            serialized = f.read()
+
+            if verify_signature:
+                # Verify HMAC signature
+                expected = hmac.new(_SECURITY_KEY, serialized, hashlib.sha256).digest()
+                if not hmac.compare_digest(signature, expected):
+                    raise SecurityError(
+                        "Session file signature verification failed",
+                        file_path=str(path),
+                        check_type="HMAC signature",
+                        details="File may be corrupted or tampered with",
+                    )
+
+            # Deserialize verified data
+            data = cast("dict[str, Any]", pickle.loads(serialized))
+        else:
+            # Legacy format without signature
+            warnings.warn(
+                f"Loading legacy session file without signature verification: {path}. "
+                "Re-save the session to enable security features.",
+                UserWarning,
+                stacklevel=3,
+            )
+
+            # Rewind and load as legacy pickle
+            f.seek(0)
+            data = cast("dict[str, Any]", pickle.load(f))
+
+        return data
+
+    # Try loading (compressed or uncompressed)
     try:
         # Try gzip compressed first
         with gzip.open(path, "rb") as f:
-            data = pickle.load(f)
+            data = _load_with_verification(f, is_compressed=True)
     except gzip.BadGzipFile:
         # Fall back to uncompressed
-        with open(path, "rb") as f:
-            data = pickle.load(f)
+        with open(path, "rb") as f:  # type: ignore[assignment]
+            data = _load_with_verification(f, is_compressed=False)
 
     session = Session._from_dict(data)
     session._file_path = path

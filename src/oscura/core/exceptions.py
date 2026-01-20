@@ -518,6 +518,61 @@ class ExportError(OscuraError):
         )
 
 
+class SecurityError(OscuraError):
+    """Security validation failed.
+
+    Raised when security checks fail, such as signature verification
+    or file integrity validation.
+
+    Attributes:
+        file_path: Path to the file that failed security checks.
+        check_type: Type of security check that failed.
+    """
+
+    docs_path: str = "errors#security"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        file_path: str | None = None,
+        check_type: str | None = None,
+        details: str | None = None,
+        fix_hint: str | None = None,
+    ) -> None:
+        """Initialize SecurityError.
+
+        Args:
+            message: Brief description of the error.
+            file_path: Path to the file that failed security checks.
+            check_type: Type of security check that failed.
+            details: Additional context about the error.
+            fix_hint: Suggestion for how to fix the error.
+        """
+        self.file_path = file_path
+        self.check_type = check_type
+
+        details_parts = []
+        if file_path:
+            details_parts.append(f"File: {file_path}")
+        if check_type:
+            details_parts.append(f"Check: {check_type}")
+        if details:
+            details_parts.append(details)
+
+        combined_details = ". ".join(details_parts) if details_parts else None
+
+        if fix_hint is None:
+            fix_hint = "Only load files from trusted sources. File may be corrupted or tampered."
+
+        super().__init__(
+            message,
+            details=combined_details,
+            fix_hint=fix_hint,
+            docs_path=self.docs_path,
+        )
+
+
 __all__ = [
     "DOCS_BASE_URL",
     "AnalysisError",
@@ -528,6 +583,7 @@ __all__ = [
     "LoaderError",
     "OscuraError",
     "SampleRateError",
+    "SecurityError",
     "UnsupportedFormatError",
     "ValidationError",
 ]

@@ -2,7 +2,7 @@
 
 > End-to-end reverse engineering workflows combining multiple Oscura capabilities
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.1.2 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 

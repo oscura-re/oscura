@@ -2,7 +2,7 @@
 
 > IEEE 2414-2020 compliant TIE, RJ/DJ decomposition, eye diagrams, bathtub curves
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.1.2 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
