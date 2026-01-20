@@ -45,8 +45,19 @@ def find_test_files() -> list[Path]:
 def run_test_file(test_file: Path) -> tuple[bool, str]:
     """Run a single test file and return success status and output."""
     try:
+        # Use same marker filtering as CI to avoid running slow/performance tests
+        # that would timeout in isolation (e.g., 1GB file benchmarks)
         result = subprocess.run(
-            [sys.executable, "-m", "pytest", str(test_file), "-v", "--tb=short"],
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                str(test_file),
+                "-v",
+                "--tb=short",
+                "-m",
+                "not slow and not performance",
+            ],
             capture_output=True,
             text=True,
             timeout=60,
