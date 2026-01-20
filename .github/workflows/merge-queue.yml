@@ -1,0 +1,220 @@
+# Merge Queue Workflow
+# ====================
+# This workflow tests the ACTUAL merge commit before it lands on main.
+# Prevents untested commits from being merged (solves the root cause).
+#
+# How it works:
+# 1. Developer creates PR
+# 2. PR CI runs on feature branch ✅
+# 3. Developer clicks "Merge" button
+# 4. GitHub creates a TEMPORARY merge commit
+# 5. THIS WORKFLOW runs on the temporary merge commit
+# 6. If ALL checks pass → merge completes
+# 7. If ANY check fails → merge is blocked
+#
+# This solves the problem where squash merges create untested commits.
+
+name: Merge Queue
+
+on:
+  merge_group:
+    types: [checks_requested]
+
+# Ensure only one merge queue run at a time (prevents race conditions)
+concurrency:
+  group: merge-queue-${{ github.event.merge_group.head_ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  RETENTION_SHORT: 7
+  RETENTION_MEDIUM: 30
+
+jobs:
+  # =================================================================
+  # CRITICAL: Run ALL the same checks as regular CI
+  # This ensures the merge commit is tested identically to PR branches
+  # =================================================================
+
+  fast-checks:
+    name: Fast Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+
+      - name: Setup Python Environment
+        uses: drivendataorg/setup-uv-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run pre-commit hooks
+        run: uv run pre-commit run --all-files
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy src tests
+
+      - name: Config validation
+        run: |
+          # Validate orchestration config
+          uv run python .claude/hooks/validate_config.py
+
+          # Validate SSOT
+          ./scripts/check-ssot.sh
+
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+
+      - name: Setup Python Environment
+        uses: drivendataorg/setup-uv-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run unit tests
+        run: |
+          uv run python -m pytest tests/unit \
+            -v \
+            --cov=src \
+            --cov-report=xml \
+            --maxfail=10 \
+            -n auto \
+            --dist=worksteal
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: merge-queue-unit
+          fail_ci_if_error: false
+
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+
+      - name: Setup Python Environment
+        uses: drivendataorg/setup-uv-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run integration tests
+        run: |
+          uv run python -m pytest tests/integration/ \
+            -v \
+            -m integration \
+            -p no:benchmark \
+            --maxfail=10
+
+  test-isolation:
+    name: Test Isolation Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+
+      - name: Setup Python Environment
+        uses: drivendataorg/setup-uv-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check test isolation
+        run: uv run python scripts/testing/check_test_isolation.py --sample 15
+
+  build-verification:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+
+      - name: Setup Python Environment
+        uses: drivendataorg/setup-uv-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build documentation
+        run: uv run python -m mkdocs build --strict --clean
+
+      - name: Build package
+        run: uv build
+
+      - name: Test CLI commands
+        run: |
+          uv run oscura --version
+          uv run oscura --help
+
+  # =================================================================
+  # Summary job: Merge is BLOCKED if any job fails
+  # =================================================================
+  merge-queue-summary:
+    name: Merge Queue Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [fast-checks, test-unit, test-integration, test-isolation, build-verification]
+    if: always()
+    steps:
+      - name: Check all required jobs passed
+        run: |
+          echo "Merge Queue Results:"
+          echo "==================="
+          echo "Fast Checks: ${{ needs.fast-checks.result }}"
+          echo "Unit Tests: ${{ needs.test-unit.result }}"
+          echo "Integration Tests: ${{ needs.test-integration.result }}"
+          echo "Test Isolation: ${{ needs.test-isolation.result }}"
+          echo "Build Verification: ${{ needs.build-verification.result }}"
+          echo ""
+
+          # Fail if any job didn't succeed
+          if [[ "${{ needs.fast-checks.result }}" != "success" ]]; then
+            echo "❌ Fast Checks failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-unit.result }}" != "success" ]]; then
+            echo "❌ Unit Tests failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-integration.result }}" != "success" ]]; then
+            echo "❌ Integration Tests failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-isolation.result }}" != "success" ]]; then
+            echo "❌ Test Isolation failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.build-verification.result }}" != "success" ]]; then
+            echo "❌ Build Verification failed"
+            exit 1
+          fi
+
+          echo "✅ All merge queue checks passed!"
+          echo "Merge commit is safe to land on main."
