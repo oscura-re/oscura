@@ -187,6 +187,11 @@ if [[ "${MODE}" == "coverage" ]]; then
   )
 fi
 
+# Fast mode: exclude slow tests
+if [[ "${MODE}" == "fast" ]]; then
+  PYTEST_ARGS+=(-m "not slow")
+fi
+
 # Add verbosity
 if [[ "${VERBOSE}" == "true" ]]; then
   PYTEST_ARGS+=(-v)

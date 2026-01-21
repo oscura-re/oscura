@@ -420,9 +420,11 @@ class TestSession:
             with pytest.raises(SecurityError, match="signature verification failed"):
                 load_session(save_path)
 
-    def test_legacy_session_loads_with_warning(self):
-        """Test legacy session files (no signature) load with warning (SECURITY-01)."""
+    def test_legacy_session_raises_security_error(self):
+        """Test legacy session files (no signature) raise SecurityError (SECURITY-01)."""
         import pickle
+
+        from oscura.core.exceptions import SecurityError
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create legacy session file (old format without signature)
@@ -442,38 +444,24 @@ class TestSession:
             with open(save_path, "wb") as f:
                 pickle.dump(session_data, f)
 
-            # Load should succeed with warning
-            with pytest.warns(UserWarning, match="legacy session file"):
-                loaded = load_session(save_path)
+            # Load should fail with SecurityError
+            with pytest.raises(SecurityError, match="legacy session file"):
+                load_session(save_path)
 
-            assert loaded.name == "Legacy Session"
-
-    def test_signature_verification_can_be_disabled(self):
-        """Test signature verification can be disabled for legacy files (SECURITY-01)."""
-        import pickle
+    def test_incomplete_signature_raises_error(self):
+        """Test incomplete signature (missing or truncated) raises SecurityError."""
+        from oscura.core.exceptions import SecurityError
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Create legacy session
-            session_data = {
-                "version": "1.0",
-                "name": "No Verify",
-                "created_at": "2024-01-01T00:00:00",
-                "modified_at": "2024-01-01T00:00:00",
-                "annotation_layers": {},
-                "measurements": {},
-                "history": {"entries": []},
-                "metadata": {},
-                "traces": {},
-            }
-
-            save_path = Path(tmpdir) / "no_verify.tks"
+            # Create file with magic bytes but incomplete signature
+            save_path = Path(tmpdir) / "incomplete.tks"
             with open(save_path, "wb") as f:
-                pickle.dump(session_data, f)
+                f.write(b"OSC1")  # Magic bytes
+                f.write(b"short")  # Incomplete signature (not 32 bytes)
 
-            # Load with verification disabled (warning still appears for legacy files)
-            with pytest.warns(UserWarning, match="legacy session file"):
-                loaded = load_session(save_path, verify_signature=False)
-            assert loaded.name == "No Verify"
+            # Load should fail with SecurityError
+            with pytest.raises(SecurityError, match="legacy session file"):
+                load_session(save_path)
 
     def test_compressed_session_with_signature(self):
         """Test compressed sessions work with signatures (SECURITY-01)."""

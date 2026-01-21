@@ -73,7 +73,9 @@ class CANStateMachine:
     - State-dependent message patterns
 
     Example - Learn ignition sequence:
-        >>> session = CANSession.from_log("ignition_cycles.blf")
+        >>> from oscura.automotive.sources import FileSource
+        >>> session = CANSession(name="Ignition Analysis")
+        >>> session.add_recording("cycles", FileSource("ignition_cycles.blf"))
         >>> sm = CANStateMachine()
         >>> # Use ignition-related CAN IDs as triggers
         >>> automaton = sm.learn_from_session(
@@ -85,7 +87,8 @@ class CANStateMachine:
         >>> print(automaton.to_dot())
 
     Example - Discover initialization sequence:
-        >>> session = CANSession.from_log("ecu_startup.blf")
+        >>> session = CANSession(name="ECU Startup")
+        >>> session.add_recording("startup", FileSource("ecu_startup.blf"))
         >>> sm = CANStateMachine()
         >>> # Use diagnostic messages as triggers
         >>> automaton = sm.learn_from_session(

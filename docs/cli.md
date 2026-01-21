@@ -233,7 +233,7 @@ Usage: cli shell [OPTIONS]
   Opens a Python REPL with Oscura pre-imported and ready to use. Features tab
   completion, persistent history, and helpful shortcuts.
 
-  Example:     $ oscura shell     Oscura Shell v0.1.0     >>> trace =
+  Example:     $ oscura shell     Oscura Shell v0.3.0     >>> trace =
   load("signal.wfm")     >>> rise_time(trace)
 
 Options:

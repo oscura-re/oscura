@@ -157,9 +157,7 @@ from oscura.analyzers.waveform.spectral import (
 
 # Signal builders (top-level convenience access)
 from oscura.builders import (
-    GeneratedSignal,
     SignalBuilder,
-    SignalMetadata,
 )
 
 # Comparison and limit testing
@@ -518,8 +516,6 @@ __all__ = [
     "FieldSpec",
     "FilterResult",
     "FormatError",
-    # Signal builders
-    "GeneratedSignal",
     # Signal quality (QUAL-005)
     "Glitch",
     "GoldenReference",

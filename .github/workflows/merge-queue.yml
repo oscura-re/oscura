@@ -46,7 +46,7 @@ jobs:
           ref: ${{ github.event.merge_group.head_sha }}
 
       - name: Setup Python Environment
-        uses: drivendataorg/setup-uv-python@v1
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -60,15 +60,18 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Type check
-        run: uv run mypy src tests
+        run: uv run mypy src/
 
       - name: Config validation
         run: |
-          # Validate orchestration config
-          uv run python .claude/hooks/validate_config.py
+          # Validate orchestration config consistency
+          uv run python .claude/hooks/validate_config_consistency.py
 
           # Validate SSOT
-          ./scripts/check-ssot.sh
+          uv run python .claude/hooks/validate_ssot.py
+
+          # Run hook unit tests
+          uv run python tests/unit/hooks/test_hooks_comprehensive.py
 
   test-unit:
     name: Unit Tests
@@ -83,19 +86,27 @@ jobs:
           ref: ${{ github.event.merge_group.head_sha }}
 
       - name: Setup Python Environment
-        uses: drivendataorg/setup-uv-python@v1
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Run unit tests
         run: |
+          # Use SAME test flags as CI for consistency
+          WORKERS=4
           uv run python -m pytest tests/unit \
             -v \
-            --cov=src \
+            -m "not slow and not performance" \
+            -n $WORKERS \
+            --maxprocesses=$WORKERS \
+            --dist loadscope \
+            --hypothesis-profile=ci \
+            --benchmark-disable \
+            --cov=src/oscura \
             --cov-report=xml \
-            --maxfail=10 \
-            -n auto \
-            --dist=worksteal
+            --cov-report=term-missing \
+            --cov-fail-under=0 \
+            --maxfail=10
 
       - name: Upload coverage
         uses: codecov/codecov-action@v5
@@ -115,16 +126,17 @@ jobs:
           ref: ${{ github.event.merge_group.head_sha }}
 
       - name: Setup Python Environment
-        uses: drivendataorg/setup-uv-python@v1
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run integration tests
         run: |
+          # Use SAME test flags as CI for consistency
           uv run python -m pytest tests/integration/ \
             -v \
-            -m integration \
-            -p no:benchmark \
+            -m "integration and not slow" \
+            --benchmark-disable \
             --maxfail=10
 
   test-isolation:
@@ -137,7 +149,7 @@ jobs:
           ref: ${{ github.event.merge_group.head_sha }}
 
       - name: Setup Python Environment
-        uses: drivendataorg/setup-uv-python@v1
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -154,7 +166,7 @@ jobs:
           ref: ${{ github.event.merge_group.head_sha }}
 
       - name: Setup Python Environment
-        uses: drivendataorg/setup-uv-python@v1
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 

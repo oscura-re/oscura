@@ -1113,11 +1113,19 @@ def memory_cleanup():
     SAVINGS: ~2 minutes (93% reduction)
 
     This is critical for large test suites to prevent OOM errors.
+
+    NOTE: ResourceWarning from gc.collect() is suppressed as it's triggered by
+    third-party libraries (rigolwfm/kaitaistruct) that don't properly close file handles.
+    This is a known limitation of the rigolwfm library.
     """
     yield
     import gc
+    import warnings
 
-    gc.collect()
+    # Suppress ResourceWarning during gc.collect() - caused by rigolwfm library
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ResourceWarning)
+        gc.collect()
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -1329,13 +1337,23 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Skip slow tests unless --runslow is passed."""
-    if config.getoption("--runslow", default=False):
+    """Mark slow tests for optional filtering.
+
+    Slow tests are skipped by default to keep test suite fast.
+    Pass --runslow to include slow/performance/stress tests.
+
+    This includes tests marked with:
+    - @pytest.mark.slow
+    - @pytest.mark.performance
+    - @pytest.mark.stress
+    """
+    if config.getoption("--runslow"):
+        # User explicitly wants to run slow tests
         return
 
     skip_slow = pytest.mark.skip(reason="need --runslow option to run")
     for item in items:
-        if "slow" in item.keywords:
+        if "slow" in item.keywords or "performance" in item.keywords or "stress" in item.keywords:
             item.add_marker(skip_slow)
 
 

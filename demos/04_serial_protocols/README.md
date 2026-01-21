@@ -2,7 +2,7 @@
 
 > UART, SPI, I2C, 1-Wire decoding with auto-parameter detection
 
-**Oscura Version**: 0.1.2 | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 

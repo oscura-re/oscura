@@ -17,8 +17,10 @@ Key features:
 
 Example:
     >>> from oscura.automotive.can import CANSession
+    >>> from oscura.automotive.sources import FileSource
     >>> # Load automotive log file
-    >>> session = CANSession.from_log("capture.blf")
+    >>> session = CANSession(name="Analysis")
+    >>> session.add_recording("main", FileSource("capture.blf"))
     >>> # View message inventory
     >>> inventory = session.inventory()
     >>> # Analyze specific message

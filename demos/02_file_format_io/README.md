@@ -2,7 +2,7 @@
 
 > Load and export data in CSV, HDF5, NumPy, MATLAB, and custom binary formats
 
-**Oscura Version**: 0.1.2 | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 

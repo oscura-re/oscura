@@ -39,6 +39,7 @@ _LOADER_REGISTRY: dict[str, tuple[str, str]] = {
     "wav": ("oscura.loaders.wav", "load_wav"),
     "tdms": ("oscura.loaders.tdms", "load_tdms"),
     "touchstone": ("oscura.loaders.touchstone", "load_touchstone"),
+    "chipwhisperer": ("oscura.loaders.chipwhisperer", "load_chipwhisperer"),
 }
 
 

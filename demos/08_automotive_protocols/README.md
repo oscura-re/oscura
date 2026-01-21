@@ -2,7 +2,7 @@
 
 > CAN, CAN-FD, LIN, FlexRay transport layer analysis
 
-**Oscura Version**: 0.1.2 | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 

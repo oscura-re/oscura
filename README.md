@@ -29,11 +29,15 @@
 
 Oscura is a hardware reverse engineering framework for security researchers, right-to-repair advocates, defense analysts, and commercial intelligence teams. From oscilloscope captures to complete system understanding.
 
-**Reverse Engineering**: Unknown protocol discovery • State machine extraction • CRC/checksum recovery • Proprietary device replication • Security vulnerability analysis
+**Reverse Engineering**: Unknown protocol discovery • State machine extraction • CRC/checksum recovery • Proprietary device replication • Security vulnerability analysis • Black-box protocol analysis
 
-**Signal Analysis**: IEEE-compliant measurements (181/1241/1459/2414) • Comprehensive protocol decoding (16+ protocols) • Spectral analysis • Timing characterization
+**Signal Analysis**: IEEE-compliant measurements (181/1241/1459/2414) • Comprehensive protocol decoding (16+ protocols) • Spectral analysis • Timing characterization • Side-channel analysis (DPA/CPA/timing attacks)
 
-**Built For**: Exploitation • Replication • Defense analysis • Commercial intelligence • Right-to-repair
+**Unified Acquisition**: File-based • Hardware sources (SocketCAN, Saleae, PyVISA - Phase 2) • Synthetic generation • Polymorphic Source protocol
+
+**Interactive Sessions**: Domain-specific analysis sessions • BlackBoxSession for protocol RE • Differential analysis • Field hypothesis generation • Protocol specification export
+
+**Built For**: Exploitation • Replication • Defense analysis • Commercial intelligence • Right-to-repair • Cryptographic research
 
 ---
 
@@ -57,6 +61,8 @@ cd oscura
 
 ## Quick Start
 
+### Signal Analysis
+
 ```python
 import oscura as osc
 
@@ -71,6 +77,57 @@ print(f"Rise time: {osc.rise_time(trace) * 1e9:.1f} ns")
 from oscura.protocols import UARTDecoder
 decoder = UARTDecoder(baud_rate=115200)
 messages = decoder.decode(trace)
+```
+
+### Black-Box Protocol Reverse Engineering
+
+```python
+from oscura.sessions import BlackBoxSession
+from oscura.acquisition import FileSource
+
+# Create analysis session
+session = BlackBoxSession(name="IoT Device RE")
+
+# Add recordings from different stimuli
+session.add_recording("idle", FileSource("idle.bin"))
+session.add_recording("button_press", FileSource("button.bin"))
+
+# Differential analysis
+diff = session.compare("idle", "button_press")
+print(f"Changed bytes: {diff.changed_bytes}")
+
+# Generate protocol specification
+spec = session.generate_protocol_spec()
+print(f"Detected {len(spec['fields'])} protocol fields")
+
+# Export Wireshark dissector
+session.export_results("dissector", "protocol.lua")
+```
+
+### CAN Protocol Analysis
+
+```python
+from oscura.automotive.can import CANSession
+from oscura.acquisition import FileSource
+
+# Create session
+session = CANSession(name="Vehicle Analysis")
+
+# Add recordings from CAN bus captures
+session.add_recording("idle", FileSource("idle.blf"))
+session.add_recording("accelerate", FileSource("accelerate.blf"))
+
+# Analyze traffic
+analysis = session.analyze()
+print(f"Messages: {analysis['inventory']['total_messages']}")
+print(f"Unique IDs: {len(analysis['inventory']['message_ids'])}")
+
+# Compare recordings
+diff = session.compare("idle", "accelerate")
+print(f"Changed IDs: {len(diff.details['changed_ids'])}")
+
+# Export DBC file
+session.export_dbc("vehicle.dbc")
 ```
 
 ---
@@ -187,9 +244,28 @@ uv sync --all-extras
 
 ## Documentation
 
-- **[Demos](demos/)** - Start here (working examples)
+### Getting Started
+
+- **[Quick Start Guide](docs/guides/quick-start.md)** - Begin here
+- **[Demos](demos/)** - Working examples for every feature
+- **[Migration Guide](docs/migration/v0-to-v1.md)** - Upgrade from older versions
+
+### User Guides
+
+- **[Black-Box Protocol Analysis](docs/guides/blackbox-analysis.md)** - Unknown protocol reverse engineering
+- **[Hardware Acquisition](docs/guides/hardware-acquisition.md)** - Direct hardware integration (Phase 2)
+- **[Side-Channel Analysis](docs/guides/side-channel-analysis.md)** - Power/timing/EM attacks
+- **[Workflows](docs/guides/workflows.md)** - Complete analysis workflows
+
+### API Reference
+
 - **[API Reference](docs/api/)** - Complete API documentation
+- **[Session Management](docs/api/session-management.md)** - Interactive analysis sessions
 - **[CLI Reference](docs/cli.md)** - Command line usage
+
+### Development
+
+- **[Architecture](docs/architecture/)** - Design principles and patterns
 - **[Testing Guide](docs/testing/)** - Test suite architecture
 - **[CHANGELOG](CHANGELOG.md)** - Version history
 

@@ -218,6 +218,7 @@ jobs:
             "core-protocols-loaders")
               paths="tests/unit/core/ tests/unit/protocols/"
               paths="$paths tests/unit/loaders/ tests/unit/math/"
+              paths="$paths tests/unit/acquisition/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "search-filtering-streaming")
@@ -236,6 +237,7 @@ jobs:
               paths="tests/unit/workflow/ tests/unit/workflows/"
               paths="$paths tests/unit/pipeline/"
               paths="$paths tests/unit/session/"
+              paths="$paths tests/unit/sessions/"
               paths="$paths tests/unit/integrations/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;

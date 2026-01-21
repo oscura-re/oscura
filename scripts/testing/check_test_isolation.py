@@ -37,6 +37,7 @@ def find_test_files() -> list[Path]:
         "tests/unit/search/test_performance.py",  # Only performance tests (all filtered by markers)
         "tests/performance/test_benchmarks.py",  # Only performance/benchmark tests (all filtered)
         "tests/stress/test_protocol_decoder_load.py",  # Only stress/slow tests (all filtered)
+        "tests/stress/test_realtime_streaming_load.py",  # Only stress/slow tests (all filtered)
     ]
     test_files = [
         f for f in test_files if not any(str(f).endswith(pattern) for pattern in excluded_patterns)

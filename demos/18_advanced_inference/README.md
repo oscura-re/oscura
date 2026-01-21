@@ -2,7 +2,7 @@
 
 > Bayesian inference, Active Learning (L\*), Protocol DSL, sequence alignment
 
-**Oscura Version**: 0.1.2 | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 

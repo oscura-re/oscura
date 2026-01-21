@@ -2781,6 +2781,8 @@ all = [
     { name = "pytest-timeout" },
     { name = "python-can" },
     { name = "python-pptx" },
+    { name = "pyvisa" },
+    { name = "pyvisa-py" },
     { name = "pywavelets" },
     { name = "reportlab" },
     { name = "rigolwfm" },
@@ -2810,6 +2812,10 @@ dev = [
     { name = "pytest-timeout" },
     { name = "types-pyyaml" },
     { name = "yamllint" },
+]
+hardware = [
+    { name = "pyvisa" },
+    { name = "pyvisa-py" },
 ]
 hdf5 = [
     { name = "h5py" },
@@ -2891,7 +2897,7 @@ requires-dist = [
     { name = "nptdms", marker = "extra == 'oscilloscopes'", specifier = ">=1.7.0,<2.0.0" },
     { name = "numpy", specifier = ">=1.24.0,<3.0.0" },
     { name = "openpyxl", marker = "extra == 'analysis'", specifier = ">=3.0.0,<4.0.0" },
-    { name = "oscura", extras = ["dev", "reporting", "hdf5", "jupyter", "automotive", "oscilloscopes", "analysis"], marker = "extra == 'all'" },
+    { name = "oscura", extras = ["dev", "reporting", "hdf5", "jupyter", "automotive", "oscilloscopes", "analysis", "hardware"], marker = "extra == 'all'" },
     { name = "pandas", specifier = ">=2.0.0,<3.0.0" },
     { name = "psutil", specifier = ">=5.9.0,<7.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0,<10.0.0" },
@@ -2900,6 +2906,8 @@ requires-dist = [
     { name = "pytest-timeout", marker = "extra == 'dev'", specifier = ">=2.3.0,<3.0.0" },
     { name = "python-can", marker = "extra == 'automotive'", specifier = ">=4.4.0,<5.0.0" },
     { name = "python-pptx", marker = "extra == 'reporting'", specifier = ">=0.6.21,<1.0.0" },
+    { name = "pyvisa", marker = "extra == 'hardware'", specifier = ">=1.13.0,<2.0.0" },
+    { name = "pyvisa-py", marker = "extra == 'hardware'", specifier = ">=0.7.0,<1.0.0" },
     { name = "pywavelets", marker = "extra == 'analysis'", specifier = ">=1.0.0,<2.0.0" },
     { name = "pyyaml", specifier = ">=6.0,<7.0.0" },
     { name = "reportlab", marker = "extra == 'reporting'", specifier = ">=4.4.7,<6.0.0" },
@@ -2910,7 +2918,7 @@ requires-dist = [
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0,<7.0.0" },
     { name = "yamllint", marker = "extra == 'dev'", specifier = ">=1.35,<2.0.0" },
 ]
-provides-extras = ["dev", "reporting", "hdf5", "jupyter", "automotive", "oscilloscopes", "analysis", "all"]
+provides-extras = ["dev", "reporting", "hdf5", "jupyter", "automotive", "oscilloscopes", "analysis", "hardware", "all"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3620,6 +3628,31 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f8/bf/abbd3cdfb8fbc7fb3d4d38d320f2441b1e7cbe29be4f23797b4a2b5d8aac/pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3", size = 320884, upload-time = "2025-03-25T02:25:00.538Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/81/c4/34e93fe5f5429d7570ec1fa436f1986fb1f00c3e0f43a589fe2bbcd22c3f/pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00", size = 509225, upload-time = "2025-03-25T02:24:58.468Z" },
+]
+
+[[package]]
+name = "pyvisa"
+version = "1.16.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5f/45/b2cf76f58097040827fc6c61af4cb3ae473ef2fa47bc4f3e582e95fab3a0/pyvisa-1.16.1.tar.gz", hash = "sha256:44d637ef977097cae6247ce621514739e7a68b0e1d683d4e4b191b67f5b4d7b3", size = 238621, upload-time = "2026-01-13T14:47:26.361Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/1e/701cde98f835aaf84cd17851103715615a5ccb2f3d2ce3e215df8b5a4550/pyvisa-1.16.1-py3-none-any.whl", hash = "sha256:b0109a146f1d1a5d66d988fd5ea2a2abafb526f276d7cd60bfdba784513de3a7", size = 181348, upload-time = "2026-01-13T14:47:23.722Z" },
+]
+
+[[package]]
+name = "pyvisa-py"
+version = "0.8.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyvisa" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/55/8d/0f1af2b39feca8868d0692a2c5d0c47f4ad559a051fb678c441fe1e99536/pyvisa_py-0.8.1.tar.gz", hash = "sha256:db53d3219d971d16b8f7c764a93e08475875063635b9ad8ea3c988439833ccdd", size = 102061, upload-time = "2025-09-04T20:48:21.639Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/0b/06ccf917ce30d78d75e452d0afc89236b1d384b776c5c33d75c8cc55fbe7/pyvisa_py-0.8.1-py3-none-any.whl", hash = "sha256:31208a2933c1793b4e829ba5f07d265b83f280668df440ee7ee6ac505dea4ee9", size = 82206, upload-time = "2025-09-04T20:48:20.13Z" },
 ]
 
 [[package]]

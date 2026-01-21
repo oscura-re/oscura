@@ -18,7 +18,6 @@ import gzip
 import hashlib
 import hmac
 import pickle
-import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -421,19 +420,21 @@ class Session:
         return "\n".join(lines)
 
 
-def load_session(path: str | Path, *, verify_signature: bool = True) -> Session:
-    """Load session from file with optional signature verification.
+def load_session(path: str | Path) -> Session:
+    """Load session from file with HMAC signature verification.
+
+    Session files must be in the current OSC1 format with HMAC signature.
+    Legacy session files without signatures are not supported.
 
     Args:
         path: Path to session file (.tks).
-        verify_signature: Verify HMAC signature (default: True). Set to False
-            only when loading legacy session files without signatures.
 
     Returns:
         Loaded Session object.
 
     Raises:
-        SecurityError: If signature verification fails.
+        SecurityError: If signature verification fails or file is not in OSC1 format.
+        gzip.BadGzipFile: If file is neither valid gzip nor uncompressed session.
 
     Example:
         >>> session = load_session('debug_session.tks')
@@ -444,61 +445,68 @@ def load_session(path: str | Path, *, verify_signature: bool = True) -> Session:
         trusted sources. Loading a malicious .tks file could execute arbitrary
         code. Never load session files from untrusted or unknown sources.
 
-        New session files include HMAC signatures for integrity verification.
-        Legacy files without signatures will trigger a warning.
-
-        For secure data exchange, consider exporting to JSON or HDF5 formats
-        instead of using pickle-based session files.
+        All session files must include HMAC signatures for integrity verification.
+        For secure data exchange with untrusted parties, consider exporting to
+        JSON or HDF5 formats instead of using pickle-based session files.
     """
     path = Path(path)
 
-    # Helper to load with signature verification
-    def _load_with_verification(f: Any, is_compressed: bool = False) -> dict[str, Any]:
-        # Read magic bytes to detect format
+    def _load_with_verification(f: Any) -> dict[str, Any]:
+        """Load and verify session file with HMAC signature.
+
+        Args:
+            f: File object (gzip or regular).
+
+        Returns:
+            Deserialized session dictionary.
+
+        Raises:
+            SecurityError: If magic bytes or signature verification fails.
+        """
+        # Read magic bytes
         magic = f.read(len(_SESSION_MAGIC))
 
-        if magic == _SESSION_MAGIC:
-            # New format with signature
-            signature = f.read(_SESSION_SIGNATURE_SIZE)
-            serialized = f.read()
-
-            if verify_signature:
-                # Verify HMAC signature
-                expected = hmac.new(_SECURITY_KEY, serialized, hashlib.sha256).digest()
-                if not hmac.compare_digest(signature, expected):
-                    raise SecurityError(
-                        "Session file signature verification failed",
-                        file_path=str(path),
-                        check_type="HMAC signature",
-                        details="File may be corrupted or tampered with",
-                    )
-
-            # Deserialize verified data
-            data = cast("dict[str, Any]", pickle.loads(serialized))
-        else:
-            # Legacy format without signature
-            warnings.warn(
-                f"Loading legacy session file without signature verification: {path}. "
-                "Re-save the session to enable security features.",
-                UserWarning,
-                stacklevel=3,
+        if magic != _SESSION_MAGIC:
+            raise SecurityError(
+                "This is a legacy session file. Please re-save with current version.",
+                file_path=str(path),
+                check_type="Session format",
+                details="Expected OSC1 format with HMAC signature",
             )
 
-            # Rewind and load as legacy pickle
-            f.seek(0)
-            data = cast("dict[str, Any]", pickle.load(f))
+        # Read signature and payload
+        signature = f.read(_SESSION_SIGNATURE_SIZE)
+        serialized = f.read()
 
+        if not signature or not serialized:
+            raise SecurityError(
+                "This is a legacy session file. Please re-save with current version.",
+                file_path=str(path),
+                check_type="Session format",
+                details="File is incomplete or corrupted",
+            )
+
+        # Verify HMAC signature
+        expected = hmac.new(_SECURITY_KEY, serialized, hashlib.sha256).digest()
+        if not hmac.compare_digest(signature, expected):
+            raise SecurityError(
+                "Session file signature verification failed",
+                file_path=str(path),
+                check_type="HMAC signature",
+                details="File may be corrupted or tampered with",
+            )
+
+        # Deserialize verified data
+        data = cast("dict[str, Any]", pickle.loads(serialized))
         return data
 
-    # Try loading (compressed or uncompressed)
+    # Try loading (compressed first, then uncompressed)
     try:
-        # Try gzip compressed first
         with gzip.open(path, "rb") as f:
-            data = _load_with_verification(f, is_compressed=True)
+            data = _load_with_verification(f)
     except gzip.BadGzipFile:
-        # Fall back to uncompressed
         with open(path, "rb") as f:  # type: ignore[assignment]
-            data = _load_with_verification(f, is_compressed=False)
+            data = _load_with_verification(f)
 
     session = Session._from_dict(data)
     session._file_path = path

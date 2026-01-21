@@ -11,6 +11,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
+from oscura.config import thresholds as config_thresholds
 from oscura.config.thresholds import (
     LogicFamily,
     ThresholdProfile,
@@ -651,7 +652,7 @@ class TestLoadUserLogicFamilies:
             user_dir.mkdir(parents=True, exist_ok=True)
             return user_dir
 
-        monkeypatch.setattr("oscura.config.thresholds.get_user_logic_families_dir", mock_get_dir)
+        monkeypatch.setattr(config_thresholds, "get_user_logic_families_dir", mock_get_dir)
 
         families = load_user_logic_families()
         assert families == []
@@ -687,7 +688,7 @@ VOL: 0.3
         def mock_get_dir() -> Path:
             return user_dir
 
-        monkeypatch.setattr("oscura.config.thresholds.get_user_logic_families_dir", mock_get_dir)
+        monkeypatch.setattr(config_thresholds, "get_user_logic_families_dir", mock_get_dir)
 
         with patch("oscura.config.schema.validate_against_schema"):
             families = load_user_logic_families()
@@ -725,7 +726,7 @@ VOL: 0.4
         def mock_get_dir() -> Path:
             return user_dir
 
-        monkeypatch.setattr("oscura.config.thresholds.get_user_logic_families_dir", mock_get_dir)
+        monkeypatch.setattr(config_thresholds, "get_user_logic_families_dir", mock_get_dir)
 
         with patch("oscura.config.schema.validate_against_schema"):
             families = load_user_logic_families()

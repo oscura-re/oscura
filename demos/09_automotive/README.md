@@ -67,20 +67,27 @@ python demos/08_automotive/comprehensive_automotive_demo.py --list
 ```python
 import cantools
 from oscura.automotive.can import CANSession
+from oscura.acquisition import FileSource
 
 # Load DBC database
 db = cantools.database.load_file("vehicle.dbc")
 
-# Load CAN log
-session = CANSession.from_log("capture.blf")
+# Create session and load CAN data
+session = CANSession(name="Vehicle Analysis")
+session.add_recording("capture", FileSource("capture.blf"))
 
-# Decode messages
-for msg in session.messages:
-    decoded_msg = db.get_message_by_name("Engine_Status")
-    if decoded_msg.frame_id == msg.arbitration_id:
-        signals = decoded_msg.decode(msg.data)
-        rpm = signals['engine_rpm']
-        print(f"RPM: {rpm}")
+# Analyze traffic
+analysis = session.analyze()
+print(f"Total messages: {analysis['inventory']['total_messages']}")
+
+# Decode messages (access via session recordings)
+for recording_name, messages in session._recordings.items():
+    for msg in messages:
+        decoded_msg = db.get_message_by_name("Engine_Status")
+        if decoded_msg.frame_id == msg.arbitration_id:
+            signals = decoded_msg.decode(msg.data)
+            rpm = signals['engine_rpm']
+            print(f"RPM: {rpm}")
 ```
 
 **Use Cases**:
@@ -107,11 +114,17 @@ for msg in session.messages:
 
 ```python
 from oscura.automotive.can import CANSession
+from oscura.acquisition import FileSource
 from oscura.automotive.can.discovery import DiscoveryDocument
 from oscura.automotive.dbc import DBCGenerator
 
-# Load unknown CAN traffic
-session = CANSession.from_log("unknown.blf")
+# Create session and load unknown CAN traffic
+session = CANSession(name="Unknown Protocol RE")
+session.add_recording("unknown", FileSource("unknown.blf"))
+
+# Analyze traffic
+analysis = session.analyze()
+print(f"Unique IDs: {len(analysis['inventory']['message_ids'])}")
 
 # Generate message inventory
 inventory = session.inventory()
@@ -119,7 +132,7 @@ print(inventory)
 
 # Analyze specific message
 msg = session.message(0x280)
-analysis = msg.analyze()
+msg_analysis = msg.analyze()
 
 # Test hypothesis
 hypothesis = msg.test_hypothesis(
@@ -359,22 +372,37 @@ Generated files:
 
 ```python
 from oscura.automotive.can import CANSession
+from oscura.acquisition import FileSource
 
-# Load from various formats
-session = CANSession.from_log("capture.blf")  # BLF
-session = CANSession.from_log("capture.asc")  # ASC
-session = CANSession.from_log("capture.csv")  # CSV
-session = CANSession.from_pcap("capture.pcap")  # PCAP
+# Create session
+session = CANSession(name="Vehicle Analysis")
+
+# Load from various formats using unified Source protocol
+session.add_recording("baseline", FileSource("capture.blf"))  # BLF
+session.add_recording("test1", FileSource("capture.asc"))  # ASC
+session.add_recording("test2", FileSource("capture.csv"))  # CSV
+
+# Analyze traffic
+analysis = session.analyze()
+print(f"Total messages: {analysis['inventory']['total_messages']}")
+print(f"Unique IDs: {len(analysis['inventory']['message_ids'])}")
 
 # Message inventory
 inventory = session.inventory()  # pandas DataFrame
 
 # Analyze specific message
 msg = session.message(0x280)
-analysis = msg.analyze()  # Message statistics
+msg_analysis = msg.analyze()  # Message statistics
 
 # Get unique IDs
 ids = session.unique_ids()  # Set of all CAN IDs
+
+# Compare recordings
+diff = session.compare("baseline", "test1")
+print(f"Changed IDs: {len(diff.details['changed_ids'])}")
+
+# Export DBC file
+session.export_dbc("discovered.dbc")
 ```
 
 ### Hypothesis Testing

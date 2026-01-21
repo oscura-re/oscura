@@ -138,9 +138,15 @@ analysis = [
     "pywavelets>=1.0.0,<2.0.0",          # Wavelet analysis
 ]
 
+# Hardware acquisition sources
+hardware = [
+    "pyvisa>=1.13.0,<2.0.0",             # VISA instrument control (oscilloscopes, etc.)
+    "pyvisa-py>=0.7.0,<1.0.0",           # Pure Python VISA backend
+]
+
 # Install all optional dependencies
 all = [
-    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis]",
+    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis,hardware]",
 ]
 
 [project.scripts]
@@ -582,8 +588,17 @@ disable_error_code = ["untyped-decorator"]
 
 # Modules with optional dependencies
 [[tool.mypy.overrides]]
-module = ["numba", "numba.*", "dpkt", "dpkt.*"]
+module = ["numba", "numba.*", "dpkt", "dpkt.*", "pyvisa", "pyvisa.*", "saleae", "saleae.*"]
 ignore_missing_imports = true
+
+# Hardware acquisition modules - optional dependencies
+[[tool.mypy.overrides]]
+module = [
+    "oscura.acquisition.socketcan",
+    "oscura.acquisition.saleae",
+    "oscura.acquisition.visa",
+]
+disable_error_code = ["attr-defined", "unreachable"]
 
 # =============================================================================
 # Bandit - Security Linting
