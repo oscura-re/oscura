@@ -296,7 +296,7 @@ jobs:
             --maxprocesses=$WORKERS \
             --dist loadscope \
             --hypothesis-profile=ci \
-            --benchmark-disable \
+            -p no:benchmark \
             --cov=src/oscura \
             --cov-report=xml \
             --cov-report=term-missing \

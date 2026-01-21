@@ -214,9 +214,9 @@ filterwarnings = [
     # when pytest-benchmark is not installed (e.g., in release smoke tests)
     # "ignore::pytest_benchmark.logger.PytestBenchmarkWarning",
     #
-    # NOTE: Integration tests use -p no:benchmark to disable pytest-benchmark plugin
-    # when running with xdist parallelization (see pre-push.sh and CI workflows).
-    # This prevents INTERNALERROR from benchmark/xdist conflict warning.
+    # NOTE: All parallelized tests use -p no:benchmark to completely disable
+    # the pytest-benchmark plugin when running with xdist (see test.sh, pre-push.sh,
+    # and CI workflows). This prevents PytestBenchmarkWarning from being raised.
     #
     # NOTE: matplotlib warning - only needed if matplotlib is in system Python
     # "ignore::matplotlib._api.MatplotlibDeprecationWarning",

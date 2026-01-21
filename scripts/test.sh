@@ -25,7 +25,7 @@ source "${SCRIPT_DIR}/lib/common.sh"
 # =============================================================================
 
 # Detect optimal worker count (CPU cores - 2 for system stability)
-WORKERS=$(($(nproc 2> /dev/null || echo 4) - 2))
+WORKERS=$(($(nproc 2>/dev/null || echo 4) - 2))
 [[ ${WORKERS} -lt 1 ]] && WORKERS=1
 [[ ${WORKERS} -gt 8 ]] && WORKERS=8 # Cap at 8 to avoid diminishing returns
 
@@ -46,7 +46,7 @@ EXCLUDE_MODULES=()
 # =============================================================================
 
 show_help() {
-  cat << 'EOF'
+  cat <<'EOF'
 Optimized Test Execution for Oscura
 
 USAGE:
@@ -106,47 +106,47 @@ CUSTOM_MAXFAIL=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --fast)
-      MODE="fast"
-      shift
-      ;;
-    --coverage)
-      MODE="coverage"
-      shift
-      ;;
-    --parallel)
-      CUSTOM_WORKERS="$2"
-      shift 2
-      ;;
-    --no-parallel)
-      WORKERS=0
-      shift
-      ;;
-    --timeout)
-      CUSTOM_TIMEOUT="$2"
-      shift 2
-      ;;
-    --maxfail)
-      CUSTOM_MAXFAIL="$2"
-      shift 2
-      ;;
-    -v | --verbose)
-      VERBOSE=true
-      shift
-      ;;
-    -q | --quiet)
-      QUIET=true
-      shift
-      ;;
-    -h | --help)
-      show_help "$@"
-      exit 0
-      ;;
-    *)
-      print_fail "Unknown option: $1"
-      echo "Use --help for usage information"
-      exit 2
-      ;;
+  --fast)
+    MODE="fast"
+    shift
+    ;;
+  --coverage)
+    MODE="coverage"
+    shift
+    ;;
+  --parallel)
+    CUSTOM_WORKERS="$2"
+    shift 2
+    ;;
+  --no-parallel)
+    WORKERS=0
+    shift
+    ;;
+  --timeout)
+    CUSTOM_TIMEOUT="$2"
+    shift 2
+    ;;
+  --maxfail)
+    CUSTOM_MAXFAIL="$2"
+    shift 2
+    ;;
+  -v | --verbose)
+    VERBOSE=true
+    shift
+    ;;
+  -q | --quiet)
+    QUIET=true
+    shift
+    ;;
+  -h | --help)
+    show_help "$@"
+    exit 0
+    ;;
+  *)
+    print_fail "Unknown option: $1"
+    echo "Use --help for usage information"
+    exit 2
+    ;;
   esac
 done
 
@@ -167,8 +167,8 @@ PYTEST_ARGS=()
 if [[ ${WORKERS} -gt 0 ]]; then
   # OPTIMAL: Use worksteal for dynamic load balancing (better than loadscope)
   PYTEST_ARGS+=(-n "${WORKERS}" --dist=worksteal)
-  # Disable benchmarks when using xdist (benchmarks cannot run in parallel)
-  PYTEST_ARGS+=(--benchmark-disable)
+  # Disable pytest-benchmark plugin when using xdist (prevents warning escalation)
+  PYTEST_ARGS+=(-p no:benchmark)
 fi
 
 # Add timeout
@@ -236,13 +236,13 @@ if [[ "${MODE}" == "coverage" ]] && [[ "${QUIET}" == "false" ]]; then
     print_info "HTML coverage report: htmlcov/index.html"
 
     # Extract coverage percentage if available
-    if command -v coverage &> /dev/null; then
-      COVERAGE_PCT=$(coverage report 2> /dev/null | tail -1 | awk '{print $4}' | tr -d '%' || echo "")
+    if command -v coverage &>/dev/null; then
+      COVERAGE_PCT=$(coverage report 2>/dev/null | tail -1 | awk '{print $4}' | tr -d '%' || echo "")
       if [[ -n "${COVERAGE_PCT}" ]]; then
         # Use bc if available, otherwise use awk for comparison
         coverage_met=0
-        if command -v bc &> /dev/null; then
-          if (($(echo "${COVERAGE_PCT} >= ${COVERAGE_MIN}" | bc -l 2> /dev/null))); then
+        if command -v bc &>/dev/null; then
+          if (($(echo "${COVERAGE_PCT} >= ${COVERAGE_MIN}" | bc -l 2>/dev/null))); then
             coverage_met=1
           fi
         else

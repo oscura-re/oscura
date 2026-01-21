@@ -1448,3 +1448,40 @@ def standard_signals():
         "uart_hello_h": SignalBuilder.uart_frame(ord("H")),
         "digital_alternating": SignalBuilder.digital_pattern("01010101"),
     }
+
+
+# =============================================================================
+# Benchmark Fallback Fixture
+# =============================================================================
+
+
+@pytest.fixture
+def benchmark(request):
+    """Fallback benchmark fixture when pytest-benchmark plugin is disabled.
+
+    When using `-p no:benchmark` to avoid xdist conflicts, tests that use
+    the benchmark fixture will get this no-op implementation instead of failing.
+
+    This allows performance tests to run without actual benchmarking - they
+    simply execute the function once and return the result.
+
+    If pytest-benchmark IS loaded, this fixture is never called (pytest-benchmark's
+    fixture takes precedence due to plugin ordering).
+
+    Usage:
+        def test_performance(benchmark):
+            result = benchmark(expensive_function)
+            # When benchmark plugin disabled: runs once, returns result
+            # When benchmark plugin enabled: runs multiple times, collects stats
+    """
+    # Check if pytest-benchmark plugin is loaded
+    if request.config.pluginmanager.hasplugin("benchmark"):
+        # Let pytest-benchmark provide the fixture
+        pytest.skip("pytest-benchmark plugin is loaded")
+
+    # Provide simple passthrough callable
+    def run_once(func, *args, **kwargs):
+        """Execute function once without benchmarking."""
+        return func(*args, **kwargs)
+
+    return run_once
