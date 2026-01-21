@@ -17,7 +17,6 @@ from oscura.automotive.can.models import (
     CANMessageList,
     MessageAnalysis,
 )
-from oscura.automotive.can.patterns import PatternAnalyzer
 from oscura.sessions.base import AnalysisSession, ComparisonResult
 
 if TYPE_CHECKING:
@@ -528,6 +527,8 @@ class CANSession(AnalysisSession):
             >>> for pair in pairs[:5]:
             ...     print(pair)
         """
+        from oscura.automotive.can.patterns import PatternAnalyzer
+
         return PatternAnalyzer.find_message_pairs(
             self, time_window_ms=time_window_ms, min_occurrence=min_occurrence
         )
@@ -563,6 +564,8 @@ class CANSession(AnalysisSession):
             >>> for seq in sequences[:5]:
             ...     print(seq)
         """
+        from oscura.automotive.can.patterns import PatternAnalyzer
+
         return PatternAnalyzer.find_message_sequences(
             self,
             max_sequence_length=max_sequence_length,
@@ -594,6 +597,8 @@ class CANSession(AnalysisSession):
             >>> for (leader, follower), corr in correlations.items():
             ...     print(f"0x{leader:03X} → 0x{follower:03X}: {corr.avg_delay_ms:.2f}ms")
         """
+        from oscura.automotive.can.patterns import PatternAnalyzer
+
         return PatternAnalyzer.find_temporal_correlations(self, max_delay_ms=max_delay_ms)
 
     def learn_state_machine(

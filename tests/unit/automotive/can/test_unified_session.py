@@ -281,6 +281,18 @@ class TestCANSpecificMethods:
         # Result may be empty, that's OK
         assert isinstance(pairs, list)
 
+    def test_find_message_sequences(self, sample_can_messages):
+        """Test find_message_sequences() method still works."""
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
+
+        # Should not raise
+        sequences = session.find_message_sequences(
+            max_sequence_length=3, time_window_ms=200, min_support=0.5
+        )
+        # Result may be empty, that's OK
+        assert isinstance(sequences, list)
+
     def test_find_temporal_correlations(self, sample_can_messages):
         """Test find_temporal_correlations() method still works."""
         session = CANSession(name="Test")

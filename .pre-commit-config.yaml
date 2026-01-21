@@ -127,6 +127,20 @@ repos:
         files: '^(pyproject\.toml|src/oscura/__init__\.py|src/oscura/automotive/__init__\.py|docs/(index|cli)\.md|docs/api/index\.md)$'
         pass_filenames: false
 
+      - id: validate-test-coverage
+        name: Validate test directories in CI
+        entry: ./scripts/ci/validate_test_coverage.sh
+        language: script
+        files: '^(tests/unit/.*|\.github/workflows/ci\.yml)$'
+        pass_filenames: false
+
+      - id: validate-workflow-permissions
+        name: Validate workflow permissions
+        entry: ./scripts/ci/validate_workflow_permissions.sh
+        language: script
+        files: '^\.github/workflows/.*\.yml$'
+        pass_filenames: false
+
 # ==========================================================================
 # CI configuration
 # ==========================================================================

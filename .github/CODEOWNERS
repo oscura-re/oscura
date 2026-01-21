@@ -1,32 +1,160 @@
-# Code Owners for Oscura
+# Code Owners for Oscura Project
+# ==============================================================================
+# This file defines code ownership for critical paths in the repository.
+# Code owners are automatically requested for review when someone opens a
+# pull request that modifies code they own.
 #
-# These owners will be requested for review when someone opens a pull request.
-# The last matching pattern takes precedence.
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 #
-# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Format: <pattern> <owner1> <owner2> ...
+# Owners can be: @username, @org/team-name, or email address
+#
+# IMPORTANT: This file should be updated when:
+# - New critical code paths are added
+# - Team structure changes
+# - Domain expertise shifts
+# ==============================================================================
 
-# Default owner for everything in the repo
-* @lair-click-bats
+# Default owner for everything (can be overridden by specific rules below)
+*       @oscura-re/maintainers
 
-# Core architecture and types
-/src/oscura/core/ @lair-click-bats
+# ==============================================================================
+# Critical Infrastructure
+# ==============================================================================
 
-# CI/CD workflows
-/.github/workflows/ @lair-click-bats
-/.github/actions/ @lair-click-bats
+# CI/CD workflows - changes affect build, test, and deployment
+/.github/workflows/     @oscura-re/devops-team
 
-# Claude Code configuration
-/.claude/ @lair-click-bats
+# GitHub Actions - custom actions affect CI pipeline
+/.github/actions/       @oscura-re/devops-team
 
+# Branch protection and repository settings
+/.github/CODEOWNERS     @oscura-re/maintainers
+/.github/rulesets/      @oscura-re/maintainers
+
+# ==============================================================================
+# Build and Release
+# ==============================================================================
+
+# Package configuration - affects dependencies and distribution
+/pyproject.toml         @oscura-re/release-team
+/uv.lock                @oscura-re/release-team
+
+# Release workflow
+/.github/workflows/release.yml  @oscura-re/release-team
+
+# ==============================================================================
+# Core Library
+# ==============================================================================
+
+# Core types and data structures
+/src/oscura/core/       @oscura-re/core-team
+
+# Signal acquisition and sources
+/src/oscura/acquisition/        @oscura-re/core-team
+
+# ==============================================================================
+# Domain-Specific Code
+# ==============================================================================
+
+# Automotive protocols (CAN, J1939, UDS, OBD-II)
+/src/oscura/automotive/         @oscura-re/automotive-team
+/tests/unit/automotive/         @oscura-re/automotive-team
+/tests/automotive/              @oscura-re/automotive-team
+
+# Protocol analyzers and decoders
+/src/oscura/analyzers/protocols/        @oscura-re/protocols-team
+/tests/unit/analyzers/protocols/        @oscura-re/protocols-team
+
+# State machine inference and reverse engineering
+/src/oscura/inference/          @oscura-re/reverse-engineering-team
+/tests/unit/inference/          @oscura-re/reverse-engineering-team
+
+# Security analysis and side-channel
+/src/oscura/analyzers/side_channel/     @oscura-re/security-team
+
+# ==============================================================================
+# Testing Infrastructure
+# ==============================================================================
+
+# Test configuration and fixtures
+/tests/conftest.py      @oscura-re/qa-team
+/tests/fixtures/        @oscura-re/qa-team
+
+# Testing scripts
+/scripts/testing/       @oscura-re/qa-team
+
+# CI test validation
+/scripts/ci/            @oscura-re/devops-team @oscura-re/qa-team
+
+# ==============================================================================
 # Documentation
-/docs/ @lair-click-bats
-*.md @lair-click-bats
+# ==============================================================================
 
-# Security-sensitive files
-/pyproject.toml @lair-click-bats
-/uv.lock @lair-click-bats
-/.github/CODEOWNERS @lair-click-bats
+# API documentation
+/docs/api/              @oscura-re/documentation-team
 
-# Test infrastructure
-/tests/conftest.py @lair-click-bats
-/scripts/testing/ @lair-click-bats
+# Architecture documentation
+/docs/architecture/     @oscura-re/core-team @oscura-re/documentation-team
+
+# MkDocs configuration
+/mkdocs.yml             @oscura-re/documentation-team
+
+# ==============================================================================
+# Security
+# ==============================================================================
+
+# Security policy
+/SECURITY.md            @oscura-re/security-team
+
+# Dependency security
+/codecov.yml            @oscura-re/security-team @oscura-re/qa-team
+
+# CodeQL configuration
+/.github/workflows/codeql.yml   @oscura-re/security-team @oscura-re/devops-team
+
+# ==============================================================================
+# Configuration Files
+# ==============================================================================
+
+# Pre-commit configuration
+/.pre-commit-config.yaml        @oscura-re/devops-team
+
+# Linting and formatting
+/.ruff.toml             @oscura-re/core-team
+/.yamllint.yaml         @oscura-re/devops-team
+/.markdownlint.yaml     @oscura-re/documentation-team
+
+# Type checking
+/mypy.ini               @oscura-re/core-team
+
+# ==============================================================================
+# Claude AI Configuration
+# ==============================================================================
+
+# Claude Code configuration and agents
+/.claude/               @oscura-re/maintainers
+
+# Project guidance
+/CLAUDE.md              @oscura-re/maintainers
+/CONTRIBUTING.md        @oscura-re/maintainers
+
+# ==============================================================================
+# Notes
+# ==============================================================================
+#
+# Team names used above (update as project grows):
+# - @oscura-re/maintainers: Project maintainers (have final say)
+# - @oscura-re/core-team: Core library and architecture
+# - @oscura-re/automotive-team: Automotive protocols and analysis
+# - @oscura-re/protocols-team: Protocol decoders and analyzers
+# - @oscura-re/reverse-engineering-team: State machine inference, RE tools
+# - @oscura-re/security-team: Security analysis and side-channel
+# - @oscura-re/devops-team: CI/CD, build, deployment
+# - @oscura-re/release-team: Release management and packaging
+# - @oscura-re/qa-team: Testing infrastructure and quality assurance
+# - @oscura-re/documentation-team: Documentation and tutorials
+#
+# Until these teams are created in GitHub, individual usernames can be used.
+# Example: /src/oscura/core/ @username1 @username2
+#

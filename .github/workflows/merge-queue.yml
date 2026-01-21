@@ -25,6 +25,13 @@ concurrency:
   group: merge-queue-${{ github.event.merge_group.head_ref }}
   cancel-in-progress: true
 
+# Explicit permissions for security (principle of least privilege)
+permissions:
+  contents: read # Read repository contents
+  pull-requests: read # Read PR information
+  checks: write # Write check results
+  actions: read # Read workflow information
+
 env:
   PYTHON_VERSION: "3.12"
   RETENTION_SHORT: 7

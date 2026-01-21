@@ -238,6 +238,7 @@ jobs:
               paths="$paths tests/unit/pipeline/"
               paths="$paths tests/unit/session/"
               paths="$paths tests/unit/sessions/"
+              paths="$paths tests/unit/automotive/"
               paths="$paths tests/unit/integrations/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
@@ -263,6 +264,9 @@ jobs:
               paths="$paths tests/unit/triggering/"
               paths="$paths tests/unit/component/"
               paths="$paths tests/unit/comparison/"
+              paths="$paths tests/unit/builders/"
+              paths="$paths tests/unit/convenience/"
+              paths="$paths tests/unit/export/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "non-unit-tests")

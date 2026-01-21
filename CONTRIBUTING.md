@@ -185,12 +185,49 @@ Oscura uses two types of git hooks to prevent CI failures:
 1. **Pre-commit hooks** (via pre-commit framework) - Run quality checks on every commit
 2. **Pre-push hooks** (custom) - Run comprehensive CI verification before push
 
-**Bypassing hooks:**
-Only bypass hooks when you have a good reason (e.g., WIP branch):
+#### Bypassing Git Hooks (Use Sparingly)
+
+In rare cases, you may need to bypass git hooks:
 
 ```bash
-git commit --no-verify    # Skip pre-commit (use sparingly)
-git push --no-verify      # Skip pre-push (DANGEROUS - only for emergencies)
+git commit --no-verify    # Skip pre-commit hooks
+git push --no-verify      # Skip pre-push hook
+```
+
+**When to bypass:**
+
+✅ **Acceptable reasons:**
+
+- Creating a WIP (work-in-progress) commit on a feature branch
+- Emergency hotfix needed immediately (fix CI in next commit)
+- Hook has a bug preventing legitimate work
+- Rebasing/amending commits (hooks already ran before)
+
+❌ **NOT acceptable:**
+
+- "Hooks are too slow" (use `--quick` mode instead)
+- "I'll fix it later" (fix it now before committing)
+- Pushing to main/develop (hooks are there to protect these branches)
+- Avoiding test failures (tests exist for a reason)
+
+**Important notes:**
+
+- **Branch protection still applies**: Even with `--no-verify`, failing code CANNOT merge to main
+- **You're not circumventing CI**: GitHub CI will still run all checks
+- **You're bypassing local validation**: This means pushing untested code, which will fail CI
+- **Use pre-push `--quick` instead**: For faster feedback during development
+
+**Better alternatives:**
+
+```bash
+# Instead of --no-verify, use quick mode:
+./scripts/pre-push.sh --quick        # Fast checks (2 min)
+
+# Or auto-fix issues first:
+./scripts/pre-push.sh --fix          # Auto-fix then verify
+
+# For feature branches, hooks run quick mode automatically
+git push  # Quick verification for feature branches
 ```
 
 ### Running Tests

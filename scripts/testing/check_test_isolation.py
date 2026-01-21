@@ -31,6 +31,8 @@ def find_test_files() -> list[Path]:
     #
     # Also exclude tests that apply resource limits, which can interfere with
     # isolation testing (tests timeout when run individually without pytest-xdist)
+    #
+    # Also exclude helper modules that match test_*.py pattern but contain no tests
     excluded_patterns = [
         "tests/automotive/loaders/test_mdf_loader.py",
         "tests/unit/plugins/test_isolation.py",  # Resource limits cause timeouts
@@ -38,6 +40,8 @@ def find_test_files() -> list[Path]:
         "tests/performance/test_benchmarks.py",  # Only performance/benchmark tests (all filtered)
         "tests/stress/test_protocol_decoder_load.py",  # Only stress/slow tests (all filtered)
         "tests/stress/test_realtime_streaming_load.py",  # Only stress/slow tests (all filtered)
+        "tests/unit/workflow/test_dag_performance.py",  # Only performance tests (all filtered)
+        "tests/unit/hooks/datetime_utils_for_test.py",  # Helper module, not a test file
     ]
     test_files = [
         f for f in test_files if not any(str(f).endswith(pattern) for pattern in excluded_patterns)

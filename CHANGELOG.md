@@ -393,6 +393,31 @@ trace = builder.build()  # Returns WaveformTrace directly
     - Added pull_request trigger to run on every PR
     - Previously: weekly schedule + manual trigger only
     - Now: PRs + main pushes + weekly + manual
+  - **ENHANCED**: Branch Protection (`scripts/ci/validate_required_checks.sh`, repository ruleset):
+    - **UPDATED**: Required status checks increased from 7 to 10
+    - **ADDED**: "Check Test Isolation" (ensures test independence)
+    - **ADDED**: "Validate Test Markers" (prevents marker typos)
+    - **ADDED**: "Build Documentation" (catches docs build failures early)
+    - **NEW**: `validate_required_checks.sh` script (validates branch protection config)
+      - Fetches required checks from GitHub API
+      - Scans all workflows for available status check names
+      - Reports any required checks that don't exist in workflows
+      - Prevents configuration drift (required checks that never pass)
+      - Python fallback when yq not available
+      - Test coverage: Validates all 10 required checks successfully
+    - **IMPACT**: Provides earlier feedback if specific checks fail, redundancy with merge queue
+  - **ENHANCED**: Git Hooks Documentation (`CONTRIBUTING.md`):
+    - **EXPANDED**: Git hooks section with detailed bypass guidance
+    - **ADDED**: Acceptable vs. not acceptable bypass scenarios
+    - **ADDED**: Better alternatives to --no-verify (--quick mode, --fix mode)
+    - **DOCUMENTED**: Branch protection still applies even with --no-verify
+    - **CLARIFIED**: Pre-push hooks run full verification for main/develop, quick for features
+    - **IMPACT**: Better developer guidance prevents misuse of --no-verify flag
+  - **FIXED**: Test Isolation Checks (`scripts/testing/check_test_isolation.py`):
+    - **EXCLUDED**: `tests/unit/hooks/datetime_utils_for_test.py` from isolation checks
+    - **REASON**: Helper module that matches test_*.py pattern but contains no tests
+    - **IMPACT**: Eliminates "no tests collected" failures in test isolation validation
+    - Previously caused random failures when sampled during isolation checks
 
 - **Configuration Consistency Enforcement** (`.claude/`, `tests/`):
   - **ENHANCED**: validate_config_consistency.py hook (`.claude/hooks/validate_config_consistency.py`)
