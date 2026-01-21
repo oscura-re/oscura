@@ -588,12 +588,12 @@ class CPAAnalyzer:
         # Select leakage function
         if leakage_model == "hamming_weight":
             self._leakage_func: Callable[[NDArray[np.integer[Any]]], NDArray[np.integer[Any]]] = (
-                lambda x: hamming_weight(x)  # type: ignore[assignment,return-value]
+                hamming_weight  # type: ignore[assignment]
             )
         elif leakage_model == "identity":
-            self._leakage_func = lambda x: x
+            self._leakage_func = lambda x: x  # Identity function cannot be simplified
         else:
-            self._leakage_func = lambda x: hamming_weight(x)  # type: ignore[assignment,return-value]
+            self._leakage_func = hamming_weight  # type: ignore[assignment]
 
     def _compute_intermediate(
         self, plaintext_byte: NDArray[np.integer[Any]], key_guess: int

@@ -525,12 +525,9 @@ class BlackBoxSession(AnalysisSession):
         if not traces:
             return {}
 
-        try:
-            # For now, return empty dict - CRC reverse engineering is complex
-            # The verify_crc function checks CRC but doesn't reverse engineer it
-            return {}
-        except Exception:
-            return {}
+        # For now, return empty dict - CRC reverse engineering is complex
+        # The verify_crc function checks CRC but doesn't reverse engineer it
+        return {}
 
     def _export_report(self, path: Path) -> None:
         """Export Markdown analysis report."""

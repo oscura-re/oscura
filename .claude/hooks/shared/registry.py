@@ -360,7 +360,7 @@ def cleanup_old_agents(registry: dict[str, Any], max_age_days: int = 30) -> int:
                 agents_to_remove.append(agent_id)
 
         except (ValueError, AttributeError):
-            pass
+            pass  # Skip agents with malformed timestamps - they'll be cleaned eventually
 
     # Remove old agents
     for agent_id in agents_to_remove:

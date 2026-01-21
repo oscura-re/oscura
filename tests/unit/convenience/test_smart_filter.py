@@ -10,8 +10,6 @@ from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 
-pytestmark = pytest.mark.unit
-
 
 class TestSmartFilter:
     """Tests for the smart_filter convenience function."""
@@ -31,13 +29,6 @@ class TestSmartFilter:
         )
 
         filtered = osc.smart_filter(trace, target="noise")
-
-        # Filtered should be cleaner (lower variance after removing trend)
-        from scipy import signal
-
-        # Detrend both
-        detrended_original = signal.detrend(noisy)
-        detrended_filtered = signal.detrend(filtered.data)
 
         # Filtered should have lower high-frequency content
         orig_hf = np.std(np.diff(noisy))

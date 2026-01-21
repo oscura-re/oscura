@@ -314,7 +314,6 @@ class AnalysisSession(ABC):
             ...         signals = self.discover_signals()
             ...         return {"signals": signals}
         """
-        ...
 
     def __repr__(self) -> str:
         """String representation."""

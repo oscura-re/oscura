@@ -10,8 +10,6 @@ from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 
-pytestmark = pytest.mark.unit
-
 
 class TestReverseEngineerSignal:
     """Tests for the reverse_engineer_signal workflow."""

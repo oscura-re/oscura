@@ -51,9 +51,12 @@ def run_test_file(test_file: Path) -> tuple[bool, str]:
     try:
         # Use same marker filtering as CI to avoid running slow/performance tests
         # that would timeout in isolation (e.g., 1GB file benchmarks)
+        # Use 'uv run python -m pytest' to ensure correct Python environment
         result = subprocess.run(
             [
-                sys.executable,
+                "uv",
+                "run",
+                "python",
                 "-m",
                 "pytest",
                 str(test_file),

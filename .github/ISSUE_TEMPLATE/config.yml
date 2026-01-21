@@ -1,21 +1,11 @@
-# Issue template chooser configuration
-# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
-
-blank_issues_enabled: false
-
+blank_issues_enabled: true
 contact_links:
   - name: Documentation
-    url: https://github.com/oscura-re/oscura/wiki
-    about: Check the documentation for guides and examples before opening an issue
-
+    url: https://oscura-re.github.io/oscura
+    about: Check the documentation for usage guides and API reference
   - name: Discussions
     url: https://github.com/oscura-re/oscura/discussions
     about: Ask questions and discuss ideas with the community
-
-  - name: IEEE/JEDEC Standards Reference
-    url: https://github.com/oscura-re/oscura/blob/main/docs/reference/standards-compliance.md
-    about: Information about supported IEEE and JEDEC standards
-
-  - name: Security Vulnerabilities
-    url: https://github.com/oscura-re/oscura/security/advisories/new
-    about: Report security vulnerabilities privately (do not use public issues)
+  - name: Security Contact
+    url: mailto:lair-click-bats@users.noreply.github.com
+    about: Report critical security vulnerabilities privately via email

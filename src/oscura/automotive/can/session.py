@@ -17,16 +17,16 @@ from oscura.automotive.can.models import (
     CANMessageList,
     MessageAnalysis,
 )
-from oscura.automotive.can.patterns import (
-    MessagePair,
-    MessageSequence,
-    PatternAnalyzer,
-    TemporalCorrelation,
-)
+from oscura.automotive.can.patterns import PatternAnalyzer
 from oscura.sessions.base import AnalysisSession, ComparisonResult
 
 if TYPE_CHECKING:
     from oscura.automotive.can.message_wrapper import CANMessageWrapper
+    from oscura.automotive.can.patterns import (
+        MessagePair,
+        MessageSequence,
+        TemporalCorrelation,
+    )
     from oscura.automotive.can.stimulus_response import StimulusResponseReport
     from oscura.inference.state_machine import FiniteAutomaton
 

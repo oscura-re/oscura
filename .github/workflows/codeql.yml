@@ -1,11 +1,13 @@
 # CodeQL Security Analysis
 # Performs security scanning for vulnerabilities and coding errors
-# Runs on: schedule (weekly), manual trigger, and main branch pushes
+# Runs on: pull requests, main branch pushes, schedule (weekly), and manual trigger
 
 name: CodeQL
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   schedule:
     # Run every Monday at 6 AM UTC

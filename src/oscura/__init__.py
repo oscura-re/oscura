@@ -567,8 +567,6 @@ __all__ = [
     "SignalBuilder",
     # Discovery
     "SignalCharacterization",
-    # Signal builders
-    "SignalMetadata",
     "SmartDefaults",
     # Convenience functions
     "SpectralMetrics",

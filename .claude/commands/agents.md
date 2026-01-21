@@ -1,3 +1,9 @@
+---
+name: agents
+description: List available agents with their capabilities and routing keywords
+arguments: [keyword, --verbose]
+---
+
 # /agents - List Available Agents
 
 Show all available agents with their capabilities, keywords, and use cases.

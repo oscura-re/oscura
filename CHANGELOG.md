@@ -378,6 +378,76 @@ trace = builder.build()  # Returns WaveformTrace directly
     - Added `HealthCheck.too_slow` to suppressed health checks
     - Root cause: Complex message stream generation legitimately takes >30s, was hitting health check timeout
   - **IMPACT**: Merge queue now runs identical tests to PR CI, preventing inconsistent results
+
+- **GitHub Best Practices Enhancements** (`.github/`):
+  - **UPDATED**: CODEOWNERS file (`.github/CODEOWNERS`)
+    - Simplified from 66 lines to 32 lines with focused ownership patterns
+    - Core architecture, CI/CD workflows, documentation, security-sensitive files
+    - Test infrastructure configuration added
+  - **ADDED**: Issue Templates (`.github/ISSUE_TEMPLATE/`)
+    - Bug report template with structured fields (bug_report.yml)
+    - Feature request template with category selection (feature_request.yml)
+    - Security vulnerability report template (security.yml)
+    - Updated template configuration with documentation links (config.yml)
+  - **ENHANCED**: CodeQL Security Scanning (`.github/workflows/codeql.yml`)
+    - Added pull_request trigger to run on every PR
+    - Previously: weekly schedule + manual trigger only
+    - Now: PRs + main pushes + weekly + manual
+
+- **Configuration Consistency Enforcement** (`.claude/`, `tests/`):
+  - **ENHANCED**: validate_config_consistency.py hook (`.claude/hooks/validate_config_consistency.py`)
+    - Added comprehensive orchestration validation (agents, commands, hooks)
+    - Added SSOT file validation (pyproject.toml, coding-standards.yaml, orchestration-config.yaml)
+    - Added agent-command reference validation (commands reference existing agents)
+    - Added hook reference validation (settings.json references existing hooks)
+    - Added frontmatter validation with required field enforcement
+    - Required fields for agents: name, description, tools, model, routing_keywords
+    - Required fields for commands: name, description, arguments
+    - Test coverage: 7/7 tests passing (was 0/7 XFAIL, 2/7 XPASS)
+  - **ADDED**: Frontmatter to all command files (`.claude/commands/`)
+    - agents.md, research.md, review.md, route.md now have structured frontmatter
+    - Enables programmatic parsing, routing automation, consistency validation
+    - All 10 command files now have complete frontmatter
+  - **IMPACT**: Ensures configuration consistency across .claude orchestration directory, prevents invalid references, enforces documentation standards
+
+- **Weekly Stress Test CI** (`.github/workflows/stress-tests.yml`):
+  - **ADDED**: Automated weekly stress test workflow
+    - Runs every Sunday at 2 AM UTC
+    - Executes 48 stress tests with `--runslow` flag
+    - Tests on Python 3.12 and 3.13
+    - 2-hour timeout for comprehensive testing
+    - Parallel execution with loadscope distribution
+    - Creates GitHub issue automatically on failure
+    - Manual trigger via workflow_dispatch
+  - **IMPACT**: Ensures stress tests run regularly without slowing down PR workflow, provides early warning for performance regressions
+
+- **PCAP Test Fixtures Generated** (`test_data/formats/pcap/`, `scripts/generate_test_pcaps.py`):
+  - **ADDED**: Synthetic PCAP test file generator
+    - Generates minimal valid PCAP files for integration testing
+    - HTTP, Modbus TCP, FTP, SSH protocols
+    - Valid PCAP global headers and packet structures
+    - No external dependencies (pure Python with struct module)
+  - **GENERATED**: Test PCAP files
+    - `tcp/http/http.pcap` - HTTP GET request/response
+    - `industrial/modbus_tcp/modbus.pcap` - Modbus TCP read request
+    - `tcp/ftp/ftp.pcap` - FTP server banner
+    - `tcp/ssh/ssh.pcap` - SSH protocol banner
+  - **IMPACT**: Integration tests now have data to run against (12 tests now execute, down from 15 skipped)
+    - Improves security vulnerability detection before merge
+
+- **Security Configuration Enabled**:
+  - ✅ Dependabot vulnerability alerts: enabled
+  - ✅ Secret scanning: enabled
+  - ✅ Secret scanning push protection: enabled
+  - ✅ CodeQL analysis: running on every PR (enhanced from weekly)
+  - **Impact**: Repository now has enterprise-grade security configuration
+
+- **Repository Cleanup**:
+  - Deleted orphaned branches: `clean-architecture`, `fix/remove-claude-coauthor-trailers`
+  - Fixed ci.yml branch triggers (removed non-existent "develop" branch)
+  - Cleaned Co-authored-by trailers from commit history
+  - Repository now has clean main-only branch structure
+
 - Unified architecture established
 - Production-ready implementations
 - Comprehensive test coverage

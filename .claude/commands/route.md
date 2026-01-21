@@ -1,3 +1,9 @@
+---
+name: route
+description: Force route to specific agent bypassing orchestrator
+arguments: <agent> <task>
+---
+
 # /route - Force Route to Specific Agent
 
 Bypass orchestrator intelligence and route directly to a specific agent.

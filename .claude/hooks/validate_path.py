@@ -23,7 +23,6 @@ Configuration:
 import json
 import os
 import sys
-from fnmatch import fnmatch
 from pathlib import Path
 
 # Add shared module to path

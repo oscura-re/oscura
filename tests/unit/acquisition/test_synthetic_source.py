@@ -95,7 +95,7 @@ class TestSyntheticSource:
         builder = SignalBuilder(sample_rate=1e6, duration=0.001).add_sine(1000)
         source = SyntheticSource(builder)
 
-        trace1 = source.read()
+        _ = source.read()  # Read to populate cache
         assert source._cached_trace is not None
 
         source.close()

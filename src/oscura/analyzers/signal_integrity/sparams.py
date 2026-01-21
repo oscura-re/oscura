@@ -300,7 +300,7 @@ __all__ = [
     "SParameterData",
     "abcd_to_s",
     "insertion_loss",
-    "load_touchstone",  # Backward compatibility via __getattr__  # noqa: F822
+    # Note: load_touchstone moved to oscura.loaders module (backward compat via __getattr__)
     "return_loss",
     "s_to_abcd",
 ]

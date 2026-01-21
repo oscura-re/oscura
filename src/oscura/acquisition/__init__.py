@@ -100,7 +100,6 @@ class Source(Protocol):
             >>> trace = source.read()
             >>> print(f"Loaded {len(trace.data)} samples")
         """
-        ...
 
     def stream(self, chunk_size: int) -> Iterator[Trace]:
         """Stream trace in chunks (for large files or continuous acquisition).
@@ -116,7 +115,6 @@ class Source(Protocol):
             >>> for chunk in source.stream(chunk_size=10000):
             ...     process_chunk(chunk)
         """
-        ...
 
     def close(self) -> None:
         """Release resources (file handles, device connections, etc.).
@@ -128,15 +126,12 @@ class Source(Protocol):
             ...     trace = source.read()
             ...  # close() called automatically
         """
-        ...
 
     def __enter__(self) -> Source:
         """Context manager entry."""
-        ...
 
     def __exit__(self, *args: object) -> None:
         """Context manager exit."""
-        ...
 
 
 # Import concrete implementations

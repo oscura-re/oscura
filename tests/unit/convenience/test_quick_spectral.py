@@ -10,8 +10,6 @@ from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 
-pytestmark = pytest.mark.unit
-
 
 class TestQuickSpectral:
     """Tests for the quick_spectral convenience function."""

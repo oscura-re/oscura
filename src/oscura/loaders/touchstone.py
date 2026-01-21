@@ -169,7 +169,7 @@ def _parse_touchstone(
                 if len(parts) % 2 == 1:
                     break  # New frequency line
             except (ValueError, IndexError):
-                pass
+                pass  # Skip lines that can't be parsed as numeric data
 
             for j in range(0, len(parts), 2):
                 if j + 1 < len(parts):

@@ -1,3 +1,9 @@
+---
+name: review
+description: Code quality review for security and best practices
+arguments: [path]
+---
+
 # /review - Code Quality Review
 
 Force code review workflow for quality, security, and best practices auditing.

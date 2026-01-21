@@ -10,8 +10,6 @@ from oscura.core.types import WaveformTrace
 
 pytestmark = pytest.mark.unit
 
-pytestmark = pytest.mark.unit
-
 
 class TestSignalBuilder:
     """Tests for the fluent SignalBuilder API."""

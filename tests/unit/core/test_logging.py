@@ -113,16 +113,16 @@ class TestConfigureLogging:
     @pytest.fixture(autouse=True)
     def reset_logging(self):
         """Reset logging configuration before and after each test."""
-        # Store original state
-        root_logger = logging.getLogger()
-        original_level = root_logger.level
-        original_handlers = root_logger.handlers[:]
+        # Store original state of oscura logger (not root logger)
+        oscura_logger = logging.getLogger("oscura")
+        original_level = oscura_logger.level
+        original_handlers = oscura_logger.handlers[:]
 
         yield
 
         # Restore original state
-        root_logger.setLevel(original_level)
-        root_logger.handlers = original_handlers
+        oscura_logger.setLevel(original_level)
+        oscura_logger.handlers = original_handlers
 
     def test_configure_console_only(self) -> None:
         """Test configuring console-only logging."""

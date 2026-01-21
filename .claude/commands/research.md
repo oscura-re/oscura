@@ -1,3 +1,9 @@
+---
+name: research
+description: Web research with comprehensive citations and documentation
+arguments: <topic>
+---
+
 # /research - Web Research & Citation
 
 Force web research workflow with comprehensive citation and documentation.

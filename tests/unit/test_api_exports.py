@@ -9,8 +9,6 @@ from oscura.builders import SignalBuilder
 
 pytestmark = pytest.mark.unit
 
-pytestmark = pytest.mark.unit
-
 
 class TestTopLevelExports:
     """Test that all new APIs are accessible at top level."""

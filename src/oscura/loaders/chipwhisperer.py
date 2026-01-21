@@ -178,7 +178,7 @@ def load_chipwhisperer_npy(
         try:
             plaintexts = np.load(textin_path)
         except Exception:
-            pass  # Not critical
+            pass  # Optional metadata file, silently ignore if missing or corrupt  # Not critical
 
     # Look for textout.npy (ciphertexts)
     textout_path = base_path / f"{base_name}_textout.npy"
@@ -198,7 +198,7 @@ def load_chipwhisperer_npy(
         try:
             keys = np.load(keys_path)
         except Exception:
-            pass
+            pass  # Optional metadata file, silently ignore if corrupt
 
     # Use default sample rate if not specified
     if sample_rate is None:
