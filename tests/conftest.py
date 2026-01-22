@@ -184,16 +184,35 @@ def real_captures_manifest(real_captures_dir: Path) -> dict[str, Any]:
 def real_wfm_files(real_captures_dir: Path) -> dict[str, list[Path]]:
     """Real Tektronix WFM files organized by size category.
 
+    Dynamically scans all waveform subdirectories and categorizes files by actual size:
+    - Small: < 1.5 MB
+    - Medium: 1.5 MB - 6 MB
+    - Large: > 6 MB
+
     Returns dict with keys: 'small', 'medium', 'large'
     Each value is a list of Path objects.
     """
     wfm_dir = real_captures_dir / "waveforms"
     result = {"small": [], "medium": [], "large": []}
 
-    for category in result:
-        cat_dir = wfm_dir / category
-        if cat_dir.exists():
-            result[category] = list(cat_dir.glob("*.wfm"))
+    if not wfm_dir.exists():
+        return result
+
+    # Scan all subdirectories for WFM files
+    for wfm_file in wfm_dir.rglob("*.wfm"):
+        if not wfm_file.is_file():
+            continue
+
+        # Get file size in MB
+        size_mb = wfm_file.stat().st_size / (1024 * 1024)
+
+        # Categorize by size
+        if size_mb < 1.5:
+            result["small"].append(wfm_file)
+        elif size_mb < 6.0:
+            result["medium"].append(wfm_file)
+        else:
+            result["large"].append(wfm_file)
 
     return result
 

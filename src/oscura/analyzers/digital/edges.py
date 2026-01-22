@@ -143,7 +143,7 @@ def detect_edges(
     if len(trace) < 2:
         return []
 
-    trace = np.asarray(trace)
+    trace = np.asarray(trace, dtype=np.float64)
 
     # Compute threshold if auto
     thresh_val: float

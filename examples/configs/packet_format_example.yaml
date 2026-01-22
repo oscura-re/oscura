@@ -43,3 +43,9 @@ samples:
 timing:
   sample_rate: 1.0e6 # 1 MHz
   samples_per_packet: 504
+
+preprocessing:
+  trim_idle:
+    enabled: true
+    pattern: 0x00000000
+    min_duration: 1000 # microseconds

@@ -54,3 +54,8 @@ decoding:
   max_message_size: 1024
   resync_on_error: true
   max_resync_distance: 256
+
+computed_fields:
+  - name: payload_crc
+    expression: "crc16(payload)"
+    description: "Computed CRC for validation"

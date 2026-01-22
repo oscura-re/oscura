@@ -55,3 +55,25 @@ control_signals:
     channel: 10
     description: "Write strobe"
     active_low: true
+
+transactions:
+  types:
+    - name: READ
+      conditions:
+        RD: false
+        WR: true
+    - name: WRITE
+      conditions:
+        RD: true
+        WR: false
+
+instruction_decode:
+  enabled: true
+  opcode_bits: [7, 6] # Top 2 bits
+  opcodes:
+    "0b00":
+      name: NOP
+    "0b01":
+      name: LOAD
+    "0b10":
+      name: STORE

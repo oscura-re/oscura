@@ -1,0 +1,98 @@
+{
+  "version": "1.0",
+  "generated": "2026-01-21",
+  "description": "Real-world capture files for Oscura integration testing",
+  "note": "Large real WFM files are gitignored due to size. Synthetic WFM files provided for comprehensive testing.",
+  "total_files": 9,
+  "categories": {
+    "waveforms": {
+      "small": 2,
+      "medium": 2,
+      "large": 1
+    },
+    "protocols": {
+      "pcap_files": 4,
+      "edge_cases": 4,
+      "error_conditions": 0
+    }
+  },
+  "files": [
+    {
+      "path": "waveforms/synthetic/small_sine_250k.wfm",
+      "size_mb": 0.48,
+      "category": "small",
+      "signal_type": "sine",
+      "frequency_hz": 1000,
+      "samples": 250000,
+      "description": "Synthetic 1kHz sine wave for basic integration tests"
+    },
+    {
+      "path": "waveforms/synthetic/small_square_300k.wfm",
+      "size_mb": 0.57,
+      "category": "small",
+      "signal_type": "square",
+      "frequency_hz": 5000,
+      "samples": 300000,
+      "description": "Synthetic 5kHz square wave for edge detection tests"
+    },
+    {
+      "path": "waveforms/synthetic/medium_sine_1.5m.wfm",
+      "size_mb": 2.86,
+      "category": "medium",
+      "signal_type": "sine",
+      "frequency_hz": 1000,
+      "samples": 1500000,
+      "description": "Medium-sized synthetic sine wave for memory management tests"
+    },
+    {
+      "path": "waveforms/synthetic/medium_triangle_2m.wfm",
+      "size_mb": 3.82,
+      "category": "medium",
+      "signal_type": "triangle",
+      "frequency_hz": 2000,
+      "samples": 2000000,
+      "description": "Medium-sized triangle wave for waveform analysis tests"
+    },
+    {
+      "path": "waveforms/synthetic/large_sine_4m.wfm",
+      "size_mb": 7.63,
+      "category": "large",
+      "signal_type": "sine",
+      "frequency_hz": 1000,
+      "samples": 4000000,
+      "description": "Large synthetic sine wave for stress testing and memory limits"
+    },
+    {
+      "path": "protocols/udp_stream_reassembly.pcap",
+      "size_kb": 1.6,
+      "category": "pcap",
+      "protocol": "UDP",
+      "packets": 15,
+      "description": "UDP stream reassembly testing with fragmented messages"
+    },
+    {
+      "path": "protocols/udp_entropy_analysis.pcap",
+      "size_kb": 15.5,
+      "category": "pcap",
+      "protocol": "UDP",
+      "packets": 100,
+      "description": "UDP packets with varying entropy (low and high entropy patterns)"
+    },
+    {
+      "path": "protocols/udp_segments.pcap",
+      "size_kb": 13.9,
+      "category": "pcap",
+      "protocol": "UDP",
+      "packets": 100,
+      "description": "Segmented UDP traffic with distinct segment markers"
+    },
+    {
+      "path": "protocols/integration_workflow.pcap",
+      "size_kb": 22.7,
+      "category": "pcap",
+      "protocol": "UDP",
+      "packets": 200,
+      "description": "Request/response protocol for integration workflow testing"
+    }
+  ]
+}

@@ -38,6 +38,14 @@ categories:
     description: "System controllers"
     color: "#2196F3"
 
+channels:
+  "0":
+    name: "Channel A"
+    description: "Primary data channel"
+  "1":
+    name: "Channel B"
+    description: "Secondary data channel"
+
 unknown_device:
   policy: "warn"
   default_name: "Unknown Device"
