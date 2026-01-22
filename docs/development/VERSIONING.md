@@ -12,7 +12,7 @@ Check `pyproject.toml` [project.version]:
 
 ```bash
 grep "^version = " pyproject.toml
-# Current: version = "0.3.0"
+# Current: version = "0.4.0"
 ```
 
 ---
@@ -36,7 +36,7 @@ MAJOR.MINOR.PATCH
   - Example: Adding new analyzers, new protocol decoders
   - Example: Adding new parameters with defaults (non-breaking)
 
-- **PATCH (0.3.0 → 0.3.1)**: Bug fixes only (backward compatible)
+- **PATCH (0.4.0 → 0.4.1)**: Bug fixes only (backward compatible)
   - Example: Fixing calculation errors, correcting behavior
   - Example: Performance improvements without API changes
 
@@ -48,8 +48,8 @@ MAJOR.MINOR.PATCH
 
 ```bash
 git commit -m "fix: resolve bug"
-# Edit pyproject.toml: 0.3.0 → 0.3.1
-git commit -m "chore: bump version to 0.3.1"
+# Edit pyproject.toml: 0.4.0 → 0.4.1
+git commit -m "chore: bump version to 0.4.1"
 ```
 
 **Problems:**
@@ -77,7 +77,7 @@ git commit -m "fix: correct calculation in Z"
 # ... more commits ...
 
 # When ready to release:
-./scripts/release.sh 0.3.1  # Bumps version, tags, pushes
+./scripts/release.sh 0.4.1  # Bumps version, tags, pushes
 ```
 
 ---
@@ -159,11 +159,11 @@ Release when:
 
 ```bash
 # Use release script (if exists)
-./scripts/release.sh 0.3.1
+./scripts/release.sh 0.4.1
 
 # Or manually:
 # 1. Update CHANGELOG.md
-sed -i 's/## \[Unreleased\]/## [0.3.1] - 2026-01-21/' CHANGELOG.md
+sed -i 's/## \[Unreleased\]/## [0.4.1] - 2026-01-21/' CHANGELOG.md
 
 # 2. Add new [Unreleased] section
 cat > CHANGELOG_HEADER.md << 'HEADER'
@@ -184,14 +184,14 @@ cat CHANGELOG_HEADER.md CHANGELOG.md > CHANGELOG_NEW.md
 mv CHANGELOG_NEW.md CHANGELOG.md
 
 # 3. Bump version in pyproject.toml
-sed -i 's/version = "0.3.0"/version = "0.3.1"/' pyproject.toml
+sed -i 's/version = "0.4.0"/version = "0.4.1"/' pyproject.toml
 
 # 4. Commit version bump
 git add CHANGELOG.md pyproject.toml
-git commit -m "chore: release v0.3.1"
+git commit -m "chore: release v0.4.1"
 
 # 5. Create git tag
-git tag -a v0.3.1 -m "Release v0.3.1"
+git tag -a v0.4.1 -m "Release v0.4.1"
 
 # 6. Push (triggers release workflow)
 git push origin main --tags
@@ -200,7 +200,7 @@ git push origin main --tags
 **Option 2: GitHub Release**
 
 1. Go to GitHub → Releases → Draft new release
-2. Choose tag: v0.3.1 (create new)
+2. Choose tag: v0.4.1 (create new)
 3. Generate release notes (auto-populates from commits)
 4. Publish release
 5. CI automatically builds and deploys
@@ -211,7 +211,7 @@ After tagging, CI automatically:
 
 - Builds package
 - Publishes to PyPI (if configured)
-- Deploys documentation: `mike deploy 0.3.1 latest`
+- Deploys documentation: `mike deploy 0.4.1 latest`
 - Updates GitHub release notes
 
 ---
@@ -222,7 +222,7 @@ After tagging, CI automatically:
 
 ```python
 import oscura
-print(oscura.__version__)  # "0.3.0"
+print(oscura.__version__)  # "0.4.0"
 ```
 
 ### For Scripts
@@ -283,7 +283,7 @@ Changes:
   - Added test coverage: 15/15 tests passing
 
 Result:
-- Version stays 0.3.0 (no bump)
+- Version stays 0.4.0 (no bump)
 - Change documented for next release
 ```
 
@@ -308,24 +308,24 @@ Changes:
   - Example: `demos/protocols/canfd_decode.py`
 
 Result:
-- Version stays 0.3.0 (no bump)  
+- Version stays 0.4.0 (no bump)  
 - Change documented for next release (0.4.0)
 ```
 
 ### Example: Release
 
 ```markdown
-Releasing v0.3.1 (bug fix release)
+Releasing v0.4.1 (bug fix release)
 
 Steps:
-1. Rename [Unreleased] → [0.3.1] - 2026-01-21
+1. Rename [Unreleased] → [0.4.1] - 2026-01-21
 2. Bump version in pyproject.toml
-3. Commit: "chore: release v0.3.1"
-4. Tag: git tag -a v0.3.1
+3. Commit: "chore: release v0.4.1"
+4. Tag: git tag -a v0.4.1
 5. Push: git push origin main --tags
 
 Result:
-- Version bumped: 0.3.0 → 0.3.1
+- Version bumped: 0.4.0 → 0.4.1
 - Tag created and pushed
 - CI deploys release
 ```

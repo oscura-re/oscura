@@ -1,6 +1,6 @@
 # Oscura API Patterns
 
-**Version**: 0.3.0 (Phase 0)
+**Version**: 0.4.0 (Phase 0)
 **Status**: Foundation Architecture
 **Last Updated**: 2026-01-20
 

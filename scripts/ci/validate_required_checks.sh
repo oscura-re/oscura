@@ -35,14 +35,14 @@ NC='\033[0m'
 
 # Check if gh CLI is available
 check_gh_cli() {
-  if ! command -v gh &>/dev/null; then
+  if ! command -v gh &> /dev/null; then
     echo -e "${RED}ERROR: gh CLI not found${NC}" >&2
     echo "Install: https://cli.github.com/" >&2
     exit 2
   fi
 
   # Check if authenticated
-  if ! gh auth status &>/dev/null; then
+  if ! gh auth status &> /dev/null; then
     echo -e "${RED}ERROR: Not authenticated with GitHub${NC}" >&2
     echo "Run: gh auth login" >&2
     exit 2
@@ -55,7 +55,7 @@ get_required_checks() {
 
   gh api "repos/oscura-re/oscura/rulesets/${ruleset_id}" \
     --jq '.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context' \
-    2>/dev/null || {
+    2> /dev/null || {
     echo -e "${RED}ERROR: Failed to fetch required status checks${NC}" >&2
     exit 2
   }
@@ -74,7 +74,7 @@ get_workflow_checks() {
     if [[ -f "${workflow}" ]]; then
       # Extract job names (lines that start with "  <name>:" in jobs section)
       # This is the job name that becomes the status check name
-      yq eval '.jobs | keys[]' "${workflow}" 2>/dev/null || true
+      yq eval '.jobs | keys[]' "${workflow}" 2> /dev/null || true
     fi
   done
 }
@@ -85,7 +85,7 @@ get_job_display_name() {
   local workflow_file="$2"
 
   # Get the "name:" field from the job if it exists
-  yq eval ".jobs.${job_key}.name" "${workflow_file}" 2>/dev/null || echo "${job_key}"
+  yq eval ".jobs.${job_key}.name" "${workflow_file}" 2> /dev/null || echo "${job_key}"
 }
 
 # Get all possible status check names from workflows
@@ -99,8 +99,8 @@ get_all_status_checks() {
   )
 
   # Use Python if yq not available (more reliable)
-  if ! command -v yq &>/dev/null && command -v python3 &>/dev/null; then
-    python3 - "${WORKFLOWS_DIR}" <<'PYTHON_EOF'
+  if ! command -v yq &> /dev/null && command -v python3 &> /dev/null; then
+    python3 - "${WORKFLOWS_DIR}" << 'PYTHON_EOF'
 import yaml
 import sys
 from pathlib import Path
@@ -150,14 +150,14 @@ PYTHON_EOF
     if [[ -f "${workflow}" ]]; then
       # Get all job keys
       local job_keys
-      job_keys=$(yq eval '.jobs | keys[]' "${workflow}" 2>/dev/null || true)
+      job_keys=$(yq eval '.jobs | keys[]' "${workflow}" 2> /dev/null || true)
 
       while IFS= read -r job_key; do
         [[ -z "${job_key}" ]] && continue
 
         # Get job display name
         local display_name
-        display_name=$(yq eval ".jobs.${job_key}.name" "${workflow}" 2>/dev/null || echo "")
+        display_name=$(yq eval ".jobs.${job_key}.name" "${workflow}" 2> /dev/null || echo "")
 
         # Use display name if available, otherwise use job key
         if [[ -n "${display_name}" && "${display_name}" != "null" ]]; then
@@ -165,7 +165,7 @@ PYTHON_EOF
         else
           checks["${job_key}"]=1
         fi
-      done <<<"${job_keys}"
+      done <<< "${job_keys}"
     fi
   done
 
@@ -191,7 +191,7 @@ echo ""
 check_gh_cli
 
 # Check if yq is available (optional but recommended)
-if ! command -v yq &>/dev/null; then
+if ! command -v yq &> /dev/null; then
   echo -e "${YELLOW}WARNING: yq not found, using fallback parsing${NC}"
   echo -e "${DIM}For better parsing, install yq: https://github.com/mikefarah/yq${NC}"
   echo ""

@@ -1,6 +1,6 @@
 # Hardware Acquisition Guide
 
-**Version**: 0.3.0
+**Version**: 0.4.0
 **Last Updated**: 2026-01-20
 **Status**: Phase 2 Placeholder (Future Implementation)
 

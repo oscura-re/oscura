@@ -5,9 +5,15 @@ All notable changes to Oscura will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Clean Architecture (BREAKING CHANGES)
+## [Unreleased]
 
-### Removed (BREAKING CHANGES for v1.0)
+## [0.4.0] - 2026-01-22
+
+### BREAKING CHANGES
+
+**This release includes breaking API changes. Migration required for existing code.**
+
+### Removed (BREAKING CHANGES)
 
 - **CANSession Legacy API** (`src/oscura/automotive/can/session.py`):
   - **REMOVED**: `CANSession.from_log()` classmethod
@@ -26,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Legacy Session File Support**:
   - **REMOVED**: Support for pre-v0.3.0 session file format
   - Old session files must be re-saved with new format
-  - **Migration**: Load old sessions and save with new format before upgrading to v1.0
+  - **Migration**: Load old sessions and save with new format before upgrading to v0.4.0
 
 ### Breaking Changes (DETAILED)
 
@@ -56,7 +62,7 @@ trace = builder.build()  # Returns WaveformTrace directly
 
 **Why**: Clean architecture with unified Source protocol and type system. No legacy baggage, simpler API, better composability.
 
-**Migration Guide**: See `docs/migration/v0-to-v1.md` for complete migration instructions.
+**Migration Guide**: Breaking changes in 0.4.0 are part of moving toward 1.0. See migration notes in this CHANGELOG for updating your code.
 
 ### Added
 
@@ -989,7 +995,7 @@ trace = builder.build()  # Returns WaveformTrace directly
 
 ### Initial Public Release
 
-Oscura 0.3.0 is the first public release of the comprehensive hardware reverse engineering framework for security researchers, right-to-repair advocates, defense analysts, and commercial intelligence teams.
+Oscura 0.4.0 is the first public release of the comprehensive hardware reverse engineering framework for security researchers, right-to-repair advocates, defense analysts, and commercial intelligence teams.
 
 ### Core Features
 

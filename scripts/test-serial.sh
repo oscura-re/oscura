@@ -32,7 +32,7 @@ MAXFAIL=10  # Stop after 10 failures
 # =============================================================================
 
 show_help() {
-  cat <<'EOF'
+  cat << 'EOF'
 Run ALL Tests in Serial Mode (No Parallelization)
 
 USAGE:
@@ -94,43 +94,43 @@ EXTRA_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  --coverage)
-    COVERAGE=true
-    shift
-    ;;
-  --slow)
-    INCLUDE_SLOW=true
-    shift
-    ;;
-  --timeout)
-    CUSTOM_TIMEOUT="$2"
-    shift 2
-    ;;
-  --maxfail)
-    CUSTOM_MAXFAIL="$2"
-    shift 2
-    ;;
-  -v | --verbose)
-    VERBOSE=true
-    shift
-    ;;
-  -q | --quiet)
-    QUIET=true
-    shift
-    ;;
-  -h | --help)
-    show_help
-    exit 0
-    ;;
-  --)
-    shift
-    EXTRA_ARGS=("$@")
-    break
-    ;;
-  *)
-    EXTRA_ARGS+=("$1")
-    shift
-    ;;
+    --coverage)
+      COVERAGE=true
+      shift
+      ;;
+    --slow)
+      INCLUDE_SLOW=true
+      shift
+      ;;
+    --timeout)
+      CUSTOM_TIMEOUT="$2"
+      shift 2
+      ;;
+    --maxfail)
+      CUSTOM_MAXFAIL="$2"
+      shift 2
+      ;;
+    -v | --verbose)
+      VERBOSE=true
+      shift
+      ;;
+    -q | --quiet)
+      QUIET=true
+      shift
+      ;;
+    -h | --help)
+      show_help
+      exit 0
+      ;;
+    --)
+      shift
+      EXTRA_ARGS=("$@")
+      break
+      ;;
+    *)
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
   esac
 done
 
@@ -220,8 +220,8 @@ if [[ "${COVERAGE}" == "true" ]] && [[ "${QUIET}" == "false" ]]; then
   if [[ -f "htmlcov/index.html" ]]; then
     print_info "HTML coverage report: htmlcov/index.html"
 
-    if command -v coverage &>/dev/null; then
-      COVERAGE_PCT=$(coverage report 2>/dev/null | tail -1 | awk '{print $4}' | tr -d '%' || echo "")
+    if command -v coverage &> /dev/null; then
+      COVERAGE_PCT=$(coverage report 2> /dev/null | tail -1 | awk '{print $4}' | tr -d '%' || echo "")
       if [[ -n "${COVERAGE_PCT}" ]]; then
         print_info "Coverage: ${COVERAGE_PCT}%"
       fi

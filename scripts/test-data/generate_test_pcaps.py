@@ -48,7 +48,7 @@ def create_udp_packet(src_ip, dst_ip, src_port, dst_port, payload):
 
 def generate_stream_reassembly_pcap(output: Path):
     """Generate PCAP for stream reassembly testing."""
-    print(f"Generating stream reassembly PCAP...")
+    print("Generating stream reassembly PCAP...")
 
     with open(output, "wb") as f:
         write_pcap_header(f)
@@ -83,7 +83,7 @@ def generate_stream_reassembly_pcap(output: Path):
 
 def generate_entropy_pcap(output: Path):
     """Generate PCAP for entropy analysis testing."""
-    print(f"Generating entropy analysis PCAP...")
+    print("Generating entropy analysis PCAP...")
 
     with open(output, "wb") as f:
         write_pcap_header(f)
@@ -109,7 +109,7 @@ def generate_entropy_pcap(output: Path):
 
 def generate_segmented_pcap(output: Path):
     """Generate PCAP with segment markers for testing."""
-    print(f"Generating segmented UDP PCAP...")
+    print("Generating segmented UDP PCAP...")
 
     with open(output, "wb") as f:
         write_pcap_header(f)
@@ -133,7 +133,7 @@ def generate_segmented_pcap(output: Path):
 
 def generate_workflow_pcap(output: Path):
     """Generate PCAP for integration workflow testing."""
-    print(f"Generating integration workflow PCAP...")
+    print("Generating integration workflow PCAP...")
 
     with open(output, "wb") as f:
         write_pcap_header(f)
