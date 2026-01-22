@@ -757,10 +757,10 @@ class TestGetLogicThreshold:
             vih = get_logic_threshold(family, "VIH")
             vil = get_logic_threshold(family, "VIL")
 
-            # Sanity checks
-            assert vil < midpoint < vih
-            assert vil > 0
-            assert vih > 0
+            # Sanity checks (must work for both positive and negative voltage families)
+            # For positive logic: VIL < midpoint < VIH
+            # For negative logic (PMOS, ECL): VIH < midpoint < VIL
+            assert min(vil, vih) < midpoint < max(vil, vih)
 
     def test_unknown_family_error(self) -> None:
         """Test that unknown logic family raises ValueError."""
@@ -954,9 +954,11 @@ class TestExports:
         """Test that __all__ list matches expected exports."""
         from oscura.analyzers.digital.extraction import __all__
 
-        assert len(__all__) == 4
+        assert len(__all__) == 6
         assert "LOGIC_FAMILIES" in __all__
         assert "detect_edges" in __all__
+        assert "detect_logic_family" in __all__
+        assert "detect_open_collector" in __all__
         assert "get_logic_threshold" in __all__
         assert "to_digital" in __all__
 

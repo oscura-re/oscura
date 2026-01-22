@@ -263,6 +263,52 @@ def export_protocol_decode(
             json.dump(output, f, cls=OscuraJSONEncoder)
 
 
+def export_vintage_logic_json(
+    result: Any,
+    path: str | Path,
+    *,
+    indent: int = 2,
+    include_metadata: bool = True,
+) -> None:
+    """Export vintage logic analysis results to JSON.
+
+    Convenience function for exporting VintageLogicAnalysisResult objects.
+    The dataclass is automatically serialized to JSON with all nested objects.
+
+    Args:
+        result: VintageLogicAnalysisResult object.
+        path: Output JSON file path.
+        indent: Indentation level for pretty printing (default: 2).
+        include_metadata: Include export metadata (default: True).
+
+    Example:
+        >>> from oscura.analyzers.digital.vintage import analyze_vintage_logic
+        >>> result = analyze_vintage_logic(traces)
+        >>> export_vintage_logic_json(result, "analysis_results.json")
+    """
+    path = Path(path)
+
+    output: dict[str, Any] = {}
+
+    if include_metadata:
+        output["_metadata"] = {
+            "format": "oscura_vintage_logic",
+            "version": "1.0",
+            "exported_at": datetime.now().isoformat(),
+            "analysis_timestamp": result.timestamp.isoformat(),
+        }
+
+    output["analysis_result"] = result
+
+    # Sanitize to handle inf/nan
+    from oscura.reporting.output import _sanitize_for_serialization
+
+    output = _sanitize_for_serialization(output)
+
+    with open(path, "w") as f:
+        json.dump(output, f, cls=OscuraJSONEncoder, indent=indent)
+
+
 def load_json(path: str | Path) -> dict[str, Any]:
     """Load JSON data file.
 
@@ -287,5 +333,6 @@ __all__ = [
     "export_json",
     "export_measurements",
     "export_protocol_decode",
+    "export_vintage_logic_json",
     "load_json",
 ]

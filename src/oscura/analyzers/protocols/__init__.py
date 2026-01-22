@@ -2,7 +2,7 @@
 
 Provides protocol decoders for common serial and automotive protocols including
 UART, SPI, I2C, CAN, LIN, FlexRay, JTAG, SWD, I2S, USB, HDLC, Manchester, CAN-FD,
-and 1-Wire.
+1-Wire, and parallel bus protocols (GPIB, Centronics, ISA).
 """
 
 from oscura.analyzers.protocols.base import (
@@ -60,6 +60,18 @@ from oscura.analyzers.protocols.onewire import (
     OneWireTimings,
     decode_onewire,
 )
+
+# Parallel bus protocols
+from oscura.analyzers.protocols.parallel_bus import (
+    CentronicsFrame,
+    GPIBFrame,
+    GPIBMessageType,
+    ISACycleType,
+    ISATransaction,
+    decode_centronics,
+    decode_gpib,
+    decode_isa_bus,
+)
 from oscura.analyzers.protocols.spi import SPIDecoder, decode_spi
 from oscura.analyzers.protocols.swd import SWDDecoder, SWDResponse, decode_swd
 from oscura.analyzers.protocols.uart import UARTDecoder, decode_uart
@@ -91,12 +103,16 @@ __all__ = [
     "CANFDFrameType",
     "CANFrame",
     "CANFrameType",
+    # Parallel bus protocols
+    "CentronicsFrame",
     "ChannelDef",
     "DecoderState",
     # FlexRay (PRO-016)
     "FlexRayDecoder",
     "FlexRayFrame",
     "FlexRaySegment",
+    "GPIBFrame",
+    "GPIBMessageType",
     # HDLC (PRO-013)
     "HDLCDecoder",
     # I2C (PRO-004)
@@ -104,6 +120,8 @@ __all__ = [
     # I2S (PRO-011)
     "I2SDecoder",
     "I2SMode",
+    "ISACycleType",
+    "ISATransaction",
     # JTAG (PRO-009)
     "JTAGDecoder",
     # LIN (PRO-008)
@@ -135,10 +153,13 @@ __all__ = [
     "USBSpeed",
     "decode_can",
     "decode_can_fd",
+    "decode_centronics",
     "decode_flexray",
+    "decode_gpib",
     "decode_hdlc",
     "decode_i2c",
     "decode_i2s",
+    "decode_isa_bus",
     "decode_jtag",
     "decode_lin",
     "decode_manchester",

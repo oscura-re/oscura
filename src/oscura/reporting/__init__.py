@@ -138,6 +138,10 @@ from oscura.reporting.template_system import (
     list_templates,
     load_template,
 )
+from oscura.reporting.vintage_logic_report import (
+    VintageLogicReport,
+    generate_vintage_logic_report,
+)
 
 __all__ = [
     # Comprehensive Analysis Report API (CAR-001 through CAR-007)
@@ -187,6 +191,8 @@ __all__ = [
     "TemplateEngine",
     "TemplateSection",
     "UnsupportedFormatError",
+    # Vintage Logic Reporting
+    "VintageLogicReport",
     "VisualEmphasis",
     "aggregate_batch_measurements",
     "analyze",
@@ -235,6 +241,7 @@ __all__ = [
     "generate_presentation_from_report",
     "generate_report",
     "generate_summary",
+    "generate_vintage_logic_report",
     "get_available_analyses",
     "get_axis_scaling",
     "list_templates",

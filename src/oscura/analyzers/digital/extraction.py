@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 # Standard logic family threshold constants
 # Reference: Various IC manufacturer datasheets
 LOGIC_FAMILIES: dict[str, dict[str, float]] = {
+    # Modern logic families (5V)
     "TTL": {
         "VIL_max": 0.8,  # Maximum input low voltage
         "VIH_min": 2.0,  # Minimum input high voltage
@@ -73,6 +74,63 @@ LOGIC_FAMILIES: dict[str, dict[str, float]] = {
         "VOL_max": 0.1,
         "VOH_min": 1.1,
         "VCC": 1.2,
+    },
+    # Vintage logic families (1960s-1970s)
+    "ECL": {
+        "VIL_max": -1.475,  # ECL 10K series
+        "VIH_min": -1.105,
+        "VOL_max": -1.630,  # Typical -1.63V
+        "VOH_min": -0.980,  # Typical -0.98V
+        "VCC": 0.0,  # Ground-referenced
+        "VEE": -5.2,  # Negative supply
+        "differential": True,  # Differential signaling
+    },
+    "ECL_100K": {
+        "VIL_max": -1.810,  # ECL 100K series (faster)
+        "VIH_min": -1.620,
+        "VOL_max": -1.950,
+        "VOH_min": -1.650,
+        "VCC": 0.0,
+        "VEE": -5.2,
+        "differential": True,
+    },
+    "RTL": {
+        "VIL_max": 0.4,  # Resistor-Transistor Logic
+        "VIH_min": 0.9,
+        "VOL_max": 0.2,
+        "VOH_min": 3.6,  # Typical 3.6V high output
+        "VCC": 3.6,  # 3.6V supply common
+    },
+    "DTL": {
+        "VIL_max": 0.5,  # Diode-Transistor Logic
+        "VIH_min": 2.0,
+        "VOL_max": 0.4,
+        "VOH_min": 4.0,  # Typical 4V high output
+        "VCC": 5.0,
+    },
+    "MOS": {
+        "VIL_max": -3.0,  # P-channel MOS (negative logic)
+        "VIH_min": -10.0,
+        "VOL_max": -0.5,
+        "VOH_min": -11.5,
+        "VCC": 0.0,  # Ground
+        "VDD": -12.0,  # Negative supply
+    },
+    "PMOS": {
+        "VIL_max": -3.0,  # PMOS (4000 series at -12V)
+        "VIH_min": -9.0,
+        "VOL_max": -0.5,
+        "VOH_min": -11.5,
+        "VCC": 0.0,
+        "VDD": -12.0,
+    },
+    "NMOS": {
+        "VIL_max": 1.5,  # NMOS (positive logic, 12V)
+        "VIH_min": 8.0,
+        "VOL_max": 0.5,
+        "VOH_min": 11.5,
+        "VCC": 12.0,
+        "VSS": 0.0,
     },
 }
 
@@ -405,9 +463,146 @@ def get_logic_threshold(
         raise ValueError(f"Unknown threshold_type: {threshold_type}")
 
 
+def detect_logic_family(
+    trace: WaveformTrace,
+    *,
+    confidence_threshold: float = 0.8,
+) -> tuple[str, float]:
+    """Auto-detect logic family from signal voltage levels.
+
+    Analyzes the signal to determine which logic family it most likely represents
+    based on voltage levels.
+
+    Args:
+        trace: Input analog waveform trace.
+        confidence_threshold: Minimum confidence (0-1) to return a match.
+
+    Returns:
+        Tuple of (family_name, confidence_score).
+        Returns ("unknown", 0.0) if no match above threshold.
+
+    Example:
+        >>> family, conf = detect_logic_family(trace)
+        >>> print(f"Detected: {family} ({conf*100:.1f}% confidence)")
+    """
+    if len(trace.data) < 10:
+        return ("unknown", 0.0)
+
+    data = np.asarray(trace.data)
+
+    # Find voltage levels using percentiles
+    p10, p90 = np.percentile(data, [10, 90])
+    vlow = p10
+    vhigh = p90
+
+    # Calculate midpoint and swing
+    vmid = (vlow + vhigh) / 2.0
+    vswing = vhigh - vlow
+
+    if vswing < 0.1:  # Insufficient signal
+        return ("unknown", 0.0)
+
+    # Score each logic family
+    scores: dict[str, float] = {}
+
+    for family_name, levels in LOGIC_FAMILIES.items():
+        # Check if voltage levels match this family
+        vil_max = levels["VIL_max"]
+        vih_min = levels["VIH_min"]
+        vcc = levels.get("VCC", 5.0)
+
+        # Expected midpoint for this family
+        expected_mid = (vil_max + vih_min) / 2.0
+
+        # Score based on:
+        # 1. Midpoint proximity
+        # 2. High level proximity to VOH
+        # 3. Low level proximity to VOL
+
+        mid_error = abs(vmid - expected_mid)
+        high_error = abs(vhigh - levels.get("VOH_min", vih_min))
+        low_error = abs(vlow - levels.get("VOL_max", vil_max))
+
+        # Normalize errors (handle VCC=0 for ECL/PMOS)
+        if vcc != 0:
+            mid_score = max(0, 1.0 - mid_error / abs(vcc))
+            high_score = max(0, 1.0 - high_error / abs(vcc))
+            low_score = max(0, 1.0 - low_error / abs(vcc))
+        else:
+            # For VCC=0 families (ECL), use voltage range instead
+            voltage_range = abs(vih_min - vil_max)
+            if voltage_range > 0:
+                mid_score = max(0, 1.0 - mid_error / voltage_range)
+                high_score = max(0, 1.0 - high_error / voltage_range)
+                low_score = max(0, 1.0 - low_error / voltage_range)
+            else:
+                mid_score = high_score = low_score = 0.0
+
+        # Combined score (weighted average)
+        total_score = mid_score * 0.5 + high_score * 0.25 + low_score * 0.25
+        scores[family_name] = total_score
+
+    # Find best match
+    if not scores:
+        return ("unknown", 0.0)
+
+    best_family = max(scores.items(), key=lambda x: x[1])
+
+    if best_family[1] < confidence_threshold:
+        return ("unknown", best_family[1])
+
+    return best_family
+
+
+def detect_open_collector(
+    trace: WaveformTrace,
+    *,
+    asymmetry_threshold: float = 3.0,
+) -> tuple[bool, float]:
+    """Detect open-collector or open-drain output.
+
+    Open-collector outputs have slow rise times (limited by pull-up resistor)
+    and fast fall times (active transistor).
+
+    Args:
+        trace: Input analog waveform trace.
+        asymmetry_threshold: Minimum rise/fall ratio to indicate open-collector.
+
+    Returns:
+        Tuple of (is_open_collector, asymmetry_ratio).
+
+    Example:
+        >>> is_oc, ratio = detect_open_collector(trace)
+        >>> if is_oc:
+        ...     print(f"Open-collector detected (rise/fall = {ratio:.1f})")
+    """
+    from oscura.analyzers.waveform.measurements import fall_time, rise_time
+
+    if len(trace.data) < 10:
+        return (False, 1.0)
+
+    # Measure rise and fall times
+    tr = rise_time(trace, ref_levels=(0.1, 0.9))
+    tf = fall_time(trace, ref_levels=(0.9, 0.1))
+
+    # Check for valid measurements
+    if np.isnan(tr) or np.isnan(tf) or tf == 0:
+        return (False, 1.0)
+
+    # Calculate asymmetry ratio
+    asymmetry = tr / tf
+
+    # Open-collector has slow rise, fast fall
+    is_oc = bool(asymmetry >= asymmetry_threshold)
+
+    return (is_oc, float(asymmetry))
+
+
 __all__ = [
     "LOGIC_FAMILIES",
     "detect_edges",
+    "detect_logic_family",
+    "detect_open_collector",
     "get_logic_threshold",
     "to_digital",
 ]
