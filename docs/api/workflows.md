@@ -1,6 +1,6 @@
 # Oscura Workflow Helpers API Documentation
 
-> **Version**: 0.4.0 | **Last Updated**: 2026-01-19
+> **Version**: 0.5.0 | **Last Updated**: 2026-01-19
 
 Complete guide to high-level workflow functions that combine multiple Oscura features for common analysis tasks.
 

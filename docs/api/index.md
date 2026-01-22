@@ -1,6 +1,6 @@
 # API Reference
 
-> **Version**: 0.4.0 | **Last Updated**: 2026-01-19
+> **Version**: 0.5.0 | **Last Updated**: 2026-01-19
 
 Complete API documentation for Oscura.
 

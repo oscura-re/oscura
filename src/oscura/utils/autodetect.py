@@ -317,7 +317,11 @@ def detect_logic_family(
         # Score based on how well levels match
         low_match = 1.0 - min(1.0, abs(v_low - vol) / 0.5)
         high_match = 1.0 - min(1.0, abs(v_high - voh) / 0.5)
-        vcc_match = 1.0 - min(1.0, abs(v_cc_est - vcc) / vcc)
+        # Handle VCC=0 for families like ECL
+        if vcc != 0:
+            vcc_match = 1.0 - min(1.0, abs(v_cc_est - vcc) / abs(vcc))
+        else:
+            vcc_match = 1.0 if abs(v_cc_est) < 0.5 else 0.0
 
         score = (low_match + high_match + vcc_match) / 3
 

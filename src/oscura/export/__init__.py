@@ -19,7 +19,19 @@ Example:
 
 # Import main exports
 from . import wireshark
+from .wavedrom import (
+    WaveDromBuilder,
+    WaveDromEdge,
+    WaveDromSignal,
+    export_wavedrom,
+    from_digital_trace,
+)
 
 __all__ = [
+    "WaveDromBuilder",
+    "WaveDromEdge",
+    "WaveDromSignal",
+    "export_wavedrom",
+    "from_digital_trace",
     "wireshark",
 ]

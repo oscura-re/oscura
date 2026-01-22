@@ -52,8 +52,16 @@ from oscura.analyzers.digital.edges import (
 from oscura.analyzers.digital.extraction import (
     LOGIC_FAMILIES,
     detect_edges,
+    detect_logic_family,
+    detect_open_collector,
     get_logic_threshold,
     to_digital,
+)
+from oscura.analyzers.digital.ic_database import (
+    IC_DATABASE,
+    ICTiming,
+    identify_ic,
+    validate_ic_timing,
 )
 from oscura.analyzers.digital.quality import (
     Glitch,
@@ -97,13 +105,37 @@ from oscura.analyzers.digital.timing import (
     skew,
     slew_rate,
 )
+from oscura.analyzers.digital.timing_paths import (
+    ICStage,
+    SetupHoldAnalysis,
+    TimingPathResult,
+    analyze_setup_hold,
+    analyze_timing_path,
+    calculate_timing_budget,
+    find_critical_paths,
+)
+from oscura.analyzers.digital.vintage import (
+    REPLACEMENT_DATABASE,
+    analyze_vintage_logic,
+)
+from oscura.analyzers.digital.vintage_result import (
+    BOMEntry,
+    ICIdentificationResult,
+    ModernReplacementIC,
+    VintageLogicAnalysisResult,
+)
 
 __all__ = [
+    # IC Database
+    "IC_DATABASE",
     # Extraction
     "LOGIC_FAMILIES",
+    "REPLACEMENT_DATABASE",
     "AdaptiveThresholdResult",
     # Adaptive Thresholds (RE-THR-001)
     "AdaptiveThresholder",
+    # Vintage Logic Analysis
+    "BOMEntry",
     # Clock Recovery (DSP-002)
     "BaudRateResult",
     # Bus Decoding (DSP-003)
@@ -125,6 +157,10 @@ __all__ = [
     "EdgeTimingViolation",
     # Quality
     "Glitch",
+    "ICIdentificationResult",
+    "ICStage",
+    "ICTiming",
+    "ModernReplacementIC",
     # Multi-Level Logic (RE-THR-002)
     "MultiLevelDetector",
     "MultiLevelResult",
@@ -132,18 +168,25 @@ __all__ = [
     # Signal Quality (DSP-005)
     "NoiseMargins",
     "ParallelBusConfig",
+    "SetupHoldAnalysis",
     "SignalIntegrityReport",
     "SignalQualityAnalyzer",
     "SimpleQualityMetrics",
     "ThresholdConfig",
     "TimingConstraint",
+    "TimingPathResult",
     "TimingViolation",
     "TransitionMetrics",
+    "VintageLogicAnalysisResult",
     "Violation",
     "align_by_trigger",
+    "analyze_setup_hold",
     "analyze_signal_integrity",
+    "analyze_timing_path",
+    "analyze_vintage_logic",
     "apply_adaptive_threshold",
     "calculate_threshold_snr",
+    "calculate_timing_budget",
     "check_timing_constraints",
     "classify_edge_quality",
     "correlate_channels",
@@ -153,10 +196,14 @@ __all__ = [
     "detect_edges",
     "detect_edges_advanced",
     "detect_glitches",
+    "detect_logic_family",
     "detect_multi_level",
+    "detect_open_collector",
     "detect_violations",
+    "find_critical_paths",
     "get_logic_threshold",
     "hold_time",
+    "identify_ic",
     "interpolate_edge_time",
     "measure_clock_jitter",
     "measure_edge_timing",
@@ -174,4 +221,5 @@ __all__ = [
     "skew",
     "slew_rate",
     "to_digital",
+    "validate_ic_timing",
 ]

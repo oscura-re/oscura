@@ -46,7 +46,7 @@ Example:
 For more information, see https://github.com/oscura-re/oscura
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __author__ = "Oscura Contributors"
 
 # Core types
