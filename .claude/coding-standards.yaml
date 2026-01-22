@@ -1,326 +1,68 @@
-# Coding Standards Configuration
-# Enforced via pre-commit hooks and CI
-# Version: 2.3.0 (Updated 2025-12-25 - Added report policy, hook governance)
-#
-# Template file - customize for your project
+_meta:
+  schema_version: "1.0.0"
+  version: "3.0.0" # Bumped for consolidation
+  last_updated: "2026-01-22"
 
-todo_policy:
-  # Clear taxonomy for different TODO types
-  markers:
-    - type: "TODO(dev)"
-      purpose: "Developer implementation task - must be resolved before merge"
-      allowed_in: ["src/**/*.py", "tests/**/*.py"]
-      action_required: true
-      example: "# TODO(dev): Add input validation for negative values"
+# Code quality standards (NOT orchestration - that's in config.yaml)
 
-    - type: "USER:"
-      purpose: "User must implement in generated code (templates only)"
-      allowed_in: ["src/**/templates.py"]
-      action_required: false
-      example: "# USER: Implement your custom logic here"
+code_style:
+  naming:
+    files: "snake_case"
+    functions: "snake_case"
+    classes: "PascalCase"
+    constants: "SCREAMING_SNAKE_CASE"
+    private: "_leading_underscore"
 
-    - type: "FUTURE:"
-      purpose: "Planned enhancement, not blocking current release"
-      allowed_in: ["**/*.py"]
-      action_required: false
-      must_have_issue: true # Must reference incomplete-features.yaml
-      example: "# FUTURE-001: Enhancement - see incomplete-features.yaml"
+  line_length: 100 # ruff default
+  docstring_style: "google"
 
-    - type: "NOTE:"
-      purpose: "Important implementation note or design decision"
-      allowed_in: ["**/*.py"]
-      action_required: false
-      example: "# NOTE: Design decision explanation"
+  formatting:
+    tool: "ruff"
+    auto_format: true
 
-  # These markers are forbidden - too vague
+code_quality:
   linting:
-    forbid:
-      - "TODO:"
-      - "FIXME:"
-      - "XXX:"
-      - "HACK:"
-    suggest: "Use TODO(dev), USER:, FUTURE:, or NOTE: instead"
-    severity: "error" # Fail pre-commit on forbidden markers
+    tool: "ruff"
+    config: "pyproject.toml"
 
-version_management:
-  single_source: "pyproject.toml"
-  sync_locations:
-    - file: "src/{project_name}/__init__.py"
-      pattern: '__version__ = "{version}"'
-    - file: "README.md"
-      pattern: "Current Version: v{version}"
+  type_checking:
+    tool: "mypy"
+    strict: true
+    config: "pyproject.toml"
 
-  validation:
-    pre_commit: true
-    ci: true
-
-github_metadata:
-  single_source: ".claude/project-metadata.yaml"
-  validation:
-    check_all_urls: true
-    allow_archive_divergence: true # Archive files can have old URLs
+  testing:
+    framework: "pytest"
+    min_coverage: 80
+    markers:
+      - unit
+      - integration
+      - stress
+      - performance
+      - compliance
+      - regression
 
 documentation:
-  required_sections:
-    README.md:
-      - "## Installation"
-      - "## Basic Usage"
-    CLAUDE.md:
-      - "## Quick Start"
-      - "## Philosophy"
-      - "## Development Tools"
+  code:
+    min_docstring_coverage: 95 # Via interrogate
+    docstring_style: "google"
 
-  code_examples:
-    must_be_tested: true
-    test_file: "tests/validation/test_readme_examples.py"
+  project:
+    changelog: "CHANGELOG.md"
+    changelog_format: "keep-a-changelog"
+    contributing: "CONTRIBUTING.md"
+    readme: "README.md"
 
-  # Markdown table formatting standard
-  markdown_tables:
-    format: "compact"
-    rationale: >-
-      Emoji characters have variable display widths, making pipe alignment
-      impossible across different renderers
-    style:
-      pipes: "unaligned"
-      header_separator: "minimum_dashes" # Use --- not ------
-      cell_spacing: "minimal" # |Header| not | Header |
-      trailing_pipes: "required" # Must have pipes on both ends
+ssot:
+  # Single Source of Truth definitions
+  version: "pyproject.toml:[project.version]"
+  dependencies: "pyproject.toml:[project.dependencies]"
+  test_config: "pyproject.toml:[tool.pytest]"
 
-    examples:
-      correct: |
-        | Column 1 | Column 2 | Column 3 |
-        |----------|----------|----------|
-        | Value A | ✅ OK | Short text |
-        | Value B | ⚠️ Warning | Much longer text content |
-
-      incorrect: |
-        | Column 1 | Column 2   | Column 3                 |
-        | -------- | ---------- | ------------------------ |
-        | Value A  | ✅ OK      | Short text               |
-        | Value B  | ⚠️ Warning | Much longer text content |
-
-    enforcement:
-      tool: "markdownlint"
-      rule: "MD060"
-      config: ".markdownlint.yaml"
-      setting: "MD060: false # Disable alignment checks"
-
-# =============================================================================
-# Report Generation Policy
-# =============================================================================
-
-report_generation:
-  # PRINCIPLE: Communicate results directly, not through excessive reports
-
-  policy: "minimal"
-
-  # When to write reports
-  allowed_reports:
-    - type: "completion_report"
-      location: ".claude/agent-outputs/{agent-id}.json"
-      purpose: "Agent handoff data - required for orchestration"
-      retention: "7 days after completion"
-
-    - type: "agent_summary"
-      location: ".claude/summaries/{agent-id}.md"
-      purpose: "Human-readable summary for context preservation"
-      retention: "7 days after completion"
-      max_size_kb: 50
-
-    - type: "coverage_report"
-      location: ".coordination/spec/{project}/coverage-report.md"
-      purpose: "Implementation coverage tracking"
-      retention: "Until superseded"
-
-    - type: "validation_report"
-      location: ".coordination/spec/{project}/validation-results.md"
-      purpose: "Test results mapping to requirements"
-      retention: "Until superseded"
-
-  # Reports that should NOT be created
-  forbidden_reports:
-    - pattern: "*_AUDIT_*.md"
-      reason: "Audit results should be communicated directly, not stored"
-
-    - pattern: "*_ANALYSIS_*.md"
-      reason: "Analysis results belong in completion reports or direct communication"
-
-    - pattern: "*_SUMMARY.md"
-      reason: "Use agent summaries in .claude/summaries/ instead"
-
-    - pattern: "*_RESULTS.{json,md}"
-      reason: "Results belong in validation reports or direct output"
-
-    - pattern: "COMPREHENSIVE_*.md"
-      reason: "One-time comprehensive reports create clutter"
-
-    - pattern: "ULTIMATE_*.md"
-      reason: "Superlative naming indicates temporary artifact"
-
-  # Best practices
-  best_practices:
-    - "Communicate results directly in conversation"
-    - "Use completion reports for agent handoffs only"
-    - "Update existing reports rather than creating new ones"
-    - "Temporary findings go in completion reports, not new files"
-    - "If creating a report, ask: will this be referenced in 7 days?"
-
-  # Enforcement
-  enforcement:
-    hook: ".claude/hooks/check_report_proliferation.py"
-    trigger: "pre_tool_use(Write)"
-    action: "warn" # Warn but don't block (user may override)
-
-file_organization:
-  ssot_directories:
-    example_configs: "examples/configs"
-    agent_definitions: ".claude/agents"
-    command_definitions: ".claude/commands"
-    requirements: ".coordination/spec/{project}"
-
-  no_duplicates:
-    enabled: true
-    exclusions:
-      - "archive/**"
-      - "test_data/**"
-
-cleanup:
-  automated:
-    stale_agents: "session_start"
-    old_checkpoints: "weekly"
-    completed_workflows: "session_end"
-
-  retention:
-    checkpoint_archives: 30 # days
-    agent_summaries: 7 # days after completion
-    workflow_progress: 0 # archive immediately on completion
-
-# =============================================================================
-# Hook Configuration (SSOT for hooks - used to generate settings.json)
-# =============================================================================
-
-hook_governance:
-  max_pre_commit_hooks: 10 # Limit complexity
-  max_execution_time_seconds: 10 # Hooks must be fast
-  required_documentation: true
-  required_tests: true
-  deprecation_policy: "Mark deprecated for 2 releases before removal"
-  emergency_bypass_env: "CLAUDE_BYPASS_HOOKS" # Set to 1 to bypass all hooks
-
-hooks:
-  # Pre-commit hooks run before git commits
-  pre_commit:
-    - name: "Dependency check"
-      script: ".claude/hooks/check_dependencies.sh"
-      blocking: false
-      critical: false
-      order: 0 # Run first
-      description: "Verify all hook dependencies are available"
-
-    - name: "SSOT validation"
-      script: ".claude/hooks/validate_ssot.py"
-      blocking: true
-      critical: true
-      order: 1
-      description: "Validate no duplicate configurations exist"
-
-    - name: "Version consistency check"
-      script: ".claude/hooks/pre_commit_version_check.sh"
-      blocking: true
-      critical: true
-      order: 2
-      depends_on: ["SSOT validation"] # Needs files validated first
-      description: "Ensure version matches across all locations"
-
-    - name: "FUTURE marker validation"
-      script: ".claude/hooks/validate_incomplete_features.py"
-      blocking: true
-      critical: true
-      order: 3
-      depends_on: ["SSOT validation"]
-      description: "Ensure FUTURE markers match registry"
-
-    - name: "NotImplementedError check"
-      script: ".claude/hooks/check_not_implemented.sh"
-      blocking: true
-      critical: true
-      order: 4
-      depends_on: ["FUTURE marker validation"]
-      description: "Check all NotImplementedError have tracking"
-
-    - name: "TODO policy enforcement"
-      script: ".claude/hooks/lint_todos.py"
-      blocking: true
-      critical: false # Warning, not critical
-      order: 5
-      description: "Enforce TODO marker format policy"
-
-  # Session start hooks run when Claude session begins
-  session_start:
-    - name: "Post-compact recovery"
-      script: ".claude/hooks/post_compact_recovery.sh"
-      blocking: false
-      critical: false
-      order: 0
-      matcher: "compact" # Only after compaction
-      description: "Validate critical files after compaction"
-
-    - name: "Cleanup stale agents"
-      script: ".claude/hooks/cleanup_stale_agents.py"
-      blocking: false
-      critical: false
-      order: 1
-      description: "Mark stale agents as failed"
-
-  # Session end hooks run when Claude session ends
-  session_end:
-    - name: "Session cleanup"
-      script: ".claude/hooks/session_cleanup.sh"
-      blocking: false
-      critical: false
-      order: 0
-      description: "Clean up temporary files"
-
-    - name: "Archive completed workflows"
-      script: ".claude/hooks/cleanup_completed_workflows.sh"
-      blocking: false
-      critical: false
-      order: 1
-      description: "Archive workflow progress files"
-
-  # Pre-compact hooks run before context compaction
-  pre_compact:
-    - name: "Pre-compact cleanup"
-      script: ".claude/hooks/pre_compact_cleanup.sh"
-      blocking: false
-      critical: false
-      order: 0
-      description: "Archive old files before compaction"
-
-  # Weekly maintenance hooks (run manually or via cron)
-  weekly_maintenance:
-    - name: "Archive old checkpoints"
-      script: ".claude/hooks/archive_old_checkpoints.py"
-      blocking: false
-      critical: false
-      description: "Remove checkpoints older than retention period"
-      manual: true # Run manually with: uv run python .claude/hooks/archive_old_checkpoints.py
-
-# =============================================================================
-# Stress Testing Configuration
-# =============================================================================
-
-stress_testing:
-  enabled: true
-  runner: ".claude/hooks/stress_test_suite.py"
-
-  categories:
-    - config_validation
-    - hook_execution
-    - agent_orchestration
-    - edge_cases
-
-  thresholds:
-    max_hook_execution_ms: 10000 # 10 seconds max per hook
-    min_pass_rate_percent: 90 # 90% minimum pass rate
-    max_concurrent_agents: 100 # Test up to 100 agents
+  # Files that should NOT be created (SSOT violations)
+  forbidden_files:
+    - "*_ANALYSIS*.md"
+    - "*_REPORT*.md"
+    - "*_AUDIT*.md"
+    - "*_SUMMARY*.md"
+    - "COMPREHENSIVE_*.md"
+    - "FINAL_*.md"

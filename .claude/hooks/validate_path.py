@@ -168,7 +168,7 @@ def main() -> None:
     except json.JSONDecodeError as e:
         # FAIL CLOSED for security hook - block on parse errors
         logger.error(f"Failed to parse stdin JSON: {e}")
-        print(f"🛑 Security hook error: Invalid JSON input", file=sys.stderr)
+        print("🛑 Security hook error: Invalid JSON input", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         # FAIL CLOSED for security hook - block on unexpected errors

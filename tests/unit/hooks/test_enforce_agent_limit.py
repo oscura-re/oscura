@@ -10,7 +10,7 @@ Test categories:
 2. Block decisions - when at or above max agents
 3. Registry interaction - reading/writing agent registry
 4. Error handling - corrupted registry, missing files
-5. Configuration - reading orchestration-config.yaml
+5. Configuration - reading config.yaml
 """
 
 import json

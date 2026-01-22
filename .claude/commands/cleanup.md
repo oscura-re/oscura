@@ -14,7 +14,7 @@ Execute maintenance tasks to archive old files, clean stale agents, and optimize
 /cleanup              # Run all cleanup tasks
 /cleanup --dry-run    # Show what would be cleaned without doing it
 /cleanup --force      # Skip confirmations and force cleanup
-```
+```python
 
 ## Examples
 
@@ -22,7 +22,7 @@ Execute maintenance tasks to archive old files, clean stale agents, and optimize
 /cleanup              # Interactive cleanup with confirmations
 /cleanup --dry-run    # Preview cleanup actions
 /cleanup --force      # Force cleanup without prompts
-```
+```markdown
 
 ## Cleanup Tasks
 
@@ -50,7 +50,7 @@ Execute maintenance tasks to archive old files, clean stale agents, and optimize
 
 ### 3. Mark Stale Agents
 
-**Target**: `.claude/agent-registry.json`
+**Target**: `.claude/agent-outputs/*.json`
 
 - Marks agents running >60 minutes as failed
 - Updates agent registry metadata
@@ -66,7 +66,7 @@ Execute maintenance tasks to archive old files, clean stale agents, and optimize
 - Moves to `.coordination/checkpoints/.archive/`
 - Removes archived checkpoints older than 30 days
 
-**Command**: `.claude/hooks/archive_old_checkpoints.py`
+**Command**: `cleanup automation`
 
 ### 5. Clean Session Artifacts
 
@@ -92,7 +92,7 @@ From `.claude/paths.yaml`:
 
 ## Sample Output
 
-```
+```bash
 Orchestration Cleanup
 =====================
 
@@ -123,13 +123,13 @@ Orchestration Cleanup
    Freed: 0.3 MB
 
 Total Freed: 9.5 MB
-```
+```markdown
 
 ## Dry-Run Output
 
 When using `--dry-run`, shows what would be cleaned:
 
-```
+```bash
 Cleanup Preview (Dry Run)
 ==========================
 
@@ -148,7 +148,7 @@ Would remove:
 Estimated space freed: 9.5 MB
 
 Run without --dry-run to perform cleanup.
-```
+```markdown
 
 ## Safety Features
 
@@ -166,7 +166,7 @@ Without `--force`, prompts before:
 Never touches:
 
 - `.coordination/README.md`
-- `.claude/agent-outputs/.gitkeep`
+- `agent output files`
 - Any file modified in last 24 hours (unless `--force`)
 
 ### Backup Before Delete
@@ -188,7 +188,7 @@ Individual cleanup scripts can be run manually:
 
 # Clean completed workflows
 .claude/hooks/cleanup_completed_workflows.sh
-```
+```markdown
 
 ## Health Check Integration
 
@@ -216,10 +216,14 @@ Edit `.claude/settings.json`:
     "SessionEnd": [] // Remove session_cleanup.sh
   }
 }
-```
+```markdown
 
 ## See Also
 
 - `/status` - View cleanup recommendations
 - `.claude/hooks/README.md` - Hook documentation
 - `.claude/paths.yaml` - Retention policy configuration
+
+## Version History
+
+- v1.0.0 (2026-01-16): Initial creation with comprehensive cleanup tasks

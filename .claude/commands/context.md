@@ -12,13 +12,13 @@ Analyze current context usage and provide actionable optimization recommendation
 
 ```bash
 /context           # Show context analysis and recommendations
-```
+```python
 
 ## Examples
 
 ```bash
 /context           # Display current context status with optimization advice
-```
+```markdown
 
 ## Information Displayed
 
@@ -80,7 +80,7 @@ Above `critical_threshold` (default: 75%)
 
 ## Sample Output
 
-```
+```python
 Context Usage Analysis
 ======================
 
@@ -106,11 +106,11 @@ Context Efficiency:
   Suggestions:
     - Consider using offset/limit when reading large files
     - Archive old agent outputs (5 reports >7 days old)
-```
+```markdown
 
 ## Context Management Thresholds
 
-From `.claude/config.yaml:orchestration.context.*` (defaults shown, see config for current values):
+From `.claude/config.yaml:orchestration.context` (defaults shown, see config for current values):
 
 - **Below warning_threshold** (default: <60%): Healthy - Normal operation
 - **At warning_threshold** (default: 60%): Warning - Start optimizing
@@ -127,8 +127,8 @@ From `.claude/config.yaml:orchestration.context.*` (defaults shown, see config f
 .claude/hooks/session_cleanup.sh
 
 # Create checkpoint
-.claude/hooks/checkpoint_state.sh create task-name "Description"
-```
+checkpoint management create task-name "Description"
+```markdown
 
 ### File Reading Optimization
 
@@ -138,7 +138,7 @@ Read(file_path="/large/file.py")
 
 # Use offset/limit for large files
 Read(file_path="/large/file.py", offset=100, limit=50)
-```
+```markdown
 
 ### Agent Coordination
 
@@ -151,6 +151,10 @@ Read(file_path="/large/file.py", offset=100, limit=50)
 
 - `/status` - System health and agent status
 - `/cleanup` - Run maintenance tasks
-- `.claude/hooks/check_context_usage.sh` - Context monitoring
+- `context monitoring` - Context monitoring
 - `.claude/config.yaml` - Threshold configuration
-- `.claude/hooks/checkpoint_state.sh` - Checkpoint management
+- `checkpoint management` - Checkpoint management
+
+## Version History
+
+- v1.0.0 (2026-01-16): Initial creation with context monitoring and optimization

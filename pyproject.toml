@@ -107,6 +107,11 @@ hdf5 = [
     "h5py>=3.0.0,<4.0.0",                # HDF5 file reading/writing
 ]
 
+# Claude orchestration system routing enhancements
+routing = [
+    "rapidfuzz>=3.0.0,<4.0.0",          # Fuzzy string matching for agent routing
+]
+
 # Jupyter notebook integration
 # NOTE: nbconvert CVE-2025-53000 affects <=7.16.6 (Windows-only code execution
 # via uncontrolled search path during PDF conversion with SVG). Constraint added
@@ -144,9 +149,14 @@ hardware = [
     "pyvisa-py>=0.7.0,<1.0.0",           # Pure Python VISA backend
 ]
 
+# Fuzzy routing enhancements
+fuzzy = [
+    "rapidfuzz>=3.0.0,<4.0.0",           # Fuzzy keyword matching for routing
+]
+
 # Install all optional dependencies
 all = [
-    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis,hardware]",
+    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis,hardware,fuzzy]",
 ]
 
 [project.scripts]

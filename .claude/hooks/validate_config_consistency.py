@@ -225,7 +225,7 @@ def check_settings_sync() -> tuple[bool, list[str]]:
             validation_errors.append("hooks: missing required field")
 
         if validation_errors:
-            errors.append(f"❌ settings.json out of sync with coding-standards.yaml:")
+            errors.append("❌ settings.json out of sync with coding-standards.yaml:")
             for ve in validation_errors:
                 errors.append(f"     - {ve}")
             errors.append("     Run: python .claude/hooks/generate_settings.py")
@@ -537,7 +537,7 @@ def main() -> int:
     print("\n" + "=" * 70)
     if all_passed:
         print("  ✅ Configuration is consistent")
-        print(f"  Errors: 0")
+        print("  Errors: 0")
     else:
         print("  ❌ VALIDATION FAILED")
         print(f"  Errors: {error_count}")

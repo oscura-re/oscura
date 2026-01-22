@@ -64,7 +64,7 @@ if [ -d "$COORD_DIR/locks" ]; then
       fi
     else
       # No expires_at field or invalid JSON - fallback to mtime (from config)
-      if [ -n "$(find "$lock_file" -mmin +${LOCKS_STALE_MINUTES} 2> /dev/null)" ]; then
+      if [ -n "$(find "$lock_file" -mmin +"${LOCKS_STALE_MINUTES}" 2> /dev/null)" ]; then
         rm -f "$lock_file"
         LOCK_COUNT=$((LOCK_COUNT + 1))
       fi

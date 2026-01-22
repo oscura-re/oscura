@@ -14,7 +14,7 @@ Commit and push changes with intelligent grouping and conventional commit format
 /git                    # Auto-generate commit message(s)
 /git "custom message"   # Use provided message
 /git --push             # Commit and push
-```
+```markdown
 
 ## Process
 
@@ -42,7 +42,7 @@ Commit and push changes with intelligent grouping and conventional commit format
 /git                              # Auto-commit with smart grouping
 /git "feat(auth): add OAuth support"  # Specific message
 /git --push                       # Commit and push
-```
+```markdown
 
 ## Notes
 
@@ -56,3 +56,7 @@ Commit and push changes with intelligent grouping and conventional commit format
 - `.claude/agents/git_commit_manager.md` - Primary agent handling this command
 - `.claude/docs/routing-concepts.md` - How routing works
 - `.claude/commands/agents.md` - All available agents
+
+## Version History
+
+- v1.0.0 (2026-01-16): Initial creation with atomic commits and conventional format

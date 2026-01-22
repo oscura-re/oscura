@@ -2,12 +2,15 @@
 """
 Shared logging utilities for Claude hooks.
 
-Provides standardized logging across all hooks with consistent formatting.
+Provides standardized logging across all hooks with consistent formatting,
+including optional JSON structured logging.
 
-Version: 1.0.0
+Version: 2.0.0
 Created: 2026-01-19
+Updated: 2026-01-22
 """
 
+import json
 import logging
 import sys
 from datetime import UTC, datetime
@@ -19,11 +22,41 @@ LOG_FORMAT = "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s"
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON lines.
+
+    Outputs structured JSON for machine parsing and log aggregation.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record as JSON.
+
+        Args:
+            record: Log record to format
+
+        Returns:
+            JSON string with timestamp, level, logger, message, and extra fields
+        """
+        log_entry: dict[str, Any] = {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        # Add extra fields if present
+        if hasattr(record, "extra_fields"):
+            log_entry.update(record.extra_fields)
+
+        return json.dumps(log_entry)
+
+
 def get_hook_logger(
     name: str,
     log_file: Path | None = None,
     level: int = logging.INFO,
     console: bool = False,
+    use_json: bool = False,
 ) -> logging.Logger:
     """Get standardized logger for hook.
 
@@ -32,14 +65,19 @@ def get_hook_logger(
         log_file: Path to log file (defaults to .claude/hooks/hooks.log)
         level: Logging level (default: INFO)
         console: Also log to console/stderr (default: False)
+        use_json: If True, log as JSON lines; if False, plain text (default: False)
 
     Returns:
         Configured logger instance
 
     Example:
+        # Plain text logging
         logger = get_hook_logger(__name__)
         logger.info("Hook started")
-        logger.error(f"Failed: {error}")
+
+        # JSON structured logging
+        logger = get_hook_logger(__name__, use_json=True)
+        logger.info("Hook started", extra={"extra_fields": {"hook": "validate_path"}})
     """
     # Create logger
     logger = logging.getLogger(name)
@@ -50,7 +88,10 @@ def get_hook_logger(
         return logger
 
     # Create formatter
-    formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
+    if use_json:
+        formatter: logging.Formatter = JSONFormatter()
+    else:
+        formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
 
     # File handler
     if log_file is None:
@@ -107,6 +148,32 @@ def log_hook_end(
         logger.info(f"{hook_name} {status} - duration: {duration_ms:.2f}ms")
     else:
         logger.info(f"{hook_name} {status}")
+
+
+def log_structured_event(
+    logger: logging.Logger, event_type: str, message: str, **extra_fields: Any
+) -> None:
+    """Log structured event with extra fields.
+
+    Args:
+        logger: Logger instance
+        event_type: Type of event (e.g., "hook_enforcement", "agent_launch")
+        message: Human-readable message
+        **extra_fields: Additional fields to include in JSON
+
+    Example:
+        logger = get_hook_logger(__name__, use_json=True)
+        log_structured_event(
+            logger,
+            "route_decision",
+            "Routed to code_reviewer",
+            agent="code_reviewer",
+            complexity=45,
+            keywords=["review", "audit"]
+        )
+    """
+    extra_fields["event_type"] = event_type
+    logger.info(message, extra={"extra_fields": extra_fields})
 
 
 def log_to_file(file_path: Path, level: str, message: str) -> None:

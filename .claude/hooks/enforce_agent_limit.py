@@ -80,14 +80,13 @@ def get_max_running_limit(config: dict[str, Any]) -> int:
         max_concurrent = swarm_config.get("max_parallel_agents")
         max_batch = swarm_config.get("max_batch_size")
 
-    # Use the most restrictive limit
-    limits = [DEFAULT_MAX_RUNNING]
+    # Use configured limit, or DEFAULT if not configured
+    limits = []
     if max_concurrent is not None:
         limits.append(int(max_concurrent))
     if max_batch is not None:
         limits.append(int(max_batch))
-
-    return min(limits)
+    return min(limits) if limits else DEFAULT_MAX_RUNNING
 
 
 def update_metrics(action: str, running_count: int) -> None:

@@ -95,7 +95,7 @@ cd oscura
 
 # Verify setup
 ./scripts/verify-setup.sh
-```
+```bash
 
 **Alternative (manual steps):**
 
@@ -108,7 +108,7 @@ uv sync --all-extras
 
 # Verify setup
 uv run pytest tests/unit -x --maxfail=5
-```
+```bash
 
 **IMPORTANT:** The `install-hooks.sh` script installs BOTH pre-commit and pre-push hooks.
 These hooks are **REQUIRED** to prevent CI failures. Do not skip this step!
@@ -138,7 +138,7 @@ These hooks are **REQUIRED** to prevent CI failures. Do not skip this step!
 git add .
 git commit -m "feat: your change"  # Pre-commit hook runs automatically
 git push                           # Pre-push hook runs automatically
-```
+```bash
 
 ### Verification Scripts
 
@@ -239,7 +239,7 @@ For comprehensive test documentation, see **[docs/testing/test-suite-guide.md](d
 ```bash
 ./scripts/test.sh              # Full tests with coverage (8-10 min)
 ./scripts/test.sh --fast       # Quick tests without coverage (5-7 min)
-```
+```bash
 
 **Manual test commands** (only if needed for specific scenarios):
 
@@ -256,7 +256,7 @@ uv run pytest tests/unit/protocols -v
 
 # Run in parallel
 uv run pytest tests/unit -n auto
-```
+```markdown
 
 ## Coding Standards
 
@@ -271,13 +271,13 @@ uv run pytest tests/unit -n auto
 
 We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-```
+```bash
 <type>(<scope>): <subject>
 
 <body>
 
 <footer>
-```
+```bash
 
 **Types:**
 
@@ -291,12 +291,12 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 **Examples:**
 
-```
+```markdown
 feat(protocols): add FlexRay decoder support
 fix(loaders): correct Tektronix WFM channel parsing
 docs(api): add spectral analysis examples
 test(analyzers): increase rise time test coverage
-```
+```markdown
 
 ### Testing
 
@@ -340,7 +340,7 @@ def rise_time(trace: TraceData, low: float = 0.1, high: float = 0.9) -> float:
     References:
         IEEE 181-2011 Section 5.2 "Rise Time and Fall Time"
     """
-```
+```python
 
 ## Documentation Checklist
 
@@ -389,11 +389,11 @@ def example_function(param1: str, param2: int = 0) -> bool:
     References:
         IEEE 181-2011 Section X.X (if applicable)
     """
-```
+```markdown
 
 ## Project Structure
 
-```
+```bash
 oscura/
 ├── demos/                  # Primary documentation (working examples)
 │   ├── 01_waveform_analysis/       # Waveform loading and analysis
@@ -443,7 +443,7 @@ oscura/
     ├── unit/               # Unit tests
     ├── integration/        # Integration tests
     └── conftest.py         # Test fixtures and configuration
-```
+```bash
 
 ## Troubleshooting CI Failures
 
@@ -457,7 +457,7 @@ If CI fails after push, here's how to debug:
 
 # If tests fail locally, get detailed output
 uv run pytest <failing_test> -v --tb=long
-```
+```bash
 
 ### 2. Common CI Failure Causes
 
@@ -480,7 +480,7 @@ python --version
 
 # Run tests with strict markers (like CI)
 uv run pytest tests/unit -v --strict-markers --strict-config
-```
+```markdown
 
 ## Getting Help
 

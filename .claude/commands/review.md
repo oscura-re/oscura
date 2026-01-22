@@ -1,405 +1,333 @@
 ---
 name: review
-description: Code quality review for security and best practices
-arguments: [path]
+description: Comprehensive code review for quality, security, and best practices
+arguments: [path, --security, --verbose]
+version: 1.0.0
+created: 2026-01-22
+updated: 2026-01-22
+status: stable
+target_agent: code_reviewer
 ---
 
-# /review - Code Quality Review
+# /review - Comprehensive Code Review
 
-Force code review workflow for quality, security, and best practices auditing.
-
-## Purpose
-
-Bypass intelligent routing and go directly to `code_reviewer` agent for comprehensive code quality analysis, security auditing, and architectural feedback.
+Perform thorough code review focusing on quality, security, maintainability, and adherence to project standards.
 
 ## Usage
 
 ```bash
-/review [path]                              # Review file or directory
-/review src/auth/jwt.py                     # Review specific file
-/review src/api/                            # Review directory
-/review                                     # Review recent changes
-/review --security src/auth/                # Security-focused review
-```
+/review [path]                  # Review changed files or specified path
+/review src/module.py           # Review specific file
+/review src/                    # Review directory
+/review --security              # Focus on security issues
+/review --verbose               # Detailed findings
+```markdown
 
-## When to Use
+## Purpose
 
-✅ **Use /review when**:
+This command routes to the **code_reviewer** agent for:
 
-- Checking code quality before commit/PR
-- Security audit of authentication/authorization code
-- Architectural review of new features
-- Finding potential bugs or issues
-- Getting feedback on code style
-- Pre-deployment quality check
+- Pull request quality gates (pre-merge reviews)
+- Security vulnerability detection
+- Code quality assessment
+- Best practices enforcement
+- Performance bottleneck identification
+- Test coverage analysis
+- Maintainability scoring
 
-❌ **Don't use /review when**:
+**When to use**:
+- Before merging pull requests
+- Pre-commit quality checks
+- Security audits for sensitive code
+- Periodic code audits (monthly/quarterly)
+- After major feature implementation
 
-- Just want to write code → Use `/code` or `/feature`
-- Need documentation → Use `/doc`
-- Need research → Use `/research`
-- Want to implement something → Use `/code` or `/feature`
-
-## How It Works
-
-```
-/review [path]
-  ↓
-Force route to code_reviewer (bypass orchestrator)
-  ↓
-code_reviewer analyzes code for:
-  - Code quality
-  - Security vulnerabilities
-  - Best practices
-  - Performance issues
-  - Architectural concerns
-  ↓
-Returns: Detailed review with recommendations
-```
+**When NOT to use**:
+- Just want code written → Use natural language or code_assistant
+- Just need documentation → Use technical_writer
+- Git operations → Use `/git`
 
 ## Examples
 
-### Example 1: File Review
+### Example 1: Review Current Changes
 
 ```bash
-/review src/auth/jwt.py
-```
+/review
+```bash
 
-Returns:
+**Output**:
+```bash
+Code Review: src/auth/jwt.py (+127, -42 lines)
 
+QUALITY (Score: 8.5/10)
+✓ Type hints present and correct
+✓ Docstrings follow Google style
+✓ Function length appropriate (<50 lines)
+⚠ Cyclomatic complexity: 12 (target: <10) in verify_token()
+
+SECURITY (Score: 7/10)
+✓ No hardcoded secrets
+✓ Input validation on all user inputs
+✗ CRITICAL: JWT signature not verified before decoding (jwt.py:45)
+⚠ Missing rate limiting on token endpoint
+
+MAINTAINABILITY (Score: 9/10)
+✓ Clear separation of concerns
+✓ Minimal coupling
+✓ Good error messages
+
+TEST COVERAGE
+✓ Unit tests present: 12/12 functions
+⚠ Missing edge case: expired token with valid signature
+
+RECOMMENDATIONS
+1. [CRITICAL] Add signature verification before decode
+2. [HIGH] Reduce complexity in verify_token() - extract helper
+3. [MEDIUM] Add rate limiting middleware
+4. [LOW] Add edge case test for expired+valid tokens
 ```markdown
-# Code Review: src/auth/jwt.py
 
-## Summary
-
-Overall quality: B+ (Good, minor improvements needed)
-
-## Security Analysis ⚠️
-
-1. **MEDIUM**: JWT secret stored in config file
-   - Recommendation: Use environment variable or secrets manager
-   - Line 15: `SECRET_KEY = config['jwt_secret']`
-
-## Code Quality ✓
-
-1. **Good**: Type hints used consistently
-2. **Good**: Comprehensive docstrings
-3. **Minor**: Function too long (45 lines)
-   - Recommendation: Split `validate_token()` into smaller functions
-
-## Performance
-
-1. **Minor**: Unnecessary regex compilation in loop
-   - Line 67: Move `re.compile()` outside loop
-
-## Best Practices ✓
-
-1. **Good**: Error handling is comprehensive
-2. **Good**: Follows project coding standards
-
-## Recommendations
-
-1. Move JWT secret to environment variable (HIGH PRIORITY)
-2. Refactor `validate_token()` for better readability
-3. Cache regex compilation
-
-## Grade: B+ (85/100)
-```
-
-### Example 2: Directory Review
+### Example 2: Security-Focused Review
 
 ```bash
-/review src/api/
-```
+/review src/auth/ --security
+```bash
 
-Returns overview of all files with:
+**Result**:
+```bash
+Security Review: src/auth/ (5 files, 847 lines)
 
-- Critical issues summary
-- Per-file grades
-- Common patterns (good and bad)
-- Architectural recommendations
+CRITICAL ISSUES (2)
+1. JWT signature not verified (jwt.py:45)
+   Risk: Authentication bypass
+   Fix: Use decode(verify=True, algorithms=['HS256'])
 
-### Example 3: Security-Focused Review
+2. SQL query uses string interpolation (users.py:78)
+   Risk: SQL injection
+   Fix: Use parameterized queries
+
+HIGH ISSUES (3)
+[... detailed security findings ...]
+```markdown
+
+### Example 3: Specific File Review
 
 ```bash
-/review --security src/
-```
+/review src/oscura/analyzers/protocols/uart.py --verbose
+```markdown
 
-Returns focused security audit:
+**Returns**:
+- Detailed quality metrics
+- Line-by-line analysis
+- Specific improvement suggestions
+- Code examples for fixes
 
-- SQL injection risks
-- XSS vulnerabilities
-- Authentication/authorization issues
-- Secrets in code
-- Insecure dependencies
+## Arguments
 
-## Review Categories
+| Argument | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `path` | file/dir | No | git diff | File, directory, or use git changes |
 
-code_reviewer analyzes:
+## Options
 
-### 1. Security ⚠️
+| Flag | Description |
+|------|-------------|
+| `--security` | Focus on security vulnerabilities only |
+| `--verbose` | Show detailed findings with code examples |
 
-- Injection vulnerabilities (SQL, XSS, command)
-- Authentication/authorization flaws
-- Secrets in code
-- Insecure cryptography
-- OWASP Top 10 issues
-
-### 2. Code Quality
-
-- Type safety
-- Error handling
-- Code organization
-- Naming conventions
-- Documentation quality
-
-### 3. Performance
-
-- Algorithmic efficiency
-- Database query optimization
-- Caching opportunities
-- Resource leaks
-- Bottlenecks
-
-### 4. Best Practices
-
-- Design patterns
-- SOLID principles
-- DRY violations
-- Code duplication
-- Project standards compliance
-
-### 5. Architecture
-
-- Module organization
-- Dependency management
-- Separation of concerns
-- Scalability concerns
-
-## After Using /review
-
-What you can do next:
-
-1. **Fix issues** - `/code fix [issue]`
-2. **Refactor** - `/code refactor [file] according to review`
-3. **Commit** - `/git "address code review findings"`
-4. **Re-review** - `/review [path]` after changes
-5. **Document** - `/doc document [complex logic]`
-
-## Review Flags
-
-Customize review focus:
+## How It Works
 
 ```bash
-/review --security <path>     # Security-focused
-/review --performance <path>  # Performance-focused
-/review --style <path>        # Style/standards focused
-/review --architecture <path> # Architectural review
-/review --all <path>          # Comprehensive (default)
-```
+/review [path]
+  ↓
+Route to code_reviewer agent
+  ↓
+1. Scope Analysis: Identify files, load standards
+  ↓
+2. Quality Check: Naming, types, docs, complexity
+  ↓
+3. Security Scan: Vulnerabilities, input validation
+  ↓
+4. Performance Analysis: Algorithm efficiency, bottlenecks
+  ↓
+5. Test Coverage: Unit/integration, edge cases
+  ↓
+6. Maintainability: Coupling, cohesion, patterns
+  ↓
+Return comprehensive review with severity levels
+```markdown
 
 ## Review Output Format
 
-```markdown
-# Code Review: <File/Directory>
+Reviews include:
 
-## Summary
-
-Overall assessment and grade
-
-## Critical Issues 🔴
-
-Must-fix issues (security, bugs)
-
-## Major Issues 🟡
-
-Should-fix issues (quality, performance)
-
-## Minor Issues 🟢
-
-Nice-to-have improvements (style, refactoring)
-
-## Positive Highlights ✓
-
-What's done well
-
-## Recommendations
-
-Prioritized action items
-
-## Detailed Analysis
-
-Per-file or per-section breakdown
-
-## Grade: X (score/100)
-```
+1. **Executive Summary**: Overall scores and critical issues
+2. **Quality Assessment**: Readability, complexity, documentation
+3. **Security Findings**: Vulnerabilities categorized by severity
+4. **Performance Analysis**: Bottlenecks and optimization opportunities
+5. **Test Coverage**: Missing tests and edge cases
+6. **Recommendations**: Prioritized action items
 
 ## Severity Levels
 
-|Level|Icon|Description|Action|
-|---|---|---|---|
-|**Critical**|🔴|Security vulnerabilities, bugs|Fix immediately|
-|**Major**|🟡|Quality issues, performance|Fix soon|
-|**Minor**|🟢|Style, optimization|Fix when convenient|
-|**Info**|ℹ️|Suggestions, best practices|Consider|
+| Level | Description | Action Required |
+|-------|-------------|-----------------|
+| **CRITICAL** | Security vulnerabilities, data loss risks | Fix before merge |
+| **HIGH** | Major quality issues, performance problems | Fix soon |
+| **MEDIUM** | Code smells, maintainability concerns | Address in next sprint |
+| **LOW** | Style issues, minor improvements | Nice to have |
 
-## Integration with Workflow
+## Quality Standards
 
-### Before Commit
+Reviews check against `.claude/coding-standards.yaml`:
 
-```
-/code implement feature
-  ↓
-/review src/feature.py
-  ↓
-Fix issues
-  ↓
-/git "add feature with review feedback"
-```
+- ✅ **Naming**: snake_case functions, PascalCase classes
+- ✅ **Type hints**: Present and correct
+- ✅ **Docstrings**: Google style with examples
+- ✅ **Function length**: < 50 lines preferred
+- ✅ **Complexity**: Cyclomatic complexity < 10
+- ✅ **DRY**: No code duplication
+- ✅ **Error handling**: Actionable error messages
 
-### Before PR
+## Security Checks
 
-```
-/feature implement authentication
-  ↓
-/review src/auth/
-  ↓
-Address findings
-  ↓
-Create PR
-```
+All reviews scan for:
 
-### Security Audit
+- Hardcoded secrets (API keys, passwords, tokens)
+- Input validation on user inputs
+- SQL injection vulnerabilities
+- Path traversal risks
+- Authentication/authorization enforcement
+- HTTPS for external connections
+- Dependency vulnerabilities
 
-```
-/review --security src/
-  ↓
-Identify vulnerabilities
-  ↓
-/code fix [security issues]
-  ↓
-/review --security src/  (verify fixed)
-```
+## Error Handling
 
-## What Gets Reviewed
+### Path Not Found
 
-code_reviewer checks:
+```bash
+/review nonexistent/path.py
+```markdown
 
-✅ **Source Code**:
+**Response**:
+```markdown
+Error: Path not found: nonexistent/path.py
+Did you mean: /review src/path.py?
+```markdown
 
-- Python files (.py)
-- Configuration files
-- SQL queries
-- API endpoints
+### No Changes Detected
 
-✅ **Patterns**:
+```bash
+/review
+```bash
 
-- Common anti-patterns
-- Security vulnerabilities
-- Performance issues
-- Code smells
+(when working directory is clean)
 
-❌ **NOT Reviewed**:
-
-- Binary files
-- Generated code
-- Third-party libraries
-- Test fixtures (unless requested)
-
-## Comparison with Other Tools
-
-|Tool|Purpose|Focus|Output|
-|---|---|---|---|
-|`/review`|Code quality|Comprehensive|Review report|
-|`ruff`|Linting|Syntax/style|Error list|
-|`mypy`|Type checking|Type safety|Type errors|
-|`pytest`|Testing|Functionality|Test results|
-
-`/review` complements these tools with human-like analysis and architectural feedback.
+**Response**:
+```bash
+No changes detected in git diff.
+Specify a path: /review <path>
+Or use: /review src/ to review specific directory
+```python
 
 ## Configuration
 
-Review behavior in `.claude/config.yaml`:
+Review behavior controlled in `.claude/config.yaml`:
 
 ```yaml
-agents:
-  code_reviewer:
-    strictness: normal # or "lenient", "strict"
-    focus_areas:
-      - security
-      - quality
-      - performance
-    ignore_patterns:
-      - 'tests/**' # Don't review tests
-      - '**/__init__.py' # Skip empty inits
-    minimum_grade: B # Warn if below
-```
+orchestration:
+  agents:
+    code_reviewer:
+      model: sonnet                  # Fast, thorough reviews
+      max_complexity: 10             # Cyclomatic complexity threshold
+      min_test_coverage: 80          # Minimum test coverage %
+```markdown
 
-## When to Request Formal Review
+## Related Commands
 
-Use `/review` before:
+| Command | Purpose | When to Use Instead |
+|---------|---------|---------------------|
+| `/review` | Code quality review | Pre-merge quality gate |
+| `/ai write code` | Implement features | Need code written |
+| `/git` | Create commits | Commit reviewed code |
+| `/route code_reviewer <task>` | Manual routing | Force specific review |
 
-- **Committing** sensitive code (auth, payments, etc.)
-- **Creating PR** for complex features
-- **Deploying** to production
-- **Merging** to main branch
-- **Refactoring** critical systems
+## Workflow Integration
 
-## Workflow
+Common patterns:
 
-```
-/review → code_reviewer (direct, no routing)
-        → Read files
-        → Analyze patterns
-        → Check security
-        → Assess quality
-        → Generate report with grades
-```
+1. **Code → Review → Commit**:
+   ```bash
+   /ai implement user authentication
+   # Review implementation
+   /review src/auth/
+   # Fix critical issues
+   /git "feat: add user authentication"
+```bash
 
-## Aliases
+2. **PR Review**:
+   ```bash
+   /review
+   # Address findings
+   /review  # Re-review after fixes
+   /git "fix: address review findings"
+```markdown
 
-The following aliases work identically:
+3. **Security Audit**:
+   ```bash
+   /review src/ --security
+   # Fix vulnerabilities
+   /review src/ --security  # Verify fixes
+```bash
 
-- `/audit` → `/review`
-- `/check` → `/review`
-- `/analyze` → `/review`
+## Pro Tips
 
-## Best Practices
+### 1. Review Before Commit
 
-### Good Review Requests:
+Always review significant changes before committing:
 
 ```bash
-/review src/auth/jwt.py                    # Specific file
-/review src/api/ --security                 # Security focus
-/review                                     # Recent changes
-/review src/ --architecture                 # Architectural review
-```
+/review && /git "feat: new feature"
+```python
 
-### After Implementing Code:
+### 2. Focus Reviews
+
+Use flags to narrow scope:
 
 ```bash
-/code implement user validation
-  ↓
-/review [generated file]
-  ↓
-Fix issues from review
-  ↓
-/git "add user validation"
-```
+/review src/auth/ --security       # Security-only
+/review src/complex.py --verbose   # Detailed analysis
+```markdown
 
-## Agent
+### 3. Incremental Reviews
 
-Routes to: **code_reviewer** (always, no routing logic)
+Review small chunks frequently rather than large batches:
 
-For normal routing behavior, see `.claude/docs/routing-concepts.md`
+```bash
+# Good: Review one module
+/review src/module.py
+
+# Avoid: Review entire codebase
+/review src/  # Too broad, less actionable
+```markdown
+
+## Comparison
+
+| Approach | Speed | Depth | Best For |
+|----------|-------|-------|----------|
+| `/review` | Medium | High | Pre-merge quality gate |
+| `/review --security` | Fast | Security | Security audits |
+| `/review --verbose` | Slow | Maximum | Complex modules |
 
 ## See Also
 
-- `.claude/docs/routing-concepts.md` - How routing works
-- `.claude/agents/code_reviewer.md` - Agent details
-- `.claude/commands/agents.md` - All available agents
+- `.claude/agents/code_reviewer.md` - Full agent capabilities
+- `.claude/coding-standards.yaml` - Project coding standards
+- `.claude/commands/git.md` - Commit reviewed code
+- `.claude/commands/route.md` - Manual routing control
+- `CONTRIBUTING.md` - Development workflow
+- `CLAUDE.md` - Project overview
 
-## Version
+## Version History
 
-v1.0.0 (2026-01-09) - Initial creation as part of workflow command system
-v1.1.0 (2026-01-16) - Added cross-references to routing concepts
+- **v1.0.0** (2026-01-22): Initial creation with routing to code_reviewer agent

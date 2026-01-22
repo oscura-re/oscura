@@ -48,9 +48,9 @@ def check_directories() -> tuple[bool, str]:
         get_absolute_path("claude.root", PROJECT_DIR),
         get_absolute_path("claude.agents", PROJECT_DIR),
         get_absolute_path("claude.hooks", PROJECT_DIR),
-        get_absolute_path("claude.outputs.root", PROJECT_DIR),
-        get_absolute_path("claude.coordination.root", PROJECT_DIR),
-        get_absolute_path("claude.coordination.checkpoints", PROJECT_DIR),
+        get_absolute_path("claude.agent_outputs", PROJECT_DIR),
+        get_absolute_path("coordination.root", PROJECT_DIR),
+        get_absolute_path("coordination.checkpoints", PROJECT_DIR),
     ]
 
     missing = []
@@ -105,7 +105,7 @@ def check_agent_registry() -> tuple[bool, str]:
 
 def check_checkpoints() -> tuple[bool, str]:
     """Check checkpoint system."""
-    checkpoint_dir = get_absolute_path("claude.coordination.checkpoints", PROJECT_DIR)
+    checkpoint_dir = get_absolute_path("coordination.checkpoints", PROJECT_DIR)
 
     if not checkpoint_dir.exists():
         return True, "No checkpoint directory (will be created as needed)"
@@ -142,7 +142,7 @@ def check_disk_space() -> tuple[bool, str]:
 
 def check_old_outputs() -> tuple[bool, str]:
     """Check for old agent outputs that should be archived."""
-    outputs_dir = get_absolute_path("claude.outputs.root", PROJECT_DIR)
+    outputs_dir = get_absolute_path("claude.agent_outputs", PROJECT_DIR)
 
     if not outputs_dir.exists():
         return True, "No outputs directory"

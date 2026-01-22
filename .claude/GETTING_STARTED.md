@@ -1,24 +1,27 @@
-# Getting Started with Claude Code
+# Getting Started with Claude Code Orchestration
 
-Welcome to the Claude Code orchestration system! This guide explains the **intelligent three-path workflow system** that automatically routes your tasks to the right agent.
+Welcome to the Claude Code orchestration system! This guide explains how to use the intelligent routing system that automatically selects the right agent for your task.
 
-**Version**: 3.1.0 (2026-01-16) - Optimized and streamlined
+**Version**: 4.0.0 (2026-01-22) - Accurate system description
 
 ## Quick Start
 
-### Your First Command
+### Your First Task
 
-**Not sure what to do? Just use `/ai`** - the system will figure out the rest:
+**Not sure what to do? Just describe your task** - the system will figure out the rest:
 
 ```bash
-# Write a simple function (routes to ad-hoc workflow)
-/ai write a function to calculate factorial
+# Write code (routes to code_assistant)
+"Write a function to calculate factorial"
 
-# Build a feature (routes to auto-spec workflow)
-/ai implement user authentication with JWT
+# Research something (routes to knowledge_researcher)
+"Research Docker networking best practices"
 
-# Research something (routes to research agent)
-/ai research Docker networking best practices
+# Create documentation (routes to technical_writer)
+"Document the API endpoints"
+
+# Review code (routes to code_reviewer)
+"Review src/auth/jwt.py for security issues"
 ```
 
 ### Check System Status
@@ -31,97 +34,78 @@ Welcome to the Claude Code orchestration system! This guide explains the **intel
 
 ---
 
-## Understanding the Three Workflows
+## How It Works
 
-The system intelligently routes your tasks through **three different paths** based on complexity:
+The orchestration system uses **intelligent keyword-based routing** to automatically select the best agent for your task:
 
-### Path 1: Ad-Hoc (No Requirements) 🏃 FAST
-
-**For**: Quick utilities, simple functions, prototypes, bug fixes
-**Speed**: ⚡ Minutes
-**Output**: Code only (no spec, no validation)
-
-**Example**:
-
-```bash
-/ai write a function to validate email addresses
+```
+User describes task in natural language
+  ↓
+Orchestrator analyzes keywords and context
+  ↓
+Fuzzy matching selects best agent (RapidFuzz)
+  ↓
+Agent executes task
+  ↓
+Returns results to user
 ```
 
-**What happens**: Direct code generation with docstring, ready to use immediately.
+### Routing Intelligence
+
+The orchestrator:
+
+1. **Discovers available agents** dynamically from `.claude/agents/*.md`
+2. **Extracts routing keywords** from agent frontmatter
+3. **Scores each agent** based on keyword overlap with user request
+4. **Routes to highest-scoring agent** automatically
+
+For complete routing details, see `.claude/docs/routing-concepts.md` and `.claude/docs/fuzzy-routing.md`.
 
 ---
 
-### Path 2: Auto-Spec (System Generates) 🤖 SMART
+## Available Agents
 
-**For**: Medium complexity features (not trivial, not massive)
-**Speed**: ⏱️ 15-30 minutes
-**Output**: Auto-generated requirements + code + validation report
+The system includes **6 specialized agents**:
 
-**Example**:
+| Agent | Purpose | Triggers |
+|-------|---------|----------|
+| **orchestrator** | Task routing and workflow coordination | Automatic (routes all tasks) |
+| **code_assistant** | Write code for all implementation tasks | "write", "create", "implement", "function" |
+| **knowledge_researcher** | Web research with citations | "research", "investigate", "validate" |
+| **technical_writer** | Create documentation and guides | "document", "write guide", "tutorial" |
+| **code_reviewer** | Code quality and security reviews | "review", "audit", "quality" |
+| **git_commit_manager** | Git operations and commits | "commit", "/git" |
 
-```bash
-/ai implement API endpoint for user registration
-```
+For detailed agent documentation, see `.claude/agents/*.md`
 
-**What happens**:
-
-1. System analyzes complexity (score: 55)
-2. Generates AUTO-XXX requirements with acceptance criteria
-3. Asks: "Review requirements? [Y/n]"
-4. Implements with validation
-5. Returns: Code + tests + validation report
+To list all agents with their keywords: `/agents --verbose`
 
 ---
 
-### Path 3: Manual Spec (User Writes) 📋 FORMAL
+## Essential Commands
 
-**For**: Complex features with detailed requirements
-**Speed**: ⏱️ Hours (thorough)
-**Output**: Full requirements + task graph + code + validation
+### Core Commands
 
-**Example**:
+| Command | Purpose | Example |
+|---------|---------|---------|
+| Natural language | Describe task, system routes automatically | "Implement authentication" |
+| `/help` | Show all commands | `/help` |
+| `/status [--json]` | System health check | `/status` |
+| `/agents [keyword]` | List available agents | `/agents` |
+| `/context` | Show context usage | `/context` |
+| `/cleanup [--dry-run]` | Run maintenance tasks | `/cleanup` |
 
-```bash
-# 1. Write requirements.md manually
-vim requirements.md
+### Specialized Commands
 
-# 2. Extract to formal spec
-/spec extract requirements.md
+| Command | Purpose | Agent |
+|---------|---------|-------|
+| `/git [message]` | Create atomic commits | git_commit_manager |
+| `/swarm <task>` | Parallel multi-agent workflows | orchestrator |
+| `/route <agent> <task>` | Force route to specific agent | (bypass routing) |
+| `/research <topic>` | Conduct comprehensive research | knowledge_researcher |
+| `/review [path]` | Code quality review | code_reviewer |
 
-# 3. Implement
-/implement TASK-001
-
-# 4. Validate
-/validate TASK-001
-```
-
----
-
-## How the System Decides
-
-The orchestrator calculates a **complexity score (0-100)** to choose the path:
-
-| Score      | Path        | Example                                |
-| ---------- | ----------- | -------------------------------------- |
-| **0-30**   | Ad-Hoc      | "write a function to reverse string"   |
-| **31-70**  | Auto-Spec   | "implement JWT authentication"         |
-| **71-100** | Manual Spec | "build complete OAuth system"          |
-
-### Complexity Factors
-
-**Increases Score (+)**:
-
-- Security/auth keywords: +30
-- Database/state: +20
-- API integration: +15
-- Multiple components: +15 each
-- Validation needed: +10
-
-**Decreases Score (-)**:
-
-- "function", "helper", "utility": -30
-- "quick", "simple", "small": -20
-- "prototype", "example": -15
+For complete command reference, see `.claude/commands/*.md`
 
 ---
 
@@ -130,113 +114,138 @@ The orchestrator calculates a **complexity score (0-100)** to choose the path:
 ### 1. Research → Document → Implement
 
 ```bash
-/ai research GraphQL best practices
-/ai document GraphQL implementation guide
-/ai implement GraphQL endpoint
+/research "GraphQL best practices 2026"
+# Review research findings
+
+/ai document "Create GraphQL implementation guide"
+# Documentation created
+
+/ai implement "Add GraphQL endpoint for users"
+# Implementation complete
 ```
 
-### 2. Implement → Test → Review → Commit
+### 2. Implement → Review → Commit
 
 ```bash
-/ai implement user authentication
-/ai write tests for authentication
+/ai "Implement user authentication with JWT"
+# Code implementation complete
+
 /review src/auth/
-/git "implement user authentication"
+# Review findings: 2 critical, 3 high priority
+
+# Fix critical issues
+
+/git "feat: add JWT authentication"
+# Committed with conventional format
 ```
 
-### 3. Prototype → Formalize → Validate
+### 3. Parallel Research
 
 ```bash
-/ai quick prototype of caching system
-# Test prototype, decide to formalize
-/spec extract from prototype
-/implement TASK-001
-/validate TASK-001
+/swarm research authentication approaches: OAuth, JWT, session-based
+# Launches 3 parallel research tasks
+# Synthesizes results
 ```
 
-### 4. Parallel Research (Multi-Agent)
+### 4. Force Specific Agent
 
 ```bash
-/swarm research authentication: OAuth, JWT, session-based
-# Launches 3 agents in parallel
+# Let orchestrator decide
+"Write a caching utility"
+
+# OR force specific agent
+/route code_assistant "Write a caching utility"
 ```
 
 ---
 
-## Essential Commands
+## Routing Examples
 
-### Core Orchestration
+The orchestrator intelligently routes based on keywords:
 
-| Command                     | Purpose                         | Example                                  |
-| --------------------------- | ------------------------------- | ---------------------------------------- |
-| `/ai <task>`                | Universal AI routing            | `/ai implement authentication`           |
-| `/status`                   | System health check             | `/status`                                |
-| `/help`                     | Show all commands               | `/help`                                  |
+### Code Implementation
 
-### Specialized Tasks
+```bash
+"Write a function to validate emails"           → code_assistant
+"Implement user registration endpoint"          → code_assistant
+"Create a helper script for migrations"         → code_assistant
+```
 
-| Command                     | Purpose                         | Agent                |
-| --------------------------- | ------------------------------- | -------------------- |
-| `/swarm <task>`             | Parallel multi-agent workflows  | orchestrator (swarm) |
-| `/research <topic>`         | Web research                    | knowledge_researcher |
-| `/review <path>`            | Code review                     | code_reviewer        |
-| `/implement TASK-XXX`       | Implement from spec             | spec_implementer     |
-| `/validate TASK-XXX`        | Validate implementation         | spec_validator       |
+### Research & Learning
 
-### Utilities
+```bash
+"Research async patterns in Python"             → knowledge_researcher
+"Investigate Docker networking best practices"  → knowledge_researcher
+"Validate JWT security approaches"              → knowledge_researcher
+```
 
-| Command                     | Purpose                         |
-| --------------------------- | ------------------------------- |
-| `/agents`                   | List available agents           |
-| `/context`                  | Monitor system state            |
-| `/cleanup [--aggressive]`   | Clean up old files              |
+### Documentation
 
-For complete command reference, see `.claude/commands/*.md`
+```bash
+"Document the REST API endpoints"               → technical_writer
+"Write a tutorial for new contributors"         → technical_writer
+"Create architecture documentation"             → technical_writer
+```
+
+### Code Review
+
+```bash
+"Review src/auth/ for security issues"          → code_reviewer
+"Audit code quality in src/analyzers/"          → code_reviewer
+"Check for performance bottlenecks"             → code_reviewer
+```
+
+### Git Operations
+
+```bash
+/git "feat: add user authentication"            → git_commit_manager
+/git "fix: resolve validation bug"              → git_commit_manager
+```
 
 ---
 
-## Available Agents
+## Fuzzy Routing
 
-The system includes 8 specialized agents:
+The system uses **fuzzy keyword matching** (RapidFuzz) to handle variations:
 
-| Agent                     | Purpose                                | Triggers                              |
-| ------------------------- | -------------------------------------- | ------------------------------------- |
-| **orchestrator**          | Task routing and workflow coordination | All `/ai` commands                    |
-| **code_assistant**        | Quick ad-hoc code writing              | "write", "create", "function"         |
-| **knowledge_researcher**  | Web research and synthesis             | "research", "find", "investigate"     |
-| **spec_implementer**      | Implement from specifications          | "implement TASK-XXX"                  |
-| **spec_validator**        | Validate against requirements          | "validate TASK-XXX"                   |
-| **technical_writer**      | Documentation creation                 | "document", "write guide"             |
-| **code_reviewer**         | Code review and security audit         | "review", "audit"                     |
-| **git_commit_manager**    | Git operations and commits             | "commit", "/git"                      |
+```bash
+"write"     → matches "write", "writer", "writing"
+"research"  → matches "research", "researcher", "investigate"
+"document"  → matches "document", "documentation", "docs"
+```
 
-For detailed agent documentation, see `.claude/agents/*.md`
+**Similarity threshold**: 80% by default (configurable in `.claude/config.yaml`)
+
+For complete fuzzy routing details, see `.claude/docs/fuzzy-routing.md`.
 
 ---
 
 ## Configuration
 
-### Main Config: `.claude/orchestration-config.yaml`
+### Main Config: `.claude/config.yaml`
 
 Controls routing behavior:
 
 ```yaml
 orchestration:
-  default_agent: orchestrator
-
-  workflow:
-    ad_hoc_max: 30           # Complexity threshold for ad-hoc
-    auto_spec_max: 70        # Max for auto-spec
-    auto_spec_prompt: true   # Ask before generating
+  default_agent: orchestrator         # Routes all tasks
 
   routing:
-    allow_auto_fallback: true
-    confidence_threshold: 0.7
+    fuzzy_matching:
+      enabled: true                   # Enable fuzzy keyword matching
+      similarity_threshold: 80        # Match threshold (0-100)
+      algorithm: token_set_ratio      # RapidFuzz algorithm
+    confidence_threshold: 0.7         # Min confidence to auto-route
+    show_routing_decisions: false     # Log routing decisions
+
+  agents:
+    max_concurrent: 2                 # Max simultaneous agents
+    max_batch_size: 2                 # Max agents per batch
 ```
 
-### Agent Config: `.claude/settings.json`
+### Agent-Specific Settings
 
-Agent-specific settings (see file for details).
+See `.claude/config.yaml:orchestration.agents.*` for agent-specific configuration.
 
 ---
 
@@ -244,62 +253,146 @@ Agent-specific settings (see file for details).
 
 ### ✅ DO
 
-- **Start with `/ai`** - Let the system choose the right workflow
-- **Be specific** - Clear task descriptions get better results
-- **Review auto-generated specs** - Edit before implementation
-- **Use `/status`** - Check system health before big tasks
-- **Commit frequently** - Use `/git` after completing tasks
+- **Start with natural language** - Describe your task and let the system route intelligently
+- **Be specific with keywords** - Use clear, descriptive language
+- **Use specialized commands** - `/research`, `/review`, `/git` for common tasks
+- **Check `/status`** before big tasks
+- **Review routing decisions** - Use `/agents` to understand routing
 
 ### ❌ DON'T
 
-- **Override routing unnecessarily** - Trust the intelligence
-- **Skip validation** - Always validate specs before committing
-- **Use ad-hoc for complex tasks** - System will warn you
-- **Ignore warnings** - If system suggests different workflow, listen
-- **Mix workflows** - Complete one workflow before starting another
+- **Override routing unnecessarily** - Trust the fuzzy matching intelligence
+- **Use vague descriptions** - "do something" won't route well
+- **Force routing with `/route` unless needed** - Automatic routing is usually best
+- **Ignore agent suggestions** - If system recommends different agent, consider why
 
 ---
 
 ## Troubleshooting
 
-### "Task too complex for ad-hoc"
+### "No matching agent found"
 
-**Issue**: Tried to use ad-hoc workflow for complex task
-**Solution**: Use `/ai` and let system choose, or explicitly use `/feature`
+**Issue**: Task description didn't match any agent keywords
+**Solution**: Be more specific, use recognized keywords, or try `/agents` to see available agents
 
-### "No TASK-XXX spec found"
+### "Multiple agents matched"
 
-**Issue**: Tried to implement without spec
-**Solution**: Create spec first with `/spec extract` or use `/ai` for auto-spec
+**Issue**: Task description matches multiple agents equally
+**Solution**: Be more specific about intent (e.g., "research Docker" vs "implement Docker client")
 
 ### "Agent not responding"
 
 **Issue**: Agent seems stuck
-**Solution**: Check `/status`, restart if needed, check `.claude/reports/` for errors
+**Solution**: Check `/status`, review `.claude/agent-outputs/` for errors
 
-### "Multiple agents suggested"
+### Wrong Agent Selected
 
-**Issue**: Task is ambiguous
-**Solution**: Be more specific, or use `/swarm` for parallel approaches
+**Issue**: Orchestrator routed to wrong agent
+**Solution**: Use `/route <agent> <task>` to force correct agent, or rephrase with better keywords
+
+---
+
+## Understanding Routing Decisions
+
+To see why the orchestrator chose a specific agent:
+
+1. Enable routing decision logging in `.claude/config.yaml`:
+
+   ```yaml
+   orchestration:
+     routing:
+       show_routing_decisions: true
+   ```
+
+2. Review structured logs (if configured):
+
+   ```bash
+   cat .claude/logs/routing-decisions.jsonl
+   ```
+
+3. Use `/agents` to see keyword mappings:
+
+   ```bash
+   /agents --verbose
+   ```
+
+For complete routing explanation, see `.claude/docs/routing-concepts.md`.
+
+---
+
+## Advanced Features
+
+### Structured Logging
+
+Enable JSON logging for machine-readable output:
+
+```yaml
+orchestration:
+  logging:
+    structured: true
+    output_path: .claude/logs/
+    retention_days: 30
+```
+
+See `.claude/docs/orchestration-logging.md` for complete logging documentation.
+
+### Swarm Workflows
+
+Execute complex tasks with parallel agent coordination:
+
+```bash
+/swarm research authentication: OAuth2, JWT, session-based
+/swarm implement feature: backend, frontend, tests
+```
+
+See `.claude/commands/swarm.md` for swarm workflow details.
+
+### Manual Routing
+
+Force routing to specific agent bypassing orchestrator:
+
+```bash
+/route code_assistant "write a function"
+/route knowledge_researcher "research Docker"
+```
+
+See `.claude/commands/route.md` for manual routing guide.
 
 ---
 
 ## Next Steps
 
-1. **Try the quick start examples** above
-2. **Read agent documentation** in `.claude/agents/`
-3. **Review command reference** in `.claude/commands/`
-4. **Check project docs** in `CLAUDE.md` for development workflow
-5. **Explore configuration** in `.claude/orchestration-config.yaml`
+1. **Try the examples** above with natural language
+2. **Explore available agents** with `/agents --verbose`
+3. **Read agent documentation** in `.claude/agents/`
+4. **Review command reference** in `.claude/commands/`
+5. **Check project workflow** in `CLAUDE.md`
+6. **Understand routing** in `.claude/docs/routing-concepts.md`
+
+---
+
+## File Locations
+
+| Documentation Type | Location |
+|-------------------|----------|
+| Agent definitions | `.claude/agents/*.md` |
+| Command reference | `.claude/commands/*.md` |
+| Routing concepts | `.claude/docs/routing-concepts.md` |
+| Fuzzy routing | `.claude/docs/fuzzy-routing.md` |
+| Templates | `.claude/templates/*.md` |
+| Configuration | `.claude/config.yaml` |
+| Project workflow | `CLAUDE.md` |
+| Contributing | `CONTRIBUTING.md` |
 
 ---
 
 ## Version History
 
-- **v3.1.0** (2026-01-16) - Optimized and streamlined
-- **v3.0.0** (2026-01-09) - Complete three-path workflow system
-- **v2.0.0** - Added auto-spec workflow
-- **v1.0.0** - Initial orchestration system
+- **v4.0.0** (2026-01-22): Complete rewrite to reflect actual system (6 agents, fuzzy routing, no spec system)
+- **v3.1.0** (2026-01-16): Optimized and streamlined (OBSOLETE - described non-existent system)
+- **v3.0.0** (2026-01-09): Complete three-path workflow system (REMOVED)
+- **v2.0.0**: Added auto-spec workflow (REMOVED)
+- **v1.0.0**: Initial orchestration system
 
 ---
 

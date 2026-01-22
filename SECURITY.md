@@ -84,7 +84,7 @@ session = load_session('analysis.tks')  # Verifies signature
 
 # Legacy files trigger warning
 session = load_session('old_file.tks')  # UserWarning: no signature
-```
+```python
 
 **Security warnings**:
 
@@ -99,7 +99,7 @@ For **secure data exchange**, use alternative formats:
 # Instead of pickle-based .tks files
 session.export_to_json('safe_export.json')  # Human-readable, safe
 session.export_to_hdf5('safe_export.h5')    # Efficient, safe
-```
+```markdown
 
 ---
 
@@ -141,7 +141,7 @@ if not Path(user_path).resolve().is_relative_to(safe_dir):
 
 # Bad: Trust user input
 loader.load(user_input_path)  # Don't do this without validation
-```
+```python
 
 **2. Set memory limits for large files:**
 
@@ -154,7 +154,7 @@ trace = load_with_limits(
     max_file_size_mb=100,
     max_samples=10_000_000
 )
-```
+```bash
 
 **3. Run vulnerability scans:**
 
@@ -162,7 +162,7 @@ trace = load_with_limits(
 uv pip install safety pip-audit
 safety check
 pip-audit
-```
+```bash
 
 ### For Deployment
 
@@ -183,7 +183,7 @@ RUN uv pip install oscura
 USER nonroot  # Don't run as root
 COPY --chown=nonroot:nonroot . /app
 WORKDIR /app
-```
+```markdown
 
 ---
 
@@ -204,7 +204,7 @@ Check your installation:
 uv pip install safety pip-audit
 safety check
 pip-audit
-```
+```markdown
 
 ---
 

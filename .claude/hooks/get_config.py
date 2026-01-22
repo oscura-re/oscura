@@ -15,10 +15,12 @@ from pathlib import Path
 
 # Add shared module to path
 sys.path.insert(0, str(Path(__file__).parent))
+from typing import Any
+
 from shared import load_config
 
 
-def get_nested_value(data: dict, key_path: str, default=None):
+def get_nested_value(data: dict[str, Any], key_path: str, default: Any = None) -> Any:
     """Get nested value from dict using dot notation.
 
     Args:
@@ -30,7 +32,7 @@ def get_nested_value(data: dict, key_path: str, default=None):
         Value at key_path or default
     """
     keys = key_path.split(".")
-    value = data
+    value: Any = data
 
     for key in keys:
         if isinstance(value, dict):
@@ -43,7 +45,7 @@ def get_nested_value(data: dict, key_path: str, default=None):
     return value
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: get_config.py <key_path>", file=sys.stderr)
         print(

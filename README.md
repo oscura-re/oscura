@@ -55,7 +55,7 @@ git clone https://github.com/oscura-re/oscura.git
 cd oscura
 ./scripts/setup.sh            # Complete setup (dependencies + hooks)
 ./scripts/verify-setup.sh     # Verify environment is ready
-```
+```python
 
 ---
 
@@ -77,7 +77,7 @@ print(f"Rise time: {osc.rise_time(trace) * 1e9:.1f} ns")
 from oscura.protocols import UARTDecoder
 decoder = UARTDecoder(baud_rate=115200)
 messages = decoder.decode(trace)
-```
+```python
 
 ### Black-Box Protocol Reverse Engineering
 
@@ -102,7 +102,7 @@ print(f"Detected {len(spec['fields'])} protocol fields")
 
 # Export Wireshark dissector
 session.export_results("dissector", "protocol.lua")
-```
+```python
 
 ### CAN Protocol Analysis
 
@@ -128,7 +128,7 @@ print(f"Changed IDs: {len(diff.details['changed_ids'])}")
 
 # Export DBC file
 session.export_dbc("vehicle.dbc")
-```
+```markdown
 
 ---
 
@@ -173,7 +173,7 @@ python demos/generate_all_demo_data.py
 
 # Run a demo
 uv run python demos/01_waveform_analysis/comprehensive_wfm_analysis.py
-```
+```markdown
 
 ---
 
@@ -216,7 +216,7 @@ oscura compare before.wfm after.wfm
 
 # Interactive shell
 oscura shell
-```
+```bash
 
 See [CLI Reference](docs/cli.md) for complete documentation.
 
@@ -238,7 +238,7 @@ uv sync --all-extras
 
 # Quality checks
 ./scripts/check.sh
-```
+```python
 
 ---
 
@@ -288,7 +288,7 @@ If you use Oscura in research:
   year = {2026},
   url = {https://github.com/oscura-re/oscura}
 }
-```
+```python
 
 Machine-readable: [CITATION.cff](CITATION.cff)
 

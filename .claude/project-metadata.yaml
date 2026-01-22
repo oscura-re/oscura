@@ -1,81 +1,56 @@
-# Project Metadata - Single Source of Truth
-# This file is the authoritative source for all project metadata
-# Version: 3.0.0 (Updated 2026-01-09)
-#
-# NOTE: This file contains ONLY project identity and validation rules.
-# All behavioral settings (maintenance, cleanup, recovery) are in config.yaml
+_meta:
+  schema_version: "1.0.0"
+  version: "4.0.0" # Bumped for template structure
+  last_updated: "2026-01-22"
 
 project:
-  name: "Oscura"
-  version_source: pyproject.toml # Single source for version
-  description: >-
-    Comprehensive analysis and reverse engineering of ANY signal or data capture
-    from ANY system—analog, digital, or mixed-signal. Complete framework for
-    oscilloscope/logic analyzer data, protocol decoding, and system reverse engineering.
+  name: "Oscura" # TEMPLATE: {{project_name}}
+  description: "Hardware reverse engineering framework" # TEMPLATE: {{project_description}}
+  type: "library" # library, application, framework
+  license: "MIT" # TEMPLATE: {{license}}
 
-  # Author/maintainer information
-  authors:
-    - name: "oscura-re"
-      role: "creator"
+author:
+  name: "Jonathan Allen" # TEMPLATE: {{author_name}}
+  email: "" # TEMPLATE: {{author_email}}
 
-  maintainers:
-    - name: "oscura-re"
-      role: "maintainer"
+language:
+  primary: "python" # TEMPLATE: {{primary_language}}
+  version: "3.12" # TEMPLATE: {{language_version}}
 
-  # License
-  license: "MIT"
+python:
+  package_manager: "uv"
+  test_framework: "pytest"
+  linter: "ruff"
+  type_checker: "mypy"
+  formatter: "ruff"
 
-  # Python version requirements (for Python projects)
-  python:
-    minimum: "3.12"
-    tested:
-      - "3.12"
-      - "3.13"
+vcs:
+  provider: "github" # TEMPLATE: {{vcs_provider}}
+  org: "oscura-re" # TEMPLATE: {{vcs_org}}
+  repo: "oscura" # TEMPLATE: {{vcs_repo}}
+  url: "https://github.com/oscura-re/oscura" # TEMPLATE: {{vcs_url}}
 
-  github:
-    org: "oscura-re"
-    repo: "oscura"
-    url: "https://github.com/oscura-re/oscura"
+  branches:
+    main: "main"
+    develop: null # No develop branch
 
-  # Files that must reference the GitHub URL
-  url_locations:
-    - pyproject.toml
-    - README.md
-    - CHANGELOG.md
+claude_code:
+  version: "0.5.0" # Minimum Claude Code version
 
-  # Version must be consistent across these files
-  version_locations:
-    primary: pyproject.toml # Single source of truth
-    secondary:
-      - README.md: "Current Version: v{version}"
-      - "src/oscura/__init__.py": '__version__ = "{version}"'
-
-  # Version pattern for validation (supports pre-release)
-  version_pattern: '^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+(\.[0-9]+)?)?(\+[a-z0-9]+)?$'
-
-validation:
-  pre_commit_checks:
-    - version_consistency
-    - github_url_consistency
-    - no_unimplemented_errors
-    - ssot_compliance
-    - future_marker_validation
-
-  ci_checks:
-    - readme_examples
-    - internal_links
-    - documentation_structure
-
-# Configuration file relationships (for validation)
-configuration_files:
-  ssot:
+  configuration_files:
+    primary_config: ".claude/config.yaml"
+    paths: ".claude/paths.yaml"
     project_metadata: ".claude/project-metadata.yaml"
     coding_standards: ".claude/coding-standards.yaml"
-    orchestration_config: ".claude/config.yaml"
-    paths: ".claude/paths.yaml"
 
-  generated:
-    settings_json:
-      source: ".claude/coding-standards.yaml"
-      target: ".claude/settings.json"
-      generator: ".claude/hooks/generate_settings.py"
+  generated_files:
+    settings: ".claude/settings.json"
+
+  agents:
+    count: 6
+    discovery_path: ".claude/agents/*.md"
+
+  templates:
+    agent: ".claude/templates/agent-definition.md"
+    command: ".claude/templates/command-definition.md"
+    completion_report: ".claude/templates/completion-report.md"

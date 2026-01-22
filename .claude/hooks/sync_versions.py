@@ -22,10 +22,7 @@ from pathlib import Path
 try:
     import tomllib  # Python 3.11+
 except ImportError:
-    try:
-        import tomli as tomllib  # Fallback for Python 3.10
-    except ImportError:
-        import toml as tomllib  # Legacy fallback
+    import tomli as tomllib  # type: ignore[no-redef,import-not-found]
 
 
 def get_version_from_pyproject() -> str:
@@ -38,7 +35,7 @@ def get_version_from_pyproject() -> str:
     try:
         with open(pyproject_path, "rb") as f:
             data = tomllib.load(f)
-        version = data["project"]["version"]
+        version: str = data["project"]["version"]
         return version
     except (KeyError, Exception) as e:
         print(f"ERROR: Could not read version from pyproject.toml: {e}", file=sys.stderr)
