@@ -8,6 +8,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **demonstrations/** (demonstrations/): Complete unified demonstration system replacing demos/ and examples/
+  - Comprehensive framework with BaseDemo class, validation system, and capability indexing
+  - 13 initial demonstrations across 5 categories (getting_started, extensibility, basic_analysis, protocol_decoding, data_loading)
+  - 100% validation pass rate with self-contained synthetic data
+  - Capability coverage tracking and API index generation
+  - Progressive learning path from beginner to expert
+  - Section-specific documentation with cross-references
+  - Quality enforcement: type hints, docstrings, IEEE standards compliance
+
+- **Signal Filtering Demo** (`demonstrations/02_basic_analysis/04_filtering.py`): Comprehensive demonstration of signal filtering capabilities with all 5 filter types (Butterworth, Chebyshev I, Chebyshev II, Bessel, Elliptic). Demonstrates `oscura.low_pass()`, `oscura.high_pass()`, `oscura.band_pass()`, `oscura.band_stop()`, and `oscura.design_filter()` with noisy multi-frequency signals. Covers filter order effects, type comparisons, and custom filter design with IEEE 181-2011 compliance validation.
+
+- **Getting Started README** (`demonstrations/00_getting_started/README.md`): Professional learning guide for the 3 foundational demonstrations covering prerequisites (Python 3.12+, installation), 20-minute learning path, detailed descriptions of hello_world, core_types, and supported_formats demos, execution instructions, troubleshooting, and next steps for advancing to intermediate topics
+
+- **Oscilloscope Loading Demo** (`demonstrations/01_data_loading/01_oscilloscopes.py`): Comprehensive demonstration of loading and analyzing oscilloscope file formats (Tektronix .wfm, Rigol .wfm, LeCroy .trc) with synthetic waveforms. Demonstrates `oscura.loaders.load_tektronix_wfm()`, `oscura.loaders.load_rigol_wfm()`, `oscura.loaders.get_supported_formats()`, metadata extraction, and format-specific features (digital channels, mixed-signal, IQ waveforms) with IEEE 181-2011 compliance.
+
+- **Serial Protocol Decoding Demo** (`demonstrations/03_protocol_decoding/01_serial_comprehensive.py`): Comprehensive demonstration of serial protocol decoders (UART, SPI, I2C, 1-Wire) with synthetic signal generation. Demonstrates `oscura.decode_uart()`, `oscura.decode_spi()`, `oscura.decode_i2c()`, and `oscura.decode_onewire()` with configurable parameters, packet extraction, and validation for each protocol type with IEEE 181 and 1241 standards compliance.
+
+- **Automotive Protocol Decoding Demo** (`demonstrations/03_protocol_decoding/02_automotive_protocols.py`): Comprehensive demonstration of automotive bus protocol decoders (CAN, CAN-FD, LIN, FlexRay) with synthetic signal generation. Demonstrates `oscura.decode_can()`, `oscura.decode_can_fd()`, `oscura.decode_lin()`, and `oscura.decode_flexray()` with differential signaling, bit rate switching, and frame validation for each automotive protocol type with ISO 11898, ISO 17458, and ISO 17987 standards compliance.
+
+- **Waveform Measurements Demo** (`demonstrations/02_basic_analysis/01_waveform_measurements.py`): Comprehensive demonstration of core measurement capabilities covering all 10 waveform measurements (amplitude, frequency, period, rise/fall time, duty cycle, overshoot/undershoot, RMS, mean). Uses pulse train, sine wave, and square wave test signals to demonstrate timing measurements, amplitude measurements, and RMS calculations with IEEE 1241-2010 standards validation.
+
+- **Spectral Analysis Demo** (`demonstrations/02_basic_analysis/03_spectral_analysis.py`): Comprehensive demonstration of frequency domain measurements covering all 7 spectral analysis capabilities (FFT, PSD, THD, SNR, SINAD, ENOB, SFDR). Uses pure sine waves, signals with harmonics, and noisy signals to demonstrate `oscura.fft()`, `oscura.psd()`, `oscura.thd()`, `oscura.snr()`, `oscura.sinad()`, `oscura.enob()`, and `oscura.sfdr()` with IEEE 1241-2010 ADC testing standards validation.
+
+- **Plugin Basics Demo** (`demonstrations/08_extensibility/01_plugin_basics.py`): P0 CRITICAL demonstration introducing Oscura's plugin system, covering `oscura.get_plugin_manager()`, `oscura.list_plugins()`, `oscura.load_plugin()`, plugin discovery by entry point groups, metadata inspection, and manager API. Demonstrates extensibility patterns and real-world use cases for protocol decoders, measurements, loaders, and exporters.
+
+- **Custom Algorithm Demo** (`demonstrations/08_extensibility/03_custom_algorithm.py`): P0 CRITICAL demonstration showing users how to extend Oscura with custom algorithms using `oscura.register_algorithm()`, `oscura.get_algorithm()`, and `oscura.get_algorithms()`. Includes practical examples of custom FFT (zero-padding), custom filters (moving average), and custom analysis algorithms (PAPR), with full integration examples and error handling validation
+
+- **Supported Formats Demo** (`demonstrations/00_getting_started/02_supported_formats.py`): Comprehensive guide showcasing all 19+ file format loaders (oscilloscopes, logic analyzers, network/packet, RF/S-parameters, scientific/generic) organized by category with format detection, feature matrix, multi-channel loading, lazy loading, and practical usage examples for each major category
+
+- **Custom Measurement Demo** (`demonstrations/08_extensibility/02_custom_measurement.py`): P0 CRITICAL demonstration showing users how to extend Oscura with custom measurements using `oscura.register_measurement()`, including practical examples (crest factor, form factor, peak-to-RMS) with registry inspection and validation
+
+- **Core Types Demo** (`demonstrations/00_getting_started/01_core_types.py`): Comprehensive demonstration teaching Oscura's fundamental data structures (TraceMetadata, WaveformTrace, DigitalTrace, ProtocolPacket, CalibrationInfo) with practical examples of creating, accessing, and converting between trace types
+
+### Documentation
+
+- **README.md Comprehensive Refinement - Final Pass** (`README.md`):
+  - **SSOT Compliance**: Removed ALL hardcoded metrics that will drift (test counts, pass rates, coverage, protocol/loader counts, versions)
+  - **Complete Capability Documentation**: Added 12+ previously undocumented or underspecified capabilities:
+    - Signal Intelligence & Classification (auto-detect digital/analog, periodicity, SNR)
+    - CRC reverse engineering with XOR differential technique (identifies 12+ algorithms)
+    - IPART-style message format inference (ensemble: entropy, alignment, variance, n-grams)
+    - L* active learning & RPNI passive learning for state machine extraction
+    - Binary format recovery (100+ magic bytes, structure alignment, auto-parser generation)
+    - Advanced side-channel: mutual information analysis, effect size (Cohen's d), outlier detection
+    - Automotive state machine extraction, stimulus-response mapping, pattern recognition
+    - Evidence-based discovery with hypothesis tracking, confidence scoring, audit trails
+    - Discovery persistence (.tkcan format) for collaboration
+    - Multi-format reporting (PDF/HTML/PPTX/Markdown) with batch processing
+    - Vintage logic reports with IC identification and modern replacement mapping
+    - Stream reassembly, pattern discovery, physical layer detection
+  - **Technical Depth**: Every capability now includes implementation details (algorithms, techniques, formats)
+  - **Replication & Obsolescence**: New section "Obsolete System Characterization & Replication" covering logic family detection, IC timing validation, modern replacements for vintage hardware (1960s-present)
+  - **Attack Surface Mapping**: Explicit connections to exploitation research (state machines, stimulus-response, differential analysis)
+  - **Intelligence Collaboration**: Emphasized multi-format export (Wireshark dissectors with ProtoField mapping, DBC, parsers, discovery archives)
+  - **What We Enable Expansion**: 10 capabilities (was 8) with complete technical context:
+    - Added: Signal Intelligence, Obsolete System Replication, Evidence-Based Discovery, Attack Surface Mapping
+    - Enhanced: Protocol Analysis, Cryptographic Analysis, Automotive Engineering, Intelligence Sharing
+  - **Dual-Use Framing**: All tables now show "Development / Reverse Engineering" contexts (RE as umbrella term, more accurate than "Security Research")
+  - **Automotive Deep Dive**: Expanded from 6 to 10 automotive capabilities (state machines, stimulus-response, evidence tracking, pattern recognition, discovery persistence)
+  - **Export & Intelligence**: Expanded from 5 to 8 export formats with technical implementation details
+  - **Vintage Computing → Replication**: Reframed section to emphasize functional cloning, part identification, FPGA/CPLD implementation
+  - **Tone Adjustments**: "Breaking" → "Reverse engineering/Recovery" throughout for academic/right-to-repair framing
+  - **Framework Name & Wording Consistency** (user feedback-driven final audit):
+    - Framework name: "Signal Analysis and Hardware Security Framework" → "**Hardware Reverse Engineering Framework**" (more accurate - RE is core mission, not security defense)
+    - Tagline: "Illuminate what vendors obscure" → "Illuminate what **others** obscure" (broader scope: vendors/governments/time)
+    - Table headers: "Development / Security Research" → "Development / Reverse Engineering" (RE is umbrella term including security research, right-to-repair, obsolescence)
+    - "What We Enable": Reworded all 10 bullets to emphasize reverse engineering as primary activity with specific RE applications
+  - **Impact**: Zero content drift, complete technical coverage, all RE/hacking/replication/exploitation connections explicit, optimal for community growth and intelligence collaboration, intelligence community ready, accurate framework identity
+
 ### Infrastructure
 
 - **Orchestration Research & Documentation** (`.claude/docs/claude-md-design-principles.md`, `.claude/ORCHESTRATION_ANALYSIS.md`, `CLAUDE.md`):
