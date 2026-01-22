@@ -62,16 +62,35 @@ logger = get_hook_logger(__name__)
 # =============================================================================
 
 
-def get_agent_activity_time(agent_id: str) -> datetime | None:
+def get_agent_activity_time(agent_id: str, agent: dict[str, Any] | None = None) -> datetime | None:
     """Get the most recent activity time for an agent.
 
     Checks:
-    1. Output file modification time
-    2. Summary file modification time
+    1. Task output file modification time (from agent["output_file"])
+    2. Agent output files in .claude/agent-outputs/
+    3. Summary file modification time
     """
     activity_times: list[datetime] = []
 
-    # Check output files
+    # Check task output file (PRIMARY - the actual running task)
+    if agent and "output_file" in agent:
+        task_output = Path(agent["output_file"])
+        if task_output.exists():
+            try:
+                stat = task_output.stat()
+                # Only count if file has content OR is very recent
+                if stat.st_size > 0 or (
+                    datetime.now(UTC) - datetime.fromtimestamp(stat.st_mtime, tz=UTC)
+                ) < timedelta(minutes=5):
+                    mtime = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
+                    activity_times.append(mtime)
+                    logger.debug(
+                        f"Task output file {task_output.name}: size={stat.st_size}, mtime={mtime}"
+                    )
+            except OSError as e:
+                logger.debug(f"Error checking task output {task_output}: {e}")
+
+    # Check agent output files
     for output_file in AGENT_OUTPUTS_DIR.glob("*.json"):
         if agent_id in output_file.name or agent_id[:7] in output_file.name:
             try:
@@ -102,8 +121,8 @@ def is_agent_active(agent: dict[str, Any], agent_id: str) -> bool:
     now = datetime.now(UTC)
     activity_threshold = now - timedelta(hours=ACTIVITY_CHECK_HOURS)
 
-    # Check output file activity
-    activity_time = get_agent_activity_time(agent_id)
+    # Check output file activity (pass agent dict to check task output file)
+    activity_time = get_agent_activity_time(agent_id, agent)
     if activity_time and activity_time > activity_threshold:
         logger.debug(f"Agent {agent_id} has recent activity at {activity_time}")
         return True
@@ -178,6 +197,7 @@ def cleanup_stale_agents(dry_run: bool = False) -> dict[str, Any]:
     now = datetime.now(UTC)
 
     stale_agents: list[str] = []
+    phantom_agents: list[str] = []  # Running but missing output file
     old_completed: list[str] = []
     active_preserved: list[str] = []
     errors: list[str] = []
@@ -186,6 +206,26 @@ def cleanup_stale_agents(dry_run: bool = False) -> dict[str, Any]:
         status = agent.get("status", "unknown")
 
         try:
+            # Check for phantom agents (running but missing task output file)
+            if status == "running" and "output_file" in agent:
+                task_output = Path(agent["output_file"])
+                if not task_output.exists():
+                    # Output file missing - phantom agent
+                    phantom_agents.append(agent_id)
+                    logger.warning(
+                        f"Agent {agent_id} marked running but task output file missing: {task_output}"
+                    )
+                    continue
+                elif task_output.stat().st_size == 0:
+                    # Check if empty file is old
+                    mtime = datetime.fromtimestamp(task_output.stat().st_mtime, tz=UTC)
+                    if (now - mtime) > timedelta(hours=1):
+                        phantom_agents.append(agent_id)
+                        logger.warning(
+                            f"Agent {agent_id} has old empty output file (>1h): {task_output}"
+                        )
+                        continue
+
             # Check for stale running agents
             if status == "running" and is_agent_stale(agent, agent_id):
                 stale_agents.append(agent_id)
@@ -213,6 +253,18 @@ def cleanup_stale_agents(dry_run: bool = False) -> dict[str, Any]:
 
     # Perform cleanup
     if not dry_run:
+        # Mark phantom agents as failed (missing output files)
+        for agent_id in phantom_agents:
+            registry["agents"][agent_id]["status"] = "failed"
+            registry["agents"][agent_id]["completed_at"] = now.isoformat()
+            registry["agents"][agent_id]["failure_reason"] = (
+                "Phantom agent: task output file missing or stale"
+            )
+            if registry["metadata"]["agents_running"] > 0:
+                registry["metadata"]["agents_running"] -= 1
+            registry["metadata"]["agents_failed"] += 1
+            logger.info(f"Marked agent {agent_id} as failed (phantom - missing output)")
+
         # Mark stale agents as failed
         for agent_id in stale_agents:
             registry["agents"][agent_id]["status"] = "failed"
@@ -232,16 +284,18 @@ def cleanup_stale_agents(dry_run: bool = False) -> dict[str, Any]:
         registry["metadata"]["last_cleanup"] = now.isoformat()
 
         # Save
-        if stale_agents or old_completed:
+        if phantom_agents or stale_agents or old_completed:
             save_registry(registry, PROJECT_DIR)
 
     result = {
         "ok": True,
         "dry_run": dry_run,
+        "phantom_marked_failed": len(phantom_agents),
         "stale_marked_failed": len(stale_agents),
         "old_removed": len(old_completed),
         "active_preserved": len(active_preserved),
         "errors": len(errors),
+        "phantom_agents": phantom_agents,
         "stale_agents": stale_agents,
         "old_agents": old_completed,
         "preserved_agents": active_preserved,
@@ -250,7 +304,7 @@ def cleanup_stale_agents(dry_run: bool = False) -> dict[str, Any]:
     }
 
     logger.info(
-        f"Cleanup complete: {len(stale_agents)} stale, {len(old_completed)} old, {len(active_preserved)} preserved"
+        f"Cleanup complete: {len(phantom_agents)} phantom, {len(stale_agents)} stale, {len(old_completed)} old, {len(active_preserved)} preserved"
     )
 
     return result
