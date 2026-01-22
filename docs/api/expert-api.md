@@ -1,6 +1,6 @@
 # Expert/Extensibility API Reference
 
-> **Version**: 0.5.0 | **Last Updated**: 2026-01-19
+> **Version**: 0.4.0 | **Last Updated**: 2026-01-19
 
 Comprehensive API documentation for extending Oscura with custom algorithms, measurements, and plugins.
 

@@ -292,4 +292,3 @@ validation_results/
 
 # Exceptions: legitimate documentation with these keywords in name
 # (none currently - add here if needed)
-*.json

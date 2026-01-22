@@ -1,6 +1,6 @@
 # Session Management & Audit Trail API
 
-> **Version**: 0.5.0
+> **Version**: 0.4.0
 > **Last Updated**: 2026-01-17
 
 ## Overview
