@@ -120,7 +120,8 @@ class LazyArray(LazyProxy[NDArray[np.floating[Any]]]):
 
     def shape(self) -> tuple[int, ...]:
         """Get shape (triggers computation)."""
-        return self.compute().shape
+        result: tuple[int, ...] = self.compute().shape
+        return result
 
     def dtype(self) -> np.dtype[Any]:
         """Get dtype (triggers computation)."""

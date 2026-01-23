@@ -946,7 +946,8 @@ class DiskCache:
     def _estimate_size(self, value: Any) -> int:
         """Estimate memory size of value."""
         if isinstance(value, np.ndarray):
-            return value.nbytes
+            result: int = value.nbytes
+            return result
         else:
             return len(pickle.dumps(value))
 

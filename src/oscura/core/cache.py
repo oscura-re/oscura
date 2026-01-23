@@ -472,7 +472,8 @@ class OscuraCache:
     def _estimate_size(self, value: Any) -> int:
         """Estimate size of value in bytes."""
         if isinstance(value, np.ndarray):
-            return value.nbytes
+            result: int = value.nbytes
+            return result
         elif isinstance(value, list | tuple):
             return sum(self._estimate_size(item) for item in value)
         elif isinstance(value, dict):
@@ -488,7 +489,8 @@ class OscuraCache:
         """Convert object to hashable bytes."""
         if isinstance(obj, np.ndarray):
             # Use array bytes for hashing
-            return obj.tobytes()
+            result: bytes = obj.tobytes()
+            return result
         elif isinstance(obj, str | bytes):
             return obj.encode() if isinstance(obj, str) else obj
         elif isinstance(obj, int | float | bool):

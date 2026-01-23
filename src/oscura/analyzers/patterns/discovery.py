@@ -500,7 +500,8 @@ def _to_bytes(data: bytes | NDArray[np.uint8] | memoryview | bytearray) -> bytes
     elif isinstance(data, bytearray | memoryview):
         return bytes(data)
     elif isinstance(data, np.ndarray):
-        return data.astype(np.uint8).tobytes()
+        result: bytes = data.astype(np.uint8).tobytes()
+        return result
     else:
         raise TypeError(f"Unsupported data type: {type(data)}")
 
