@@ -98,7 +98,7 @@ When NOT to invoke (anti-triggers):
 - List staged: `git diff --cached --name-only`
 - Review stats: `git diff --stat && git diff --cached --stat`
 - Categorize by domain:
-  - `src/*/loaders/` → scope: loaders  # TEMPLATE: Adjust paths per project
+  - `src/*/loaders/` → scope: loaders # TEMPLATE: Adjust paths per project
   - `src/*/analyzers/` → scope: analyzers
   - `docs/` → scope: docs
   - `tests/` → scope: tests
@@ -126,8 +126,9 @@ When NOT to invoke (anti-triggers):
      Body if needed
      EOF
      )"
+     ```
 
-```bash
+````bash
   4. Verify commit created: `git log -1 --oneline`
 - Common groupings:
   - Code + its tests together (feat with test coverage)
@@ -347,11 +348,11 @@ For complete examples and guidelines, see `.claude/docs/conventional-commits-gui
 ```bash
 git add src/loaders/hdf5.py tests/unit/loaders/test_hdf5.py
 git commit -m "feat(loaders): add HDF5 loader with tests"
-```
+````
 
 **Group 2**: Documentation
 
-```bash
+````bash
 git add docs/loaders/hdf5.md
 git commit -m "docs(loaders): document HDF5 loader usage"
 ```bash
@@ -454,3 +455,4 @@ Recommended commit structure:
 3. docs(loaders): CSV loader documentation
 4. ci(tests): update test workflow for CSV
 Proceed with this grouping? (yes/alternative)"
+````

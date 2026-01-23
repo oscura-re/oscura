@@ -6,19 +6,19 @@ Complete API documentation for Oscura.
 
 ## Quick Links
 
-|Category|Documentation|
-|---|---|
-|Loading Data|[loader.md](loader.md)|
-|Analysis|[analysis.md](analysis.md)|
-|Pipelines|[pipelines.md](pipelines.md)|
-|Component Analysis|[component-analysis.md](component-analysis.md)|
-|Comparison & Limits|[comparison-and-limits.md](comparison-and-limits.md)|
-|EMC Compliance|[emc-compliance.md](emc-compliance.md)|
-|Session Management|[session-management.md](session-management.md)|
-|Export|[export.md](export.md)|
-|Reporting|[reporting.md](reporting.md)|
-|Visualization|[visualization.md](visualization.md)|
-|**Expert API**|**[expert-api.md](expert-api.md)**|
+| Category            | Documentation                                        |
+| ------------------- | ---------------------------------------------------- |
+| Loading Data        | [loader.md](loader.md)                               |
+| Analysis            | [analysis.md](analysis.md)                           |
+| Pipelines           | [pipelines.md](pipelines.md)                         |
+| Component Analysis  | [component-analysis.md](component-analysis.md)       |
+| Comparison & Limits | [comparison-and-limits.md](comparison-and-limits.md) |
+| EMC Compliance      | [emc-compliance.md](emc-compliance.md)               |
+| Session Management  | [session-management.md](session-management.md)       |
+| Export              | [export.md](export.md)                               |
+| Reporting           | [reporting.md](reporting.md)                         |
+| Visualization       | [visualization.md](visualization.md)                 |
+| **Expert API**      | **[expert-api.md](expert-api.md)**                   |
 
 ## API Overview
 
@@ -304,98 +304,98 @@ osc.export_pwl(trace, "data.pwl")  # For SPICE
 
 ### Core Modules
 
-|Module|Description|
-|---|---|
-|`oscura`|Main package with convenience functions|
-|`oscura.core`|Core data types (WaveformTrace, DigitalTrace, TraceMetadata)|
-|`oscura.core.exceptions`|Exception hierarchy|
-|`oscura.core.config`|Configuration management|
+| Module                   | Description                                                  |
+| ------------------------ | ------------------------------------------------------------ |
+| `oscura`                 | Main package with convenience functions                      |
+| `oscura.core`            | Core data types (WaveformTrace, DigitalTrace, TraceMetadata) |
+| `oscura.core.exceptions` | Exception hierarchy                                          |
+| `oscura.core.config`     | Configuration management                                     |
 
 ### Loaders
 
-|Module|Description|
-|---|---|
-|`oscura.loaders`|File format loaders|
-|`oscura.loaders.tektronix`|Tektronix WFM loader|
-|`oscura.loaders.rigol`|Rigol WFM loader|
-|`oscura.loaders.sigrok`|Sigrok SR loader|
-|`oscura.loaders.csv`|CSV loader|
-|`oscura.loaders.hdf5`|HDF5 loader|
-|`oscura.loaders.configurable`|Schema-driven packet loader|
+| Module                        | Description                 |
+| ----------------------------- | --------------------------- |
+| `oscura.loaders`              | File format loaders         |
+| `oscura.loaders.tektronix`    | Tektronix WFM loader        |
+| `oscura.loaders.rigol`        | Rigol WFM loader            |
+| `oscura.loaders.sigrok`       | Sigrok SR loader            |
+| `oscura.loaders.csv`          | CSV loader                  |
+| `oscura.loaders.hdf5`         | HDF5 loader                 |
+| `oscura.loaders.configurable` | Schema-driven packet loader |
 
 ### Analyzers
 
-|Module|Description|
-|---|---|
-|`oscura.analyzers.waveform`|Waveform measurements|
-|`oscura.analyzers.digital`|Digital signal analysis|
-|`oscura.analyzers.spectral`|FFT, PSD, spectral metrics|
-|`oscura.analyzers.jitter`|Jitter measurements|
-|`oscura.analyzers.eye`|Eye diagram analysis|
-|`oscura.analyzers.statistical`|Statistical analysis|
-|`oscura.analyzers.patterns`|Pattern detection|
+| Module                         | Description                |
+| ------------------------------ | -------------------------- |
+| `oscura.analyzers.waveform`    | Waveform measurements      |
+| `oscura.analyzers.digital`     | Digital signal analysis    |
+| `oscura.analyzers.spectral`    | FFT, PSD, spectral metrics |
+| `oscura.analyzers.jitter`      | Jitter measurements        |
+| `oscura.analyzers.eye`         | Eye diagram analysis       |
+| `oscura.analyzers.statistical` | Statistical analysis       |
+| `oscura.analyzers.patterns`    | Pattern detection          |
 
 ### Protocol Decoders
 
-|Module|Protocol|
-|---|---|
-|`oscura.analyzers.protocols.uart`|UART/RS-232|
-|`oscura.analyzers.protocols.spi`|SPI|
-|`oscura.analyzers.protocols.i2c`|I2C|
-|`oscura.analyzers.protocols.can`|CAN/CAN-FD|
-|`oscura.analyzers.protocols.lin`|LIN|
-|`oscura.analyzers.protocols.flexray`|FlexRay|
-|`oscura.analyzers.protocols.onewire`|1-Wire|
-|`oscura.analyzers.protocols.jtag`|JTAG|
-|`oscura.analyzers.protocols.swd`|SWD|
-|`oscura.analyzers.protocols.i2s`|I2S|
-|`oscura.analyzers.protocols.usb`|USB|
-|`oscura.analyzers.protocols.hdlc`|HDLC|
-|`oscura.analyzers.protocols.manchester`|Manchester encoding|
+| Module                                  | Protocol            |
+| --------------------------------------- | ------------------- |
+| `oscura.analyzers.protocols.uart`       | UART/RS-232         |
+| `oscura.analyzers.protocols.spi`        | SPI                 |
+| `oscura.analyzers.protocols.i2c`        | I2C                 |
+| `oscura.analyzers.protocols.can`        | CAN/CAN-FD          |
+| `oscura.analyzers.protocols.lin`        | LIN                 |
+| `oscura.analyzers.protocols.flexray`    | FlexRay             |
+| `oscura.analyzers.protocols.onewire`    | 1-Wire              |
+| `oscura.analyzers.protocols.jtag`       | JTAG                |
+| `oscura.analyzers.protocols.swd`        | SWD                 |
+| `oscura.analyzers.protocols.i2s`        | I2S                 |
+| `oscura.analyzers.protocols.usb`        | USB                 |
+| `oscura.analyzers.protocols.hdlc`       | HDLC                |
+| `oscura.analyzers.protocols.manchester` | Manchester encoding |
 
 ### Inference
 
-|Module|Description|
-|---|---|
-|`oscura.inference`|Protocol inference|
-|`oscura.inference.message_format`|Message structure detection|
-|`oscura.inference.state_machine`|State machine inference|
-|`oscura.inference.alignment`|Sequence alignment|
+| Module                            | Description                 |
+| --------------------------------- | --------------------------- |
+| `oscura.inference`                | Protocol inference          |
+| `oscura.inference.message_format` | Message structure detection |
+| `oscura.inference.state_machine`  | State machine inference     |
+| `oscura.inference.alignment`      | Sequence alignment          |
 
 ### Comparison & Testing
 
-|Module|Description|
-|---|---|
-|`oscura.comparison`|Waveform comparison|
-|`oscura.comparison.compare`|Trace comparison functions|
-|`oscura.comparison.golden`|Golden reference testing|
-|`oscura.comparison.limits`|Specification limit testing|
-|`oscura.comparison.mask`|Mask-based pass/fail testing|
+| Module                      | Description                  |
+| --------------------------- | ---------------------------- |
+| `oscura.comparison`         | Waveform comparison          |
+| `oscura.comparison.compare` | Trace comparison functions   |
+| `oscura.comparison.golden`  | Golden reference testing     |
+| `oscura.comparison.limits`  | Specification limit testing  |
+| `oscura.comparison.mask`    | Mask-based pass/fail testing |
 
 ### EMC Compliance
 
-|Module|Description|
-|---|---|
-|`oscura.compliance`|EMC/EMI compliance testing|
-|`oscura.compliance.masks`|Regulatory limit masks (FCC, CISPR, MIL-STD)|
-|`oscura.compliance.testing`|Compliance test execution and result analysis|
-|`oscura.compliance.reporting`|Compliance report generation (HTML, PDF, JSON)|
-|`oscura.compliance.advanced`|Advanced detectors and interpolation methods|
+| Module                        | Description                                    |
+| ----------------------------- | ---------------------------------------------- |
+| `oscura.compliance`           | EMC/EMI compliance testing                     |
+| `oscura.compliance.masks`     | Regulatory limit masks (FCC, CISPR, MIL-STD)   |
+| `oscura.compliance.testing`   | Compliance test execution and result analysis  |
+| `oscura.compliance.reporting` | Compliance report generation (HTML, PDF, JSON) |
+| `oscura.compliance.advanced`  | Advanced detectors and interpolation methods   |
 
 ### Session Management & Audit
 
-|Module|Description|
-|---|---|
-|`oscura.session`|Session management and annotations|
-|`oscura.core.audit`|Audit trail with HMAC verification|
+| Module              | Description                        |
+| ------------------- | ---------------------------------- |
+| `oscura.session`    | Session management and annotations |
+| `oscura.core.audit` | Audit trail with HMAC verification |
 
 ### Export & Reporting
 
-|Module|Description|
-|---|---|
-|`oscura.exporters`|Data exporters|
-|`oscura.reporting`|Report generation|
-|`oscura.visualization`|Plotting utilities|
+| Module                 | Description        |
+| ---------------------- | ------------------ |
+| `oscura.exporters`     | Data exporters     |
+| `oscura.reporting`     | Report generation  |
+| `oscura.visualization` | Plotting utilities |
 
 ## Accessing Documentation
 

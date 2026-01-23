@@ -106,7 +106,7 @@ When NOT to invoke (anti-triggers):
 
 **Critical Execution Loop**:
 
-```markdown
+````markdown
 1. Update active_work.json: status = "in_progress"
 2. Spawn agent(s) for current phase
 3. WAIT for completion report(s)
@@ -120,8 +120,8 @@ When NOT to invoke (anti-triggers):
 6. Synthesize results from all completion reports
 7. Update active_work.json: status = "complete"
 8. Write final orchestration completion report
-```markdown
 
+````markdown
 **Dependencies**: Routing decision complete
 **Outputs**: Subagent results, completion reports
 
@@ -130,6 +130,7 @@ When NOT to invoke (anti-triggers):
 **Purpose**: Combine results and provide unified response
 
 **Actions**:
+
 - Read all completion reports from `.claude/agent-outputs/`
 - Verify all agents reached "complete" status
 - Extract artifacts and key findings
@@ -175,7 +176,7 @@ Common mistakes to avoid:
 
 Write to `.claude/agent-outputs/[timestamp]-orchestration-complete.json`:
 
-```json
+````json
 {
   "task_id": "YYYY-MM-DD-HHMMSS-orchestration",
   "agent": "orchestrator",
@@ -340,3 +341,7 @@ log_orchestration('COMPLETE', Agent=agent_name, Duration=duration)
 ```bash
 
 **Retention**: 14 days (see `config.yaml:logging.files.orchestration`)
+````
+
+````
+````

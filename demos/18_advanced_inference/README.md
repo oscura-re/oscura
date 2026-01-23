@@ -52,14 +52,14 @@ print(f"Transitions: {len(automaton.transitions)}")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`bayesian_inference.py`|Uncertainty quantification|Advanced|
-|`active_learning.py`|L\* algorithm|Advanced|
-|`protocol_dsl.py`|Protocol definition language|Intermediate|
-|`sequence_alignment.py`|Global/local/multiple|Intermediate|
-|`stream_reassembly.py`|TCP/UDP reconstruction|Intermediate|
-|`signal_quality.py`|Automated signal assessment|Basic|
+| Script                  | Purpose                      | Complexity   |
+| ----------------------- | ---------------------------- | ------------ |
+| `bayesian_inference.py` | Uncertainty quantification   | Advanced     |
+| `active_learning.py`    | L\* algorithm                | Advanced     |
+| `protocol_dsl.py`       | Protocol definition language | Intermediate |
+| `sequence_alignment.py` | Global/local/multiple        | Intermediate |
+| `stream_reassembly.py`  | TCP/UDP reconstruction       | Intermediate |
+| `signal_quality.py`     | Automated signal assessment  | Basic        |
 
 ## Related Demos
 

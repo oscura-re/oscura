@@ -10,7 +10,7 @@ Bypass orchestrator intelligence and route directly to a specific agent.
 
 ## Usage
 
-```bash
+````bash
 /route <agent> <task>                           # Force routing
 /route code_assistant "write a function"        # Bypass orchestrator
 /route knowledge_researcher "research Docker"   # Direct to researcher
@@ -322,3 +322,4 @@ orchestration:
 
 v1.0.0 (2026-01-09) - Initial creation as part of utility command system
 v1.1.0 (2026-01-16) - Added reference to routing-concepts.md
+````

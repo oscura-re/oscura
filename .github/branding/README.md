@@ -15,14 +15,14 @@ The Oscura logo features three layered waveforms representing multi-dimensional 
 
 ### Color Palette
 
-| Color           | Hex Code | Usage                     |
-| --------------- | -------- | ------------------------- |
-| Primary         | #0891B2  | Main cyan                 |
-| Highlight       | #22D3EE  | Bright cyan accents       |
-| Accent          | #67E8F9  | Light cyan details        |
-| Background      | #0C1415  | Deep teal-black           |
-| Text            | #F8FAFC  | Off-white text            |
-| Secondary Text  | #94A3B8  | Muted gray for taglines   |
+| Color          | Hex Code | Usage                   |
+| -------------- | -------- | ----------------------- |
+| Primary        | #0891B2  | Main cyan               |
+| Highlight      | #22D3EE  | Bright cyan accents     |
+| Accent         | #67E8F9  | Light cyan details      |
+| Background     | #0C1415  | Deep teal-black         |
+| Text           | #F8FAFC  | Off-white text          |
+| Secondary Text | #94A3B8  | Muted gray for taglines |
 
 ## Files
 
@@ -30,25 +30,25 @@ The Oscura logo features three layered waveforms representing multi-dimensional 
 
 Use SVG files whenever possible for best quality at any size.
 
-| File                  | Dimensions  | Description                              |
-| --------------------- | ----------- | ---------------------------------------- |
-| `logo-icon.svg`       | 1024x1024   | Icon only, for avatars and small spaces  |
-| `logo-full.svg`       | 800x1000    | Icon + "OSCURA" text below               |
-| `logo-horizontal.svg` | 1200x400    | Icon left, text right (best for headers) |
-| `logo-vertical.svg`   | 600x800     | Icon top, text bottom                    |
-| `logo-wordmark.svg`   | 800x200     | "OSCURA" text only                       |
-| `logo-dark.svg`       | 1024x1024   | Optimized for dark backgrounds           |
-| `logo-light.svg`      | 1024x1024   | Optimized for light backgrounds          |
-| `social-preview.svg`  | 1280x640    | GitHub social preview layout             |
+| File                  | Dimensions | Description                              |
+| --------------------- | ---------- | ---------------------------------------- |
+| `logo-icon.svg`       | 1024x1024  | Icon only, for avatars and small spaces  |
+| `logo-full.svg`       | 800x1000   | Icon + "OSCURA" text below               |
+| `logo-horizontal.svg` | 1200x400   | Icon left, text right (best for headers) |
+| `logo-vertical.svg`   | 600x800    | Icon top, text bottom                    |
+| `logo-wordmark.svg`   | 800x200    | "OSCURA" text only                       |
+| `logo-dark.svg`       | 1024x1024  | Optimized for dark backgrounds           |
+| `logo-light.svg`      | 1024x1024  | Optimized for light backgrounds          |
+| `social-preview.svg`  | 1280x640   | GitHub social preview layout             |
 
 ### Raster (PNG) - GitHub Specific
 
-| File                        | Dimensions  | Purpose                              |
-| --------------------------- | ----------- | ------------------------------------ |
-| `oscura-org-avatar.png`     | 512x512     | GitHub organization avatar           |
-| `oscura-org-avatar-1024.png`| 1024x1024   | High-resolution avatar               |
-| `oscura-repo-social.png`    | 1280x640    | Repository social preview (OG image) |
-| `oscura-readme-header.png`  | 800x267     | README header image                  |
+| File                         | Dimensions | Purpose                              |
+| ---------------------------- | ---------- | ------------------------------------ |
+| `oscura-org-avatar.png`      | 512x512    | GitHub organization avatar           |
+| `oscura-org-avatar-1024.png` | 1024x1024  | High-resolution avatar               |
+| `oscura-repo-social.png`     | 1280x640   | Repository social preview (OG image) |
+| `oscura-readme-header.png`   | 800x267    | README header image                  |
 
 ## Usage
 
@@ -63,7 +63,7 @@ Use SVG files whenever possible for best quality at any size.
 ### In Documentation
 
 ```html
-<img src="../.github/branding/logo-icon.svg" alt="Oscura" height="48">
+<img src="../.github/branding/logo-icon.svg" alt="Oscura" height="48" />
 ```
 
 ### As Favicon

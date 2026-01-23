@@ -10,7 +10,7 @@ Commit and push changes with intelligent grouping and conventional commit format
 
 ## Usage
 
-```bash
+````bash
 /git                    # Auto-generate commit message(s)
 /git "custom message"   # Use provided message
 /git --push             # Commit and push
@@ -60,3 +60,4 @@ Commit and push changes with intelligent grouping and conventional commit format
 ## Version History
 
 - v1.0.0 (2026-01-16): Initial creation with atomic commits and conventional format
+````

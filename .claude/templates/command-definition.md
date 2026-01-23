@@ -13,14 +13,14 @@ Every command file MUST start with YAML frontmatter:
 
 ```yaml
 ---
-name: command_name                      # REQUIRED: Command name (no / prefix)
+name: command_name # REQUIRED: Command name (no / prefix)
 description: Brief one-line description # REQUIRED: Shown in /help listing
-arguments: [arg1, arg2, --flag]        # REQUIRED: Use [] for optional, <> for required
-version: 1.0.0                         # REQUIRED: Command version (semver)
-created: 2026-01-22                    # REQUIRED: ISO-8601 date
-updated: 2026-01-22                    # REQUIRED: ISO-8601 date (same as created initially)
-status: stable                         # REQUIRED: stable|beta|experimental
-target_agent: agent_name               # OPTIONAL: Primary agent or "none" for utility commands
+arguments: [arg1, arg2, --flag] # REQUIRED: Use [] for optional, <> for required
+version: 1.0.0 # REQUIRED: Command version (semver)
+created: 2026-01-22 # REQUIRED: ISO-8601 date
+updated: 2026-01-22 # REQUIRED: ISO-8601 date (same as created initially)
+status: stable # REQUIRED: stable|beta|experimental
+target_agent: agent_name # OPTIONAL: Primary agent or "none" for utility commands
 ---
 ```
 
@@ -54,16 +54,16 @@ Brief paragraph (1-3 sentences) explaining what this command does.
 
 Show all variations with clear syntax:
 
-```markdown
+````markdown
 ## Usage
 
 \```bash
-/command                        # Basic usage
-/command <required>             # With required arg
-/command [optional]             # With optional arg
-/command --flag                 # With flag
+/command # Basic usage
+/command <required> # With required arg
+/command [optional] # With optional arg
+/command --flag # With flag
 \```
-```
+````
 
 ### 3. Purpose
 
@@ -86,7 +86,7 @@ This command is designed for:
 
 Provide **concrete, working examples** with expected output:
 
-```markdown
+````markdown
 ## Examples
 
 ### Example 1: Basic Usage
@@ -109,7 +109,7 @@ Expected output here
 \```
 
 **Result**: Describe outcome
-```
+````
 
 ### 5. Arguments and Options
 
@@ -118,16 +118,16 @@ Document all arguments and flags:
 ```markdown
 ## Arguments
 
-| Argument | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `arg1` | string | Yes | - | Purpose of arg1 |
-| `arg2` | path | No | `.` | Purpose of arg2 |
+| Argument | Type   | Required | Default | Description     |
+| -------- | ------ | -------- | ------- | --------------- |
+| `arg1`   | string | Yes      | -       | Purpose of arg1 |
+| `arg2`   | path   | No       | `.`     | Purpose of arg2 |
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
-| `--json` | Output as JSON |
+| Flag        | Description               |
+| ----------- | ------------------------- |
+| `--json`    | Output as JSON            |
 | `--verbose` | Show detailed information |
 ```
 
@@ -135,24 +135,25 @@ Document all arguments and flags:
 
 Explain the implementation/workflow:
 
-```markdown
+````markdown
 ## How It Works
 
 \```
 User invokes /command
-  ↓
+↓
 System validates arguments
-  ↓
+↓
 Execute core logic
-  ↓
+↓
 Return results
 \```
 
 **Internal flow**:
+
 1. Step 1: What happens
 2. Step 2: What happens next
 3. Step 3: Final result
-```
+````
 
 ### 7. Error Handling
 
@@ -178,21 +179,22 @@ Document common errors and solutions:
 
 Link to relevant config settings:
 
-```markdown
+````markdown
 ## Configuration
 
 Behavior controlled by `.claude/config.yaml`:
 
 \```yaml
 section:
-  subsection:
-    setting: value  # Description
+subsection:
+setting: value # Description
 \```
 
 **Configurable options**:
+
 - `setting1`: Purpose and default value
 - `setting2`: Purpose and default value
-```
+````
 
 ### 9. Related Commands (REQUIRED)
 
@@ -201,10 +203,10 @@ List related commands in a table:
 ```markdown
 ## Related Commands
 
-| Command | Purpose | When to Use Instead |
-|---------|---------|---------------------|
-| `/other1` | Alternative approach | When X condition |
-| `/other2` | Complementary | Use after this command |
+| Command   | Purpose              | When to Use Instead    |
+| --------- | -------------------- | ---------------------- |
+| `/other1` | Alternative approach | When X condition       |
+| `/other2` | Complementary        | Use after this command |
 ```
 
 **Ensure bidirectional links**: If command A links to B, B must link to A.
@@ -259,11 +261,11 @@ Explanation and example
 ```markdown
 ## Comparison
 
-| Aspect | This Command | Alternative |
-|--------|--------------|-------------|
-| Speed | Fast | Slow |
-| Complexity | Simple | Complex |
-| Use Case | Quick tasks | Complex workflows |
+| Aspect     | This Command | Alternative       |
+| ---------- | ------------ | ----------------- |
+| Speed      | Fast         | Slow              |
+| Complexity | Simple       | Complex           |
+| Use Case   | Quick tasks  | Complex workflows |
 ```
 
 ### Workflow Integration
@@ -274,6 +276,7 @@ Explanation and example
 This command fits into workflows:
 
 **Common patterns**:
+
 1. `/cmd1` → `/command` → `/cmd3`
 2. `/command` (standalone)
 3. Part of automated scripts
@@ -281,20 +284,22 @@ This command fits into workflows:
 
 ### Advanced Usage
 
-```markdown
+````markdown
 ## Advanced Usage
 
 ### Scripting
 
 \```bash
+
 # Example script using this command
+
 /command arg1 && /command arg2
 \```
 
 ### Automation
 
 Integration with CI/CD or other tools.
-```
+````
 
 ---
 

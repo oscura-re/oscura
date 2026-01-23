@@ -52,6 +52,12 @@ documentation:
     contributing: "CONTRIBUTING.md"
     readme: "README.md"
 
+file_organization:
+  ssot_validation:
+    # Allowed duplicate config files (demonstration outputs)
+    allowed_duplicate_configs:
+      - "config.yaml" # demonstrations/data/outputs/configuration_files/config.yaml
+
 ssot:
   # Single Source of Truth definitions
   version: "pyproject.toml:[project.version]"

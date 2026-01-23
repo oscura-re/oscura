@@ -708,14 +708,14 @@ print("Analysis complete! DBC file exported.")
 
 ## Implementation Status
 
-| Feature | Status | Version |
-|---------|--------|---------|
-| Source Protocol | ✅ Complete | v0.3.0 |
-| FileSource | ✅ Complete | v0.3.0 |
-| SyntheticSource | ✅ Complete | v0.3.0 |
-| SocketCAN | 🚧 Phase 2 | v1.0 (planned) |
-| Saleae Logic | 🚧 Phase 2 | v1.0 (planned) |
-| PyVISA | 🚧 Phase 3 | v1.1 (planned) |
+| Feature         | Status      | Version        |
+| --------------- | ----------- | -------------- |
+| Source Protocol | ✅ Complete | v0.3.0         |
+| FileSource      | ✅ Complete | v0.3.0         |
+| SyntheticSource | ✅ Complete | v0.3.0         |
+| SocketCAN       | 🚧 Phase 2  | v1.0 (planned) |
+| Saleae Logic    | 🚧 Phase 2  | v1.0 (planned) |
+| PyVISA          | 🚧 Phase 3  | v1.1 (planned) |
 
 **Legend**:
 

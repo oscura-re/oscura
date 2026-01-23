@@ -205,15 +205,15 @@ name: Stress Tests
 
 on:
   schedule:
-    - cron: "0 0 * * 0"  # Weekly on Sundays
-  workflow_dispatch:     # Manual trigger
+    - cron: '0 0 * * 0' # Weekly on Sundays
+  workflow_dispatch: # Manual trigger
   pull_request:
-    types: [labeled]     # When PR labeled with 'stress-test'
+    types: [labeled] # When PR labeled with 'stress-test'
 
 jobs:
   stress:
     runs-on: ubuntu-latest
-    timeout-minutes: 120  # 2 hours for stress tests
+    timeout-minutes: 120 # 2 hours for stress tests
 
     steps:
       - name: Run stress tests

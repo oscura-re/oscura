@@ -169,7 +169,7 @@ Common mistakes to avoid:
 
 Write to `.claude/agent-outputs/[task-id]-complete.json`:
 
-```json
+````json
 {
   "task_id": "YYYY-MM-DD-HHMMSS-code-reviewer",
   "agent": "code_reviewer",
@@ -419,3 +419,4 @@ radon mi src/                   # Maintainability index
 - [ ] Configuration externalized
 - [ ] No commented-out code
 - [ ] TODOs have issue references
+````

@@ -355,7 +355,9 @@ This project includes the Claude Code orchestration system...
 ## CRITICAL - QUALITY ENFORCEMENT
 
 ### Pre-Commit Requirements (MANDATORY)
+
 BEFORE ANY git commit, MUST execute in order:
+
 1. `python3 .claude/hooks/validate_all.py` → MUST show 5/5 passing
 2. `./scripts/check.sh` → MUST pass all quality checks
 3. IF any validation fails → BLOCK commit, fix errors first
@@ -364,9 +366,11 @@ BEFORE ANY git commit, MUST execute in order:
 ## AUTOMATIC BEHAVIORS
 
 ### Agent Orchestration (SPAWN PROACTIVELY)
+
 AUTOMATICALLY spawn agents when:
+
 - **After writing >50 lines code** → spawn `code_reviewer` (MANDATORY)
-...
+  ...
 ```
 
 **Improvements:**
@@ -390,6 +394,7 @@ AUTOMATICALLY spawn agents when:
 
 ```markdown
 # [Project Name] - [One-line description]
+
 **Tech Stack**: [List technologies]
 ```
 

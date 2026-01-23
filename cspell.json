@@ -8,7 +8,13 @@
 
   "language": "en",
 
-  "dictionaries": ["en_US", "companies", "softwareTerms", "python", "workspace-custom"],
+  "dictionaries": [
+    "en_US",
+    "companies",
+    "softwareTerms",
+    "python",
+    "workspace-custom"
+  ],
 
   "dictionaryDefinitions": [
     {
@@ -99,7 +105,12 @@
     "**/test_data/**"
   ],
 
-  "ignoreRegExpList": ["https?://[^\\s)>\"']+", "`[^`]+`", "```[\\s\\S]*?```", "<!--[\\s\\S]*?-->"],
+  "ignoreRegExpList": [
+    "https?://[^\\s)>\"']+",
+    "`[^`]+`",
+    "```[\\s\\S]*?```",
+    "<!--[\\s\\S]*?-->"
+  ],
 
   "words": [],
 
@@ -109,7 +120,16 @@
 
   "allowCompoundWords": false,
 
-  "flagWords": ["hte", "teh", "adn", "taht", "recieve", "seperate", "definately", "occured"],
+  "flagWords": [
+    "hte",
+    "teh",
+    "adn",
+    "taht",
+    "recieve",
+    "seperate",
+    "definately",
+    "occured"
+  ],
 
   "cache": {
     "useCache": true,

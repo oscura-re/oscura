@@ -176,10 +176,7 @@ Write to `.claude/agent-outputs/[task-id]-complete.json`:
   "started_at": "ISO-8601 timestamp",
   "completed_at": "ISO-8601 timestamp",
   "request": "User's original request",
-  "artifacts": [
-    "path/to/new_file.py",
-    "path/to/modified_file.py"
-  ],
+  "artifacts": ["path/to/new_file.py", "path/to/modified_file.py"],
   "metrics": {
     "files_created": 1,
     "files_modified": 1,
@@ -407,4 +404,4 @@ Which approach do you prefer?"
 1. Phase 1: Core data structure (I can start here)
 2. Phase 2: API integration
 3. Phase 3: Error handling and logging
-Let me implement Phase 1 first, then we can tackle the rest."
+   Let me implement Phase 1 first, then we can tackle the rest."

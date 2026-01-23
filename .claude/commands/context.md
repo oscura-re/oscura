@@ -10,7 +10,7 @@ Analyze current context usage and provide actionable optimization recommendation
 
 ## Usage
 
-```bash
+````bash
 /context           # Show context analysis and recommendations
 ```python
 
@@ -158,3 +158,4 @@ Read(file_path="/large/file.py", offset=100, limit=50)
 ## Version History
 
 - v1.0.0 (2026-01-16): Initial creation with context monitoring and optimization
+````

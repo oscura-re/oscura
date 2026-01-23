@@ -158,7 +158,7 @@ When creating new agents, follow this process:
 
 To test keyword routing:
 
-```bash
+````bash
 # Test with orchestrator
 /ai "write a function to parse JSON"  # Should route to code_assistant
 /ai "write documentation for API"     # Should route to technical_writer
@@ -193,3 +193,4 @@ When scores are tied or close:
 - `.claude/agents/orchestrator.md` - Routing algorithm details
 - `.claude/docs/routing-concepts.md` - Complete routing explanation
 - `.claude/commands/agents.md` - Agent catalog with keywords
+````

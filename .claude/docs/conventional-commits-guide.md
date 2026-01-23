@@ -4,7 +4,7 @@ Comprehensive guide to conventional commit format and examples for the Oscura pr
 
 ## Format Specification
 
-```python
+````python
 <type>[optional scope][optional !]: <description>
 
 [optional body]
@@ -441,3 +441,4 @@ npx commitlint --from HEAD~1
 - **Tool**: [commitlint](https://commitlint.js.org/)
 - **Project Guide**: `CONTRIBUTING.md` - Full development workflow
 - **Agent**: `git_commit_manager` - AI assistant for git commits
+````

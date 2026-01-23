@@ -67,17 +67,17 @@ Create files in workspace ONLY when they are:
 
 ## Where to Put Different Types of Content
 
-| Content Type | Correct Location | Wrong Location |
-|-------------|------------------|----------------|
-| **Analysis of problem** | Direct communication to user OR `.claude/reports/YYYY-MM-DD-analysis.md` | `ROOT/PROBLEM_ANALYSIS.md` ❌ |
-| **Implementation summary** | CHANGELOG.md entry OR direct communication | `ROOT/IMPLEMENTATION_SUMMARY.md` ❌ |
-| **Audit findings** | Direct communication OR `.claude/reports/YYYY-MM-DD-audit.md` | `ROOT/AUDIT_REPORT.md` ❌ |
-| **Badge documentation** | `.github/BADGE_MAINTENANCE.md` OR docs/ | `ROOT/BADGE_GUIDE.md` ❌ |
-| **Test verification** | Direct communication OR CI test results | `ROOT/TEST_VERIFICATION.md` ❌ |
-| **Configuration changes** | CHANGELOG.md entry | `ROOT/CONFIG_CHANGES.md` ❌ |
-| **User guide** | `docs/guides/user-guide.md` ✅ | `.claude/reports/` ❌ |
-| **API reference** | `docs/api/reference.md` ✅ | `.claude/reports/` ❌ |
-| **Agent completion report** | `.claude/agent-outputs/[id]-complete.json` ✅ | `ROOT/` ❌ |
+| Content Type                | Correct Location                                                         | Wrong Location                      |
+| --------------------------- | ------------------------------------------------------------------------ | ----------------------------------- |
+| **Analysis of problem**     | Direct communication to user OR `.claude/reports/YYYY-MM-DD-analysis.md` | `ROOT/PROBLEM_ANALYSIS.md` ❌       |
+| **Implementation summary**  | CHANGELOG.md entry OR direct communication                               | `ROOT/IMPLEMENTATION_SUMMARY.md` ❌ |
+| **Audit findings**          | Direct communication OR `.claude/reports/YYYY-MM-DD-audit.md`            | `ROOT/AUDIT_REPORT.md` ❌           |
+| **Badge documentation**     | `.github/BADGE_MAINTENANCE.md` OR docs/                                  | `ROOT/BADGE_GUIDE.md` ❌            |
+| **Test verification**       | Direct communication OR CI test results                                  | `ROOT/TEST_VERIFICATION.md` ❌      |
+| **Configuration changes**   | CHANGELOG.md entry                                                       | `ROOT/CONFIG_CHANGES.md` ❌         |
+| **User guide**              | `docs/guides/user-guide.md` ✅                                           | `.claude/reports/` ❌               |
+| **API reference**           | `docs/api/reference.md` ✅                                               | `.claude/reports/` ❌               |
+| **Agent completion report** | `.claude/agent-outputs/[id]-complete.json` ✅                            | `ROOT/` ❌                          |
 
 ---
 

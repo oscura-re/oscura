@@ -118,7 +118,10 @@
               },
               "value": {
                 "description": "Expected constant value for validation",
-                "oneOf": [{ "type": "integer" }, { "type": "array", "items": { "type": "integer" } }]
+                "oneOf": [
+                  { "type": "integer" },
+                  { "type": "array", "items": { "type": "integer" } }
+                ]
               },
               "description": {
                 "type": "string",
@@ -185,7 +188,18 @@
             },
             "type": {
               "type": "string",
-              "enum": ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64", "float32", "float64"],
+              "enum": [
+                "uint8",
+                "uint16",
+                "uint32",
+                "uint64",
+                "int8",
+                "int16",
+                "int32",
+                "int64",
+                "float32",
+                "float64"
+              ],
               "description": "Sample data type"
             },
             "endian": {
@@ -289,7 +303,10 @@
             },
             "expected": {
               "description": "Expected value",
-              "oneOf": [{ "type": "integer" }, { "type": "array", "items": { "type": "integer" } }]
+              "oneOf": [
+                { "type": "integer" },
+                { "type": "array", "items": { "type": "integer" } }
+              ]
             },
             "on_failure": {
               "type": "string",
@@ -362,7 +379,10 @@
             },
             "pattern": {
               "description": "Idle pattern to detect",
-              "oneOf": [{ "type": "string", "enum": ["auto", "zeros", "ones"] }, { "type": "integer" }]
+              "oneOf": [
+                { "type": "string", "enum": ["auto", "zeros", "ones"] },
+                { "type": "integer" }
+              ]
             },
             "min_duration": {
               "type": "integer",

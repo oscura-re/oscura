@@ -10,16 +10,16 @@ This document provides a decision framework for choosing the right API pattern i
 
 ## Quick Reference
 
-| Use Case | Pattern | Example |
-|----------|---------|---------|
-| One-shot measurement | Function | `rise_time(trace)` |
-| Data transformation | Function → Trace | `low_pass(trace, cutoff=1e6)` |
-| Protocol decoding | Decoder class | `UARTDecoder().decode(trace)` |
-| Data acquisition | Source subclass | `FileSource("capture.wfm")` |
-| Interactive exploration | Session subclass | `CANSession()` |
-| Automated workflow | Workflow function (DAG) | `reverse_engineer_signal(trace)` |
-| Sequential composition | Pipeline | `low_pass(1e6) \| decimate(4)` |
-| One-call convenience | Convenience function | `quick_spectral(trace)` |
+| Use Case                | Pattern                 | Example                          |
+| ----------------------- | ----------------------- | -------------------------------- |
+| One-shot measurement    | Function                | `rise_time(trace)`               |
+| Data transformation     | Function → Trace        | `low_pass(trace, cutoff=1e6)`    |
+| Protocol decoding       | Decoder class           | `UARTDecoder().decode(trace)`    |
+| Data acquisition        | Source subclass         | `FileSource("capture.wfm")`      |
+| Interactive exploration | Session subclass        | `CANSession()`                   |
+| Automated workflow      | Workflow function (DAG) | `reverse_engineer_signal(trace)` |
+| Sequential composition  | Pipeline                | `low_pass(1e6) \| decimate(4)`   |
+| One-call convenience    | Convenience function    | `quick_spectral(trace)`          |
 
 ---
 

@@ -210,7 +210,7 @@ Avoid:
 
 Write to `.claude/agent-outputs/[task-id]-complete.json`:
 
-```json
+````json
 {
   "task_id": "YYYY-MM-DD-HHMMSS-writing",
   "agent": "technical_writer",
@@ -302,3 +302,4 @@ Write to `.claude/agent-outputs/[task-id]-complete.json`:
 - **Agent**: `code_assistant` - Use for code implementation
 - **Documentation**: `.claude/docs/agent-context-best-practices.md` - Context optimization
 - **Disambiguation**: `.claude/docs/keyword-disambiguation.md` - Keyword routing
+````

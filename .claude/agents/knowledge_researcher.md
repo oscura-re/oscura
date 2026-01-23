@@ -199,9 +199,10 @@ See `.claude/docs/agent-context-best-practices.md` for general guidance.
 
 **Web Sources**:
 
-```markdown
+````markdown
 [Descriptive Title](https://url.com) - Brief context, Author/Org, Date
-```bash
+
+````bash
 
 **Academic Papers**:
 ```markdown
@@ -288,7 +289,7 @@ Write to `.claude/agent-outputs/[task-id]-complete.json`:
     "for_next_agent": "Research complete, may need technical_writer for documentation polish"
   }
 }
-```markdown
+```
 
 **Status Values** (ONLY use these 5 values):
 

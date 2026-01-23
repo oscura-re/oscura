@@ -43,7 +43,13 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["${file}::${selectedText}", "-v", "--tb=short", "--strict-markers", "-s"],
+      "args": [
+        "${file}::${selectedText}",
+        "-v",
+        "--tb=short",
+        "--strict-markers",
+        "-s"
+      ],
       "console": "integratedTerminal",
       "justMyCode": false,
       "env": {
@@ -55,7 +61,14 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/unit", "-v", "--tb=short", "--strict-markers", "-m", "unit"],
+      "args": [
+        "tests/unit",
+        "-v",
+        "--tb=short",
+        "--strict-markers",
+        "-m",
+        "unit"
+      ],
       "console": "integratedTerminal",
       "justMyCode": false,
       "env": {
@@ -79,7 +92,13 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/unit", "-v", "--tb=short", "-m", "unit and not slow and not memory_intensive"],
+      "args": [
+        "tests/unit",
+        "-v",
+        "--tb=short",
+        "-m",
+        "unit and not slow and not memory_intensive"
+      ],
       "console": "integratedTerminal",
       "justMyCode": false,
       "env": {
@@ -103,7 +122,14 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["${file}", "-v", "--tb=short", "--cov=src/oscura", "--cov-report=term-missing", "--cov-report=html"],
+      "args": [
+        "${file}",
+        "-v",
+        "--tb=short",
+        "--cov=src/oscura",
+        "--cov-report=term-missing",
+        "--cov-report=html"
+      ],
       "console": "integratedTerminal",
       "justMyCode": false,
       "env": {

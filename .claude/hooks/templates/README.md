@@ -153,15 +153,15 @@ Register hooks in `.claude/settings.json`:
 
 ### Hook Types
 
-|Hook Type|When It Runs|
-|---|---|
-|`PreToolUse`|Before tool execution|
-|`PostToolUse`|After tool execution|
-|`Stop`|When agent stops|
-|`SubagentStop`|When subagent stops|
-|`PreCompact`|Before context compaction|
-|`SessionStart`|On session start (with matcher)|
-|`SessionEnd`|On session end|
+| Hook Type      | When It Runs                    |
+| -------------- | ------------------------------- |
+| `PreToolUse`   | Before tool execution           |
+| `PostToolUse`  | After tool execution            |
+| `Stop`         | When agent stops                |
+| `SubagentStop` | When subagent stops             |
+| `PreCompact`   | Before context compaction       |
+| `SessionStart` | On session start (with matcher) |
+| `SessionEnd`   | On session end                  |
 
 ## Best Practices
 

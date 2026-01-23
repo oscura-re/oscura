@@ -3,10 +3,11 @@
 Standard template for all agent definitions. All agents MUST follow this structure.
 
 ---
+
 name: agent_name
 description: 'Brief one-line description of what this agent does (max 80 chars)'
-tools: [Tool1, Tool2, Tool3]  # Available tools: Read, Write, Edit, Bash, Grep, Glob, Task, WebFetch, WebSearch
-model: sonnet  # sonnet (fast, efficient) or opus (complex reasoning)
+tools: [Tool1, Tool2, Tool3] # Available tools: Read, Write, Edit, Bash, Grep, Glob, Task, WebFetch, WebSearch
+model: sonnet # sonnet (fast, efficient) or opus (complex reasoning)
 routing_keywords:
 
 - keyword1

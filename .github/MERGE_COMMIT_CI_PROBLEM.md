@@ -66,7 +66,7 @@ branches:
   main:
     protection:
       required_status_checks:
-        strict: true  # Require branch up-to-date
+        strict: true # Require branch up-to-date
       merge_queue:
         enabled: true
         grouping_strategy: HEADGREEN
@@ -128,7 +128,7 @@ git push --force-with-lease
 # .github/workflows/auto-revert.yml
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ['CI']
     branches: [main]
     types: [completed]
 
@@ -248,7 +248,7 @@ Add alerts for main branch CI failures:
 # .github/workflows/alert-main-failure.yml
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ['CI']
     branches: [main]
     types: [completed]
 

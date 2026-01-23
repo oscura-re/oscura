@@ -32,7 +32,7 @@ Lightweight debugging and tracking of orchestration decisions without consuming 
 
 Simple text format (not verbose JSON):
 
-```python
+````python
 [2026-01-09 14:30:45] ROUTE | Complexity: 25 | Path: AD_HOC | Agent: code_assistant
 [2026-01-09 14:31:12] ROUTE | Complexity: 65 | Path: AUTO_SPEC | Agent: orchestrator→spec_implementer
 [2026-01-09 14:32:00] ERROR | Agent: code_assistant | Message: File not found
@@ -99,3 +99,4 @@ logging:
 - `.claude/hooks/shared/logging_utils.py` - Shared logging utilities
 - `.claude/config.yaml` - Configuration settings
 - `.claude/agents/orchestrator.md` - Orchestrator agent documentation
+````

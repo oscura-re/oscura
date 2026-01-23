@@ -10,7 +10,7 @@ Display available slash commands with descriptions and usage examples.
 
 ## Usage
 
-```bash
+````bash
 /help              # List all available commands
 /help <command>    # Show detailed help for specific command
 ```python
@@ -68,3 +68,4 @@ This will show:
 ## Version History
 
 - v1.0.0 (2026-01-16): Initial creation with command listing and detailed help
+````
