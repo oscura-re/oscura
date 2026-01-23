@@ -825,7 +825,7 @@ print("\nAnalysis complete!")
 
 - [Hardware Acquisition Guide](hardware-acquisition.md) - Capture data from devices
 - [Session Management API](../api/session-management.md) - Full API reference
-- [Protocol Inference Demo](../../demos/07_protocol_inference/) - Working examples
+- [Protocol Inference Demo](../../demonstrations/07_protocol_inference/) - Working examples
 - [Migration Guide](../migration/v0-to-v1.md) - Upgrade from older versions
 
 ---

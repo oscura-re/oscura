@@ -14,10 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **Vestigial Directories**: Removed deprecated demos/ (63 files) and examples/ (1 file) directories, fully superseded by comprehensive demonstrations/ system with 112 validated demos across 20 sections
+- **Vestigial Scripts**: Removed root-level validate_all_demos.py and run_all_demos.py, superseded by demonstrations/validate_all.py
 
 ### Changed
 
-- **Documentation** (README.md, CONTRIBUTING.md): Updated all demo references to point to new demonstrations/ structure with correct section mappings
+- **Documentation** (README.md, CONTRIBUTING.md, docs/*, src/*/README.md): Updated all demo references across codebase to point to new demonstrations/ structure with correct section mappings (11 documentation files updated)
 
 ### Added
 

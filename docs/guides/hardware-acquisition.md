@@ -701,7 +701,7 @@ print("Analysis complete! DBC file exported.")
 
 - [Black-Box Analysis Guide](blackbox-analysis.md) - Protocol reverse engineering
 - [Session Management API](../api/session-management.md) - Session API reference
-- [Automotive Protocols Demo](../../demos/08_automotive_protocols/) - CAN examples
+- [Automotive Protocols Demo](../../demonstrations/08_automotive_protocols/) - CAN examples
 - [Migration Guide](../migration/v0-to-v1.md) - Version migration
 
 ---

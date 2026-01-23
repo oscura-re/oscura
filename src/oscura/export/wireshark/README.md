@@ -196,7 +196,7 @@ Requires `luac` (Lua compiler) to be installed:
 
 ## Examples
 
-See `examples/05_export/wireshark_dissector_example.py` for complete examples:
+See `demonstrations/05_export/wireshark_dissector_example.py` for complete examples:
 
 - Simple protocol with enum fields
 - Modbus-like protocol
@@ -205,7 +205,7 @@ See `examples/05_export/wireshark_dissector_example.py` for complete examples:
 Run the example:
 
 ```bash
-python examples/05_export/wireshark_dissector_example.py
+python demonstrations/05_export/wireshark_dissector_example.py
 ```
 
 ## API Reference

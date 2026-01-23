@@ -114,7 +114,7 @@ File → Loader → Trace → Analyzer → Measurements → Exporter → Output
     Metadata (sample rate, channels, units)
 ```
 
-**Working examples**: See [Complete Workflows Demo](https://github.com/oscura-re/oscura/tree/main/demos/19_complete_workflows)
+**Working examples**: See [Complete Workflows Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/19_complete_workflows)
 
 ## Use Case Categories
 
@@ -123,29 +123,29 @@ Oscura serves four primary domains:
 ### 1. **Analog Circuit Analysis**
 
 Audio, power supplies, RF baseband, sensors
-→ [Power Demo](https://github.com/oscura-re/oscura/tree/main/demos/14_power_analysis)
+→ [Power Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/14_power_analysis)
 
 ### 2. **Digital Protocol Analysis**
 
 UART, SPI, I2C, CAN decoding and validation
-→ [Protocol Demo](https://github.com/oscura-re/oscura/tree/main/demos/04_serial_protocols)
+→ [Protocol Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/04_serial_protocols)
 
 ### 3. **Protocol Reverse Engineering**
 
 Unknown signal analysis, CRC recovery, state machine learning
-→ [RE Demo](https://github.com/oscura-re/oscura/tree/main/demos/17_signal_reverse_engineering)
+→ [RE Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/17_signal_reverse_engineering)
 
 ### 4. **Compliance Validation**
 
 IEEE standards, EMC testing, automotive diagnostics
-→ [Spectral Demo](https://github.com/oscura-re/oscura/tree/main/demos/12_spectral_compliance)
+→ [Spectral Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/12_spectral_compliance)
 
 ## Performance Considerations
 
 **Small files (<100MB)**: Load entirely into memory
 
 **Large files (>100MB)**: Use streaming loaders
-→ [Custom DAQ Demo](https://github.com/oscura-re/oscura/tree/main/demos/03_custom_daq)
+→ [Custom DAQ Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/03_custom_daq)
 
 **Very large datasets**: Consider chunking and parallel processing
 → [Pipelines API](../api/pipelines.md)

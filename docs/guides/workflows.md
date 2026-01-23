@@ -13,7 +13,7 @@ Typical patterns for different signal analysis tasks.
 3. Perform spectral analysis
 4. Export results
 
-**Working example**: [Waveform Analysis Demo](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis)
+**Working example**: [Waveform Analysis Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/01_waveform_analysis)
 
 **When to use**:
 
@@ -34,7 +34,7 @@ Typical patterns for different signal analysis tasks.
 3. Extract decoded frames
 4. Validate/analyze frames
 
-**Working example**: [Protocol Decoding Demo](https://github.com/oscura-re/oscura/tree/main/demos/05_protocol_decoding)
+**Working example**: [Protocol Decoding Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/05_protocol_decoding)
 
 **When to use**:
 
@@ -55,7 +55,7 @@ Typical patterns for different signal analysis tasks.
 3. Accumulate statistics
 4. Generate summary
 
-**Working example**: [Custom DAQ Demo](https://github.com/oscura-re/oscura/tree/main/demos/03_custom_daq)
+**Working example**: [Custom DAQ Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/03_custom_daq)
 
 **When to use**:
 
@@ -78,7 +78,7 @@ Typical patterns for different signal analysis tasks.
 5. Detect checksums/CRCs
 6. Generate protocol specification
 
-**Working example**: [Signal RE Demo](https://github.com/oscura-re/oscura/tree/main/demos/17_signal_reverse_engineering)
+**Working example**: [Signal RE Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/17_signal_reverse_engineering)
 
 **When to use**:
 
@@ -99,7 +99,7 @@ Typical patterns for different signal analysis tasks.
 3. Extract diagnostic data
 4. Generate DBC file for future analysis
 
-**Working example**: [Automotive Demo](https://github.com/oscura-re/oscura/tree/main/demos/09_automotive)
+**Working example**: [Automotive Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/09_automotive)
 
 **When to use**:
 
@@ -122,9 +122,9 @@ Typical patterns for different signal analysis tasks.
 
 **Working examples**:
 
-- [Spectral Compliance (IEEE 1241)](https://github.com/oscura-re/oscura/tree/main/demos/12_spectral_compliance)
-- [Jitter Analysis (IEEE 2414)](https://github.com/oscura-re/oscura/tree/main/demos/13_jitter_analysis)
-- [EMC Testing (CISPR 16)](https://github.com/oscura-re/oscura/tree/main/demos/16_emc_compliance)
+- [Spectral Compliance (IEEE 1241)](https://github.com/oscura-re/oscura/tree/main/demonstrations/12_spectral_compliance)
+- [Jitter Analysis (IEEE 2414)](https://github.com/oscura-re/oscura/tree/main/demonstrations/13_jitter_analysis)
+- [EMC Testing (CISPR 16)](https://github.com/oscura-re/oscura/tree/main/demonstrations/16_emc_compliance)
 
 **When to use**:
 
@@ -144,7 +144,7 @@ Typical patterns for different signal analysis tasks.
 2. Generate report
 3. Export to target format(s)
 
-**Working example**: [All Output Formats](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis)
+**Working example**: [All Output Formats](https://github.com/oscura-re/oscura/tree/main/demonstrations/01_waveform_analysis)
 
 **Supported formats**:
 
@@ -192,7 +192,7 @@ Typical patterns for different signal analysis tasks.
 3. Validate results
 4. Package as reusable workflow
 
-**Working example**: [Complete Workflows Demo](https://github.com/oscura-re/oscura/tree/main/demos/19_complete_workflows)
+**Working example**: [Complete Workflows Demo](https://github.com/oscura-re/oscura/tree/main/demonstrations/19_complete_workflows)
 
 **When to use**:
 

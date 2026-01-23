@@ -922,4 +922,4 @@ results = [pipeline.transform(t) for t in traces]
 - [Analysis API](analysis.md) - Built-in analysis functions
 - [Loader API](loader.md) - Data loading
 - [Export API](export.md) - Save results
-- [Advanced Examples](../../demos/15_complete_workflows/) - Complete workflow demonstrations
+- [Advanced Examples](../../demonstrations/15_complete_workflows/) - Complete workflow demonstrations

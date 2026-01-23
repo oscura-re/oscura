@@ -149,5 +149,5 @@ Information and Computation, 75(2), 87-106.
 | Query complexity  | O(                      | Q                          | ²   | Σ   | )   | N/A | ## See Also |
 
 - `oscura.inference.state_machine`: RPNI passive learning
-- `examples/lstar_demo.py`: Complete usage examples
+- `demonstrations/lstar_demo.py`: Complete usage examples
 - `tests/unit/inference/test_lstar.py`: Test cases including academic examples
