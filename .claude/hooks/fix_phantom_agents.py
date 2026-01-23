@@ -217,7 +217,7 @@ def main():
     try:
         project_root = find_project_root()
     except FileNotFoundError:
-        print("ERROR: Not in an Oscura project directory", file=sys.stderr)
+        print("ERROR: Not in a project directory with .claude/", file=sys.stderr)
         sys.exit(1)
 
     registry_path = project_root / ".claude" / "agent-registry.json"

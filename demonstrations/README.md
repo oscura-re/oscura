@@ -127,6 +127,7 @@ if __name__ == "__main__":
 ```
 
 **All demonstrations:**
+
 - ✅ Execute without external files (self-contained)
 - ✅ Print "DEMONSTRATION PASSED" on success
 - ✅ Include timing and validation
@@ -154,6 +155,7 @@ python demonstrations/validate_all.py --fast
 ```
 
 **Quality Metrics:**
+
 - 100% pass rate required
 - < 60 seconds per demo (unless documented)
 - Zero external dependencies beyond oscura
@@ -177,6 +179,7 @@ python demonstrations/capability_index.py --gaps-only
 ```
 
 **Coverage Goals:**
+
 - ✅ 100% module coverage (45/45 modules)
 - ✅ 100% API symbol coverage (813/813 symbols)
 - ✅ All IEEE standards validated
@@ -200,6 +203,7 @@ python demonstrations/generate_all_data.py --quick
 ```
 
 **Why not in git?**
+
 - All data is 100% synthetic and reproducible
 - Reduces repository size significantly
 - Faster clones for all users
@@ -263,6 +267,7 @@ Typical execution times:
 - Coverage analysis: < 10 seconds
 
 **Optimization tips:**
+
 - Use `--fast` for quick validation
 - Generate data once, reuse multiple times
 - Run specific sections during development

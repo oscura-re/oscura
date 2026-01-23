@@ -62,18 +62,20 @@ class DemoValidator:
         if section:
             search_pattern = f"{section}/**/*.py"
         else:
-            search_pattern = "*/**.py"
+            search_pattern = "*/**/*.py"
 
         # Find all Python files in demonstration directories
         demo_files = sorted(self.demos_dir.glob(search_pattern))
 
-        # Exclude common/ and this file
+        # Exclude common/, utility scripts, and __init__.py files
         demo_files = [
             f
             for f in demo_files
             if f.parent.name != "common"
             and f.name != "validate_all.py"
             and f.name != "capability_index.py"
+            and f.name != "generate_all_data.py"
+            and f.name != "__init__.py"
         ]
 
         return demo_files
@@ -95,9 +97,9 @@ class DemoValidator:
         start_time = time.time()
 
         try:
-            # Run demonstration
+            # Run demonstration with uv environment
             result = subprocess.run(
-                [sys.executable, str(demo_path)],
+                ["uv", "run", "python3", str(demo_path)],
                 capture_output=True,
                 text=True,
                 cwd=self.demos_dir.parent,  # Run from project root
