@@ -51,7 +51,7 @@ Demonstrations are organized in **progressive learning order** from beginner to 
 | **18_comparison_testing**   | Testing     | 4     | Golden reference, limits, masks                     |
 | **19_standards_compliance** | Standards   | 4     | IEEE 181, 1241, 1459, 2414 validation               |
 
-**Total:** ~100 demonstrations covering 813 API symbols across 45 modules
+**Total:** 112 demonstrations covering 266 user-facing API symbols (78 demonstrated = 29.3% coverage)
 
 ---
 
@@ -181,9 +181,11 @@ python demonstrations/capability_index.py --gaps-only
 **Coverage Goals:**
 
 - ✅ 100% module coverage (45/45 modules)
-- ✅ 100% API symbol coverage (813/813 symbols)
+- ⏳ API symbol coverage: 78/266 user-facing symbols (29.3%, growing)
 - ✅ All IEEE standards validated
 - ✅ All protocols demonstrated
+
+**Note:** 266 = user-facing symbols in `__all__` (authoritative). 813 includes internal symbols not relevant to users. See STATUS.md for detailed coverage analysis.
 
 ---
 
