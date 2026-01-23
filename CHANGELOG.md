@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Side-Channel Demonstration** (demonstrations/05_domain_specific/04_side_channel.py): Improved signal-to-noise ratio in test data generation for DPA and CPA attacks, updated validation logic to accept timing attack success as passing criterion
 - **Hook Logging** (.claude/hooks/shared/logging_utils.py): Fixed Path.cwd() misuse causing spurious .claude directories in subdirectories (demonstrations/, .vscode/). Now respects CLAUDE_PROJECT_DIR environment variable. Cleaned up existing spurious directories and added **/.claude/ to .gitignore
 
+### Improved
+
+- **Jitter Analysis Validation** (demonstrations/04_advanced_analysis/01_jitter_analysis.py): Tightened validation thresholds for better precision demonstration - clean clock period jitter threshold reduced from 100 ps to 10 ps (demonstrates true capability at 10 GHz sampling), DCD tolerance reduced from 150% to 50% (2.5-7.5% range) for more realistic measurement expectations
+- **Waveform Measurements Documentation** (demonstrations/02_basic_analysis/01_waveform_measurements.py): Enhanced comments explaining rise/fall time measurement behavior - clarified that 784 ns measured value (vs 10 ns nominal) is CORRECT for 1 MHz sampling rate, demonstrates real-world sampling limitation effects. Added educational context about sample rate requirements for resolving fast edges
+
 ### Removed
 
 - **Vestigial Directories**: Removed deprecated demos/ (63 files) and examples/ (1 file) directories, fully superseded by comprehensive demonstrations/ system with 112 validated demos across 20 sections

@@ -293,22 +293,24 @@ class WaveformMeasurementsDemo(BaseDemo):
         ):
             all_valid = False
 
-        # Rise time should be ~10ns (may vary significantly with sampling resolution)
-        # At 1MHz sampling, time resolution is 1µs, so measured rise time will be much longer
+        # Rise time: Nominal 10 ns, but measured as 784 ns due to sampling limitation
+        # At 1 MHz sampling (1 µs resolution), cannot resolve 10 ns edges accurately
+        # The 784 ns value is CORRECT for this sample rate - demonstrates real measurement limitations
         if not validate_approximately(
             results["pulse_rise_time"],
             784e-9,
             tolerance=0.1,
-            name="Rise time",
+            name="Rise time (sampling-limited)",
         ):
             all_valid = False
 
-        # Fall time should be ~784ns (1µs sampling resolution effect)
+        # Fall time: Same sampling limitation effect (nominal 10 ns → measured 784 ns)
+        # Real-world lesson: sample rate must be >> signal bandwidth to resolve fast edges
         if not validate_approximately(
             results["pulse_fall_time"],
             784e-9,
             tolerance=0.1,
-            name="Fall time",
+            name="Fall time (sampling-limited)",
         ):
             all_valid = False
 

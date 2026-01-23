@@ -360,8 +360,8 @@ class JitterAnalysisDemo(BaseDemo):
 
         clean_periods = results["clean_periods"]
         clean_period_std = np.std(clean_periods)
-        if clean_period_std < 100e-12:  # Should be < 100 ps for clean clock (relaxed)
-            self.success(f"Clean clock period jitter: {clean_period_std * 1e12:.3f} ps < 100 ps")
+        if clean_period_std < 10e-12:  # Should be < 10 ps for truly clean clock at 10 GHz sampling
+            self.success(f"Clean clock period jitter: {clean_period_std * 1e12:.3f} ps < 10 ps")
         else:
             self.warning(
                 f"Clean clock period jitter: {clean_period_std * 1e12:.3f} ps (synthetic data has sampling quantization)"
@@ -389,11 +389,11 @@ class JitterAnalysisDemo(BaseDemo):
         # Validate DCD measurements
         self.subsection("DCD Validation")
 
-        # DCD should be reasonably close to injected 5% (relaxed tolerance)
+        # DCD should be reasonably close to injected 5% (tightened tolerance)
         if validate_approximately(
             results["dcd_percent"],
             5.0,
-            tolerance=1.5,  # 150% tolerance due to measurement uncertainty
+            tolerance=0.5,  # 50% tolerance (2.5-7.5% range) - tighter validation
             name="DCD percentage",
         ):
             pass  # Success already logged
