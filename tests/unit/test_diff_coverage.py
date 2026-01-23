@@ -33,6 +33,9 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
+pytestmark = pytest.mark.unit
+
+
 # =============================================================================
 # Spectral Analysis Edge Case Tests (11 lines)
 # =============================================================================
