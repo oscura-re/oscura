@@ -289,173 +289,24 @@ See [main demonstrations README](../README.md#running-demonstrations) for all ex
 
 ## Tips for Learning
 
-### Understand Before Measuring
+- **Understand assumptions**: Frequency needs periodic signals, rise time needs clean edges, FFT needs sufficient samples
+- **Validate with known signals**: Test measurements first on synthetic signals with known properties
+- **Combine techniques**: Real analysis uses filtering, edge detection, timing measurement, and statistics together
+- **Follow IEEE standards**: IEEE 1241-2010 (ADC), IEEE 181-2011 (waveforms) define authoritative measurement methods
 
-Each measurement has assumptions:
-
-```python
-# Frequency requires periodic signal
-freq = frequency(trace)  # Assumes stable period
-
-# Rise time requires clean edges
-rt = rise_time(trace)  # Assumes 10-90% transition visible
-
-# FFT requires sufficient samples
-spectrum = fft(trace)  # Assumes power-of-2 length optimal
-```
-
-Read the docstrings to understand requirements.
-
-### Visualize Results
-
-Plotting helps understand measurements:
+## Core APIs
 
 ```python
-import matplotlib.pyplot as plt
-
-# Plot time domain
-plt.plot(trace.time(), trace.data)
-plt.xlabel("Time (s)")
-plt.ylabel("Voltage (V)")
-
-# Plot frequency domain
-freq, mag = fft(trace)
-plt.plot(freq, mag)
-plt.xlabel("Frequency (Hz)")
-plt.ylabel("Magnitude")
-```
-
-### Validate with Known Signals
-
-Test measurements on synthetic signals first:
-
-```python
-from demonstrations.common import generate_sine_wave
-
-# Known 1 kHz, 2 Vpp sine wave
-trace = generate_sine_wave(frequency=1000.0, amplitude=1.0)
-
-# Validate measurements
-assert abs(frequency(trace) - 1000.0) < 1.0  # Within 1 Hz
-assert abs(amplitude(trace) - 2.0) < 0.01    # Within 10 mV
-```
-
-### Combine Techniques
-
-Real analysis combines multiple techniques:
-
-```python
-# 1. Filter noise
-filtered = low_pass(trace, cutoff=10000.0)
-
-# 2. Detect edges
-edges = find_rising_edges(filtered, threshold=0.5)
-
-# 3. Measure timing
-periods = [edges[i+1] - edges[i] for i in range(len(edges)-1)]
-
-# 4. Statistical characterization
-stats = basic_stats(periods)
-print(f"Period jitter: {stats['std']} s")
-```
-
-### Reference IEEE Standards
-
-Oscura follows IEEE standards for measurement definitions:
-
-- **IEEE 1241-2010** - ADC testing (SNR, ENOB, THD)
-- **IEEE 181-2011** - Waveform measurements (rise time, overshoot)
-- Read the standards for authoritative definitions
-
----
-
-## Understanding the Framework
-
-### Measurement API
-
-**Simple Measurements**:
-
-```python
-from oscura import amplitude, frequency, rms
-
-amp = amplitude(trace)      # Peak-to-peak voltage
-freq = frequency(trace)     # Fundamental frequency
-rms_v = rms(trace)         # RMS voltage
-```
-
-**Statistical Measurements**:
-
-```python
-from oscura import basic_stats, percentiles
-
-stats = basic_stats(trace)
-# Returns: {'mean', 'median', 'std', 'min', 'max', 'range'}
-
-pct = percentiles(trace, [25, 50, 75])
-# Returns quartiles
-```
-
-**Spectral Measurements**:
-
-```python
+from oscura import amplitude, frequency, rms, basic_stats, percentiles
 from oscura import fft, psd, thd, snr
-
-freq_bins, magnitude = fft(trace)
-freq_bins, power = psd(trace)
-total_hd = thd(trace, fundamental_freq=1000.0)
-signal_noise_ratio = snr(trace, signal_freq=1000.0)
-```
-
-### Filtering API
-
-**Pre-designed Filters**:
-
-```python
 from oscura import low_pass, high_pass, band_pass, band_stop
+from oscura import find_rising_edges, find_falling_edges, find_pulses, find_glitches
 
-# Remove high frequencies
-filtered = low_pass(trace, cutoff=10000.0, order=4)
-
-# Remove DC and low frequencies
-ac_trace = high_pass(trace, cutoff=100.0)
-
-# Select frequency band
-band = band_pass(trace, low=1000.0, high=5000.0)
-```
-
-**Custom Filter Design**:
-
-```python
-from oscura.filtering.design import design_filter
-
-# Design custom filter
-sos = design_filter(
-    filter_type='lowpass',
-    cutoff=10000.0,
-    sample_rate=trace.metadata.sample_rate,
-    order=6,
-    ftype='butter'  # butterworth, cheby1, cheby2, bessel, ellip
-)
-```
-
-### Triggering API
-
-**Edge Triggers**:
-
-```python
-from oscura import EdgeTrigger, find_rising_edges, find_falling_edges
-
-trigger = EdgeTrigger(threshold=0.5, edge='rising', hysteresis=0.1)
-edges = find_rising_edges(trace, threshold=0.5)
-```
-
-**Pulse Triggers**:
-
-```python
-from oscura import PulseWidthTrigger, find_pulses, find_glitches
-
-pulses = find_pulses(trace, min_width=1e-6, max_width=10e-6)
-glitches = find_glitches(trace, max_width=100e-9)
+amp = amplitude(trace)  # Peak-to-peak
+freq = frequency(trace) # Fundamental frequency
+rms_v = rms(trace)     # RMS voltage
+filtered = low_pass(trace, cutoff=10000.0)  # Low-pass filter
+edges = find_rising_edges(trace, 0.5)       # Edge detection
 ```
 
 ---

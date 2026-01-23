@@ -292,124 +292,27 @@ python demonstrations/generate_all_data.py
 
 ## Tips for Learning
 
-### Read the Docstrings
-
-Each demo includes extensive documentation at the top:
-
-```python
-"""Hello World: Your first Oscura demonstration
-
-Demonstrates:
-- oscura.load() - Load signal data
-- oscura.amplitude() - Measure peak-to-peak voltage
-...
-"""
-```
-
-Read these first to understand what the demo teaches!
-
-### Modify and Experiment
-
-These demos are meant to be modified. Try:
-
-```python
-# Change the frequency
-trace = generate_sine_wave(frequency=5000.0)  # 5 kHz instead of 1 kHz
-
-# Add a second signal
-trace2 = generate_sine_wave(frequency=2000.0, amplitude=0.5)
-
-# Stack them together
-combined = trace.data + trace2.data
-```
-
-See what happens! This is the best way to understand the concepts.
-
-### Check the Related Demos
-
-Each demo lists related demonstrations at the top. Use these to see how concepts are applied in different contexts:
-
-```python
-Related Demos:
-- 00_getting_started/00_hello_world.py
-- 02_basic_analysis/01_waveform_measurements.py
-```
-
-### Read Real Code
-
-After understanding the basics here, look at:
-
-- `src/oscura/` - The actual framework implementation
-- `tests/` - Real test cases showing expected behavior
-- `examples/` - Complete working examples
-
----
+- **Read docstrings** at the top of each demo first
+- **Modify and experiment** - Change parameters to see effects
+- **Check related demos** - Learn how concepts apply elsewhere
+- **Read real code** - Examine `src/oscura/`, `tests/`, and `examples/`
 
 ## Understanding the Framework
 
-### Core Concepts
+Oscura's core components:
 
-**Traces** - The fundamental data structure representing signal measurements:
+- **Traces** - `WaveformTrace` (analog), `DigitalTrace` (digital)
+- **Metadata** - Sample rate, vertical scale, channel info
+- **Measurements** - Amplitude, frequency, RMS, power
+- **Protocols** - UART, SPI, I2C, CAN, LIN, Modbus, etc.
 
-- `WaveformTrace` - Analog signals (voltage over time)
-- `DigitalTrace` - Digital signals (high/low logic levels)
-
-**Metadata** - Information about how the signal was captured:
-
-- Sample rate (Hz) - How often samples were taken
-- Vertical scale (V/div) - Voltage per division
-- Channel information - Which instrument channel measured this
-- Source file - Where the data came from
-
-**Measurements** - Quantities extracted from signals:
-
-- Amplitude - Peak-to-peak voltage
-- Frequency - Oscillation rate
-- RMS - Root mean square (average power)
-- Power - Signal power (watts)
-- Etc.
-
-**Protocols** - Decoded communication:
-
-- UART, SPI, I2C, CAN, LIN, Modbus, etc.
-- Each has standard packet structure
-- Decoded from digital signals
-
-### Architecture Philosophy
-
-Oscura is built on these principles:
-
-1. **Type safety** - Explicit types prevent errors
-2. **Metadata everywhere** - Every trace carries context
-3. **Measurement accuracy** - Follows IEEE standards
-4. **Protocol standards** - Implements industry-standard decoders
-5. **Extensibility** - Add custom measurements and decoders
-6. **Progressive disclosure** - Simple API for common tasks, advanced API for complex work
-
----
+Built on: Type safety, metadata everywhere, IEEE standards compliance, extensibility, progressive disclosure.
 
 ## Resources
 
-### In This Repository
-
-- **`demonstrations/`** - 100+ working examples
-- **`src/oscura/`** - Framework source code
-- **`tests/`** - Test cases with expected behavior
-- **`docs/`** - Full API documentation
-
-### External Resources
-
-- **[IEEE 1241-2010](https://standards.ieee.org/)** - ADC Terminology (what we measure)
-- **[Oscilloscope fundamentals](https://www.tek.com/)** - From Tektronix
-- **[Protocol specifications](https://www.iot.org/)** - From IoT organizations
-
-### Getting Help
-
-1. Check the related demos - similar use cases often already exist
-2. Read the docstrings in the code - they include examples
-3. Look at the test cases for expected behavior
-4. Try the `/help` command for framework documentation
-5. Examine other demos in the demonstrations/ directory
+- **In repo**: `demonstrations/`, `src/oscura/`, `tests/`, `docs/`
+- **External**: IEEE 1241-2010 (ADC), Tektronix fundamentals, protocol specs
+- **Help**: Related demos, code docstrings, test cases, `/help` command
 
 ---
 

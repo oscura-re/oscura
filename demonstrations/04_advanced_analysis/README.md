@@ -298,183 +298,25 @@ See [main demonstrations README](../README.md#running-demonstrations) for all ex
 
 ## Tips for Learning
 
-### Start with Quality Assessment
+- **Understand standards**: IEEE 2414-2020 (jitter), IEEE 1459-2010 (power), IEEE 1241-2010 (ADC)
+- **Combine techniques**: Use TIE + eye diagram + SNR for complete signal quality assessment
+- **Validate with professional tools**: Compare against oscilloscopes and BERT testers
+- **Quality workflow**: Time domain → Jitter → Eye diagram → Overall assessment
 
-Demo 06 provides a comprehensive overview:
+## Advanced Analysis APIs
 
 ```python
 from oscura import snr, sinad, thd, sfdr, enob
-
-# Quick quality check
-signal_snr = snr(trace, signal_freq=1000.0)
-signal_thd = thd(trace, fundamental_freq=1000.0)
-effective_bits = enob(trace, signal_freq=1000.0)
-
-if signal_snr < 40:
-    print("Warning: Low SNR - check for noise")
-if signal_thd > 0.01:
-    print("Warning: High THD - check for distortion")
-```
-
-### Understand IEEE Standards
-
-Advanced analysis requires understanding standard definitions:
-
-```python
-# IEEE 2414-2020: TIE is edge time minus ideal edge time
-tie = edge_times - ideal_edge_times
-
-# IEEE 1459-2010: Apparent power S = V_rms * I_rms
-apparent_power = v_rms * i_rms
-
-# IEEE 1241-2010: ENOB = (SINAD - 1.76) / 6.02
-enob = (sinad_db - 1.76) / 6.02
-```
-
-Read the standards for authoritative methodology.
-
-### Visualize Advanced Metrics
-
-Plotting helps understand complex measurements:
-
-```python
-import matplotlib.pyplot as plt
-
-# Plot jitter histogram
-plt.hist(tie_values, bins=50)
-plt.xlabel("Time Interval Error (s)")
-plt.ylabel("Count")
-plt.title("TIE Histogram - RJ/DJ Decomposition")
-
-# Plot eye diagram
-eye = generate_eye(trace, unit_interval=1e-9)
-plt.imshow(eye.density, aspect='auto', origin='lower')
-plt.xlabel("Time (UI)")
-plt.ylabel("Voltage")
-plt.title(f"Eye Diagram - Q={eye.q_factor:.2f}")
-```
-
-### Combine Multiple Techniques
-
-Real-world analysis uses multiple methods:
-
-```python
-# Complete signal quality workflow
-
-# 1. Time domain quality
-snr_val = snr(trace, signal_freq=1000.0)
-thd_val = thd(trace, fundamental_freq=1000.0)
-
-# 2. Jitter analysis
-edges = find_rising_edges(trace, threshold=0.5)
-tie_result = tie_from_edges(edges, expected_period=1e-3)
-
-# 3. Eye diagram for BER
-eye = generate_eye(trace, unit_interval=1e-9)
-eye_metrics = measure_eye(eye)
-
-# 4. Overall assessment
-if snr_val > 40 and thd_val < 0.01 and eye_metrics.q_factor > 6:
-    print("Signal quality: EXCELLENT")
-```
-
-### Reference Professional Tools
-
-Compare Oscura results with industry tools:
-
-- **Oscilloscope jitter analysis** - Compare TIE, C2C measurements
-- **Power analyzer** - Validate P, Q, S, PF calculations
-- **BERT tester** - Compare eye diagrams and BER
-- **Spectrum analyzer** - Verify SNR, SFDR, ENOB
-
----
-
-## Understanding the Framework
-
-### Jitter Analysis API
-
-```python
-from oscura.analyzers.jitter.measurements import (
-    tie_from_edges,
-    cycle_to_cycle_jitter,
-    period_jitter,
-    measure_dcd
-)
-
-# Time Interval Error
-edges = find_rising_edges(trace, threshold=0.5)
-tie_result = tie_from_edges(edges, expected_period=1e-3)
-
-# Cycle-to-cycle jitter
-c2c_result = cycle_to_cycle_jitter(edges)
-
-# Period jitter
-pj_result = period_jitter(edges, nominal_period=1e-3)
-
-# Duty cycle distortion
-dcd_result = measure_dcd(trace, threshold=0.5)
-```
-
-### Power Analysis API
-
-```python
-from oscura.analyzers.power.ac_power import (
-    apparent_power,
-    reactive_power,
-    power_factor,
-    phase_angle
-)
-from oscura.analyzers.power.basic import average_power
-
-# AC power analysis
-p_active = average_power(v_trace, i_trace)
-q_reactive = reactive_power(v_trace, i_trace)
-s_apparent = apparent_power(v_trace, i_trace)
-pf = power_factor(v_trace, i_trace)
-phi = phase_angle(v_trace, i_trace)
-```
-
-### Signal Integrity API
-
-```python
+from oscura.jitter import tie_from_edges, cycle_to_cycle_jitter, period_jitter
+from oscura.power import average_power, reactive_power, apparent_power, power_factor
 from oscura import rise_time, fall_time, overshoot, undershoot
+from oscura.eye import generate_eye, measure_eye, eye_height, eye_width, q_factor
+from oscura.patterns import SignatureDiscovery
 
-# Transition measurements
-rt = rise_time(trace, low_threshold=0.1, high_threshold=0.9)
-ft = fall_time(trace, low_threshold=0.1, high_threshold=0.9)
-
-# Overshoot/undershoot
-ovs = overshoot(trace)
-uds = undershoot(trace)
-```
-
-### Eye Diagram API
-
-```python
-from oscura.analyzers.eye.diagram import generate_eye
-from oscura.analyzers.eye.metrics import measure_eye, eye_height, eye_width, q_factor
-
-# Generate eye diagram
-eye = generate_eye(trace, unit_interval=1e-9, samples_per_ui=100)
-
-# Extract metrics
-metrics = measure_eye(eye)
-height = eye_height(eye)
-width = eye_width(eye)
-q = q_factor(eye)
-```
-
-### Pattern Discovery API
-
-```python
-from oscura.analyzers.patterns.discovery import SignatureDiscovery
-
-# Discover patterns
-discovery = SignatureDiscovery(min_length=4, max_length=32)
-signatures = discovery.discover_signatures(trace.data)
-
-for sig in signatures:
-    print(f"Pattern: {sig.pattern.hex()} (count: {sig.count})")
+snr_val = snr(trace, 1000.0)   # Signal-to-noise ratio
+thd_val = thd(trace, 1000.0)   # Total harmonic distortion
+eye = generate_eye(trace, 1e-9) # Eye diagram for BER analysis
+patterns = SignatureDiscovery().discover_signatures(trace.data)
 ```
 
 ---

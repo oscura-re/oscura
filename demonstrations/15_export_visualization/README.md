@@ -382,66 +382,11 @@ Comprehensive reports include:
 
 ## Advanced Techniques
 
-### Automated Report Pipelines
+**Automated Report Pipelines**: Template-based reports with programmatic sections, plots, tables; export PDF/HTML/Markdown
 
-Create repeatable report generation workflows:
+**Custom Wireshark Dissectors**: Custom field formatting with hex display, conditional field parsing
 
-```python
-# Define report template
-report = AnalysisReport(
-    title="Protocol Analysis",
-    template="protocol_template.md"
-)
-
-# Add sections programmatically
-report.add_section("Overview", overview_text)
-report.add_plot("Waveform", waveform_plot)
-report.add_table("Measurements", measurements_df)
-
-# Generate multiple formats
-report.export_pdf("report.pdf")
-report.export_html("report.html")
-report.export_markdown("report.md")
-```
-
-### Custom Wireshark Dissectors
-
-Advanced dissector features:
-
-```python
-# Custom field formatting
-dissector.add_field(
-    name="timestamp",
-    type="uint32",
-    format="hex",  # Display as hexadecimal
-    description="Packet timestamp"
-)
-
-# Conditional field parsing
-dissector.add_conditional_field(
-    name="payload",
-    condition=lambda pkt: pkt.type == 0x01,
-    parser=custom_payload_parser
-)
-```
-
-### Interactive Visualizations
-
-Create interactive HTML plots:
-
-```python
-# Enable interactive features
-plot = create_plot(
-    trace,
-    interactive=True,
-    zoom=True,
-    pan=True,
-    hover_info=True
-)
-
-# Export as standalone HTML
-plot.export_html("interactive_plot.html")
-```
+**Interactive Visualizations**: Zoom, pan, hover info enabled; export as standalone HTML
 
 ---
 

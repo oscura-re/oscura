@@ -283,38 +283,11 @@ Intelligent workflows:
 
 ## Tips for Success
 
-### Maximize Recommendation Quality
+**Maximize Recommendations**: Provide rich metadata (sample rate, vertical scale, descriptive channel names, source file context)
 
-Provide rich signal metadata:
+**Use Wizards**: Even if familiar with analysis, wizards show expert parameter selection patterns
 
-```python
-metadata = TraceMetadata(
-    sample_rate=100000.0,
-    vertical_scale=1.0,
-    channel_name="UART_TX",      # Descriptive names help
-    source_file="device_comms",  # Context aids recommendations
-)
-```
-
-### Use Wizards for Learning
-
-Even if you know the analysis, use wizards to learn best practices:
-
-```python
-# Wizard shows optimal parameter selection
-wizard = AnalysisWizard(trace)
-recommendations = wizard.suggest_parameters()
-# Learn what values experts would choose
-```
-
-### Leverage Onboarding for New Features
-
-When Oscura adds new capabilities, use onboarding helpers to discover them:
-
-```python
-# Discover newly added features
-onboarding.show_new_features(since_version="0.5.0")
-```
+**Discover New Features**: Use onboarding helpers to learn newly added capabilities
 
 ---
 

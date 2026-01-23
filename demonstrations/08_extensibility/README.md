@@ -405,96 +405,25 @@ fft_func = osc.get_algorithm("my_fft", category="fft")
 
 ---
 
-## Understanding Plugin Architecture
+## Plugin Architecture & Best Practices
 
-### Plugin Discovery
+**Discovery**: Entry points (pip), plugin directories, dynamic registration
 
-Oscura discovers plugins through:
+**Lifecycle**: Discovery → Validation → Loading → Initialization → Use → Cleanup
 
-1. **Entry points** - Python package entry points (pip install)
-2. **Plugin directories** - Configurable plugin paths
-3. **Dynamic registration** - Runtime `register_plugin()` calls
+**Registries**: Built-in measurements, custom measurements, plugin measurements, algorithms (fft, filter, analysis, detection)
 
-### Plugin Lifecycle
+**Plugin Development DO**: Document publicly, test thoroughly (>80%), specify dependencies, use semver versioning, validate inputs
 
-```
-Discovery → Validation → Loading → Initialization → Use → Cleanup
-    ↓           ↓           ↓            ↓          ↓       ↓
- Scan paths  Metadata   Import code   Configure  Execute  Unload
-```
+**Plugin Development DON'T**: Modify global state, assume Oscura version, skip metadata, use bare except:
 
-### Measurement Registry
+**Custom Measurements DO**: Return with units, handle edge cases, document types, provide examples
 
-Central catalog of all measurements:
+**Custom Measurements DON'T**: Modify inputs, skip type hints, use ambiguous names
 
-- **Built-in measurements** - Amplitude, frequency, RMS, power, etc.
-- **Custom measurements** - User-defined domain-specific metrics
-- **Plugin measurements** - Measurements from loaded plugins
-- **Dynamic measurements** - Generated at runtime
+**Algorithm Registration DO**: Specify category, document performance, validate inputs, provide fallbacks
 
-### Algorithm Categories
-
-Algorithms organized by purpose:
-
-| Category  | Purpose            | Examples                            |
-| --------- | ------------------ | ----------------------------------- |
-| fft       | Frequency analysis | Welch, periodogram, custom FFT      |
-| filter    | Signal filtering   | Butterworth, Chebyshev, FIR, IIR    |
-| analysis  | Signal processing  | Envelope, demodulation, correlation |
-| detection | Event detection    | Edge, peak, threshold detection     |
-
----
-
-## Best Practices
-
-### Plugin Development
-
-**DO**:
-
-- Document all public methods with examples
-- Include comprehensive tests (>80% coverage)
-- Specify all dependencies explicitly
-- Version your plugins semantically (semver)
-- Validate inputs thoroughly
-
-**DON'T**:
-
-- Modify global state without cleanup
-- Assume specific Oscura version without checking
-- Skip metadata (breaks discovery)
-- Use bare `except:` clauses (hides errors)
-
-### Custom Measurements
-
-**DO**:
-
-- Return measurements with units
-- Handle edge cases (empty data, NaN values)
-- Document expected input types
-- Provide usage examples in docstrings
-
-**DON'T**:
-
-- Modify input data (side effects)
-- Return None without documentation
-- Skip type hints (breaks introspection)
-- Use ambiguous names
-
-### Algorithm Registration
-
-**DO**:
-
-- Specify category explicitly
-- Document performance characteristics
-- Validate algorithm inputs
-- Provide fallback for edge cases
-
-**DON'T**:
-
-- Assume specific NumPy version
-- Skip error handling
-- Ignore performance implications
-- Create circular dependencies
+**Algorithm Registration DON'T**: Assume NumPy version, skip error handling, ignore performance, create circular dependencies
 
 ---
 

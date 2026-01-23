@@ -433,80 +433,11 @@ Non-sinusoidal waveforms (switching power supplies, VFDs) require IEEE 1459 defi
 
 ## Advanced Topics
 
-### Coherent Sampling for IEEE 1241
+**Coherent Sampling (IEEE 1241)**: Calculate coherent frequency ensuring integer cycles: `(cycles * sample_rate) / num_samples`
 
-Ensure integer number of cycles for FFT-based measurements:
+**Harmonic Analysis (IEEE 1459)**: FFT → Extract harmonics (50 max) → Calculate THD = √(H₂² + H₃²...) / H₁
 
-```python
-# Calculate coherent frequency
-sample_rate = 100000.0
-num_samples = 10000
-cycles = 17  # Integer number of cycles
-
-coherent_freq = (cycles * sample_rate) / num_samples
-# Result: 170.0 Hz (exactly 17 cycles in 10000 samples)
-
-# Generate coherent signal
-signal = generate_sine_wave(
-    frequency=coherent_freq,
-    sample_rate=sample_rate,
-    num_samples=num_samples
-)
-
-# Verify coherence
-actual_cycles = (num_samples * coherent_freq) / sample_rate
-assert actual_cycles == cycles
-```
-
-### Harmonic Analysis for IEEE 1459
-
-Calculate individual harmonic contributions:
-
-```python
-# Perform FFT
-fft_result = fft_analysis(signal)
-
-# Extract harmonics (up to 50th)
-harmonics = []
-fundamental_freq = 60.0  # 60 Hz power line
-
-for n in range(1, 51):
-    harmonic_freq = n * fundamental_freq
-    harmonic_power = get_power_at_frequency(fft_result, harmonic_freq)
-    harmonics.append({
-        'order': n,
-        'frequency': harmonic_freq,
-        'power': harmonic_power
-    })
-
-# Calculate THD per IEEE 1459
-fundamental_power = harmonics[0]['power']
-harmonic_sum = sum(h['power'] for h in harmonics[1:])
-thd = np.sqrt(harmonic_sum) / fundamental_power
-```
-
-### Eye Diagram Analysis for IEEE 2414
-
-Generate and analyze eye diagrams:
-
-```python
-# Create eye diagram from serial data
-eye = create_eye_diagram(
-    signal,
-    bit_rate=100e6,  # 100 Mbps
-    samples_per_ui=100  # Unit Interval
-)
-
-# Measure eye parameters
-eye_height = measure_eye_height(eye)
-eye_width = measure_eye_width(eye)
-eye_jitter = measure_eye_jitter(eye)
-
-# Check compliance
-assert eye_height >= 400e-3  # 400mV minimum
-assert eye_width >= 10e-9    # 10ns minimum
-assert eye_jitter <= 1e-9    # 1ns maximum total jitter
-```
+**Eye Diagram Analysis (IEEE 2414)**: Create from serial data, measure eye_height (≥400mV), eye_width (≥10ns), eye_jitter (≤1ns)
 
 ---
 

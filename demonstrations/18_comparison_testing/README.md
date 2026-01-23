@@ -393,91 +393,13 @@ Effective regression testing requires:
 
 ## Advanced Techniques
 
-### Multi-Signal Comparison
+**Multi-Signal Comparison**: Compare arrays of test signals against reference, correlation + RMSE, statistical pass rate
 
-Compare multiple signals simultaneously:
+**Dynamic Mask Generation**: Create masks from baseline population (mean ± 3σ), test new signals against dynamic masks
 
-```python
-# Compare array of test signals against reference
-test_signals = [signal1, signal2, signal3, signal4]
-reference = golden_reference
+**Adaptive Thresholds**: Adjust by SNR (High >40 dB = strict, Medium 20-40 = moderate, Low <20 = relaxed)
 
-results = []
-for test in test_signals:
-    correlation = correlate(test, reference)
-    rmse = calculate_rmse(test, reference)
-    results.append({
-        'correlation': correlation,
-        'rmse': rmse,
-        'pass': correlation > 0.95 and rmse < 0.1
-    })
-
-# Statistical summary
-pass_rate = sum(r['pass'] for r in results) / len(results)
-```
-
-### Dynamic Mask Generation
-
-Create masks from signal statistics:
-
-```python
-# Generate mask from signal population
-signals = load_baseline_signals()
-
-# Calculate mean and std dev at each time point
-mean_trace = np.mean([s.data for s in signals], axis=0)
-std_trace = np.std([s.data for s in signals], axis=0)
-
-# Create mask as ±3σ from mean
-upper_mask = mean_trace + 3 * std_trace
-lower_mask = mean_trace - 3 * std_trace
-
-# Test new signal against dynamic mask
-violations = check_mask(new_signal, upper_mask, lower_mask)
-```
-
-### Adaptive Thresholds
-
-Adjust thresholds based on signal characteristics:
-
-```python
-# Calculate adaptive threshold
-signal_snr = calculate_snr(signal)
-
-if signal_snr > 40:  # High SNR
-    threshold = 0.01  # Strict threshold
-elif signal_snr > 20:  # Medium SNR
-    threshold = 0.05  # Moderate threshold
-else:  # Low SNR
-    threshold = 0.10  # Relaxed threshold
-
-# Apply adaptive threshold
-is_regression = difference > threshold
-```
-
-### Trend Analysis
-
-Track signal changes over time:
-
-```python
-# Collect measurements over time
-measurements = []
-timestamps = []
-
-for signal in signal_sequence:
-    measurements.append(measure_parameter(signal))
-    timestamps.append(signal.metadata.timestamp)
-
-# Detect trends
-from scipy.stats import linregress
-slope, intercept, r_value, p_value, std_err = linregress(
-    timestamps, measurements
-)
-
-# Alert if significant trend
-if abs(slope) > trend_threshold and p_value < 0.05:
-    print(f"Significant trend detected: {slope:.3e} units/sec")
-```
+**Trend Analysis**: Use linear regression on time-series measurements, alert on significant slopes (p < 0.05)
 
 ---
 

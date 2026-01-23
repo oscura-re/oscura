@@ -411,152 +411,32 @@ class ProgressTracker:
 
 ## Performance Guidelines
 
-### Choosing Thread vs Process Pool
+**ThreadPoolExecutor (I/O-bound)**: File loading, network ops, lightweight computation, shared memory needed
+**ProcessPoolExecutor (CPU-bound)**: FFT, filtering, NumPy ops, true parallelism needed
 
-**Use ThreadPoolExecutor when**:
+**Worker count**: CPU-bound = `os.cpu_count()`, I/O-bound = `os.cpu_count() * 2`
 
-- File I/O is the bottleneck (loading files)
-- Network operations dominate
-- Lightweight computations
-- Shared memory needed
+**Batch sizes**: Small (10-100) = low memory/high overhead, Medium (100-1000) = balanced, Large (1000+) = low overhead/high memory
 
-**Use ProcessPoolExecutor when**:
+## Real-World Use Cases & Best Practices
 
-- Heavy CPU computation (FFT, filtering)
-- NumPy operations dominate
-- Need true parallelism
-- Memory isolation required
+**Regression Testing**: Process captures, compare to baseline, alert on changes
 
-### Worker Count Optimization
+**Production Validation**: Process units, aggregate quality metrics, generate pass/fail reports
 
-```python
-import os
+**Dataset Analysis**: Process 10K+ files with progress tracking and statistical analysis
 
-# Rule of thumb for worker count
-cpu_bound_workers = os.cpu_count()  # One per core
-io_bound_workers = os.cpu_count() * 2  # More workers OK
+**Error Handling DO**: Catch in workers, log context, continue, report failed items
 
-# Example
-if computation_heavy:
-    max_workers = os.cpu_count()
-else:
-    max_workers = os.cpu_count() * 2
-```
+**Error Handling DON'T**: Stop on error, ignore silently, skip logging
 
-### Batch Size Considerations
+**Progress Tracking DO**: Update per item, ETA from recent samples, show % and throughput
 
-| Batch Size        | Pros                                  | Cons                       |
-| ----------------- | ------------------------------------- | -------------------------- |
-| Small (10-100)    | Low memory, frequent progress updates | Higher overhead            |
-| Medium (100-1000) | Balanced performance                  | Moderate memory            |
-| Large (1000+)     | Lower overhead                        | High memory, slow progress |
+**Progress Tracking DON'T**: Update too frequently, use first sample only, block on updates
 
----
+**Result Aggregation DO**: Store raw results, multiple statistics, include metadata, generate reports
 
-## Real-World Use Cases
-
-### Regression Testing
-
-Process nightly signal captures to detect changes:
-
-```python
-# Process today's captures
-results_today = process_batch(todays_files)
-
-# Compare to baseline
-results_baseline = load_baseline()
-
-# Detect regressions
-regressions = compare_batches(results_today, results_baseline)
-if regressions:
-    alert_team(regressions)
-```
-
-### Production Validation
-
-Validate manufactured units at scale:
-
-```python
-# Process 1000 unit test captures
-results = process_batch_parallel(unit_test_files, max_workers=8)
-
-# Aggregate quality metrics
-summary = aggregate_results(results)
-
-# Pass/fail decisions
-passed = [r for r in results if r.quality_score > 95]
-failed = [r for r in results if r.quality_score <= 95]
-
-# Generate report
-generate_production_report(summary, passed, failed)
-```
-
-### Dataset Analysis
-
-Analyze large signal datasets:
-
-```python
-# Process 10,000 signal captures
-with progress_tracker(total=10000) as tracker:
-    results = []
-    for chunk in chunked(files, chunk_size=100):
-        chunk_results = process_batch(chunk, max_workers=4)
-        results.extend(chunk_results)
-        tracker.update(len(chunk))
-
-# Statistical analysis
-stats = calculate_statistics(results)
-outliers = detect_outliers(results)
-```
-
----
-
-## Best Practices
-
-### Error Handling
-
-**DO**:
-
-- Catch exceptions in worker functions
-- Log errors with context (filename, timestamp)
-- Continue processing after errors
-- Report failed items at end
-
-**DON'T**:
-
-- Let one error stop entire batch
-- Silently ignore failures
-- Skip error logging
-
-### Progress Tracking
-
-**DO**:
-
-- Update progress after each item
-- Calculate ETA from recent samples
-- Display both percentage and ETA
-- Show throughput metrics
-
-**DON'T**:
-
-- Update too frequently (performance impact)
-- Calculate ETA from first sample only
-- Block on progress updates
-
-### Result Aggregation
-
-**DO**:
-
-- Store raw results for later analysis
-- Calculate multiple statistical measures
-- Include metadata (timestamps, versions)
-- Generate human-readable reports
-
-**DON'T**:
-
-- Aggregate prematurely (lose details)
-- Skip outlier detection
-- Ignore data quality metrics
+**Result Aggregation DON'T**: Aggregate early, skip outliers, ignore quality metrics
 
 ---
 

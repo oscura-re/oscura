@@ -265,98 +265,34 @@ See [main demonstrations README](../README.md#running-demonstrations) for all ex
 
 ## Tips for Learning
 
-### Understand Your Domain Standards
+- **Read standards**: SAE J1979 (OBD-II), CISPR 32 (EMC), ISO 14229 (UDS), IEEE 17825 (side-channel)
+- **Start with known data**: Test with reference signals before analyzing real data
+- **Combine domain knowledge**: Use industry tools and standards in your analysis
+- **Validate against professionals**: Compare with commercial tools (CANalyzer, EMI receiver, ChipWhisperer)
 
-Each demonstration references industry standards:
-
-```python
-# Automotive: SAE J1979 defines OBD-II PIDs
-pid_0x0c = 0x0C  # Engine RPM
-formula = "((A * 256) + B) / 4"  # Per SAE J1979
-
-# EMC: CISPR 32 defines emission limits
-cispr32_class_b_limit = {
-    0.15: (66, 56),  # MHz: (quasi-peak dBμV, average dBμV)
-    0.50: (56, 46),
-}
-
-# Logic: TTL has specific voltage thresholds
-ttl_vil_max = 0.8  # V - Maximum LOW input
-ttl_vih_min = 2.0  # V - Minimum HIGH input
-```
-
-Read the standards for authoritative specifications.
-
-### Start with Known Reference Data
-
-Validate techniques with known-good data:
+## Domain APIs (Examples)
 
 ```python
-# Automotive: Test with known OBD-II responses
-known_rpm_response = [0x41, 0x0C, 0x0F, 0xA0]  # 1000 RPM
-rpm = decode_obd2_pid(known_rpm_response, pid=0x0C)
-assert rpm == 1000
+# Automotive
+from oscura.automotive import decode_can, decode_obd2, decode_j1939, decode_uds
+obd_responses = [f for f in decode_can(trace, 500000) if f.identifier == 0x7E8]
+pid_data = decode_obd2(response, mode=0x01)
 
-# EMC: Test with known signal vs limits
-test_signal = generate_emissions_signature(freq=150e3, level=60)
-result = check_cispr32_compliance(test_signal, class_type='B')
-assert result.passes
+# EMC
+from oscura.emc import measure_conducted_emissions, check_cispr32_compliance
+freqs, levels = measure_conducted_emissions(trace, rbw=9000)
+result = check_cispr32_compliance(freqs, levels, 'B')
+
+# Vintage Logic
+from oscura.vintage import detect_logic_family, identify_ic
+family = detect_logic_family(trace)
+ic_info = identify_ic(trace, family=family)
+
+# Side-Channel
+from oscura.side_channel import dpa_attack, cpa_attack, t_test_leakage
+key_candidates = dpa_attack(power_traces, plaintexts, ciphertexts, 0)
+correlation_results = cpa_attack(power_traces, plaintexts, 0)
 ```
-
-### Combine Domain Knowledge with Analysis
-
-Real-world applications require both:
-
-```python
-# Automotive diagnostic workflow
-# 1. Decode CAN traffic
-can_frames = decode_can(trace, bitrate=500000)
-
-# 2. Extract OBD-II responses
-obd_responses = [f for f in can_frames if f.identifier == 0x7E8]
-
-# 3. Decode PIDs with domain knowledge
-for response in obd_responses:
-    pid = response.data[1]
-    value = decode_obd2_pid(response.data, pid)
-    print(f"PID 0x{pid:02X}: {value}")
-```
-
-### Visualize Domain-Specific Results
-
-Domain experts expect specific visualizations:
-
-```python
-import matplotlib.pyplot as plt
-
-# EMC: Plot spectrum vs limits
-freqs, levels = measure_conducted_emissions(trace)
-limits = get_cispr32_limits(class_type='B')
-
-plt.plot(freqs / 1e6, levels, label='Measured')
-plt.plot(limit_freqs / 1e6, limit_levels, 'r--', label='CISPR 32 Class B')
-plt.xlabel('Frequency (MHz)')
-plt.ylabel('Level (dBμV)')
-plt.legend()
-plt.grid(True)
-
-# Side-channel: Plot correlation traces
-for key_hypothesis in range(256):
-    correlation = compute_cpa_correlation(traces, key_hypothesis)
-    plt.plot(correlation, alpha=0.1, color='gray')
-plt.plot(max_correlation, 'r', linewidth=2, label='Correct key')
-plt.xlabel('Sample')
-plt.ylabel('Correlation')
-```
-
-### Reference Industry Tools
-
-Compare with professional domain tools:
-
-- **Automotive**: CANalyzer, CANoe, Vehicle Spy
-- **EMC**: R&S EMI Test Receiver, Keysight MXE EMI
-- **Vintage Logic**: Logic analyzers with family detection
-- **Side-Channel**: ChipWhisperer, Riscure Inspector
 
 ---
 

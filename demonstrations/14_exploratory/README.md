@@ -323,61 +323,11 @@ Recovery techniques include:
 
 ## Advanced Techniques
 
-### Multi-Method Validation
+**Multi-Method Validation**: Use FFT, time domain, and statistical analysis to validate findings across methods
 
-Use multiple analysis methods to validate findings:
+**Hypothesis-Driven**: Form hypothesis → test → validate/refine (iterative approach)
 
-```python
-# Frequency domain analysis
-fft_result = fft_analysis(trace)
-
-# Time domain analysis
-time_result = waveform_analysis(trace)
-
-# Statistical analysis
-stats_result = statistical_analysis(trace)
-
-# Validate consistency across methods
-assert all_methods_agree(fft_result, time_result, stats_result)
-```
-
-### Hypothesis-Driven Investigation
-
-Systematic approach to unknown signals:
-
-```python
-# 1. Form hypothesis based on initial characterization
-hypothesis = "Signal contains 9600 baud UART data"
-
-# 2. Test hypothesis with specific analysis
-uart_test = uart_decode(trace, baud_rate=9600)
-
-# 3. Validate or refine hypothesis
-if uart_test.success:
-    # Hypothesis confirmed
-    analyze_uart_data(uart_test.packets)
-else:
-    # Refine hypothesis
-    hypothesis = "Signal may be different baud rate"
-    test_multiple_baud_rates(trace)
-```
-
-### Iterative Refinement
-
-Build understanding incrementally:
-
-```python
-# Iteration 1: Basic characterization
-info_v1 = characterize_signal(trace)
-
-# Iteration 2: Refine based on initial findings
-if info_v1.type == "digital":
-    info_v2 = characterize_digital_protocol(trace)
-
-# Iteration 3: Decode specific protocol
-if info_v2.likely_protocol == "UART":
-    decoded = decode_uart(trace, info_v2.parameters)
-```
+**Iterative Refinement**: Characterization → Narrow down → Decode specific protocol
 
 ---
 

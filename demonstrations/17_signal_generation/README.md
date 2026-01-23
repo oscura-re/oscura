@@ -329,75 +329,13 @@ Real-world signal degradations:
 
 ## Advanced Techniques
 
-### Multi-Channel Synchronized Signals
+**Multi-Channel Synchronized**: Phase-aligned channels with same sample rate (0°, 90°, 180° phase shifts)
 
-Generate phase-aligned multi-channel signals:
+**Custom Waveforms**: Define custom functions, sum of harmonics, arbitrary shapes
 
-```python
-# Create synchronized channels
-builder = SignalBuilder(sample_rate=100000.0)
+**Protocol Fuzzing**: Add protocol errors (framing errors, parity errors, break conditions) for robustness testing
 
-ch1 = builder.sine_wave(frequency=1000.0, phase=0.0)
-ch2 = builder.sine_wave(frequency=1000.0, phase=90.0)  # 90° phase shift
-ch3 = builder.sine_wave(frequency=1000.0, phase=180.0) # 180° phase shift
-
-# Verify synchronization
-assert ch1.metadata.sample_rate == ch2.metadata.sample_rate
-```
-
-### Custom Waveform Generation
-
-Create arbitrary waveforms:
-
-```python
-# Define custom waveform function
-def custom_wave(t):
-    """Custom waveform: sum of harmonics."""
-    return (np.sin(2*np.pi*1000*t) +
-            0.5*np.sin(2*np.pi*2000*t) +
-            0.25*np.sin(2*np.pi*3000*t))
-
-# Generate using SignalBuilder
-trace = SignalBuilder.custom_waveform(
-    waveform_func=custom_wave,
-    duration=0.1,
-    sample_rate=100000.0
-)
-```
-
-### Protocol Fuzzing
-
-Generate invalid protocol sequences for robustness testing:
-
-```python
-# Generate valid UART sequence
-valid_uart = generate_uart(data=[0x55, 0xAA])
-
-# Add protocol errors for fuzzing
-fuzzed = add_protocol_errors(
-    valid_uart,
-    framing_errors=0.1,    # 10% framing errors
-    parity_errors=0.05,    # 5% parity errors
-    break_conditions=True  # Include break conditions
-)
-```
-
-### Impairment Profiles
-
-Create realistic impairment profiles for different environments:
-
-```python
-# Industrial environment profile
-industrial_profile = ImpairmentProfile(
-    jitter_rms=50e-12,      # 50 ps RMS jitter
-    noise_level=0.05,       # 5% noise
-    emi_frequency=60.0,     # 60 Hz EMI
-    harmonic_distortion=0.02 # 2% THD
-)
-
-# Apply profile to signal
-impaired = industrial_profile.apply(clean_signal)
-```
+**Impairment Profiles**: Industrial (50ps jitter, 5% noise, 60Hz EMI, 2% THD), environment-specific
 
 ---
 
