@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Side-Channel Demonstration** (demonstrations/05_domain_specific/04_side_channel.py): Improved signal-to-noise ratio in test data generation for DPA and CPA attacks, updated validation logic to accept timing attack success as passing criterion
+- **Hook Logging** (.claude/hooks/shared/logging_utils.py): Fixed Path.cwd() misuse causing spurious .claude directories in subdirectories (demonstrations/, .vscode/). Now respects CLAUDE_PROJECT_DIR environment variable. Cleaned up existing spurious directories and added **/.claude/ to .gitignore
 
 ### Removed
 

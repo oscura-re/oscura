@@ -162,6 +162,10 @@ work-obj*.cf
 .claude/hooks/orchestration-metrics.json
 .claude/hooks/__pycache__/
 
+# Prevent spurious .claude directories in subdirectories
+# (caused by Path.cwd() misuse - see logging_utils.py fix)
+**/.claude/
+
 # Orchestration activity log (debugging)
 .claude/orchestration.log
 .claude/orchestration.log.*

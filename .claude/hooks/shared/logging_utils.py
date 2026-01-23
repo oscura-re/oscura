@@ -12,6 +12,7 @@ Updated: 2026-01-22
 
 import json
 import logging
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -95,8 +96,9 @@ def get_hook_logger(
 
     # File handler
     if log_file is None:
-        # Default log file
-        project_dir = Path.cwd()
+        # Default log file - respect CLAUDE_PROJECT_DIR to avoid creating
+        # spurious .claude directories in subdirectories
+        project_dir = Path(os.getenv("CLAUDE_PROJECT_DIR", ".")).resolve()
         log_file = project_dir / ".claude" / "hooks" / "hooks.log"
 
     log_file.parent.mkdir(parents=True, exist_ok=True)
