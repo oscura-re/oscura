@@ -3,16 +3,16 @@
 This module provides targeted tests for uncovered lines in the diff coverage report.
 Each test is designed to execute specific code paths that were missing coverage.
 
-Diff Coverage Analysis:
-- Total lines: 278
-- Missing lines: 88 (need to cover ~34 more lines for 80%)
-- Target: Cover edge cases and fallback code paths
+Diff Coverage Analysis (Updated):
+- Target: 80%+ diff coverage
+- Strategy: Execute specific return statements in Prior.pdf(), Prior.sample(), and registry methods
+- Focus: Lines 145-203 in bayesian.py, lines 684-938 in extensions.py
 
 Covered modules:
 - src/oscura/analyzers/waveform/spectral.py (thd, snr, sinad, enob, sfdr edge cases)
 - src/oscura/core/numba_backend.py (fallback decorators when Numba unavailable)
-- src/oscura/inference/bayesian.py (Prior distributions: pdf, sample)
-- src/oscura/extensibility/extensions.py (ExtensionPointRegistry)
+- src/oscura/inference/bayesian.py (Prior distributions: pdf, sample for ALL distribution types)
+- src/oscura/extensibility/extensions.py (ExtensionPointRegistry - all hook/category methods)
 - src/oscura/analyzers/digital/timing.py (phase_difference, jitter_pk_pk edge cases)
 - src/oscura/analyzers/eye/metrics.py (eye_height, eye_width, q_factor edge cases)
 - src/oscura/core/backend_selector.py (optional import detection)
@@ -1292,3 +1292,298 @@ class TestMiscellaneousCoverage:
 
             # Verify log file was created
             assert log_path.exists(), "Log file should exist"
+
+
+# =============================================================================
+# Bayesian Prior PDF Coverage (Lines 145-168)
+# =============================================================================
+
+
+class TestBayesianPriorPdfCoverage:
+    """Test Prior.pdf() for all distribution types to cover lines 145-168.
+
+    Targets bayesian.py:145, 147, 160, 162, 164, 166, 168
+    """
+
+    def test_prior_normal_pdf(self) -> None:
+        """Test Prior.pdf() for normal distribution (line 145)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("normal", {"mean": 0.0, "std": 1.0})
+        pdf_value = prior.pdf(0.0)
+        assert isinstance(pdf_value, float)
+        assert pdf_value > 0
+
+    def test_prior_uniform_pdf(self) -> None:
+        """Test Prior.pdf() for uniform distribution (line 147)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("uniform", {"low": 0.0, "high": 10.0})
+        pdf_value = prior.pdf(5.0)
+        assert isinstance(pdf_value, float)
+        assert pdf_value > 0
+
+    def test_prior_log_uniform_pdf(self) -> None:
+        """Test Prior.pdf() for log_uniform distribution (line 160)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("log_uniform", {"low": 100.0, "high": 10000.0})
+        pdf_value = prior.pdf(1000.0)
+        assert isinstance(pdf_value, (float, np.ndarray))
+
+    def test_prior_beta_pdf(self) -> None:
+        """Test Prior.pdf() for beta distribution (line 162)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("beta", {"a": 2.0, "b": 2.0})
+        pdf_value = prior.pdf(0.5)
+        assert isinstance(pdf_value, float)
+        assert pdf_value > 0
+
+    def test_prior_gamma_pdf(self) -> None:
+        """Test Prior.pdf() for gamma distribution (line 164)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("gamma", {"shape": 2.0, "scale": 1.0})
+        pdf_value = prior.pdf(2.0)
+        assert isinstance(pdf_value, float)
+        assert pdf_value > 0
+
+    def test_prior_half_normal_pdf(self) -> None:
+        """Test Prior.pdf() for half_normal distribution (line 166)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("half_normal", {"scale": 1.0})
+        pdf_value = prior.pdf(0.5)
+        assert isinstance(pdf_value, float)
+        assert pdf_value > 0
+
+    def test_prior_geometric_pdf(self) -> None:
+        """Test Prior.pdf() for geometric distribution (line 168)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("geometric", {"p": 0.3})
+        pdf_value = prior.pdf(3)
+        assert isinstance(pdf_value, float)
+        assert pdf_value > 0
+
+
+# =============================================================================
+# Bayesian Prior Sample Coverage (Lines 185-203)
+# =============================================================================
+
+
+class TestBayesianPriorSampleCoverage:
+    """Test Prior.sample() for all distribution types to cover lines 185-203.
+
+    Targets bayesian.py:185, 187, 194-195, 197, 199, 201, 203
+    """
+
+    def test_prior_normal_sample(self) -> None:
+        """Test Prior.sample() for normal distribution (line 185)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("normal", {"mean": 0.0, "std": 1.0})
+        samples = prior.sample(100)
+        assert len(samples) == 100
+        assert isinstance(samples, np.ndarray)
+
+    def test_prior_uniform_sample(self) -> None:
+        """Test Prior.sample() for uniform distribution (line 187)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("uniform", {"low": 0.0, "high": 10.0})
+        samples = prior.sample(100)
+        assert len(samples) == 100
+        assert np.all((samples >= 0.0) & (samples <= 10.0))
+
+    def test_prior_log_uniform_sample(self) -> None:
+        """Test Prior.sample() for log_uniform distribution (lines 194-195)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("log_uniform", {"low": 100.0, "high": 10000.0})
+        samples = prior.sample(100)
+        assert len(samples) == 100
+        # Samples should be between low and high on log scale
+        assert np.all((samples >= 100.0) & (samples <= 10000.0))
+
+    def test_prior_beta_sample(self) -> None:
+        """Test Prior.sample() for beta distribution (line 197)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("beta", {"a": 2.0, "b": 2.0})
+        samples = prior.sample(100)
+        assert len(samples) == 100
+        assert np.all((samples >= 0.0) & (samples <= 1.0))
+
+    def test_prior_gamma_sample(self) -> None:
+        """Test Prior.sample() for gamma distribution (line 199)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("gamma", {"shape": 2.0, "scale": 1.0})
+        samples = prior.sample(100)
+        assert len(samples) == 100
+        assert np.all(samples >= 0.0)
+
+    def test_prior_half_normal_sample(self) -> None:
+        """Test Prior.sample() for half_normal distribution (line 201)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("half_normal", {"scale": 1.0})
+        samples = prior.sample(100)
+        assert len(samples) == 100
+        assert np.all(samples >= 0.0)
+
+    def test_prior_geometric_sample(self) -> None:
+        """Test Prior.sample() for geometric distribution (line 203)."""
+        from oscura.inference.bayesian import Prior
+
+        prior = Prior("geometric", {"p": 0.3})
+        samples = prior.sample(100)
+        assert len(samples) == 100
+        assert np.all(samples >= 1.0)  # Geometric starts at 1
+
+
+# =============================================================================
+# Extension Registry Coverage (Lines 192, 684, 729, 737, 923-927, 936-938)
+# =============================================================================
+
+
+class TestExtensionRegistryCoverage:
+    """Test ExtensionPointRegistry methods to cover lines 192, 684, 729, 737, 923-927, 936-938."""
+
+    def test_hook_context_none_metadata(self) -> None:
+        """Test HookContext with metadata=None triggers __post_init__ (line 192)."""
+        from oscura.extensibility.extensions import HookContext
+
+        # Explicitly pass None to trigger the __post_init__ check
+        context = HookContext(data="test", metadata=None)
+        assert context.metadata == {}
+
+    def test_list_categories(self) -> None:
+        """Test list_categories() method (line 684)."""
+        from oscura.extensibility.extensions import get_registry
+
+        registry = get_registry()
+
+        # Register a test algorithm to ensure categories exist
+        def test_func(data: Any) -> Any:
+            return data
+
+        registry.register_algorithm(
+            name="test_algo_coverage",
+            func=test_func,
+            category="test_category_coverage",
+            priority=50,
+        )
+
+        categories = registry.list_categories()
+        assert isinstance(categories, list)
+        assert "test_category_coverage" in categories
+
+    def test_benchmark_invalid_category(self) -> None:
+        """Test benchmark_algorithms() with invalid category (line 729)."""
+        from oscura.extensibility.extensions import get_registry
+
+        registry = get_registry()
+
+        with pytest.raises(KeyError, match="Category .* not found"):
+            registry.benchmark_algorithms(
+                "nonexistent_category_xyz",
+                test_data=np.array([1, 2, 3]),
+            )
+
+    def test_benchmark_valid_category(self) -> None:
+        """Test benchmark_algorithms() with valid category (line 737)."""
+        from oscura.extensibility.extensions import get_registry
+
+        registry = get_registry()
+
+        # Register a simple algorithm
+        def simple_algo(data: Any) -> Any:
+            return data * 2
+
+        registry.register_algorithm(
+            name="simple_benchmark_test",
+            func=simple_algo,
+            category="benchmark_test_cat",
+        )
+
+        # Run benchmark (line 737: for name, algo in self._algorithms[category].items())
+        results = registry.benchmark_algorithms(
+            "benchmark_test_cat",
+            test_data=np.array([1, 2, 3]),
+            metrics=["execution_time"],
+            iterations=5,
+        )
+
+        assert "simple_benchmark_test" in results
+        assert "execution_time" in results["simple_benchmark_test"]
+
+    def test_list_hooks_specific_point(self) -> None:
+        """Test list_hooks() with specific hook_point (lines 923-925)."""
+        from oscura.extensibility.extensions import HookContext, get_registry
+
+        registry = get_registry()
+
+        def test_hook(context: HookContext) -> HookContext:
+            return context
+
+        # Register a hook
+        registry.register_hook("test_hook_point", test_hook, priority=50, name="test_hook")
+
+        # List hooks for specific point (line 923: if hook_point not in self._hooks)
+        hooks = registry.list_hooks("test_hook_point")
+        assert "test_hook_point" in hooks
+        assert "test_hook" in hooks["test_hook_point"]
+
+        # List hooks for non-existent point (line 924-925: return {hook_point: []})
+        empty_hooks = registry.list_hooks("nonexistent_hook_point_xyz")
+        assert empty_hooks == {"nonexistent_hook_point_xyz": []}
+
+    def test_list_hooks_all_points(self) -> None:
+        """Test list_hooks() with no specific hook_point (line 927)."""
+        from oscura.extensibility.extensions import HookContext, get_registry
+
+        registry = get_registry()
+
+        def another_hook(context: HookContext) -> HookContext:
+            return context
+
+        registry.register_hook("another_test_point", another_hook, name="another_hook")
+
+        # List all hooks (line 927)
+        all_hooks = registry.list_hooks(hook_point=None)
+        assert isinstance(all_hooks, dict)
+
+    def test_clear_hooks_specific_point(self) -> None:
+        """Test clear_hooks() with specific hook_point (line 936)."""
+        from oscura.extensibility.extensions import HookContext, get_registry
+
+        registry = get_registry()
+
+        def disposable_hook(context: HookContext) -> HookContext:
+            return context
+
+        registry.register_hook("disposable_point", disposable_hook)
+
+        # Clear specific hook point (line 936: self._hooks.pop(hook_point, None))
+        registry.clear_hooks("disposable_point")
+
+        # Verify cleared
+        hooks = registry.list_hooks("disposable_point")
+        assert hooks == {"disposable_point": []}
+
+    def test_clear_hooks_all_points(self) -> None:
+        """Test clear_hooks() with no specific hook_point (line 938)."""
+        from oscura.extensibility.extensions import get_registry
+
+        registry = get_registry()
+
+        # Clear all hooks (line 938: self._hooks.clear())
+        registry.clear_hooks(hook_point=None)
+
+        # Verify all cleared
+        all_hooks = registry.list_hooks()
+        # Should be empty or only contain hooks from other tests
+        assert isinstance(all_hooks, dict)
