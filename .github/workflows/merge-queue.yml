@@ -110,17 +110,8 @@ jobs:
 
           echo "✅ Package builds successfully"
 
-      # 4. Type check critical paths only (25s)
-      - name: Type check core modules
-        run: |
-          echo "Type checking critical paths..."
-          # Only check core modules, not entire codebase
-          uv run mypy src/oscura/core/ \
-            --no-incremental \
-            --show-error-codes \
-            --strict
-
-          echo "✅ Core modules type check passed"
+      # Note: Type checking is already comprehensive in PR CI workflow
+      # No need to duplicate it in merge queue - focus on merge commit integrity
 
   # =================================================================
   # SMOKE TESTS: Catch integration issues (60-90 seconds)
