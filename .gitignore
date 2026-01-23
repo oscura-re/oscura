@@ -218,6 +218,21 @@ tests/performance/test_data/*.npz
 !test_data/README.md
 
 # -----------------------------------------------------------------------------
+# Scripts Directory Protection
+# -----------------------------------------------------------------------------
+# Prevent accidental data generation in scripts/ (should only contain code)
+scripts/**/*.npz
+scripts/**/*.pcap
+scripts/**/*.bin
+scripts/**/*.wfm
+scripts/**/*.wav
+scripts/**/*.vcd
+# But keep Python scripts, shell scripts, and documentation
+!scripts/**/*.py
+!scripts/**/*.sh
+!scripts/**/README.md
+
+# -----------------------------------------------------------------------------
 # Generated Binary Files (root directory only)
 # -----------------------------------------------------------------------------
 # Large binary test files generated during testing
