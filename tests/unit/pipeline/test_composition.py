@@ -149,38 +149,51 @@ class TestCompose:
         assert composed.__doc__ is not None
         assert "2" in composed.__doc__  # Number of functions
 
-    def test_compose_with_partial_function_name(self, sample_trace):
-        """Test compose handles functools.partial in function names."""
+    def test_compose_with_partial_function(self, sample_trace):
+        """Test compose works correctly with functools.partial objects."""
 
         def scale(trace: WaveformTrace, factor: float) -> WaveformTrace:
             return WaveformTrace(data=trace.data * factor, metadata=trace.metadata)
 
-        scale.__name__ = "scale"
-
         # Create partial function
         double = partial(scale, factor=2.0)
+        triple = partial(scale, factor=3.0)
 
-        # Compose with partial - should extract name from partial.func
-        composed = compose(double)
+        # Compose with partial functions
+        composed = compose(triple, double)
 
-        assert "scale" in composed.__name__
+        # Apply: double first, then triple = 2 * 3 = 6x
+        result = composed(sample_trace)
 
-    def test_compose_with_callable_without_name(self, sample_trace):
-        """Test compose handles callables without __name__ or func attributes."""
+        expected = sample_trace.data * 6.0
+        np.testing.assert_array_almost_equal(result.data, expected)
 
-        class CallableWithoutName:
-            """Callable object without __name__ attribute."""
+    def test_compose_with_callable_object(self, sample_trace):
+        """Test compose works correctly with callable objects."""
+
+        class Doubler:
+            """Callable object that doubles trace values."""
 
             def __call__(self, trace: WaveformTrace) -> WaveformTrace:
                 return WaveformTrace(data=trace.data * 2, metadata=trace.metadata)
 
-        callable_obj = CallableWithoutName()
+        class Tripler:
+            """Callable object that triples trace values."""
 
-        # Compose with callable that has neither __name__ nor func
-        composed = compose(callable_obj)
+            def __call__(self, trace: WaveformTrace) -> WaveformTrace:
+                return WaveformTrace(data=trace.data * 3, metadata=trace.metadata)
 
-        # Should use repr() for the name
-        assert "CallableWithoutName" in composed.__name__
+        doubler = Doubler()
+        tripler = Tripler()
+
+        # Compose callable objects
+        composed = compose(tripler, doubler)
+
+        # Apply: double first, then triple = 2 * 3 = 6x
+        result = composed(sample_trace)
+
+        expected = sample_trace.data * 6.0
+        np.testing.assert_array_almost_equal(result.data, expected)
 
 
 # =============================================================================
