@@ -44,15 +44,15 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ### Estimated Time
 
-| Demo | Time | Difficulty | Topics |
-|------|------|-----------|--------|
-| 01_plugin_basics | 10 min | Intermediate | Plugin discovery, metadata, loading |
-| 02_custom_measurement | 15 min | Intermediate | Custom measurements, registration |
-| 03_custom_algorithm | 15 min | Intermediate | FFT, filters, algorithm registry |
-| 04_plugin_development | 20 min | Advanced | Full plugin lifecycle, decoders |
-| 05_measurement_registry | 10 min | Intermediate | Registry exploration, dynamic use |
-| 06_plugin_templates | 10 min | Intermediate | Template generation, scaffolding |
-| **Total** | **80 min** | **Intermediate-Advanced** | **Plugin system mastery** |
+| Demo                    | Time       | Difficulty                | Topics                              |
+| ----------------------- | ---------- | ------------------------- | ----------------------------------- |
+| 01_plugin_basics        | 10 min     | Intermediate              | Plugin discovery, metadata, loading |
+| 02_custom_measurement   | 15 min     | Intermediate              | Custom measurements, registration   |
+| 03_custom_algorithm     | 15 min     | Intermediate              | FFT, filters, algorithm registry    |
+| 04_plugin_development   | 20 min     | Advanced                  | Full plugin lifecycle, decoders     |
+| 05_measurement_registry | 10 min     | Intermediate              | Registry exploration, dynamic use   |
+| 06_plugin_templates     | 10 min     | Intermediate              | Template generation, scaffolding    |
+| **Total**               | **80 min** | **Intermediate-Advanced** | **Plugin system mastery**           |
 
 ---
 
@@ -417,13 +417,13 @@ fft_func = osc.get_algorithm("my_fft", category="fft")
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Apply custom measurements to batch data | `09_batch_processing/01_parallel_batch.py` | Batch → Parallel processing |
-| Build domain-specific analysis session | `10_sessions/01_analysis_session.py` | Sessions → Custom workflows |
-| Integrate custom decoders with protocols | `03_protocol_decoding/06_auto_detection.py` | Protocols → Auto-detection |
-| Create quality checks with custom metrics | `12_quality_tools/02_quality_scoring.py` | Quality → Custom scoring |
-| Deploy plugins for team use | `11_integration/` | Integration → Team workflows |
+| Goal                                      | Next Demo                                   | Path                         |
+| ----------------------------------------- | ------------------------------------------- | ---------------------------- |
+| Apply custom measurements to batch data   | `09_batch_processing/01_parallel_batch.py`  | Batch → Parallel processing  |
+| Build domain-specific analysis session    | `10_sessions/01_analysis_session.py`        | Sessions → Custom workflows  |
+| Integrate custom decoders with protocols  | `03_protocol_decoding/06_auto_detection.py` | Protocols → Auto-detection   |
+| Create quality checks with custom metrics | `12_quality_tools/02_quality_scoring.py`    | Quality → Custom scoring     |
+| Deploy plugins for team use               | `11_integration/`                           | Integration → Team workflows |
 
 ### Recommended Learning Sequence
 
@@ -485,12 +485,12 @@ Central catalog of all measurements:
 
 Algorithms organized by purpose:
 
-| Category | Purpose | Examples |
-|----------|---------|----------|
-| fft | Frequency analysis | Welch, periodogram, custom FFT |
-| filter | Signal filtering | Butterworth, Chebyshev, FIR, IIR |
-| analysis | Signal processing | Envelope, demodulation, correlation |
-| detection | Event detection | Edge, peak, threshold detection |
+| Category  | Purpose            | Examples                            |
+| --------- | ------------------ | ----------------------------------- |
+| fft       | Frequency analysis | Welch, periodogram, custom FFT      |
+| filter    | Signal filtering   | Butterworth, Chebyshev, FIR, IIR    |
+| analysis  | Signal processing  | Envelope, demodulation, correlation |
+| detection | Event detection    | Edge, peak, threshold detection     |
 
 ---
 
@@ -574,14 +574,14 @@ Algorithms organized by purpose:
 
 The Extensibility section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_plugin_basics | Plugin discovery | Understand plugin architecture |
-| 02_custom_measurement | Measurement registration | Create custom measurements |
-| 03_custom_algorithm | Algorithm registration | Integrate custom algorithms |
-| 04_plugin_development | Complete plugin lifecycle | Build full plugins |
-| 05_measurement_registry | Registry exploration | Dynamic measurement use |
-| 06_plugin_templates | Scaffolding generation | Accelerate plugin development |
+| Demo                    | Focus                     | Outcome                        |
+| ----------------------- | ------------------------- | ------------------------------ |
+| 01_plugin_basics        | Plugin discovery          | Understand plugin architecture |
+| 02_custom_measurement   | Measurement registration  | Create custom measurements     |
+| 03_custom_algorithm     | Algorithm registration    | Integrate custom algorithms    |
+| 04_plugin_development   | Complete plugin lifecycle | Build full plugins             |
+| 05_measurement_registry | Registry exploration      | Dynamic measurement use        |
+| 06_plugin_templates     | Scaffolding generation    | Accelerate plugin development  |
 
 After completing these 80-minute demonstrations, you'll be able to:
 

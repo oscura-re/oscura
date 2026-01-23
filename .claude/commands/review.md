@@ -15,7 +15,7 @@ Perform thorough code review focusing on quality, security, maintainability, and
 
 ## Usage
 
-```bash
+````bash
 /review [path]                  # Review changed files or specified path
 /review src/module.py           # Review specific file
 /review src/                    # Review directory
@@ -331,3 +331,4 @@ Review small chunks frequently rather than large batches:
 ## Version History
 
 - **v1.0.0** (2026-01-22): Initial creation with routing to code_reviewer agent
+````

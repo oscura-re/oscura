@@ -155,7 +155,7 @@ response = client.messages.create(
 
 ```yaml
 # config.yaml
-version: "1.0"
+version: '1.0'
 
 signal:
   sample_rate: 100000
@@ -336,7 +336,7 @@ send_to_claude(summary)
 stages:
   - type: load
   - type: filter
-    params: {low_pass: 50000}
+    params: { low_pass: 50000 }
   - type: analyze
   - type: export
 ```

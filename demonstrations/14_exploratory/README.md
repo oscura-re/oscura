@@ -26,13 +26,13 @@ python demonstrations/02_basic_analysis/01_waveform_measurements.py
 
 ## Demonstrations
 
-| Demo | Time | Difficulty | Focus |
-|------|------|-----------|-------|
-| 01_unknown_signals | 15 min | Advanced | Automatic signal characterization |
-| 02_fuzzy_matching | 10 min | Intermediate | Pattern matching with tolerance |
-| 03_signal_recovery | 15 min | Advanced | Recovering corrupted signals |
-| 04_exploratory_analysis | 15 min | Advanced | Investigation without documentation |
-| **Total** | **55 min** | **Advanced** | **Unknown signal analysis** |
+| Demo                    | Time       | Difficulty   | Focus                               |
+| ----------------------- | ---------- | ------------ | ----------------------------------- |
+| 01_unknown_signals      | 15 min     | Advanced     | Automatic signal characterization   |
+| 02_fuzzy_matching       | 10 min     | Intermediate | Pattern matching with tolerance     |
+| 03_signal_recovery      | 15 min     | Advanced     | Recovering corrupted signals        |
+| 04_exploratory_analysis | 15 min     | Advanced     | Investigation without documentation |
+| **Total**               | **55 min** | **Advanced** | **Unknown signal analysis**         |
 
 ---
 
@@ -274,12 +274,12 @@ recovered = recover_signal(corrupted, interpolation="cubic")
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Decode unknown protocols | `06_reverse_engineering/01_unknown_protocol.py` | Reverse engineering |
-| Export findings for reporting | `15_export_visualization/04_report_generation.py` | Report generation |
-| Build complete RE workflow | `16_complete_workflows/01_protocol_discovery.py` | Complete workflows |
-| Compare against references | `18_comparison_testing/01_golden_reference.py` | Comparison testing |
+| Goal                          | Next Demo                                         | Path                |
+| ----------------------------- | ------------------------------------------------- | ------------------- |
+| Decode unknown protocols      | `06_reverse_engineering/01_unknown_protocol.py`   | Reverse engineering |
+| Export findings for reporting | `15_export_visualization/04_report_generation.py` | Report generation   |
+| Build complete RE workflow    | `16_complete_workflows/01_protocol_discovery.py`  | Complete workflows  |
+| Compare against references    | `18_comparison_testing/01_golden_reference.py`    | Comparison testing  |
 
 ### Recommended Next Sections
 
@@ -464,12 +464,12 @@ optimal = recover(signal, strength=0.4)
 
 The Exploratory Analysis section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_unknown_signals | Automatic characterization | Signal type and feature detection |
-| 02_fuzzy_matching | Pattern matching | Find patterns with tolerance |
-| 03_signal_recovery | Corruption recovery | Reconstruct signals from noisy data |
-| 04_exploratory_analysis | Complete investigation | Systematic no-documentation RE |
+| Demo                    | Focus                      | Outcome                             |
+| ----------------------- | -------------------------- | ----------------------------------- |
+| 01_unknown_signals      | Automatic characterization | Signal type and feature detection   |
+| 02_fuzzy_matching       | Pattern matching           | Find patterns with tolerance        |
+| 03_signal_recovery      | Corruption recovery        | Reconstruct signals from noisy data |
+| 04_exploratory_analysis | Complete investigation     | Systematic no-documentation RE      |
 
 After completing these 55-minute demonstrations, you'll understand:
 

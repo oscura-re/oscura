@@ -37,12 +37,12 @@ Learn basic API          Work with traces & metadata   See what's supported
 
 ### Estimated Time
 
-| Demo | Time | Difficulty | Topics |
-|------|------|-----------|--------|
-| 00_hello_world | 5 min | Beginner | Installation validation, basic measurements |
-| 01_core_types | 10 min | Beginner | Data structures, metadata, traces |
-| 02_supported_formats | 5 min | Beginner | File format overview, loader reference |
-| **Total** | **20 min** | **Beginner** | **Foundational concepts** |
+| Demo                 | Time       | Difficulty   | Topics                                      |
+| -------------------- | ---------- | ------------ | ------------------------------------------- |
+| 00_hello_world       | 5 min      | Beginner     | Installation validation, basic measurements |
+| 01_core_types        | 10 min     | Beginner     | Data structures, metadata, traces           |
+| 02_supported_formats | 5 min      | Beginner     | File format overview, loader reference      |
+| **Total**            | **20 min** | **Beginner** | **Foundational concepts**                   |
 
 ---
 
@@ -149,13 +149,13 @@ Every advanced capability in Oscura works with these core types. Understanding t
 
 **Supported categories**:
 
-| Category | Formats | Examples |
-|----------|---------|----------|
-| Oscilloscopes | .wfm, .bin, .csv | Tektronix, Rigol, Siglent |
-| Logic Analyzers | .vcd, .vvp, .jtag | ModelSim, FPGA tools |
-| Automotive | .dbc, .blf, .asc | CAN, LIN bus protocols |
-| General Scientific | .csv, .txt, .mat | MATLAB, spreadsheets |
-| Spectrum Analyzers | .s2p, .bin | Microwave measurements |
+| Category           | Formats           | Examples                  |
+| ------------------ | ----------------- | ------------------------- |
+| Oscilloscopes      | .wfm, .bin, .csv  | Tektronix, Rigol, Siglent |
+| Logic Analyzers    | .vcd, .vvp, .jtag | ModelSim, FPGA tools      |
+| Automotive         | .dbc, .blf, .asc  | CAN, LIN bus protocols    |
+| General Scientific | .csv, .txt, .mat  | MATLAB, spreadsheets      |
+| Spectrum Analyzers | .s2p, .bin        | Microwave measurements    |
 
 **Concepts introduced**:
 
@@ -297,14 +297,14 @@ python demonstrations/generate_all_data.py
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Load and analyze oscilloscope files | `01_data_loading/01_oscilloscopes.py` | File I/O → Oscilloscope data |
-| Decode protocols (UART, SPI, I2C) | `03_protocol_decoding/01_serial_comprehensive.py` | Protocol → Serial decoding |
-| Perform advanced measurements | `02_basic_analysis/01_waveform_measurements.py` | Analysis → Measurements |
-| Reverse engineer an unknown protocol | `06_reverse_engineering/01_unknown_protocol.py` | Reverse engineering → Protocol inference |
-| Analyze power supplies and noise | `04_advanced_analysis/02_power_analysis.py` | Advanced → Power analysis |
-| Build a complete RE workflow | `16_complete_workflows/01_protocol_discovery.py` | Workflows → Complete examples |
+| Goal                                 | Next Demo                                         | Path                                     |
+| ------------------------------------ | ------------------------------------------------- | ---------------------------------------- |
+| Load and analyze oscilloscope files  | `01_data_loading/01_oscilloscopes.py`             | File I/O → Oscilloscope data             |
+| Decode protocols (UART, SPI, I2C)    | `03_protocol_decoding/01_serial_comprehensive.py` | Protocol → Serial decoding               |
+| Perform advanced measurements        | `02_basic_analysis/01_waveform_measurements.py`   | Analysis → Measurements                  |
+| Reverse engineer an unknown protocol | `06_reverse_engineering/01_unknown_protocol.py`   | Reverse engineering → Protocol inference |
+| Analyze power supplies and noise     | `04_advanced_analysis/02_power_analysis.py`       | Advanced → Power analysis                |
+| Build a complete RE workflow         | `16_complete_workflows/01_protocol_discovery.py`  | Workflows → Complete examples            |
 
 ### Recommended Learning Sequence
 
@@ -462,11 +462,11 @@ Oscura is built on these principles:
 
 The Getting Started section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 00_hello_world | Installation validation | Know Oscura works |
-| 01_core_types | Data structures | Understand traces, metadata, types |
-| 02_supported_formats | File format overview | See what data sources are supported |
+| Demo                 | Focus                   | Outcome                             |
+| -------------------- | ----------------------- | ----------------------------------- |
+| 00_hello_world       | Installation validation | Know Oscura works                   |
+| 01_core_types        | Data structures         | Understand traces, metadata, types  |
+| 02_supported_formats | File format overview    | See what data sources are supported |
 
 After completing these three 20-minute demonstrations, you'll understand:
 

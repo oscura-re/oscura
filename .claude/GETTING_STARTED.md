@@ -67,14 +67,14 @@ For complete routing details, see `.claude/docs/routing-concepts.md` and `.claud
 
 The system includes **6 specialized agents**:
 
-| Agent | Purpose | Triggers |
-|-------|---------|----------|
-| **orchestrator** | Task routing and workflow coordination | Automatic (routes all tasks) |
-| **code_assistant** | Write code for all implementation tasks | "write", "create", "implement", "function" |
-| **knowledge_researcher** | Web research with citations | "research", "investigate", "validate" |
-| **technical_writer** | Create documentation and guides | "document", "write guide", "tutorial" |
-| **code_reviewer** | Code quality and security reviews | "review", "audit", "quality" |
-| **git_commit_manager** | Git operations and commits | "commit", "/git" |
+| Agent                    | Purpose                                 | Triggers                                   |
+| ------------------------ | --------------------------------------- | ------------------------------------------ |
+| **orchestrator**         | Task routing and workflow coordination  | Automatic (routes all tasks)               |
+| **code_assistant**       | Write code for all implementation tasks | "write", "create", "implement", "function" |
+| **knowledge_researcher** | Web research with citations             | "research", "investigate", "validate"      |
+| **technical_writer**     | Create documentation and guides         | "document", "write guide", "tutorial"      |
+| **code_reviewer**        | Code quality and security reviews       | "review", "audit", "quality"               |
+| **git_commit_manager**   | Git operations and commits              | "commit", "/git"                           |
 
 For detailed agent documentation, see `.claude/agents/*.md`
 
@@ -86,24 +86,24 @@ To list all agents with their keywords: `/agents --verbose`
 
 ### Core Commands
 
-| Command | Purpose | Example |
-|---------|---------|---------|
-| Natural language | Describe task, system routes automatically | "Implement authentication" |
-| `/help` | Show all commands | `/help` |
-| `/status [--json]` | System health check | `/status` |
-| `/agents [keyword]` | List available agents | `/agents` |
-| `/context` | Show context usage | `/context` |
-| `/cleanup [--dry-run]` | Run maintenance tasks | `/cleanup` |
+| Command                | Purpose                                    | Example                    |
+| ---------------------- | ------------------------------------------ | -------------------------- |
+| Natural language       | Describe task, system routes automatically | "Implement authentication" |
+| `/help`                | Show all commands                          | `/help`                    |
+| `/status [--json]`     | System health check                        | `/status`                  |
+| `/agents [keyword]`    | List available agents                      | `/agents`                  |
+| `/context`             | Show context usage                         | `/context`                 |
+| `/cleanup [--dry-run]` | Run maintenance tasks                      | `/cleanup`                 |
 
 ### Specialized Commands
 
-| Command | Purpose | Agent |
-|---------|---------|-------|
-| `/git [message]` | Create atomic commits | git_commit_manager |
-| `/swarm <task>` | Parallel multi-agent workflows | orchestrator |
-| `/route <agent> <task>` | Force route to specific agent | (bypass routing) |
-| `/research <topic>` | Conduct comprehensive research | knowledge_researcher |
-| `/review [path]` | Code quality review | code_reviewer |
+| Command                 | Purpose                        | Agent                |
+| ----------------------- | ------------------------------ | -------------------- |
+| `/git [message]`        | Create atomic commits          | git_commit_manager   |
+| `/swarm <task>`         | Parallel multi-agent workflows | orchestrator         |
+| `/route <agent> <task>` | Force route to specific agent  | (bypass routing)     |
+| `/research <topic>`     | Conduct comprehensive research | knowledge_researcher |
+| `/review [path]`        | Code quality review            | code_reviewer        |
 
 For complete command reference, see `.claude/commands/*.md`
 
@@ -228,19 +228,19 @@ Controls routing behavior:
 
 ```yaml
 orchestration:
-  default_agent: orchestrator         # Routes all tasks
+  default_agent: orchestrator # Routes all tasks
 
   routing:
     fuzzy_matching:
-      enabled: true                   # Enable fuzzy keyword matching
-      similarity_threshold: 80        # Match threshold (0-100)
-      algorithm: token_set_ratio      # RapidFuzz algorithm
-    confidence_threshold: 0.7         # Min confidence to auto-route
-    show_routing_decisions: false     # Log routing decisions
+      enabled: true # Enable fuzzy keyword matching
+      similarity_threshold: 80 # Match threshold (0-100)
+      algorithm: token_set_ratio # RapidFuzz algorithm
+    confidence_threshold: 0.7 # Min confidence to auto-route
+    show_routing_decisions: false # Log routing decisions
 
   agents:
-    max_concurrent: 2                 # Max simultaneous agents
-    max_batch_size: 2                 # Max agents per batch
+    max_concurrent: 2 # Max simultaneous agents
+    max_batch_size: 2 # Max agents per batch
 ```
 
 ### Agent-Specific Settings
@@ -373,16 +373,16 @@ See `.claude/commands/route.md` for manual routing guide.
 
 ## File Locations
 
-| Documentation Type | Location |
-|-------------------|----------|
-| Agent definitions | `.claude/agents/*.md` |
-| Command reference | `.claude/commands/*.md` |
-| Routing concepts | `.claude/docs/routing-concepts.md` |
-| Fuzzy routing | `.claude/docs/fuzzy-routing.md` |
-| Templates | `.claude/templates/*.md` |
-| Configuration | `.claude/config.yaml` |
-| Project workflow | `CLAUDE.md` |
-| Contributing | `CONTRIBUTING.md` |
+| Documentation Type | Location                           |
+| ------------------ | ---------------------------------- |
+| Agent definitions  | `.claude/agents/*.md`              |
+| Command reference  | `.claude/commands/*.md`            |
+| Routing concepts   | `.claude/docs/routing-concepts.md` |
+| Fuzzy routing      | `.claude/docs/fuzzy-routing.md`    |
+| Templates          | `.claude/templates/*.md`           |
+| Configuration      | `.claude/config.yaml`              |
+| Project workflow   | `CLAUDE.md`                        |
+| Contributing       | `CONTRIBUTING.md`                  |
 
 ---
 

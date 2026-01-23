@@ -24,10 +24,10 @@ This demo category covers jitter measurement and analysis per IEEE 2414-2020. Os
 
 ### Standards Compliance
 
-|Standard|Coverage|Notes|
-|---|---|---|
-|IEEE 2414-2020|Full|Jitter measurement|
-|OIF-CEI-28G|Partial|28G jitter requirements|
+| Standard       | Coverage | Notes                   |
+| -------------- | -------- | ----------------------- |
+| IEEE 2414-2020 | Full     | Jitter measurement      |
+| OIF-CEI-28G    | Partial  | 28G jitter requirements |
 
 ## Quick Start
 
@@ -61,13 +61,13 @@ print(f"TJ at BER 1e-12: {tj * 1e12:.2f} ps")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`tie_measurement.py`|Time Interval Error extraction|Basic|
-|`rj_dj_decomposition.py`|Jitter separation|Intermediate|
-|`eye_diagram.py`|Eye diagram generation|Intermediate|
-|`bathtub_curve.py`|BER estimation and bathtub|Advanced|
-|`ieee2414_compliance.py`|Full IEEE 2414 validation|Advanced|
+| Script                   | Purpose                        | Complexity   |
+| ------------------------ | ------------------------------ | ------------ |
+| `tie_measurement.py`     | Time Interval Error extraction | Basic        |
+| `rj_dj_decomposition.py` | Jitter separation              | Intermediate |
+| `eye_diagram.py`         | Eye diagram generation         | Intermediate |
+| `bathtub_curve.py`       | BER estimation and bathtub     | Advanced     |
+| `ieee2414_compliance.py` | Full IEEE 2414 validation      | Advanced     |
 
 ## Related Demos
 

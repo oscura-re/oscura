@@ -41,13 +41,13 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ### Estimated Time
 
-| Demo | Time | Difficulty | Topics |
-|------|------|-----------|--------|
-| 01_parallel_batch | 15 min | Intermediate | Thread/process pools, parallel execution |
-| 02_result_aggregation | 10 min | Intermediate | Statistics, outliers, comparison |
-| 03_progress_tracking | 10 min | Intermediate | Progress monitoring, ETA, resumption |
-| 04_optimization | 15 min | Advanced | Performance benchmarking, GPU acceleration |
-| **Total** | **50 min** | **Intermediate-Advanced** | **Production batch workflows** |
+| Demo                  | Time       | Difficulty                | Topics                                     |
+| --------------------- | ---------- | ------------------------- | ------------------------------------------ |
+| 01_parallel_batch     | 15 min     | Intermediate              | Thread/process pools, parallel execution   |
+| 02_result_aggregation | 10 min     | Intermediate              | Statistics, outliers, comparison           |
+| 03_progress_tracking  | 10 min     | Intermediate              | Progress monitoring, ETA, resumption       |
+| 04_optimization       | 15 min     | Advanced                  | Performance benchmarking, GPU acceleration |
+| **Total**             | **50 min** | **Intermediate-Advanced** | **Production batch workflows**             |
 
 ---
 
@@ -85,11 +85,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 **Performance comparison**:
 
-| Workload Type | Best Choice | Reason |
-|---------------|-------------|--------|
-| File I/O heavy | ThreadPoolExecutor | GIL not held during I/O |
+| Workload Type   | Best Choice         | Reason                       |
+| --------------- | ------------------- | ---------------------------- |
+| File I/O heavy  | ThreadPoolExecutor  | GIL not held during I/O      |
 | CPU computation | ProcessPoolExecutor | True parallelism, bypass GIL |
-| Mixed workload | ProcessPoolExecutor | Better overall performance |
+| Mixed workload  | ProcessPoolExecutor | Better overall performance   |
 
 **Why this matters**: Production workflows often involve processing hundreds or thousands of signal captures. Parallel execution can reduce processing time from hours to minutes.
 
@@ -205,13 +205,13 @@ ETA: 3m 24s | Throughput: 8.4 files/sec | Success: 618/620
 
 **Performance strategies**:
 
-| Method | Best For | Speedup | Memory | Overhead |
-|--------|----------|---------|--------|----------|
-| Serial | <10 files, simple ops | 1.0x | Low | None |
-| Threads | I/O-bound, file loading | 2-4x | Shared | Low |
-| Processes | CPU-bound, FFT-heavy | 1.5-3x | Isolated | Medium |
-| GPU | Large FFT, many signals | 5-50x | GPU VRAM | High transfer |
-| Advanced Batch | Production workflows | 2-4x | Moderate | Low |
+| Method         | Best For                | Speedup | Memory   | Overhead      |
+| -------------- | ----------------------- | ------- | -------- | ------------- |
+| Serial         | <10 files, simple ops   | 1.0x    | Low      | None          |
+| Threads        | I/O-bound, file loading | 2-4x    | Shared   | Low           |
+| Processes      | CPU-bound, FFT-heavy    | 1.5-3x  | Isolated | Medium        |
+| GPU            | Large FFT, many signals | 5-50x   | GPU VRAM | High transfer |
+| Advanced Batch | Production workflows    | 2-4x    | Moderate | Low           |
 
 **Optimization guidelines**:
 
@@ -420,13 +420,13 @@ class ProgressTracker:
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Build interactive batch analysis | `10_sessions/01_analysis_session.py` | Sessions → Multi-recording |
+| Goal                               | Next Demo                                   | Path                           |
+| ---------------------------------- | ------------------------------------------- | ------------------------------ |
+| Build interactive batch analysis   | `10_sessions/01_analysis_session.py`        | Sessions → Multi-recording     |
 | Apply custom measurements in batch | `08_extensibility/02_custom_measurement.py` | Extensibility → Custom metrics |
-| Batch process with quality checks | `12_quality_tools/02_quality_scoring.py` | Quality → Automated validation |
-| Export batch results | `15_export_visualization/` | Export → Report generation |
-| Production deployment | `11_integration/` | Integration → CI/CD pipelines |
+| Batch process with quality checks  | `12_quality_tools/02_quality_scoring.py`    | Quality → Automated validation |
+| Export batch results               | `15_export_visualization/`                  | Export → Report generation     |
+| Production deployment              | `11_integration/`                           | Integration → CI/CD pipelines  |
 
 ### Recommended Learning Sequence
 
@@ -493,11 +493,11 @@ else:
 
 ### Batch Size Considerations
 
-| Batch Size | Pros | Cons |
-|------------|------|------|
-| Small (10-100) | Low memory, frequent progress updates | Higher overhead |
-| Medium (100-1000) | Balanced performance | Moderate memory |
-| Large (1000+) | Lower overhead | High memory, slow progress |
+| Batch Size        | Pros                                  | Cons                       |
+| ----------------- | ------------------------------------- | -------------------------- |
+| Small (10-100)    | Low memory, frequent progress updates | Higher overhead            |
+| Medium (100-1000) | Balanced performance                  | Moderate memory            |
+| Large (1000+)     | Lower overhead                        | High memory, slow progress |
 
 ---
 
@@ -633,11 +633,11 @@ outliers = detect_outliers(results)
 
 The Batch Processing section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_parallel_batch | Parallel execution | Process files efficiently |
+| Demo                  | Focus                | Outcome                       |
+| --------------------- | -------------------- | ----------------------------- |
+| 01_parallel_batch     | Parallel execution   | Process files efficiently     |
 | 02_result_aggregation | Statistical analysis | Aggregate and compare results |
-| 03_progress_tracking | Monitoring | Track progress with ETA |
+| 03_progress_tracking  | Monitoring           | Track progress with ETA       |
 
 After completing these 35-minute demonstrations, you'll be able to:
 

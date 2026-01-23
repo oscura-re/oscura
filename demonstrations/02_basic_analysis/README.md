@@ -21,15 +21,15 @@ Before running these demonstrations, ensure you have:
 
 ## Demonstrations
 
-| Demo | File | Time | Difficulty | Topics |
-|------|------|------|------------|--------|
-| **01** | `01_waveform_measurements.py` | 15 min | Beginner | Amplitude, frequency, rise/fall time, duty cycle |
-| **02** | `02_statistics.py` | 10 min | Beginner | Mean, std, percentiles, distributions, outliers |
-| **03** | `03_spectral_analysis.py` | 15 min | Intermediate | FFT, PSD, THD, SNR, SINAD, ENOB, SFDR |
-| **04** | `04_filtering.py` | 15 min | Intermediate | Low/high/band-pass, filter design, types |
-| **05** | `05_triggering.py` | 15 min | Intermediate | Edge detection, pulse width, glitches, runts |
-| **06** | `06_math_operations.py` | 10 min | Beginner | Add, subtract, multiply, divide, differentiate, integrate |
-| **Total** | | **80 min** | **Beginner to Intermediate** | **Complete analysis foundations** |
+| Demo      | File                          | Time       | Difficulty                   | Topics                                                    |
+| --------- | ----------------------------- | ---------- | ---------------------------- | --------------------------------------------------------- |
+| **01**    | `01_waveform_measurements.py` | 15 min     | Beginner                     | Amplitude, frequency, rise/fall time, duty cycle          |
+| **02**    | `02_statistics.py`            | 10 min     | Beginner                     | Mean, std, percentiles, distributions, outliers           |
+| **03**    | `03_spectral_analysis.py`     | 15 min     | Intermediate                 | FFT, PSD, THD, SNR, SINAD, ENOB, SFDR                     |
+| **04**    | `04_filtering.py`             | 15 min     | Intermediate                 | Low/high/band-pass, filter design, types                  |
+| **05**    | `05_triggering.py`            | 15 min     | Intermediate                 | Edge detection, pulse width, glitches, runts              |
+| **06**    | `06_math_operations.py`       | 10 min     | Beginner                     | Add, subtract, multiply, divide, differentiate, integrate |
+| **Total** |                               | **80 min** | **Beginner to Intermediate** | **Complete analysis foundations**                         |
 
 ---
 
@@ -294,14 +294,14 @@ This runs all demonstrations and reports coverage, validation status, and failur
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Decode protocols from analyzed signals | `03_protocol_decoding/01_serial_comprehensive.py` | Analysis → Protocol decoding |
-| Perform advanced jitter analysis | `04_advanced_analysis/01_jitter_analysis.py` | Basic → Advanced timing |
-| Analyze power supply quality | `04_advanced_analysis/02_power_analysis.py` | Basic → Power quality |
-| Assess signal integrity | `04_advanced_analysis/03_signal_integrity.py` | Basic → SI analysis |
-| Generate eye diagrams | `04_advanced_analysis/04_eye_diagrams.py` | Basic → Eye diagrams |
-| Discover unknown patterns | `04_advanced_analysis/05_pattern_discovery.py` | Analysis → Pattern recognition |
+| Goal                                   | Next Demo                                         | Path                           |
+| -------------------------------------- | ------------------------------------------------- | ------------------------------ |
+| Decode protocols from analyzed signals | `03_protocol_decoding/01_serial_comprehensive.py` | Analysis → Protocol decoding   |
+| Perform advanced jitter analysis       | `04_advanced_analysis/01_jitter_analysis.py`      | Basic → Advanced timing        |
+| Analyze power supply quality           | `04_advanced_analysis/02_power_analysis.py`       | Basic → Power quality          |
+| Assess signal integrity                | `04_advanced_analysis/03_signal_integrity.py`     | Basic → SI analysis            |
+| Generate eye diagrams                  | `04_advanced_analysis/04_eye_diagrams.py`         | Basic → Eye diagrams           |
+| Discover unknown patterns              | `04_advanced_analysis/05_pattern_discovery.py`    | Analysis → Pattern recognition |
 
 ### Recommended Learning Sequence
 
@@ -530,14 +530,14 @@ glitches = find_glitches(trace, max_width=100e-9)
 
 The Basic Analysis section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_waveform_measurements | Time domain measurements | Amplitude, frequency, rise/fall, duty cycle |
-| 02_statistics | Distribution analysis | Mean, std, percentiles, outliers |
-| 03_spectral_analysis | Frequency domain | FFT, PSD, THD, SNR, ENOB, SFDR |
-| 04_filtering | Signal conditioning | Low/high/band-pass, filter design |
-| 05_triggering | Event detection | Edges, pulses, glitches, runts |
-| 06_math_operations | Signal manipulation | Arithmetic, differentiate, integrate, correlation |
+| Demo                     | Focus                    | Outcome                                           |
+| ------------------------ | ------------------------ | ------------------------------------------------- |
+| 01_waveform_measurements | Time domain measurements | Amplitude, frequency, rise/fall, duty cycle       |
+| 02_statistics            | Distribution analysis    | Mean, std, percentiles, outliers                  |
+| 03_spectral_analysis     | Frequency domain         | FFT, PSD, THD, SNR, ENOB, SFDR                    |
+| 04_filtering             | Signal conditioning      | Low/high/band-pass, filter design                 |
+| 05_triggering            | Event detection          | Edges, pulses, glitches, runts                    |
+| 06_math_operations       | Signal manipulation      | Arithmetic, differentiate, integrate, correlation |
 
 After completing these six 80-minute demonstrations, you'll understand:
 

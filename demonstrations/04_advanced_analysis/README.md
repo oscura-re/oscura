@@ -21,15 +21,15 @@ Before running these demonstrations, ensure you have:
 
 ## Demonstrations
 
-| Demo | File | Time | Difficulty | Topics |
-|------|------|------|------------|--------|
-| **01** | `01_jitter_analysis.py` | 20 min | Advanced | TIE, C2C jitter, DCD, RJ/DJ decomposition |
-| **02** | `02_power_analysis.py` | 15 min | Intermediate | Active/reactive/apparent power, PF, THD |
-| **03** | `03_signal_integrity.py` | 20 min | Advanced | Rise/fall time, overshoot, eye metrics, TDR |
-| **04** | `04_eye_diagrams.py` | 20 min | Advanced | Eye construction, height/width, Q-factor, BER |
-| **05** | `05_pattern_discovery.py` | 20 min | Advanced | Signature discovery, repetitions, state extraction |
-| **06** | `06_quality_assessment.py` | 15 min | Intermediate | SNR, SINAD, THD, SFDR, ENOB |
-| **Total** | | **110 min** | **Intermediate to Advanced** | **Professional-grade analysis** |
+| Demo      | File                       | Time        | Difficulty                   | Topics                                             |
+| --------- | -------------------------- | ----------- | ---------------------------- | -------------------------------------------------- |
+| **01**    | `01_jitter_analysis.py`    | 20 min      | Advanced                     | TIE, C2C jitter, DCD, RJ/DJ decomposition          |
+| **02**    | `02_power_analysis.py`     | 15 min      | Intermediate                 | Active/reactive/apparent power, PF, THD            |
+| **03**    | `03_signal_integrity.py`   | 20 min      | Advanced                     | Rise/fall time, overshoot, eye metrics, TDR        |
+| **04**    | `04_eye_diagrams.py`       | 20 min      | Advanced                     | Eye construction, height/width, Q-factor, BER      |
+| **05**    | `05_pattern_discovery.py`  | 20 min      | Advanced                     | Signature discovery, repetitions, state extraction |
+| **06**    | `06_quality_assessment.py` | 15 min      | Intermediate                 | SNR, SINAD, THD, SFDR, ENOB                        |
+| **Total** |                            | **110 min** | **Intermediate to Advanced** | **Professional-grade analysis**                    |
 
 ---
 
@@ -309,13 +309,13 @@ This runs all demonstrations and reports coverage, validation status, and failur
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Apply to automotive diagnostics | `05_domain_specific/01_automotive_diagnostics.py` | Analysis → OBD-II/J1939 |
-| EMC compliance testing | `05_domain_specific/02_emc_compliance.py` | Analysis → CISPR/MIL-STD |
-| Vintage logic family detection | `05_domain_specific/03_vintage_logic.py` | Analysis → IC identification |
-| Side-channel analysis | `05_domain_specific/04_side_channel.py` | Analysis → Cryptographic attacks |
-| Build complete RE workflow | `16_complete_workflows/01_protocol_discovery.py` | Analysis → Full workflow |
+| Goal                            | Next Demo                                         | Path                             |
+| ------------------------------- | ------------------------------------------------- | -------------------------------- |
+| Apply to automotive diagnostics | `05_domain_specific/01_automotive_diagnostics.py` | Analysis → OBD-II/J1939          |
+| EMC compliance testing          | `05_domain_specific/02_emc_compliance.py`         | Analysis → CISPR/MIL-STD         |
+| Vintage logic family detection  | `05_domain_specific/03_vintage_logic.py`          | Analysis → IC identification     |
+| Side-channel analysis           | `05_domain_specific/04_side_channel.py`           | Analysis → Cryptographic attacks |
+| Build complete RE workflow      | `16_complete_workflows/01_protocol_discovery.py`  | Analysis → Full workflow         |
 
 ### Recommended Learning Sequence
 
@@ -560,14 +560,14 @@ Compare with industry-standard tools:
 
 The Advanced Analysis section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_jitter_analysis | Timing quality | TIE, C2C, period jitter, RJ/DJ, bathtub |
-| 02_power_analysis | Power quality | P, Q, S, PF, phase angle, THD, efficiency |
-| 03_signal_integrity | Signal quality | Rise/fall time, overshoot, eye metrics, TDR |
-| 04_eye_diagrams | BER analysis | Eye height/width, Q-factor, BER contours |
-| 05_pattern_discovery | Pattern recognition | Signatures, repetitions, state extraction |
-| 06_quality_assessment | Quality scoring | SNR, SINAD, THD, SFDR, ENOB |
+| Demo                  | Focus               | Outcome                                     |
+| --------------------- | ------------------- | ------------------------------------------- |
+| 01_jitter_analysis    | Timing quality      | TIE, C2C, period jitter, RJ/DJ, bathtub     |
+| 02_power_analysis     | Power quality       | P, Q, S, PF, phase angle, THD, efficiency   |
+| 03_signal_integrity   | Signal quality      | Rise/fall time, overshoot, eye metrics, TDR |
+| 04_eye_diagrams       | BER analysis        | Eye height/width, Q-factor, BER contours    |
+| 05_pattern_discovery  | Pattern recognition | Signatures, repetitions, state extraction   |
+| 06_quality_assessment | Quality scoring     | SNR, SINAD, THD, SFDR, ENOB                 |
 
 After completing these six 110-minute demonstrations, you'll understand:
 

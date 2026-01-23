@@ -26,13 +26,13 @@ python demonstrations/02_basic_analysis/01_waveform_measurements.py
 
 ## Demonstrations
 
-| Demo | Time | Difficulty | Focus |
-|------|------|-----------|-------|
-| 01_ieee_181 | 15 min | Intermediate | IEEE 181-2011 pulse measurements |
-| 02_ieee_1241 | 15 min | Advanced | IEEE 1241-2010 ADC characterization |
-| 03_ieee_1459 | 15 min | Advanced | IEEE 1459-2010 power quality |
-| 04_ieee_2414 | 15 min | Advanced | IEEE 2414-2020 automotive PHY |
-| **Total** | **60 min** | **Advanced** | **Standards compliance** |
+| Demo         | Time       | Difficulty   | Focus                               |
+| ------------ | ---------- | ------------ | ----------------------------------- |
+| 01_ieee_181  | 15 min     | Intermediate | IEEE 181-2011 pulse measurements    |
+| 02_ieee_1241 | 15 min     | Advanced     | IEEE 1241-2010 ADC characterization |
+| 03_ieee_1459 | 15 min     | Advanced     | IEEE 1459-2010 power quality        |
+| 04_ieee_2414 | 15 min     | Advanced     | IEEE 2414-2020 automotive PHY       |
+| **Total**    | **60 min** | **Advanced** | **Standards compliance**            |
 
 ---
 
@@ -330,12 +330,12 @@ diff_voltage = voltage_p.data - voltage_n.data
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Apply standards to production testing | `16_complete_workflows/02_production_testing.py` | Production workflows |
-| Generate compliant test signals | `17_signal_generation/01_signal_builder_comprehensive.py` | Signal generation |
-| Compare against limits | `18_comparison_testing/02_limit_testing.py` | Limit testing |
-| Build domain-specific workflows | `05_domain_specific/` | Domain-specific demos |
+| Goal                                  | Next Demo                                                 | Path                  |
+| ------------------------------------- | --------------------------------------------------------- | --------------------- |
+| Apply standards to production testing | `16_complete_workflows/02_production_testing.py`          | Production workflows  |
+| Generate compliant test signals       | `17_signal_generation/01_signal_builder_comprehensive.py` | Signal generation     |
+| Compare against limits                | `18_comparison_testing/02_limit_testing.py`               | Limit testing         |
+| Build domain-specific workflows       | `05_domain_specific/`                                     | Domain-specific demos |
 
 ### Recommended Next Sections
 
@@ -384,13 +384,13 @@ diff_voltage = voltage_p.data - voltage_n.data
 
 **Key Metrics**:
 
-| Metric | Formula | Meaning |
-|--------|---------|---------|
-| SNR | 20·log₁₀(signal/noise) | Signal quality without harmonics |
-| SINAD | 20·log₁₀(signal/(noise+distortion)) | Overall signal quality |
-| ENOB | (SINAD - 1.76) / 6.02 | Effective resolution |
-| THD | 20·log₁₀(√(H₂²+H₃²+...) / H₁) | Harmonic distortion |
-| SFDR | Signal power - Largest spur | Spurious-free range |
+| Metric | Formula                             | Meaning                          |
+| ------ | ----------------------------------- | -------------------------------- |
+| SNR    | 20·log₁₀(signal/noise)              | Signal quality without harmonics |
+| SINAD  | 20·log₁₀(signal/(noise+distortion)) | Overall signal quality           |
+| ENOB   | (SINAD - 1.76) / 6.02               | Effective resolution             |
+| THD    | 20·log₁₀(√(H₂²+H₃²+...) / H₁)       | Harmonic distortion              |
+| SFDR   | Signal power - Largest spur         | Spurious-free range              |
 
 **Testing Requirements**:
 
@@ -404,11 +404,11 @@ diff_voltage = voltage_p.data - voltage_n.data
 
 **Power Definitions**:
 
-| Power Type | Symbol | Unit | Formula |
-|------------|--------|------|---------|
-| Active | P | Watts (W) | ∫ v(t)·i(t) dt |
-| Reactive | Q | VARs | √(S² - P²) |
-| Apparent | S | VA | Vrms · Irms |
+| Power Type | Symbol | Unit      | Formula        |
+| ---------- | ------ | --------- | -------------- |
+| Active     | P      | Watts (W) | ∫ v(t)·i(t) dt |
+| Reactive   | Q      | VARs      | √(S² - P²)     |
+| Apparent   | S      | VA        | Vrms · Irms    |
 
 **Power Factor**:
 
@@ -424,13 +424,13 @@ Non-sinusoidal waveforms (switching power supplies, VFDs) require IEEE 1459 defi
 
 **100BASE-T1 Parameters**:
 
-| Parameter | Specification | Test Method |
-|-----------|---------------|-------------|
-| Differential Voltage | 1.0V ± 10% | Peak-to-peak measurement |
-| Rise/Fall Time | ≤ 5ns | 20%-80% method |
-| Random Jitter | ≤ 400ps | Statistical analysis |
-| Deterministic Jitter | ≤ 600ps | Pattern-based measurement |
-| Return Loss | ≥ 10dB @ 66.67MHz | S-parameter measurement |
+| Parameter            | Specification     | Test Method               |
+| -------------------- | ----------------- | ------------------------- |
+| Differential Voltage | 1.0V ± 10%        | Peak-to-peak measurement  |
+| Rise/Fall Time       | ≤ 5ns             | 20%-80% method            |
+| Random Jitter        | ≤ 400ps           | Statistical analysis      |
+| Deterministic Jitter | ≤ 600ps           | Pattern-based measurement |
+| Return Loss          | ≥ 10dB @ 66.67MHz | S-parameter measurement   |
 
 **Eye Diagram Requirements**:
 
@@ -611,12 +611,12 @@ metadata = {
 
 The IEEE Standards Compliance section covers:
 
-| Demo | Standard | Focus | Outcome |
-|------|----------|-------|---------|
-| 01_ieee_181 | IEEE 181-2011 | Pulse measurements | Rise/fall time, overshoot |
-| 02_ieee_1241 | IEEE 1241-2010 | ADC characterization | SNR, SINAD, ENOB, THD |
-| 03_ieee_1459 | IEEE 1459-2010 | Power quality | Active/reactive power, THD |
-| 04_ieee_2414 | IEEE 2414-2020 | Automotive PHY | Eye diagrams, jitter, compliance |
+| Demo         | Standard       | Focus                | Outcome                          |
+| ------------ | -------------- | -------------------- | -------------------------------- |
+| 01_ieee_181  | IEEE 181-2011  | Pulse measurements   | Rise/fall time, overshoot        |
+| 02_ieee_1241 | IEEE 1241-2010 | ADC characterization | SNR, SINAD, ENOB, THD            |
+| 03_ieee_1459 | IEEE 1459-2010 | Power quality        | Active/reactive power, THD       |
+| 04_ieee_2414 | IEEE 2414-2020 | Automotive PHY       | Eye diagrams, jitter, compliance |
 
 After completing these 60-minute demonstrations, you'll understand:
 

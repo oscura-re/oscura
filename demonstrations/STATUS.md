@@ -20,43 +20,43 @@
 
 ### ✅ Core Infrastructure (100%)
 
-| Component | Status | Description |
-|-----------|--------|-------------|
-| Directory Structure | ✅ Complete | 20 categories, 97 demonstrations |
-| BaseDemo Framework | ✅ Complete | Production-ready template system |
-| Validation System | ✅ Fixed | `validate_all.py` with uv environment support |
-| Capability Indexer | ✅ Complete | `capability_index.py` tracks 266 API symbols |
-| Data Generator | ✅ Complete | `generate_all_data.py` (self-contained synthetic data) |
-| Common Utilities | ✅ Complete | 5 helper modules for demonstrations |
-| Comprehensive Audit | ✅ Complete | Full capability gap analysis |
+| Component           | Status      | Description                                            |
+| ------------------- | ----------- | ------------------------------------------------------ |
+| Directory Structure | ✅ Complete | 20 categories, 97 demonstrations                       |
+| BaseDemo Framework  | ✅ Complete | Production-ready template system                       |
+| Validation System   | ✅ Fixed    | `validate_all.py` with uv environment support          |
+| Capability Indexer  | ✅ Complete | `capability_index.py` tracks 266 API symbols           |
+| Data Generator      | ✅ Complete | `generate_all_data.py` (self-contained synthetic data) |
+| Common Utilities    | ✅ Complete | 5 helper modules for demonstrations                    |
+| Comprehensive Audit | ✅ Complete | Full capability gap analysis                           |
 
 ---
 
 ## Demonstrations: 97/97 (100% COMPLETE!)
 
-| Section | Demos | Status | Focus |
-|---------|-------|--------|-------|
-| **00_getting_started** | 3 | ✅ COMPLETE | Installation validation, core types |
-| **01_data_loading** | 7 | ✅ COMPLETE | 8 file formats, streaming, multi-channel |
-| **02_basic_analysis** | 6 | ✅ COMPLETE | Waveform, spectral, filtering, math |
-| **03_protocol_decoding** | 6 | ✅ COMPLETE | 14 protocols (serial, automotive, debug) |
-| **04_advanced_analysis** | 6 | ✅ COMPLETE | Jitter, power, SI, eye diagrams |
-| **05_domain_specific** | 4 | ✅ COMPLETE | Automotive, EMC, vintage, side-channel |
-| **06_reverse_engineering** | 6 | ✅ COMPLETE | Protocol inference, CRC, state machines |
-| **07_advanced_api** | 7 | ✅ COMPLETE | Pipeline, DSL, operators, streaming |
-| **08_extensibility** | 6 | ✅ COMPLETE | Plugins, custom measurements |
-| **09_batch_processing** | 3 | ✅ COMPLETE | Parallel batch, aggregation |
-| **10_sessions** | 5 | ✅ COMPLETE | Interactive analysis workflows |
-| **11_integration** | 5 | ✅ COMPLETE | CLI, Jupyter, LLM, hardware |
-| **12_quality_tools** | 4 | ✅ COMPLETE | Ensemble, scoring, warnings |
-| **13_guidance** | 3 | ✅ COMPLETE | Recommendations, wizards, onboarding |
-| **14_exploratory** | 4 | ✅ COMPLETE | Unknown signals, fuzzy matching |
-| **15_export_visualization** | 5 | ✅ COMPLETE | Export formats, reports, WaveDrom |
-| **16_complete_workflows** | 6 | ✅ COMPLETE | End-to-end real-world workflows |
-| **17_signal_generation** | 3 | ✅ COMPLETE | SignalBuilder, protocol generation |
-| **18_comparison_testing** | 4 | ✅ COMPLETE | Golden reference, masks, limits |
-| **19_standards_compliance** | 4 | ✅ COMPLETE | IEEE 181, 1241, 1459, 2414 |
-| **TOTAL** | **97** | **✅ 100%** | **Comprehensive coverage** |
+| Section                     | Demos  | Status      | Focus                                    |
+| --------------------------- | ------ | ----------- | ---------------------------------------- |
+| **00_getting_started**      | 3      | ✅ COMPLETE | Installation validation, core types      |
+| **01_data_loading**         | 7      | ✅ COMPLETE | 8 file formats, streaming, multi-channel |
+| **02_basic_analysis**       | 6      | ✅ COMPLETE | Waveform, spectral, filtering, math      |
+| **03_protocol_decoding**    | 6      | ✅ COMPLETE | 14 protocols (serial, automotive, debug) |
+| **04_advanced_analysis**    | 6      | ✅ COMPLETE | Jitter, power, SI, eye diagrams          |
+| **05_domain_specific**      | 4      | ✅ COMPLETE | Automotive, EMC, vintage, side-channel   |
+| **06_reverse_engineering**  | 6      | ✅ COMPLETE | Protocol inference, CRC, state machines  |
+| **07_advanced_api**         | 7      | ✅ COMPLETE | Pipeline, DSL, operators, streaming      |
+| **08_extensibility**        | 6      | ✅ COMPLETE | Plugins, custom measurements             |
+| **09_batch_processing**     | 3      | ✅ COMPLETE | Parallel batch, aggregation              |
+| **10_sessions**             | 5      | ✅ COMPLETE | Interactive analysis workflows           |
+| **11_integration**          | 5      | ✅ COMPLETE | CLI, Jupyter, LLM, hardware              |
+| **12_quality_tools**        | 4      | ✅ COMPLETE | Ensemble, scoring, warnings              |
+| **13_guidance**             | 3      | ✅ COMPLETE | Recommendations, wizards, onboarding     |
+| **14_exploratory**          | 4      | ✅ COMPLETE | Unknown signals, fuzzy matching          |
+| **15_export_visualization** | 5      | ✅ COMPLETE | Export formats, reports, WaveDrom        |
+| **16_complete_workflows**   | 6      | ✅ COMPLETE | End-to-end real-world workflows          |
+| **17_signal_generation**    | 3      | ✅ COMPLETE | SignalBuilder, protocol generation       |
+| **18_comparison_testing**   | 4      | ✅ COMPLETE | Golden reference, masks, limits          |
+| **19_standards_compliance** | 4      | ✅ COMPLETE | IEEE 181, 1241, 1459, 2414               |
+| **TOTAL**                   | **97** | **✅ 100%** | **Comprehensive coverage**               |
 
 ---
 
@@ -116,32 +116,32 @@ User-Facing Function Coverage: ~42% (excluding types/errors)
 
 ### Coverage by Domain
 
-| Domain | Coverage | Status | Gaps |
-|--------|----------|--------|------|
-| **Data Loading** | 38% | ⚠️ Good | Touchstone, PCAP, ChipWhisperer |
-| **Waveform Analysis** | 83% | ✅ Excellent | Wavelets |
-| **Statistical Analysis** | 25% | ⚠️ Gaps | Entropy, classification |
-| **Protocol Decoding** | 82% | ✅ Excellent | USB, HDLC (minor) |
-| **Advanced Analysis** | 40% | ⚠️ Gaps | TDR, impedance, transmission lines |
-| **RE/Inference** | 33% | ⚠️ Gaps | Signal classification, anomalies |
-| **Power Analysis** | 72% | ✅ Good | — |
-| **Jitter/Eye** | 75% | ✅ Good | — |
-| **Signal Integrity** | 67% | ✅ Adequate | — |
-| **Pipeline/API** | 80% | ✅ Good | GPU acceleration |
-| **Export/Reporting** | 60% | ✅ Adequate | — |
+| Domain                   | Coverage | Status       | Gaps                               |
+| ------------------------ | -------- | ------------ | ---------------------------------- |
+| **Data Loading**         | 38%      | ⚠️ Good      | Touchstone, PCAP, ChipWhisperer    |
+| **Waveform Analysis**    | 83%      | ✅ Excellent | Wavelets                           |
+| **Statistical Analysis** | 25%      | ⚠️ Gaps      | Entropy, classification            |
+| **Protocol Decoding**    | 82%      | ✅ Excellent | USB, HDLC (minor)                  |
+| **Advanced Analysis**    | 40%      | ⚠️ Gaps      | TDR, impedance, transmission lines |
+| **RE/Inference**         | 33%      | ⚠️ Gaps      | Signal classification, anomalies   |
+| **Power Analysis**       | 72%      | ✅ Good      | —                                  |
+| **Jitter/Eye**           | 75%      | ✅ Good      | —                                  |
+| **Signal Integrity**     | 67%      | ✅ Adequate  | —                                  |
+| **Pipeline/API**         | 80%      | ✅ Good      | GPU acceleration                   |
+| **Export/Reporting**     | 60%      | ✅ Adequate  | —                                  |
 
 ### Use Case Coverage
 
-| Use Case | Rating | Demos | Assessment |
-|----------|--------|-------|------------|
-| **Reverse Engineering** | ⭐⭐⭐⭐⭐ | 13 | Excellent - Core strength |
-| **Characterization** | ⭐⭐⭐⭐⭐ | 18 | Excellent - IEEE compliant |
-| **Hardware Hacking** | ⭐⭐⭐⭐☆ | 15 | Very Good |
-| **System Replication** | ⭐⭐⭐⭐☆ | 12 | Very Good |
-| **Right to Repair** | ⭐⭐⭐⭐☆ | 10 | Very Good |
-| **Production Testing** | ⭐⭐⭐⭐☆ | 8 | Very Good |
-| **Exploitation** | ⭐⭐⭐☆☆ | 5 | Good |
-| **Privacy Analysis** | ⭐⭐⭐☆☆ | 4 | Moderate |
+| Use Case                | Rating     | Demos | Assessment                 |
+| ----------------------- | ---------- | ----- | -------------------------- |
+| **Reverse Engineering** | ⭐⭐⭐⭐⭐ | 13    | Excellent - Core strength  |
+| **Characterization**    | ⭐⭐⭐⭐⭐ | 18    | Excellent - IEEE compliant |
+| **Hardware Hacking**    | ⭐⭐⭐⭐☆  | 15    | Very Good                  |
+| **System Replication**  | ⭐⭐⭐⭐☆  | 12    | Very Good                  |
+| **Right to Repair**     | ⭐⭐⭐⭐☆  | 10    | Very Good                  |
+| **Production Testing**  | ⭐⭐⭐⭐☆  | 8     | Very Good                  |
+| **Exploitation**        | ⭐⭐⭐☆☆   | 5     | Good                       |
+| **Privacy Analysis**    | ⭐⭐⭐☆☆   | 4     | Moderate                   |
 
 ---
 

@@ -6,12 +6,12 @@
 
 ## Quick Navigation
 
-|Resource|Purpose|
-|---|---|
-|**[Demos](https://github.com/oscura-re/oscura/tree/main/demos)**|Production-ready examples (START HERE)|
-|[API Reference](api/)|Generated function/class reference|
-|[CLI Reference](cli.md)|Command-line interface|
-|[Error Codes](error-codes.md)|Error reference|
+| Resource                                                         | Purpose                                |
+| ---------------------------------------------------------------- | -------------------------------------- |
+| **[Demos](https://github.com/oscura-re/oscura/tree/main/demos)** | Production-ready examples (START HERE) |
+| [API Reference](api/)                                            | Generated function/class reference     |
+| [CLI Reference](cli.md)                                          | Command-line interface                 |
+| [Error Codes](error-codes.md)                                    | Error reference                        |
 
 ---
 
@@ -31,27 +31,27 @@ Tutorials and user guides have been consolidated into demo READMEs to maintain a
 
 All demos are in the [GitHub repository demos/ directory](https://github.com/oscura-re/oscura/tree/main/demos):
 
-|Category|What You'll Learn|
-|---|---|
-|01_waveform_analysis|Oscilloscope file loading|
-|02_file_format_io|All file formats (VCD, etc.)|
-|03_custom_daq|Large file streaming|
-|04_serial_protocols|UART, SPI, I2C, JTAG|
-|05_protocol_decoding|Comprehensive protocol decode|
-|06_udp_packet_analysis|UDP/network packets|
-|07_protocol_inference|RE workflows, CRC reverse|
-|08_automotive_protocols|CAN, LIN, FlexRay|
-|09_automotive|OBD-II, UDS diagnostics|
-|10_timing_measurements|Rise/fall time|
-|11_mixed_signal|Mixed analog+digital|
-|12_spectral_compliance|FFT, THD, SNR|
-|13_jitter_analysis|TIE, RJ/DJ, eye|
-|14_power_analysis|Power quality|
-|15_signal_integrity|TDR, S-params|
-|16_emc_compliance|CISPR, FCC|
-|17_signal_reverse_engineering|Unknown signal RE|
-|18_advanced_inference|ML techniques|
-|19_complete_workflows|End-to-end|
+| Category                      | What You'll Learn             |
+| ----------------------------- | ----------------------------- |
+| 01_waveform_analysis          | Oscilloscope file loading     |
+| 02_file_format_io             | All file formats (VCD, etc.)  |
+| 03_custom_daq                 | Large file streaming          |
+| 04_serial_protocols           | UART, SPI, I2C, JTAG          |
+| 05_protocol_decoding          | Comprehensive protocol decode |
+| 06_udp_packet_analysis        | UDP/network packets           |
+| 07_protocol_inference         | RE workflows, CRC reverse     |
+| 08_automotive_protocols       | CAN, LIN, FlexRay             |
+| 09_automotive                 | OBD-II, UDS diagnostics       |
+| 10_timing_measurements        | Rise/fall time                |
+| 11_mixed_signal               | Mixed analog+digital          |
+| 12_spectral_compliance        | FFT, THD, SNR                 |
+| 13_jitter_analysis            | TIE, RJ/DJ, eye               |
+| 14_power_analysis             | Power quality                 |
+| 15_signal_integrity           | TDR, S-params                 |
+| 16_emc_compliance             | CISPR, FCC                    |
+| 17_signal_reverse_engineering | Unknown signal RE             |
+| 18_advanced_inference         | ML techniques                 |
+| 19_complete_workflows         | End-to-end                    |
 
 ---
 

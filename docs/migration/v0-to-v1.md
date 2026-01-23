@@ -595,12 +595,12 @@ If you encounter migration issues:
 
 ## Timeline
 
-| Version | Release | Key Changes | Migration Required |
-|---------|---------|-------------|-------------------|
-| v0.3.0 | 2026-01-20 | Type unification, Source protocol, Sessions | Optional (deprecation warnings) |
-| v0.4.0 | TBD | Hardware sources (Phase 2) | No |
-| v0.5.0 | TBD | Remove deprecated APIs | Yes (remove deprecated code) |
-| v1.0.0 | TBD | Stable API, backward compatibility guaranteed | No |
+| Version | Release    | Key Changes                                   | Migration Required              |
+| ------- | ---------- | --------------------------------------------- | ------------------------------- |
+| v0.3.0  | 2026-01-20 | Type unification, Source protocol, Sessions   | Optional (deprecation warnings) |
+| v0.4.0  | TBD        | Hardware sources (Phase 2)                    | No                              |
+| v0.5.0  | TBD        | Remove deprecated APIs                        | Yes (remove deprecated code)    |
+| v1.0.0  | TBD        | Stable API, backward compatibility guaranteed | No                              |
 
 ---
 

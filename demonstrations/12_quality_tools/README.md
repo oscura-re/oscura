@@ -39,13 +39,13 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ### Estimated Time
 
-| Demo | Time | Difficulty | Topics |
-|------|------|-----------|--------|
-| 01_ensemble_methods | 15 min | Intermediate | Multiple methods, voting, outliers |
-| 02_quality_scoring | 15 min | Intermediate | SNR, distortion, scoring algorithms |
-| 03_warning_system | 15 min | Intermediate | Anomaly detection, warnings, severity |
-| 04_recommendations | 15 min | Intermediate | Smart suggestions, optimization guidance |
-| **Total** | **60 min** | **Intermediate** | **Quality assurance mastery** |
+| Demo                | Time       | Difficulty       | Topics                                   |
+| ------------------- | ---------- | ---------------- | ---------------------------------------- |
+| 01_ensemble_methods | 15 min     | Intermediate     | Multiple methods, voting, outliers       |
+| 02_quality_scoring  | 15 min     | Intermediate     | SNR, distortion, scoring algorithms      |
+| 03_warning_system   | 15 min     | Intermediate     | Anomaly detection, warnings, severity    |
+| 04_recommendations  | 15 min     | Intermediate     | Smart suggestions, optimization guidance |
+| **Total**           | **60 min** | **Intermediate** | **Quality assurance mastery**            |
 
 ---
 
@@ -126,12 +126,12 @@ freq_final = weighted_average(results, weights)
 
 **Quality metrics**:
 
-| Metric | Range | Good | Acceptable | Poor |
-|--------|-------|------|------------|------|
-| Overall Score | 0-100 | 90+ | 70-90 | <70 |
-| SNR | dB | >60 dB | 40-60 dB | <40 dB |
-| THD | % | <1% | 1-5% | >5% |
-| Noise Floor | dBFS | <-80 dBFS | -60 to -80 dBFS | >-60 dBFS |
+| Metric        | Range | Good      | Acceptable      | Poor      |
+| ------------- | ----- | --------- | --------------- | --------- |
+| Overall Score | 0-100 | 90+       | 70-90           | <70       |
+| SNR           | dB    | >60 dB    | 40-60 dB        | <40 dB    |
+| THD           | %     | <1%       | 1-5%            | >5%       |
+| Noise Floor   | dBFS  | <-80 dBFS | -60 to -80 dBFS | >-60 dBFS |
 
 **Quality scoring algorithm**:
 
@@ -190,12 +190,12 @@ def calculate_quality_score(trace):
 
 **Severity levels**:
 
-| Level | Meaning | Action Required |
-|-------|---------|-----------------|
-| INFO | Informational | None - just FYI |
-| WARNING | Potential issue | Review recommended |
-| ERROR | Confirmed problem | Investigation required |
-| CRITICAL | Severe problem | Immediate action needed |
+| Level    | Meaning           | Action Required         |
+| -------- | ----------------- | ----------------------- |
+| INFO     | Informational     | None - just FYI         |
+| WARNING  | Potential issue   | Review recommended      |
+| ERROR    | Confirmed problem | Investigation required  |
+| CRITICAL | Severe problem    | Immediate action needed |
 
 **Example output**:
 
@@ -459,13 +459,13 @@ recs = get_recommendations(
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Apply quality checks in batch | `09_batch_processing/01_parallel_batch.py` | Batch → Quality validation |
-| Integrate quality in sessions | `10_sessions/01_analysis_session.py` | Sessions → Quality tracking |
-| Build custom quality metrics | `08_extensibility/02_custom_measurement.py` | Extensibility → Custom scoring |
-| Automate quality reports | `15_export_visualization/` | Export → Quality dashboards |
-| Production quality gates | `11_integration/` | Integration → CI/CD quality checks |
+| Goal                          | Next Demo                                   | Path                               |
+| ----------------------------- | ------------------------------------------- | ---------------------------------- |
+| Apply quality checks in batch | `09_batch_processing/01_parallel_batch.py`  | Batch → Quality validation         |
+| Integrate quality in sessions | `10_sessions/01_analysis_session.py`        | Sessions → Quality tracking        |
+| Build custom quality metrics  | `08_extensibility/02_custom_measurement.py` | Extensibility → Custom scoring     |
+| Automate quality reports      | `15_export_visualization/`                  | Export → Quality dashboards        |
+| Production quality gates      | `11_integration/`                           | Integration → CI/CD quality checks |
 
 ### Recommended Learning Sequence
 
@@ -568,30 +568,30 @@ recs = get_recommendations(
 
 ### SNR Estimation Methods
 
-| Method | Best For | Limitations |
-|--------|----------|-------------|
-| Frequency domain | Tonal signals | Requires FFT, assumes specific spectrum |
-| Time domain | Broadband signals | Needs signal/noise separation |
-| Autocorrelation | Periodic signals | Computation intensive |
-| Peak-to-RMS | Simple signals | Less accurate for complex signals |
+| Method           | Best For          | Limitations                             |
+| ---------------- | ----------------- | --------------------------------------- |
+| Frequency domain | Tonal signals     | Requires FFT, assumes specific spectrum |
+| Time domain      | Broadband signals | Needs signal/noise separation           |
+| Autocorrelation  | Periodic signals  | Computation intensive                   |
+| Peak-to-RMS      | Simple signals    | Less accurate for complex signals       |
 
 ### Distortion Metrics
 
-| Metric | Formula | Meaning |
-|--------|---------|---------|
-| THD | √(H₂² + H₃² + ...) / H₁ | Total harmonic distortion |
-| THD+N | √(noise² + distortion²) / signal | THD plus noise |
-| SINAD | signal / (noise + distortion) | Signal to noise+distortion |
-| SFDR | fundamental / largest_spur | Spurious-free dynamic range |
+| Metric | Formula                          | Meaning                     |
+| ------ | -------------------------------- | --------------------------- |
+| THD    | √(H₂² + H₃² + ...) / H₁          | Total harmonic distortion   |
+| THD+N  | √(noise² + distortion²) / signal | THD plus noise              |
+| SINAD  | signal / (noise + distortion)    | Signal to noise+distortion  |
+| SFDR   | fundamental / largest_spur       | Spurious-free dynamic range |
 
 ### Quality Thresholds by Application
 
 | Application | Min SNR | Max THD | Min Bits |
-|-------------|---------|---------|----------|
-| Laboratory | 80 dB | 0.1% | 16 bits |
-| Industrial | 50 dB | 2% | 12 bits |
-| Automotive | 40 dB | 5% | 10 bits |
-| Embedded | 35 dB | 10% | 8 bits |
+| ----------- | ------- | ------- | -------- |
+| Laboratory  | 80 dB   | 0.1%    | 16 bits  |
+| Industrial  | 50 dB   | 2%      | 12 bits  |
+| Automotive  | 40 dB   | 5%      | 10 bits  |
+| Embedded    | 35 dB   | 10%     | 8 bits   |
 
 ---
 
@@ -693,12 +693,12 @@ def auto_analyze(trace):
 
 The Quality Tools section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_ensemble_methods | Multiple methods | Robust measurements |
-| 02_quality_scoring | SNR, distortion, scoring | Comprehensive quality assessment |
-| 03_warning_system | Anomaly detection | Automatic issue detection |
-| 04_recommendations | Smart suggestions | Analysis guidance |
+| Demo                | Focus                    | Outcome                          |
+| ------------------- | ------------------------ | -------------------------------- |
+| 01_ensemble_methods | Multiple methods         | Robust measurements              |
+| 02_quality_scoring  | SNR, distortion, scoring | Comprehensive quality assessment |
+| 03_warning_system   | Anomaly detection        | Automatic issue detection        |
+| 04_recommendations  | Smart suggestions        | Analysis guidance                |
 
 After completing these 60-minute demonstrations, you'll be able to:
 

@@ -15,7 +15,7 @@ Conduct thorough research on any topic using authoritative sources with proper c
 
 ## Usage
 
-```bash
+````bash
 /research <topic>                    # Standard depth research
 /research <topic> --depth=deep       # Deep research with more sources
 /research "Docker networking"        # Research specific topic
@@ -219,3 +219,4 @@ orchestration:
 ## Version History
 
 - **v1.0.0** (2026-01-22): Initial creation with routing to knowledge_researcher agent
+````

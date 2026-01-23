@@ -10,7 +10,7 @@ Display comprehensive orchestration system health, running agents, and resource 
 
 ## Usage
 
-```bash
+````bash
 /status            # Human-readable dashboard
 /status --json     # JSON output for scripting
 ```python
@@ -156,3 +156,4 @@ This command reads:
 ## Version History
 
 - v1.0.0 (2026-01-16): Initial creation with system health monitoring
+````

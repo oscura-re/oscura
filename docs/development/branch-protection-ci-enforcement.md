@@ -80,7 +80,7 @@ Implement **always-running summary jobs** with proper naming and conditional exe
 
 ```yaml
 ci-success:
-  name: CI Success  # ❌ Doesn't match "CI" requirement
+  name: CI Success # ❌ Doesn't match "CI" requirement
   needs: [pre-commit, lint, typecheck, test, build]
 ```
 
@@ -88,9 +88,9 @@ ci-success:
 
 ```yaml
 ci-success:
-  name: CI  # ✅ Matches branch protection exactly
+  name: CI # ✅ Matches branch protection exactly
   needs: [pre-commit, lint, typecheck, test, build]
-  if: always()  # ✅ Always runs, even if dependencies fail/skip
+  if: always() # ✅ Always runs, even if dependencies fail/skip
 ```
 
 #### 2. **Documentation Workflow** (`docs.yml`)
@@ -100,12 +100,12 @@ ci-success:
 ```yaml
 on:
   pull_request:
-    paths:  # ❌ Only runs on doc changes
-      - "docs/**"
-      - "src/**/*.py"
+    paths: # ❌ Only runs on doc changes
+      - 'docs/**'
+      - 'src/**/*.py'
 
 docs-summary:
-  name: Documentation Summary  # ❌ Wrong name
+  name: Documentation Summary # ❌ Wrong name
 ```
 
 **After:**
@@ -113,21 +113,21 @@ docs-summary:
 ```yaml
 on:
   pull_request:
-    branches: [main]  # ✅ No path filters - always triggers
+    branches: [main] # ✅ No path filters - always triggers
 
 jobs:
-  detect-changes:  # ✅ New job to detect if docs changed
+  detect-changes: # ✅ New job to detect if docs changed
     outputs:
       should-run: ${{ steps.filter.outputs.docs }}
 
   build:
     needs: [detect-changes]
-    if: needs.detect-changes.outputs.should-run == 'true'  # ✅ Conditional
+    if: needs.detect-changes.outputs.should-run == 'true' # ✅ Conditional
 
   docs-summary:
-    name: Documentation  # ✅ Matches branch protection
+    name: Documentation # ✅ Matches branch protection
     needs: [detect-changes, build, docstring-lint, spell-check]
-    if: always()  # ✅ Always runs
+    if: always() # ✅ Always runs
     steps:
       - name: Check documentation results
         run: |
@@ -149,11 +149,11 @@ jobs:
 ```yaml
 on:
   pull_request:
-    paths:  # ❌ Only runs on code changes
-      - "src/**/*.py"
+    paths: # ❌ Only runs on code changes
+      - 'src/**/*.py'
 
 quality-gates-success:
-  name: Quality Gates Status  # ❌ Wrong name
+  name: Quality Gates Status # ❌ Wrong name
 ```
 
 **After:**
@@ -161,17 +161,24 @@ quality-gates-success:
 ```yaml
 on:
   pull_request:
-    branches: [main]  # ✅ No path filters
+    branches: [main] # ✅ No path filters
 
 jobs:
-  detect-changes:  # ✅ Detect if code changed
+  detect-changes: # ✅ Detect if code changed
     outputs:
       should-run: ${{ steps.filter.outputs.code }}
 
   quality-gates-success:
-    name: Code Quality  # ✅ Matches branch protection
-    needs: [detect-changes, docstring-style, dead-code, complexity, import-architecture]
-    if: always()  # ✅ Always runs
+    name: Code Quality # ✅ Matches branch protection
+    needs:
+      [
+        detect-changes,
+        docstring-style,
+        dead-code,
+        complexity,
+        import-architecture,
+      ]
+    if: always() # ✅ Always runs
 ```
 
 #### 4. **Test Quality Gates Workflow** (`test-quality.yml`)
@@ -181,11 +188,11 @@ jobs:
 ```yaml
 on:
   pull_request:
-    paths:  # ❌ Only runs on test changes
-      - "tests/**"
+    paths: # ❌ Only runs on test changes
+      - 'tests/**'
 
 quality-gates-success:
-  name: Quality Gates Success  # ❌ Wrong name
+  name: Quality Gates Success # ❌ Wrong name
 ```
 
 **After:**
@@ -193,17 +200,17 @@ quality-gates-success:
 ```yaml
 on:
   pull_request:
-    branches: [main]  # ✅ No path filters
+    branches: [main] # ✅ No path filters
 
 jobs:
-  detect-changes:  # ✅ Detect if tests changed
+  detect-changes: # ✅ Detect if tests changed
     outputs:
       should-run: ${{ steps.filter.outputs.tests }}
 
   quality-gates-success:
-    name: Test Quality Gates  # ✅ Matches branch protection
+    name: Test Quality Gates # ✅ Matches branch protection
     needs: [detect-changes, marker-validation, test-isolation, coverage-markers]
-    if: always()  # ✅ Always runs
+    if: always() # ✅ Always runs
 ```
 
 ### Key Design Decisions
@@ -266,10 +273,10 @@ jobs:
 
    ```json
    [
-     {"context": "CI"},
-     {"context": "Documentation"},
-     {"context": "Code Quality"},
-     {"context": "Test Quality Gates"}
+     { "context": "CI" },
+     { "context": "Documentation" },
+     { "context": "Code Quality" },
+     { "context": "Test Quality Gates" }
    ]
    ```
 
@@ -309,9 +316,9 @@ jobs:
 
    ```yaml
    summary-job:
-     name: <EXACT BRANCH PROTECTION NAME>  # Must match exactly!
+     name: <EXACT BRANCH PROTECTION NAME> # Must match exactly!
      needs: [all, required, jobs]
-     if: always()  # CRITICAL - must always run
+     if: always() # CRITICAL - must always run
      steps:
        - name: Check results
          run: |
@@ -391,7 +398,7 @@ gh pr checks <PR_NUMBER>
 
 ```yaml
 if [[ "${{ needs.job.result }}" == "failure" ]]; then
-  exit 1
+exit 1
 fi
 # skipped/cancelled/success all pass
 ```

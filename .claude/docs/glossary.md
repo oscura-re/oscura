@@ -36,7 +36,7 @@ A list of keywords in an agent's frontmatter that trigger routing to that agent.
 
 **Example**:
 
-```yaml
+````yaml
 routing_keywords:
   - write
   - code
@@ -400,3 +400,4 @@ Pattern of saving agent metadata to registry file immediately upon launch, ensur
 ## Version
 
 v1.0.0 (2026-01-16) - Initial glossary
+````

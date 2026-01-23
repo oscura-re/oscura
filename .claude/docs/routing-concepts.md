@@ -12,7 +12,7 @@ The orchestration system uses **keyword-based routing** to automatically select 
 
 The system dynamically discovers available agents at runtime:
 
-```python
+````python
 1. Scan `.claude/agents/*.md` for agent files
 2. Parse YAML frontmatter from each file
 3. Extract `routing_keywords` list
@@ -408,3 +408,4 @@ orchestration:
 ## Version
 
 v1.0.0 (2026-01-16) - Initial routing concepts documentation
+````

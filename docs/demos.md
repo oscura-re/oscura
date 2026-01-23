@@ -12,54 +12,54 @@ All Oscura demos are **working Python scripts** with comprehensive READMEs. They
 
 Start here if you're new to Oscura:
 
-| Demo | Description | Key Features |
-|---|---|---|
+| Demo                                                                                               | Description                         | Key Features                     |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------- |
 | [01 - Waveform Analysis](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis) | Load and analyze oscilloscope files | File loading, basic measurements |
-| [02 - File Formats](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io) | Work with multiple file formats | CSV, HDF5, MATLAB, VCD |
-| [04 - Serial Protocols](https://github.com/oscura-re/oscura/tree/main/demos/04_serial_protocols) | Decode UART, SPI, I2C, JTAG | Basic protocol decoding |
+| [02 - File Formats](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io)         | Work with multiple file formats     | CSV, HDF5, MATLAB, VCD           |
+| [04 - Serial Protocols](https://github.com/oscura-re/oscura/tree/main/demos/04_serial_protocols)   | Decode UART, SPI, I2C, JTAG         | Basic protocol decoding          |
 
 ### 🔧 **Intermediate**
 
 More complex workflows and analysis:
 
-| Demo | Description | Key Features |
-|---|---|---|
-| [03 - Custom DAQ](https://github.com/oscura-re/oscura/tree/main/demos/03_custom_daq) | Memory-efficient large file processing | Streaming, chunking |
-| [05 - Protocol Decoding](https://github.com/oscura-re/oscura/tree/main/demos/05_protocol_decoding) | Comprehensive multi-protocol decode | Auto-detection, validation |
-| [06 - UDP Analysis](https://github.com/oscura-re/oscura/tree/main/demos/06_udp_packet_analysis) | Network packet analysis | PCAP, payload parsing |
-| [10 - Timing](https://github.com/oscura-re/oscura/tree/main/demos/10_timing_measurements) | IEEE 181 pulse measurements | Rise/fall time, slew rate |
-| [11 - Mixed Signal](https://github.com/oscura-re/oscura/tree/main/demos/11_mixed_signal) | Analog + digital analysis | Clock recovery, jitter |
+| Demo                                                                                               | Description                            | Key Features               |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------- |
+| [03 - Custom DAQ](https://github.com/oscura-re/oscura/tree/main/demos/03_custom_daq)               | Memory-efficient large file processing | Streaming, chunking        |
+| [05 - Protocol Decoding](https://github.com/oscura-re/oscura/tree/main/demos/05_protocol_decoding) | Comprehensive multi-protocol decode    | Auto-detection, validation |
+| [06 - UDP Analysis](https://github.com/oscura-re/oscura/tree/main/demos/06_udp_packet_analysis)    | Network packet analysis                | PCAP, payload parsing      |
+| [10 - Timing](https://github.com/oscura-re/oscura/tree/main/demos/10_timing_measurements)          | IEEE 181 pulse measurements            | Rise/fall time, slew rate  |
+| [11 - Mixed Signal](https://github.com/oscura-re/oscura/tree/main/demos/11_mixed_signal)           | Analog + digital analysis              | Clock recovery, jitter     |
 
 ### 🚀 **Advanced**
 
 Complex reverse engineering and compliance:
 
-| Demo | Description | Key Features |
-|---|---|---|
-| [07 - Protocol Inference](https://github.com/oscura-re/oscura/tree/main/demos/07_protocol_inference) | CRC recovery, pattern recognition | Protocol RE workflows |
-| [08 - Automotive Protocols](https://github.com/oscura-re/oscura/tree/main/demos/08_automotive_protocols) | CAN, LIN, FlexRay | Multi-protocol automotive |
-| [09 - Automotive](https://github.com/oscura-re/oscura/tree/main/demos/09_automotive) | OBD-II, UDS, J1939 diagnostics | Advanced automotive |
-| [17 - Signal RE](https://github.com/oscura-re/oscura/tree/main/demos/17_signal_reverse_engineering) | Complete RE workflow | Unknown signal analysis |
-| [18 - Advanced Inference](https://github.com/oscura-re/oscura/tree/main/demos/18_advanced_inference) | ML-based inference | State machine learning |
+| Demo                                                                                                     | Description                       | Key Features              |
+| -------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------- |
+| [07 - Protocol Inference](https://github.com/oscura-re/oscura/tree/main/demos/07_protocol_inference)     | CRC recovery, pattern recognition | Protocol RE workflows     |
+| [08 - Automotive Protocols](https://github.com/oscura-re/oscura/tree/main/demos/08_automotive_protocols) | CAN, LIN, FlexRay                 | Multi-protocol automotive |
+| [09 - Automotive](https://github.com/oscura-re/oscura/tree/main/demos/09_automotive)                     | OBD-II, UDS, J1939 diagnostics    | Advanced automotive       |
+| [17 - Signal RE](https://github.com/oscura-re/oscura/tree/main/demos/17_signal_reverse_engineering)      | Complete RE workflow              | Unknown signal analysis   |
+| [18 - Advanced Inference](https://github.com/oscura-re/oscura/tree/main/demos/18_advanced_inference)     | ML-based inference                | State machine learning    |
 
 ### ✅ **Compliance & Standards**
 
 IEEE and EMC validation:
 
-| Demo | Description | Standard |
-|---|---|---|
-| [12 - Spectral Compliance](https://github.com/oscura-re/oscura/tree/main/demos/12_spectral_compliance) | FFT, THD, SNR, SINAD, ENOB | IEEE 1241-2010 |
-| [13 - Jitter Analysis](https://github.com/oscura-re/oscura/tree/main/demos/13_jitter_analysis) | TIE, RJ/DJ decomposition, eye diagrams | IEEE 2414-2020 |
-| [14 - Power Analysis](https://github.com/oscura-re/oscura/tree/main/demos/14_power_analysis) | Power quality, harmonics | IEEE 1459-2010 |
-| [15 - Signal Integrity](https://github.com/oscura-re/oscura/tree/main/demos/15_signal_integrity) | TDR, S-parameters | IEEE 181-2011 |
-| [16 - EMC Compliance](https://github.com/oscura-re/oscura/tree/main/demos/16_emc_compliance) | CISPR 32, IEC 61000 testing | CISPR 16 |
+| Demo                                                                                                   | Description                            | Standard       |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------- | -------------- |
+| [12 - Spectral Compliance](https://github.com/oscura-re/oscura/tree/main/demos/12_spectral_compliance) | FFT, THD, SNR, SINAD, ENOB             | IEEE 1241-2010 |
+| [13 - Jitter Analysis](https://github.com/oscura-re/oscura/tree/main/demos/13_jitter_analysis)         | TIE, RJ/DJ decomposition, eye diagrams | IEEE 2414-2020 |
+| [14 - Power Analysis](https://github.com/oscura-re/oscura/tree/main/demos/14_power_analysis)           | Power quality, harmonics               | IEEE 1459-2010 |
+| [15 - Signal Integrity](https://github.com/oscura-re/oscura/tree/main/demos/15_signal_integrity)       | TDR, S-parameters                      | IEEE 181-2011  |
+| [16 - EMC Compliance](https://github.com/oscura-re/oscura/tree/main/demos/16_emc_compliance)           | CISPR 32, IEC 61000 testing            | CISPR 16       |
 
 ### 🏁 **Complete Workflows**
 
 End-to-end production examples:
 
-| Demo | Description | Use Case |
-|---|---|---|
+| Demo                                                                                                 | Description                | Use Case             |
+| ---------------------------------------------------------------------------------------------------- | -------------------------- | -------------------- |
 | [19 - Complete Workflows](https://github.com/oscura-re/oscura/tree/main/demos/19_complete_workflows) | Production-ready pipelines | Real-world workflows |
 
 ---

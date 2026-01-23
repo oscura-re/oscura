@@ -28,28 +28,28 @@ python demonstrations/capability_index.py --format markdown
 
 Demonstrations are organized in **progressive learning order** from beginner to expert:
 
-| Section | Focus | Demos | Description |
-|---------|-------|-------|-------------|
-| **00_getting_started** | Basics | 3 | Installation validation, core types, format support |
-| **01_data_loading** | I/O | 7 | All 21+ file format loaders |
-| **02_basic_analysis** | Core | 6 | Measurements, statistics, spectral, filtering |
-| **03_protocol_decoding** | Protocols | 6 | All 17+ protocol decoders |
-| **04_advanced_analysis** | Advanced | 6 | Jitter, power, signal integrity, patterns |
-| **05_domain_specific** | Industry | 4 | Automotive, EMC, vintage logic, side-channel |
-| **06_reverse_engineering** | RE | 6 | Protocol inference, CRC recovery, state machines |
-| **07_advanced_api** | Expert API | 7 | Pipelines, DSL, operators, optimization |
-| **08_extensibility** | Plugins | 6 | Custom measurements, algorithms, plugins |
-| **09_batch_processing** | Batch | 3 | Parallel processing, aggregation |
-| **10_sessions** | Sessions | 5 | Interactive analysis, annotations, history |
-| **11_integration** | Integration | 5 | CLI, Jupyter, LLM, configuration |
-| **12_quality_tools** | Quality | 4 | Ensemble methods, scoring, warnings |
-| **13_guidance** | Guidance | 3 | Recommendations, wizards, onboarding |
-| **14_exploratory** | Exploration | 4 | Unknown signals, fuzzy matching, recovery |
-| **15_export_visualization** | Export | 5 | All formats, WaveDrom, Wireshark, reports |
-| **16_complete_workflows** | Workflows | 6 | End-to-end reverse engineering pipelines |
-| **17_signal_generation** | Generation | 3 | SignalBuilder, synthetic signals, protocols |
-| **18_comparison_testing** | Testing | 4 | Golden reference, limits, masks |
-| **19_standards_compliance** | Standards | 4 | IEEE 181, 1241, 1459, 2414 validation |
+| Section                     | Focus       | Demos | Description                                         |
+| --------------------------- | ----------- | ----- | --------------------------------------------------- |
+| **00_getting_started**      | Basics      | 3     | Installation validation, core types, format support |
+| **01_data_loading**         | I/O         | 7     | All 21+ file format loaders                         |
+| **02_basic_analysis**       | Core        | 6     | Measurements, statistics, spectral, filtering       |
+| **03_protocol_decoding**    | Protocols   | 6     | All 17+ protocol decoders                           |
+| **04_advanced_analysis**    | Advanced    | 6     | Jitter, power, signal integrity, patterns           |
+| **05_domain_specific**      | Industry    | 4     | Automotive, EMC, vintage logic, side-channel        |
+| **06_reverse_engineering**  | RE          | 6     | Protocol inference, CRC recovery, state machines    |
+| **07_advanced_api**         | Expert API  | 7     | Pipelines, DSL, operators, optimization             |
+| **08_extensibility**        | Plugins     | 6     | Custom measurements, algorithms, plugins            |
+| **09_batch_processing**     | Batch       | 3     | Parallel processing, aggregation                    |
+| **10_sessions**             | Sessions    | 5     | Interactive analysis, annotations, history          |
+| **11_integration**          | Integration | 5     | CLI, Jupyter, LLM, configuration                    |
+| **12_quality_tools**        | Quality     | 4     | Ensemble methods, scoring, warnings                 |
+| **13_guidance**             | Guidance    | 3     | Recommendations, wizards, onboarding                |
+| **14_exploratory**          | Exploration | 4     | Unknown signals, fuzzy matching, recovery           |
+| **15_export_visualization** | Export      | 5     | All formats, WaveDrom, Wireshark, reports           |
+| **16_complete_workflows**   | Workflows   | 6     | End-to-end reverse engineering pipelines            |
+| **17_signal_generation**    | Generation  | 3     | SignalBuilder, synthetic signals, protocols         |
+| **18_comparison_testing**   | Testing     | 4     | Golden reference, limits, masks                     |
+| **19_standards_compliance** | Standards   | 4     | IEEE 181, 1241, 1459, 2414 validation               |
 
 **Total:** ~100 demonstrations covering 813 API symbols across 45 modules
 
@@ -59,15 +59,15 @@ Demonstrations are organized in **progressive learning order** from beginner to 
 
 ### By Task
 
-| I want to... | Go to |
-|--------------|-------|
-| Load oscilloscope files | 01_data_loading/01_oscilloscopes.py |
-| Decode UART/SPI/I2C | 03_protocol_decoding/01_serial_comprehensive.py |
-| Analyze power supply | 04_advanced_analysis/02_power_analysis.py |
-| Reverse engineer protocol | 06_reverse_engineering/01_unknown_protocol.py |
-| Create custom measurement | 08_extensibility/02_custom_measurement.py |
-| Build signal generator | 17_signal_generation/01_signal_builder.py |
-| Check EMC compliance | 05_domain_specific/02_emc_compliance.py |
+| I want to...              | Go to                                           |
+| ------------------------- | ----------------------------------------------- |
+| Load oscilloscope files   | 01_data_loading/01_oscilloscopes.py             |
+| Decode UART/SPI/I2C       | 03_protocol_decoding/01_serial_comprehensive.py |
+| Analyze power supply      | 04_advanced_analysis/02_power_analysis.py       |
+| Reverse engineer protocol | 06_reverse_engineering/01_unknown_protocol.py   |
+| Create custom measurement | 08_extensibility/02_custom_measurement.py       |
+| Build signal generator    | 17_signal_generation/01_signal_builder.py       |
+| Check EMC compliance      | 05_domain_specific/02_emc_compliance.py         |
 
 ### By Capability
 
@@ -244,16 +244,16 @@ python demonstrations/generate_all_data.py --quick
 
 Demonstrations validate against industry standards:
 
-| Standard | Section | Coverage |
-|----------|---------|----------|
-| IEEE 181-2011 (Pulse) | 19_standards_compliance | Full |
-| IEEE 1241-2010 (ADC) | 19_standards_compliance | Full |
-| IEEE 1459-2010 (Power) | 19_standards_compliance | Full |
-| IEEE 2414-2020 (Jitter) | 19_standards_compliance | Full |
-| ISO 11898 (CAN) | 05_domain_specific | Full |
-| ISO 14229 (UDS) | 05_domain_specific | Full |
-| CISPR 32 (EMC) | 05_domain_specific | Full |
-| FCC Part 15 | 05_domain_specific | Full |
+| Standard                | Section                 | Coverage |
+| ----------------------- | ----------------------- | -------- |
+| IEEE 181-2011 (Pulse)   | 19_standards_compliance | Full     |
+| IEEE 1241-2010 (ADC)    | 19_standards_compliance | Full     |
+| IEEE 1459-2010 (Power)  | 19_standards_compliance | Full     |
+| IEEE 2414-2020 (Jitter) | 19_standards_compliance | Full     |
+| ISO 11898 (CAN)         | 05_domain_specific      | Full     |
+| ISO 14229 (UDS)         | 05_domain_specific      | Full     |
+| CISPR 32 (EMC)          | 05_domain_specific      | Full     |
+| FCC Part 15             | 05_domain_specific      | Full     |
 
 ---
 

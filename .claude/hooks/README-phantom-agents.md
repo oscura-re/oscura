@@ -196,19 +196,19 @@ python3 .claude/hooks/fix_phantom_agents.py
 ```yaml
 orchestration:
   agents:
-    max_concurrent: 2                    # Agent limit
+    max_concurrent: 2 # Agent limit
     max_batch_size: 2
     polling_interval_seconds: 10
 
 hooks:
   cleanup_stale_agents:
-    stale_threshold_hours: 24            # Mark as stale after
-    activity_check_hours: 1              # Recent activity window
-    max_age_days: 30                     # Remove completed agents after
+    stale_threshold_hours: 24 # Mark as stale after
+    activity_check_hours: 1 # Recent activity window
+    max_age_days: 30 # Remove completed agents after
 
 cleanup:
   session_start:
-    - stale_agents                       # Runs cleanup hook
+    - stale_agents # Runs cleanup hook
     - old_locks
     - health_check
 ```

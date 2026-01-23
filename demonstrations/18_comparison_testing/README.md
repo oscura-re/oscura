@@ -26,13 +26,13 @@ python demonstrations/02_basic_analysis/01_waveform_measurements.py
 
 ## Demonstrations
 
-| Demo | Time | Difficulty | Focus |
-|------|------|-----------|-------|
-| 01_golden_reference | 15 min | Intermediate | Compare against reference waveforms |
-| 02_limit_testing | 10 min | Intermediate | Pass/fail against parameter limits |
-| 03_mask_testing | 15 min | Advanced | Waveform mask conformance testing |
-| 04_regression_testing | 10 min | Intermediate | Detect changes from baseline |
-| **Total** | **50 min** | **Intermediate** | **Comparison testing** |
+| Demo                  | Time       | Difficulty       | Focus                               |
+| --------------------- | ---------- | ---------------- | ----------------------------------- |
+| 01_golden_reference   | 15 min     | Intermediate     | Compare against reference waveforms |
+| 02_limit_testing      | 10 min     | Intermediate     | Pass/fail against parameter limits  |
+| 03_mask_testing       | 15 min     | Advanced         | Waveform mask conformance testing   |
+| 04_regression_testing | 10 min     | Intermediate     | Detect changes from baseline        |
+| **Total**             | **50 min** | **Intermediate** | **Comparison testing**              |
 
 ---
 
@@ -310,12 +310,12 @@ regressions = detect_changes(new_signal, baseline, threshold)
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Validate against IEEE standards | `19_standards_compliance/01_ieee_181.py` | Standards compliance |
-| Generate test signals | `17_signal_generation/01_signal_builder_comprehensive.py` | Signal generation |
-| Build production test workflows | `16_complete_workflows/02_production_testing.py` | Complete workflows |
-| Perform batch validation | `09_batch_processing/01_batch_analysis.py` | Batch processing |
+| Goal                            | Next Demo                                                 | Path                 |
+| ------------------------------- | --------------------------------------------------------- | -------------------- |
+| Validate against IEEE standards | `19_standards_compliance/01_ieee_181.py`                  | Standards compliance |
+| Generate test signals           | `17_signal_generation/01_signal_builder_comprehensive.py` | Signal generation    |
+| Build production test workflows | `16_complete_workflows/02_production_testing.py`          | Complete workflows   |
+| Perform batch validation        | `09_batch_processing/01_batch_analysis.py`                | Batch processing     |
 
 ### Recommended Next Sections
 
@@ -343,12 +343,12 @@ regressions = detect_changes(new_signal, baseline, threshold)
 
 Different metrics reveal different aspects of similarity:
 
-| Metric | Range | Meaning | Best For |
-|--------|-------|---------|----------|
-| Correlation | -1 to 1 | Linear relationship | Shape similarity |
-| RMSE | 0 to ∞ | Average error magnitude | Overall difference |
-| MAE | 0 to ∞ | Average absolute error | Robust to outliers |
-| Peak Error | 0 to ∞ | Maximum difference | Worst-case analysis |
+| Metric      | Range   | Meaning                 | Best For            |
+| ----------- | ------- | ----------------------- | ------------------- |
+| Correlation | -1 to 1 | Linear relationship     | Shape similarity    |
+| RMSE        | 0 to ∞  | Average error magnitude | Overall difference  |
+| MAE         | 0 to ∞  | Average absolute error  | Robust to outliers  |
+| Peak Error  | 0 to ∞  | Maximum difference      | Worst-case analysis |
 
 **Interpretation**:
 
@@ -575,12 +575,12 @@ results['criteria'] = test_criteria
 
 The Comparison and Validation Testing section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_golden_reference | Reference comparison | Statistical similarity testing |
-| 02_limit_testing | Parameter limits | Pass/fail against specs |
-| 03_mask_testing | Waveform masks | Conformance testing |
-| 04_regression_testing | Change detection | Baseline comparison |
+| Demo                  | Focus                | Outcome                        |
+| --------------------- | -------------------- | ------------------------------ |
+| 01_golden_reference   | Reference comparison | Statistical similarity testing |
+| 02_limit_testing      | Parameter limits     | Pass/fail against specs        |
+| 03_mask_testing       | Waveform masks       | Conformance testing            |
+| 04_regression_testing | Change detection     | Baseline comparison            |
 
 After completing these 50-minute demonstrations, you'll understand:
 

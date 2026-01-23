@@ -66,7 +66,7 @@ git commit -m "chore: bump version to 0.4.1"
 git commit -m "fix: resolve bug X"
 # Edit CHANGELOG.md under [Unreleased] → ### Fixed
 
-# Commit 2  
+# Commit 2
 git commit -m "feat: add new analyzer Y"
 # Edit CHANGELOG.md under [Unreleased] → ### Added
 
@@ -93,9 +93,11 @@ git commit -m "fix: correct calculation in Z"
    ## [Unreleased]
 
    ### Added
+
    - **New Analyzer** (`src/oscura/analyzers/new.py`): Description
 
    ### Fixed
+
    - **Bug in X** (`src/oscura/core/x.py:42`): Fixed issue where...
    ```
 
@@ -115,18 +117,23 @@ Required sections under `[Unreleased]`:
 ## [Unreleased]
 
 ### Added
+
 - New features, capabilities, files
 
-### Changed  
+### Changed
+
 - Changes to existing functionality
 
 ### Fixed
+
 - Bug fixes
 
 ### Removed
+
 - Removed features/files
 
 ### Infrastructure
+
 - CI/CD, tooling, dependencies
 ```
 
@@ -271,6 +278,7 @@ The `sync_versions.py` pre-commit hook ensures versions stay synchronized across
 PR: "fix: correct FFT calculation for odd-length signals"
 
 Changes:
+
 1. Fix bug in src/oscura/analyzers/spectral/fft.py
 2. Add test case
 3. Update CHANGELOG.md:
@@ -278,11 +286,13 @@ Changes:
 ## [Unreleased]
 
 ### Fixed
+
 - **FFT Analyzer** (`src/oscura/analyzers/spectral/fft.py:87`):
   - Fixed incorrect FFT calculation for odd-length signals
   - Added test coverage: 15/15 tests passing
 
 Result:
+
 - Version stays 0.4.0 (no bump)
 - Change documented for next release
 ```
@@ -293,14 +303,16 @@ Result:
 PR: "feat: add CAN-FD protocol decoder"
 
 Changes:
+
 1. Implement CAN-FD decoder
-2. Add comprehensive tests  
+2. Add comprehensive tests
 3. Add demo example
 4. Update CHANGELOG.md:
 
 ## [Unreleased]
 
 ### Added
+
 - **CAN-FD Protocol Decoder** (`src/oscura/analyzers/protocols/can_fd.py`):
   - Full CAN-FD frame decoding with BRS support
   - Flexible data rate handling
@@ -308,7 +320,8 @@ Changes:
   - Example: `demos/protocols/canfd_decode.py`
 
 Result:
-- Version stays 0.4.0 (no bump)  
+
+- Version stays 0.4.0 (no bump)
 - Change documented for next release (0.4.0)
 ```
 
@@ -318,6 +331,7 @@ Result:
 Releasing v0.4.1 (bug fix release)
 
 Steps:
+
 1. Rename [Unreleased] → [0.4.1] - 2026-01-21
 2. Bump version in pyproject.toml
 3. Commit: "chore: release v0.4.1"
@@ -325,6 +339,7 @@ Steps:
 5. Push: git push origin main --tags
 
 Result:
+
 - Version bumped: 0.4.0 → 0.4.1
 - Tag created and pushed
 - CI deploys release

@@ -4,16 +4,16 @@ Guide to selecting the appropriate Oscura APIs for your use case.
 
 ## Quick Reference
 
-| I need to... | Use this API | Demo |
-|---|---|---|
-| Load a file | [Loader API](../api/loader.md) | [File Format Demo](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io) |
-| Measure waveforms | [Analysis API](../api/analysis.md) | [Waveform Demo](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis) |
-| Decode protocols | [Analysis API](../api/analysis.md) | [Protocol Demo](https://github.com/oscura-re/oscura/tree/main/demos/04_serial_protocols) |
-| Analyze power | [Power API](../api/power-analysis.md) | [Power Demo](https://github.com/oscura-re/oscura/tree/main/demos/14_power_analysis) |
-| Test compliance | [EMC API](../api/emc-compliance.md) | [Compliance Demo](https://github.com/oscura-re/oscura/tree/main/demos/12_spectral_compliance) |
-| Reverse engineer | [Workflows API](../api/workflows.md) | [RE Demo](https://github.com/oscura-re/oscura/tree/main/demos/17_signal_reverse_engineering) |
-| Build pipelines | [Pipelines API](../api/pipelines.md) | [Workflows Demo](https://github.com/oscura-re/oscura/tree/main/demos/19_complete_workflows) |
-| Export results | [Export API](../api/export.md) | [Export Demo](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis) |
+| I need to...      | Use this API                          | Demo                                                                                          |
+| ----------------- | ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Load a file       | [Loader API](../api/loader.md)        | [File Format Demo](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io)     |
+| Measure waveforms | [Analysis API](../api/analysis.md)    | [Waveform Demo](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis)     |
+| Decode protocols  | [Analysis API](../api/analysis.md)    | [Protocol Demo](https://github.com/oscura-re/oscura/tree/main/demos/04_serial_protocols)      |
+| Analyze power     | [Power API](../api/power-analysis.md) | [Power Demo](https://github.com/oscura-re/oscura/tree/main/demos/14_power_analysis)           |
+| Test compliance   | [EMC API](../api/emc-compliance.md)   | [Compliance Demo](https://github.com/oscura-re/oscura/tree/main/demos/12_spectral_compliance) |
+| Reverse engineer  | [Workflows API](../api/workflows.md)  | [RE Demo](https://github.com/oscura-re/oscura/tree/main/demos/17_signal_reverse_engineering)  |
+| Build pipelines   | [Pipelines API](../api/pipelines.md)  | [Workflows Demo](https://github.com/oscura-re/oscura/tree/main/demos/19_complete_workflows)   |
+| Export results    | [Export API](../api/export.md)        | [Export Demo](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis)       |
 
 ---
 
@@ -114,14 +114,14 @@ osc.workflows.reverse_engineer_signal(trace)
 
 ## By File Format
 
-| Format | Loader | Demo |
-|---|---|---|
-| Tektronix .wfm | `osc.load_wfm()` | [Waveform](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis) |
-| Sigrok .sr | `osc.load_sigrok()` | [File Format](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io) |
-| VCD | `osc.load_vcd()` | [File Format](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io) |
-| PCAP | `osc.load_pcap()` | [UDP Analysis](https://github.com/oscura-re/oscura/tree/main/demos/06_udp_packet_analysis) |
-| CAN (BLF/ASC) | `osc.load_can()` | [Automotive](https://github.com/oscura-re/oscura/tree/main/demos/08_automotive_protocols) |
-| CSV/HDF5/NumPy | `osc.load()` | [File Format](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io) |
+| Format         | Loader              | Demo                                                                                       |
+| -------------- | ------------------- | ------------------------------------------------------------------------------------------ |
+| Tektronix .wfm | `osc.load_wfm()`    | [Waveform](https://github.com/oscura-re/oscura/tree/main/demos/01_waveform_analysis)       |
+| Sigrok .sr     | `osc.load_sigrok()` | [File Format](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io)       |
+| VCD            | `osc.load_vcd()`    | [File Format](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io)       |
+| PCAP           | `osc.load_pcap()`   | [UDP Analysis](https://github.com/oscura-re/oscura/tree/main/demos/06_udp_packet_analysis) |
+| CAN (BLF/ASC)  | `osc.load_can()`    | [Automotive](https://github.com/oscura-re/oscura/tree/main/demos/08_automotive_protocols)  |
+| CSV/HDF5/NumPy | `osc.load()`        | [File Format](https://github.com/oscura-re/oscura/tree/main/demos/02_file_format_io)       |
 
 **Auto-detect**: `osc.load(filename)` detects format automatically
 

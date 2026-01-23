@@ -29,7 +29,7 @@ The system gracefully degrades to exact matching when rapidfuzz is unavailable.
 
 ## Installation
 
-```bash
+````bash
 # Optional enhancement for fuzzy matching
 uv add --optional fuzzy rapidfuzz
 ```markdown
@@ -128,3 +128,4 @@ score = fuzzy_keyword_match(request, keywords, threshold=70)
 - `.claude/agents/orchestrator.md` - Orchestrator agent
 - `.claude/hooks/shared/routing.py` - Implementation
 - [RapidFuzz documentation](https://github.com/maxbachmann/RapidFuzz) - Algorithm details
+````

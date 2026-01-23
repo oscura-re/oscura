@@ -28,16 +28,16 @@ uv add oscura --all-extras
 
 ## Demonstrations
 
-| Demo | File | Time | Difficulty | Topics |
-|------|------|------|------------|--------|
-| **01** | `01_oscilloscopes.py` | 10 min | Beginner | Tektronix, Rigol, LeCroy formats |
-| **02** | `02_logic_analyzers.py` | 10 min | Beginner | Sigrok, VCD, Saleae formats |
-| **03** | `03_automotive_formats.py` | 10 min | Intermediate | Vector BLF/ASC, MDF/MF4, DBC |
-| **04** | `04_scientific_formats.py` | 10 min | Intermediate | TDMS, HDF5, NPZ, WAV |
-| **05** | `05_custom_binary.py` | 15 min | Advanced | Binary loader API, struct parsing |
-| **06** | `06_streaming_large_files.py` | 15 min | Advanced | Chunked loading, memory efficiency |
-| **07** | `07_multi_channel.py` | 10 min | Intermediate | Multi-channel loading, synchronization |
-| **Total** | | **80 min** | **Beginner to Advanced** | **Complete file I/O mastery** |
+| Demo      | File                          | Time       | Difficulty               | Topics                                 |
+| --------- | ----------------------------- | ---------- | ------------------------ | -------------------------------------- |
+| **01**    | `01_oscilloscopes.py`         | 10 min     | Beginner                 | Tektronix, Rigol, LeCroy formats       |
+| **02**    | `02_logic_analyzers.py`       | 10 min     | Beginner                 | Sigrok, VCD, Saleae formats            |
+| **03**    | `03_automotive_formats.py`    | 10 min     | Intermediate             | Vector BLF/ASC, MDF/MF4, DBC           |
+| **04**    | `04_scientific_formats.py`    | 10 min     | Intermediate             | TDMS, HDF5, NPZ, WAV                   |
+| **05**    | `05_custom_binary.py`         | 15 min     | Advanced                 | Binary loader API, struct parsing      |
+| **06**    | `06_streaming_large_files.py` | 15 min     | Advanced                 | Chunked loading, memory efficiency     |
+| **07**    | `07_multi_channel.py`         | 10 min     | Intermediate             | Multi-channel loading, synchronization |
+| **Total** |                               | **80 min** | **Beginner to Advanced** | **Complete file I/O mastery**          |
 
 ---
 
@@ -273,13 +273,13 @@ pip install h5py scipy
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Analyze loaded waveforms | `02_basic_analysis/01_waveform_measurements.py` | File I/O → Measurements |
-| Decode protocols from loaded data | `03_protocol_decoding/01_serial_comprehensive.py` | File I/O → Protocol decoding |
-| Perform statistical analysis | `02_basic_analysis/02_statistics.py` | File I/O → Statistics |
-| Analyze automotive captures | `05_domain_specific/01_automotive_diagnostics.py` | Automotive loading → Diagnostics |
-| Work with frequency domain | `02_basic_analysis/03_spectral_analysis.py` | File I/O → FFT/PSD |
+| Goal                              | Next Demo                                         | Path                             |
+| --------------------------------- | ------------------------------------------------- | -------------------------------- |
+| Analyze loaded waveforms          | `02_basic_analysis/01_waveform_measurements.py`   | File I/O → Measurements          |
+| Decode protocols from loaded data | `03_protocol_decoding/01_serial_comprehensive.py` | File I/O → Protocol decoding     |
+| Perform statistical analysis      | `02_basic_analysis/02_statistics.py`              | File I/O → Statistics            |
+| Analyze automotive captures       | `05_domain_specific/01_automotive_diagnostics.py` | Automotive loading → Diagnostics |
+| Work with frequency domain        | `02_basic_analysis/03_spectral_analysis.py`       | File I/O → FFT/PSD               |
 
 ### Recommended Learning Sequence
 
@@ -464,15 +464,15 @@ trace = load_binary("proprietary.bin", header_parser=parse_header)
 
 The Data Loading section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_oscilloscopes | Analog waveform formats | Load Tektronix, Rigol, LeCroy files |
-| 02_logic_analyzers | Digital capture formats | Load Sigrok, VCD, Saleae files |
-| 03_automotive_formats | Automotive protocols | Load BLF, ASC, MDF, DBC files |
-| 04_scientific_formats | Scientific data | Load TDMS, HDF5, NPZ, WAV files |
-| 05_custom_binary | Binary parsing | Create custom format loaders |
-| 06_streaming_large_files | Memory management | Handle files exceeding RAM |
-| 07_multi_channel | Multi-trace analysis | Synchronized channel loading |
+| Demo                     | Focus                   | Outcome                             |
+| ------------------------ | ----------------------- | ----------------------------------- |
+| 01_oscilloscopes         | Analog waveform formats | Load Tektronix, Rigol, LeCroy files |
+| 02_logic_analyzers       | Digital capture formats | Load Sigrok, VCD, Saleae files      |
+| 03_automotive_formats    | Automotive protocols    | Load BLF, ASC, MDF, DBC files       |
+| 04_scientific_formats    | Scientific data         | Load TDMS, HDF5, NPZ, WAV files     |
+| 05_custom_binary         | Binary parsing          | Create custom format loaders        |
+| 06_streaming_large_files | Memory management       | Handle files exceeding RAM          |
+| 07_multi_channel         | Multi-trace analysis    | Synchronized channel loading        |
 
 After completing these seven 80-minute demonstrations, you'll understand:
 

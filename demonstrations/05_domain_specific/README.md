@@ -22,13 +22,13 @@ Before running these demonstrations, ensure you have:
 
 ## Demonstrations
 
-| Demo | File | Time | Difficulty | Topics |
-|------|------|------|------------|--------|
-| **01** | `01_automotive_diagnostics.py` | 25 min | Advanced | OBD-II (54+ PIDs), J1939 (154+ PGNs), UDS, DTCs |
-| **02** | `02_emc_compliance.py` | 20 min | Advanced | CISPR 16/32, MIL-STD-461G, emissions testing |
-| **03** | `03_vintage_logic.py` | 20 min | Intermediate | TTL, CMOS, ECL family detection, IC identification |
-| **04** | `04_side_channel.py` | 25 min | Expert | DPA, CPA, timing attacks, AES key extraction |
-| **Total** | | **90 min** | **Intermediate to Expert** | **Industry applications** |
+| Demo      | File                           | Time       | Difficulty                 | Topics                                             |
+| --------- | ------------------------------ | ---------- | -------------------------- | -------------------------------------------------- |
+| **01**    | `01_automotive_diagnostics.py` | 25 min     | Advanced                   | OBD-II (54+ PIDs), J1939 (154+ PGNs), UDS, DTCs    |
+| **02**    | `02_emc_compliance.py`         | 20 min     | Advanced                   | CISPR 16/32, MIL-STD-461G, emissions testing       |
+| **03**    | `03_vintage_logic.py`          | 20 min     | Intermediate               | TTL, CMOS, ECL family detection, IC identification |
+| **04**    | `04_side_channel.py`           | 25 min     | Expert                     | DPA, CPA, timing attacks, AES key extraction       |
+| **Total** |                                | **90 min** | **Intermediate to Expert** | **Industry applications**                          |
 
 ---
 
@@ -273,12 +273,12 @@ This runs all demonstrations and reports coverage, validation status, and failur
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Build complete workflows | `16_complete_workflows/01_protocol_discovery.py` | Domain → Complete RE |
-| Learn extensibility | `08_extensibility/01_plugin_basics.py` | Domain → Custom tools |
-| Batch processing | `09_batch_processing/01_multi_file.py` | Domain → Automation |
-| Export and visualization | `15_export_visualization/01_reports.py` | Domain → Documentation |
+| Goal                     | Next Demo                                        | Path                   |
+| ------------------------ | ------------------------------------------------ | ---------------------- |
+| Build complete workflows | `16_complete_workflows/01_protocol_discovery.py` | Domain → Complete RE   |
+| Learn extensibility      | `08_extensibility/01_plugin_basics.py`           | Domain → Custom tools  |
+| Batch processing         | `09_batch_processing/01_multi_file.py`           | Domain → Automation    |
+| Export and visualization | `15_export_visualization/01_reports.py`          | Domain → Documentation |
 
 ### Recommended Learning Sequence
 
@@ -577,12 +577,12 @@ if leakage.significant:
 
 The Domain-Specific Applications section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_automotive_diagnostics | Automotive | OBD-II, J1939, UDS, 210+ DTCs |
-| 02_emc_compliance | EMC testing | CISPR 16/32, MIL-STD-461G compliance |
-| 03_vintage_logic | Vintage computing | TTL, CMOS, ECL detection, IC identification |
-| 04_side_channel | Security | DPA, CPA, timing attacks, key extraction |
+| Demo                      | Focus             | Outcome                                     |
+| ------------------------- | ----------------- | ------------------------------------------- |
+| 01_automotive_diagnostics | Automotive        | OBD-II, J1939, UDS, 210+ DTCs               |
+| 02_emc_compliance         | EMC testing       | CISPR 16/32, MIL-STD-461G compliance        |
+| 03_vintage_logic          | Vintage computing | TTL, CMOS, ECL detection, IC identification |
+| 04_side_channel           | Security          | DPA, CPA, timing attacks, key extraction    |
 
 After completing these four 90-minute demonstrations, you'll understand:
 

@@ -26,12 +26,12 @@ python demonstrations/00_getting_started/00_hello_world.py
 
 ## Demonstrations
 
-| Demo | Time | Difficulty | Focus |
-|------|------|-----------|-------|
-| 01_signal_builder_comprehensive | 20 min | Intermediate | Complete SignalBuilder API |
-| 02_protocol_generation | 15 min | Intermediate | Generate protocol test sequences |
-| 03_impairment_simulation | 15 min | Advanced | Real-world signal impairments |
-| **Total** | **50 min** | **Intermediate** | **Signal generation** |
+| Demo                            | Time       | Difficulty       | Focus                            |
+| ------------------------------- | ---------- | ---------------- | -------------------------------- |
+| 01_signal_builder_comprehensive | 20 min     | Intermediate     | Complete SignalBuilder API       |
+| 02_protocol_generation          | 15 min     | Intermediate     | Generate protocol test sequences |
+| 03_impairment_simulation        | 15 min     | Advanced         | Real-world signal impairments    |
+| **Total**                       | **50 min** | **Intermediate** | **Signal generation**            |
 
 ---
 
@@ -261,12 +261,12 @@ signal = add_noise(clean_signal, noise_level=0.1)   # 10% noise
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Test protocol decoders | `03_protocol_decoding/01_serial_comprehensive.py` | Protocol decoding |
-| Compare against reference signals | `18_comparison_testing/01_golden_reference.py` | Comparison testing |
-| Measure signal quality | `02_basic_analysis/01_waveform_measurements.py` | Basic analysis |
-| Filter impaired signals | `02_basic_analysis/03_filtering.py` | Filtering |
+| Goal                              | Next Demo                                         | Path               |
+| --------------------------------- | ------------------------------------------------- | ------------------ |
+| Test protocol decoders            | `03_protocol_decoding/01_serial_comprehensive.py` | Protocol decoding  |
+| Compare against reference signals | `18_comparison_testing/01_golden_reference.py`    | Comparison testing |
+| Measure signal quality            | `02_basic_analysis/01_waveform_measurements.py`   | Basic analysis     |
+| Filter impaired signals           | `02_basic_analysis/03_filtering.py`               | Filtering          |
 
 ### Recommended Next Sections
 
@@ -302,14 +302,14 @@ SignalBuilder is Oscura's single source of truth for test signal generation:
 
 Different waveforms for different test scenarios:
 
-| Waveform | Use Case | Key Parameters |
-|----------|----------|----------------|
-| Sine | Frequency response, filters | Frequency, amplitude, phase |
-| Square | Digital logic, timing | Frequency, duty cycle |
-| Triangle | Linearity, slew rate | Frequency, amplitude |
-| Sawtooth | Oscilloscope triggers, sweep | Frequency, rise/fall ratio |
-| Pulse | Protocol testing, timing | Width, period, amplitude |
-| Noise | Noise floor, SNR testing | Type (white/pink), level |
+| Waveform | Use Case                     | Key Parameters              |
+| -------- | ---------------------------- | --------------------------- |
+| Sine     | Frequency response, filters  | Frequency, amplitude, phase |
+| Square   | Digital logic, timing        | Frequency, duty cycle       |
+| Triangle | Linearity, slew rate         | Frequency, amplitude        |
+| Sawtooth | Oscilloscope triggers, sweep | Frequency, rise/fall ratio  |
+| Pulse    | Protocol testing, timing     | Width, period, amplitude    |
+| Noise    | Noise floor, SNR testing     | Type (white/pink), level    |
 
 ### Impairment Types
 
@@ -532,11 +532,11 @@ i2c_signal = generate_i2c(
 
 The Signal Generation section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
+| Demo                            | Focus                        | Outcome                          |
+| ------------------------------- | ---------------------------- | -------------------------------- |
 | 01_signal_builder_comprehensive | Complete waveform generation | All signal types and impairments |
-| 02_protocol_generation | Protocol test sequences | UART/SPI/I2C/CAN generation |
-| 03_impairment_simulation | Real-world degradations | Jitter/noise/distortion testing |
+| 02_protocol_generation          | Protocol test sequences      | UART/SPI/I2C/CAN generation      |
+| 03_impairment_simulation        | Real-world degradations      | Jitter/noise/distortion testing  |
 
 After completing these 50-minute demonstrations, you'll understand:
 

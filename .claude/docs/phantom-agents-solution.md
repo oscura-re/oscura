@@ -111,10 +111,10 @@ python3 .claude/hooks/fix_phantom_agents.py --dry-run  # Preview
   "agents": {
     "agent_id": {
       "status": "running",
-      "session_id": "uuid",           // Track which session launched
-      "last_validated": "timestamp",  // Last time we checked it's alive
-      "last_activity": "timestamp",   // Last output file modification
-      "heartbeat_file": "path"        // File that must exist while running
+      "session_id": "uuid", // Track which session launched
+      "last_validated": "timestamp", // Last time we checked it's alive
+      "last_activity": "timestamp", // Last output file modification
+      "heartbeat_file": "path" // File that must exist while running
     }
   }
 }
@@ -146,8 +146,8 @@ hooks:
     stale_threshold_hours: 24
     activity_check_hours: 1
     max_age_days: 30
-    check_task_output_files: true      # NEW: Validate /tmp/claude/ files
-    mark_missing_as_phantom: true      # NEW: Auto-mark when file missing
+    check_task_output_files: true # NEW: Validate /tmp/claude/ files
+    mark_missing_as_phantom: true # NEW: Auto-mark when file missing
     cleanup_empty_task_files_hours: 24 # NEW: Clean old empty files
 ```
 

@@ -85,7 +85,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ### Installation
 
-```bash
+````bash
 # Clone your fork
 git clone https://github.com/YOUR-USERNAME/oscura.git
 cd oscura
@@ -192,7 +192,7 @@ In rare cases, you may need to bypass git hooks:
 ```bash
 git commit --no-verify    # Skip pre-commit hooks
 git push --no-verify      # Skip pre-push hook
-```
+````
 
 **When to bypass:**
 
@@ -236,7 +236,7 @@ For comprehensive test documentation, see **[docs/testing/test-suite-guide.md](d
 
 **Recommended:** Use the optimized test script:
 
-```bash
+````bash
 ./scripts/test.sh              # Full tests with coverage (8-10 min)
 ./scripts/test.sh --fast       # Quick tests without coverage (5-7 min)
 ```bash
@@ -502,3 +502,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 ---
 
 Thank you for contributing to Oscura!
+````

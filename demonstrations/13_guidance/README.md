@@ -26,12 +26,12 @@ python demonstrations/00_getting_started/00_hello_world.py
 
 ## Demonstrations
 
-| Demo | Time | Difficulty | Focus |
-|------|------|-----------|-------|
-| 01_smart_recommendations | 10 min | Intermediate | Context-aware analysis suggestions |
-| 02_analysis_wizards | 15 min | Intermediate | Interactive workflow assistants |
-| 03_onboarding_helpers | 10 min | Beginner | First-time user guidance |
-| **Total** | **35 min** | **Intermediate** | **Intelligent guidance** |
+| Demo                     | Time       | Difficulty       | Focus                              |
+| ------------------------ | ---------- | ---------------- | ---------------------------------- |
+| 01_smart_recommendations | 10 min     | Intermediate     | Context-aware analysis suggestions |
+| 02_analysis_wizards      | 15 min     | Intermediate     | Interactive workflow assistants    |
+| 03_onboarding_helpers    | 10 min     | Beginner         | First-time user guidance           |
+| **Total**                | **35 min** | **Intermediate** | **Intelligent guidance**           |
 
 ---
 
@@ -233,12 +233,12 @@ metadata = TraceMetadata(
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Explore unknown signals automatically | `14_exploratory/01_unknown_signals.py` | Exploratory analysis |
-| Build complete analysis workflows | `16_complete_workflows/01_protocol_discovery.py` | Complete workflows |
-| Learn quality assurance practices | `12_quality_tools/01_measurement_validation.py` | Quality tools |
-| Export and visualize results | `15_export_visualization/01_export_formats.py` | Export and visualization |
+| Goal                                  | Next Demo                                        | Path                     |
+| ------------------------------------- | ------------------------------------------------ | ------------------------ |
+| Explore unknown signals automatically | `14_exploratory/01_unknown_signals.py`           | Exploratory analysis     |
+| Build complete analysis workflows     | `16_complete_workflows/01_protocol_discovery.py` | Complete workflows       |
+| Learn quality assurance practices     | `12_quality_tools/01_measurement_validation.py`  | Quality tools            |
+| Export and visualize results          | `15_export_visualization/01_export_formats.py`   | Export and visualization |
 
 ### Recommended Next Sections
 
@@ -357,11 +357,11 @@ onboarding.show_new_features(since_version="0.5.0")
 
 The Intelligent Guidance section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
+| Demo                     | Focus                          | Outcome                |
+| ------------------------ | ------------------------------ | ---------------------- |
 | 01_smart_recommendations | Auto-detection and suggestions | Context-aware analysis |
-| 02_analysis_wizards | Interactive workflows | Guided execution |
-| 03_onboarding_helpers | First-time user guidance | Quick start assistance |
+| 02_analysis_wizards      | Interactive workflows          | Guided execution       |
+| 03_onboarding_helpers    | First-time user guidance       | Quick start assistance |
 
 After completing these 35-minute demonstrations, you'll understand:
 

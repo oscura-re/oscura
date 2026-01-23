@@ -20,12 +20,12 @@ This demo category covers serial protocol decoding for UART, SPI, I2C, and 1-Wir
 
 ### Protocol Support
 
-|Protocol|Features|
-|---|---|
-|UART|Auto-baud, 5-9 data bits, parity, 1-2 stop bits|
-|SPI|CPOL/CPHA modes 0-3, MSB/LSB first, multi-slave|
-|I2C|Standard/Fast/Fast+, 7/10-bit addressing, ACK/NACK|
-|1-Wire|Standard/Overdrive, ROM commands, family codes|
+| Protocol | Features                                           |
+| -------- | -------------------------------------------------- |
+| UART     | Auto-baud, 5-9 data bits, parity, 1-2 stop bits    |
+| SPI      | CPOL/CPHA modes 0-3, MSB/LSB first, multi-slave    |
+| I2C      | Standard/Fast/Fast+, 7/10-bit addressing, ACK/NACK |
+| 1-Wire   | Standard/Overdrive, ROM commands, family codes     |
 
 ## Quick Start
 
@@ -53,13 +53,13 @@ for frame in frames:
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`uart_decoding.py`|UART with auto-baud detection|Basic|
-|`spi_analysis.py`|SPI mode detection, MOSI/MISO|Basic|
-|`i2c_transaction.py`|I2C address scanning|Intermediate|
-|`one_wire_devices.py`|1-Wire device enumeration|Intermediate|
-|`multi_protocol.py`|Correlating multiple protocols|Advanced|
+| Script                | Purpose                        | Complexity   |
+| --------------------- | ------------------------------ | ------------ |
+| `uart_decoding.py`    | UART with auto-baud detection  | Basic        |
+| `spi_analysis.py`     | SPI mode detection, MOSI/MISO  | Basic        |
+| `i2c_transaction.py`  | I2C address scanning           | Intermediate |
+| `one_wire_devices.py` | 1-Wire device enumeration      | Intermediate |
+| `multi_protocol.py`   | Correlating multiple protocols | Advanced     |
 
 ## Related Demos
 

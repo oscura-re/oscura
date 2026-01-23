@@ -10,7 +10,7 @@ Execute maintenance tasks to archive old files, clean stale agents, and optimize
 
 ## Usage
 
-```bash
+````bash
 /cleanup              # Run all cleanup tasks
 /cleanup --dry-run    # Show what would be cleaned without doing it
 /cleanup --force      # Skip confirmations and force cleanup
@@ -227,3 +227,4 @@ Edit `.claude/settings.json`:
 ## Version History
 
 - v1.0.0 (2026-01-16): Initial creation with comprehensive cleanup tasks
+````

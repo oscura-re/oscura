@@ -5,7 +5,6 @@ All notable changes to Oscura will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [Unreleased]
 
 ### Added
@@ -112,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Signal Intelligence & Classification (auto-detect digital/analog, periodicity, SNR)
     - CRC reverse engineering with XOR differential technique (identifies 12+ algorithms)
     - IPART-style message format inference (ensemble: entropy, alignment, variance, n-grams)
-    - L* active learning & RPNI passive learning for state machine extraction
+    - L\* active learning & RPNI passive learning for state machine extraction
     - Binary format recovery (100+ magic bytes, structure alignment, auto-parser generation)
     - Advanced side-channel: mutual information analysis, effect size (Cohen's d), outlier detection
     - Automotive state machine extraction, stimulus-response mapping, pattern recognition
@@ -154,7 +153,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All changes validated: 5/5 validators passing, 100/100 portability score
   - Templates updated: agent-definition.md and command-definition.md with improved structure
   - **Impact**: Research-backed CLAUDE.md design, proven effective for autonomous AI orchestration
-
 
 ## [0.5.0] - 2026-01-22
 

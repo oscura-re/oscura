@@ -155,12 +155,14 @@ This repository uses a **merge queue** to ensure all commits on `main` pass CI.
 ### Troubleshooting
 
 **"Merge blocked by merge queue"**:
+
 - Check the merge queue CI run for failures
 - Fix the issues in your branch
 - Push a new commit
 - Queue automatically restarts
 
 **"Waiting in merge queue"**:
+
 - Queue processes PRs one at a time
 - Your turn will come (usually <10 minutes)
 - You can continue working on other PRs
@@ -231,10 +233,10 @@ For high-traffic repositories, enable **grouping** to batch multiple PRs:
 # .github/merge-queue.yml (optional)
 queue:
   merge_method: squash
-  grouping_strategy: HEADGREEN  # Group PRs targeting same SHA
-  max_entries_to_merge: 5        # Batch up to 5 PRs
-  min_entries_to_merge: 1        # Minimum 1 PR
-  merge_commit_message_regex: ""  # No filtering
+  grouping_strategy: HEADGREEN # Group PRs targeting same SHA
+  max_entries_to_merge: 5 # Batch up to 5 PRs
+  min_entries_to_merge: 1 # Minimum 1 PR
+  merge_commit_message_regex: '' # No filtering
 ```
 
 **Benefits**:

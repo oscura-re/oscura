@@ -73,7 +73,7 @@ Oscura implements the following security practices:
 
 **Best practices**:
 
-```python
+````python
 from oscura.session import Session, load_session
 
 # Save with signature (default)
@@ -305,3 +305,4 @@ Security updates are released as patch versions and announced in:
 - CHANGELOG.md
 
 Subscribe to repository notifications for security alerts.
+````

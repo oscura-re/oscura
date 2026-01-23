@@ -36,7 +36,7 @@ Create expressive, readable code with fluent APIs:
 
 Enable intuitive signal mathematics:
 
-- Arithmetic operators (+, -, *, /)
+- Arithmetic operators (+, -, \*, /)
 - Comparison operators for thresholding
 - Unary operators (negation, absolute value)
 - Practical application: differential signaling
@@ -153,12 +153,12 @@ with ProcessPoolExecutor(max_workers=cpu_count) as executor:
 
 ## Performance Guide
 
-| Technique | Speedup | Use Case |
-|-----------|---------|----------|
-| FFT Caching | 2-10x | Repeated spectral analysis |
-| Parallel Processing | 2-8x | Batch processing (scales with cores) |
-| Streaming | Memory | Large files, real-time |
-| Lazy Evaluation | Variable | Conditional processing |
+| Technique           | Speedup  | Use Case                             |
+| ------------------- | -------- | ------------------------------------ |
+| FFT Caching         | 2-10x    | Repeated spectral analysis           |
+| Parallel Processing | 2-8x     | Batch processing (scales with cores) |
+| Streaming           | Memory   | Large files, real-time               |
+| Lazy Evaluation     | Variable | Conditional processing               |
 
 ## Best Practices
 
@@ -179,10 +179,10 @@ with ProcessPoolExecutor(max_workers=cpu_count) as executor:
 
 ## Integration with Other Demos
 
-- **Basic Analysis (02_*)** - Shows what to analyze; Advanced API shows how to organize it
-- **Protocol Decoding (03_*)** - Can be streamlined with pipelines
-- **Domain Specific (05_*)** - Advanced patterns improve domain-specific workflows
-- **Extensibility (08_*)** - Composition enables plugin architectures
+- **Basic Analysis (02\_\*)** - Shows what to analyze; Advanced API shows how to organize it
+- **Protocol Decoding (03\_\*)** - Can be streamlined with pipelines
+- **Domain Specific (05\_\*)** - Advanced patterns improve domain-specific workflows
+- **Extensibility (08\_\*)** - Composition enables plugin architectures
 
 ## Performance Considerations
 

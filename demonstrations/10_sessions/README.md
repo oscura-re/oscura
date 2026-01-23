@@ -46,14 +46,14 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ### Estimated Time
 
-| Demo | Time | Difficulty | Topics |
-|------|------|-----------|--------|
-| 01_analysis_session | 15 min | Intermediate | Core sessions, multi-recording, comparison |
-| 02_can_session | 15 min | Intermediate | CAN-specific analysis, pattern discovery |
-| 03_blackbox_session | 20 min | Advanced | Protocol RE, differential analysis |
-| 04_session_persistence | 10 min | Intermediate | State tracking, metadata, annotations |
-| 05_interactive_analysis | 15 min | Intermediate | Interactive workflows, hypothesis testing |
-| **Total** | **75 min** | **Intermediate-Advanced** | **Session mastery** |
+| Demo                    | Time       | Difficulty                | Topics                                     |
+| ----------------------- | ---------- | ------------------------- | ------------------------------------------ |
+| 01_analysis_session     | 15 min     | Intermediate              | Core sessions, multi-recording, comparison |
+| 02_can_session          | 15 min     | Intermediate              | CAN-specific analysis, pattern discovery   |
+| 03_blackbox_session     | 20 min     | Advanced                  | Protocol RE, differential analysis         |
+| 04_session_persistence  | 10 min     | Intermediate              | State tracking, metadata, annotations      |
+| 05_interactive_analysis | 15 min     | Intermediate              | Interactive workflows, hypothesis testing  |
+| **Total**               | **75 min** | **Intermediate-Advanced** | **Session mastery**                        |
 
 ---
 
@@ -450,13 +450,13 @@ with open("session_state.json", "r") as f:
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Process sessions in batch | `09_batch_processing/01_parallel_batch.py` | Batch → Apply to sessions |
-| Build domain-specific session | `08_extensibility/04_plugin_development.py` | Extensibility → Custom sessions |
-| Add quality checks to sessions | `12_quality_tools/02_quality_scoring.py` | Quality → Session validation |
-| Export session results | `15_export_visualization/` | Export → Session reports |
-| Complete RE workflow | `16_complete_workflows/01_protocol_discovery.py` | Workflows → Full examples |
+| Goal                           | Next Demo                                        | Path                            |
+| ------------------------------ | ------------------------------------------------ | ------------------------------- |
+| Process sessions in batch      | `09_batch_processing/01_parallel_batch.py`       | Batch → Apply to sessions       |
+| Build domain-specific session  | `08_extensibility/04_plugin_development.py`      | Extensibility → Custom sessions |
+| Add quality checks to sessions | `12_quality_tools/02_quality_scoring.py`         | Quality → Session validation    |
+| Export session results         | `15_export_visualization/`                       | Export → Session reports        |
+| Complete RE workflow           | `16_complete_workflows/01_protocol_discovery.py` | Workflows → Full examples       |
 
 ### Recommended Learning Sequence
 
@@ -652,13 +652,13 @@ session.metadata["hypotheses"].append({
 
 The Analysis Sessions section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_analysis_session | Core session API | Multi-recording workflows |
-| 02_can_session | Domain-specific pattern | CAN analysis concepts |
-| 03_blackbox_session | Protocol RE | Differential analysis |
-| 04_session_persistence | State tracking | Metadata and audit trails |
-| 05_interactive_analysis | Interactive workflows | Hypothesis testing |
+| Demo                    | Focus                   | Outcome                   |
+| ----------------------- | ----------------------- | ------------------------- |
+| 01_analysis_session     | Core session API        | Multi-recording workflows |
+| 02_can_session          | Domain-specific pattern | CAN analysis concepts     |
+| 03_blackbox_session     | Protocol RE             | Differential analysis     |
+| 04_session_persistence  | State tracking          | Metadata and audit trails |
+| 05_interactive_analysis | Interactive workflows   | Hypothesis testing        |
 
 After completing these 75-minute demonstrations, you'll be able to:
 

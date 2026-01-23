@@ -4,14 +4,14 @@ Complete demonstration suite for Oscura's reverse engineering capabilities. Thes
 
 ## Overview
 
-| Demo | Description | Key Features |
-|------|-------------|--------------|
-| **01_unknown_protocol.py** | Complete unknown protocol RE workflow | Differential analysis, field hypothesis, state inference |
-| **02_crc_recovery.py** | CRC polynomial recovery | CRC-8/16/32, polynomial finding, parameter recovery |
-| **03_state_machines.py** | State machine learning | L* algorithm, PTA construction, DOT export |
-| **04_field_inference.py** | Field boundary detection | Entropy analysis, type classification, correlation |
-| **05_pattern_discovery.py** | Message pattern recognition | Request-response, bursts, timing analysis |
-| **06_wireshark_export.py** | Wireshark dissector generation | Lua dissectors, JSON/Markdown export, DBC files |
+| Demo                        | Description                           | Key Features                                             |
+| --------------------------- | ------------------------------------- | -------------------------------------------------------- |
+| **01_unknown_protocol.py**  | Complete unknown protocol RE workflow | Differential analysis, field hypothesis, state inference |
+| **02_crc_recovery.py**      | CRC polynomial recovery               | CRC-8/16/32, polynomial finding, parameter recovery      |
+| **03_state_machines.py**    | State machine learning                | L\* algorithm, PTA construction, DOT export              |
+| **04_field_inference.py**   | Field boundary detection              | Entropy analysis, type classification, correlation       |
+| **05_pattern_discovery.py** | Message pattern recognition           | Request-response, bursts, timing analysis                |
+| **06_wireshark_export.py**  | Wireshark dissector generation        | Lua dissectors, JSON/Markdown export, DBC files          |
 
 ## Quick Start
 
@@ -73,7 +73,7 @@ Shows how to recover CRC parameters without prior knowledge:
 
 ### 03_state_machines.py
 
-__State Machine Learning Using L_ Algorithm__
+**State Machine Learning Using L\_ Algorithm**
 
 Demonstrates protocol state machine extraction:
 

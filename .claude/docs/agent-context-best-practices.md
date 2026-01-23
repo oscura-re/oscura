@@ -84,13 +84,13 @@ Claude has a context window limit. Manage it by:
 
 Different agents have different context requirements:
 
-| Agent | Optimal Context Size | Key Information Needed |
-|-------|---------------------|----------------------|
-| code_assistant | Small-Medium | File to edit, specific function, requirements |
-| technical_writer | Medium-Large | Existing docs, codebase structure, audience |
-| knowledge_researcher | Small | Research question, quality criteria, sources |
-| code_reviewer | Large | Full file(s), test coverage, security concerns |
-| git_commit_manager | Small | Changed files, commit history |
+| Agent                | Optimal Context Size | Key Information Needed                         |
+| -------------------- | -------------------- | ---------------------------------------------- |
+| code_assistant       | Small-Medium         | File to edit, specific function, requirements  |
+| technical_writer     | Medium-Large         | Existing docs, codebase structure, audience    |
+| knowledge_researcher | Small                | Research question, quality criteria, sources   |
+| code_reviewer        | Large                | Full file(s), test coverage, security concerns |
+| git_commit_manager   | Small                | Changed files, commit history                  |
 
 ## Best Practices Summary
 

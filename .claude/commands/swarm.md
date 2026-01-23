@@ -10,10 +10,10 @@ Execute tasks requiring multiple independent agents working simultaneously.
 
 ## When to Use
 
-|Command|Pattern|Use When|
-|---|---|---|
-|Natural language|Serial|Tasks with dependencies, step-by-step workflows|
-|`/swarm`|Parallel|Independent subtasks, multiple perspectives|
+| Command          | Pattern  | Use When                                        |
+| ---------------- | -------- | ----------------------------------------------- |
+| Natural language | Serial   | Tasks with dependencies, step-by-step workflows |
+| `/swarm`         | Parallel | Independent subtasks, multiple perspectives     |
 
 ## Parallel Detection Keywords
 
@@ -37,7 +37,7 @@ Execute tasks requiring multiple independent agents working simultaneously.
 
 ## Examples
 
-```bash
+````bash
 # Comprehensive research
 /swarm comprehensive research on Docker networking from academic, industry, and community sources
 
@@ -109,3 +109,4 @@ After all agents complete:
 ## Version History
 
 - v1.0.0 (2026-01-16): Initial creation with parallel agent coordination
+````

@@ -21,15 +21,15 @@ Before running these demonstrations, ensure you have:
 
 ## Demonstrations
 
-| Demo | File | Time | Difficulty | Topics |
-|------|------|------|------------|--------|
-| **01** | `01_serial_comprehensive.py` | 20 min | Beginner | UART, SPI, I2C, 1-Wire |
-| **02** | `02_automotive_protocols.py` | 20 min | Intermediate | CAN, CAN-FD, LIN, FlexRay |
-| **03** | `03_debug_protocols.py` | 15 min | Intermediate | JTAG, SWD, USB |
-| **04** | `04_parallel_bus.py` | 15 min | Advanced | IEEE-488 (GPIB), Centronics, ISA |
-| **05** | `05_encoded_protocols.py` | 15 min | Advanced | Manchester, I2S, HDLC |
-| **06** | `06_auto_detection.py` | 15 min | Advanced | Protocol auto-detection, baud rate recovery |
-| **Total** | | **100 min** | **Beginner to Advanced** | **20+ protocol decoders** |
+| Demo      | File                         | Time        | Difficulty               | Topics                                      |
+| --------- | ---------------------------- | ----------- | ------------------------ | ------------------------------------------- |
+| **01**    | `01_serial_comprehensive.py` | 20 min      | Beginner                 | UART, SPI, I2C, 1-Wire                      |
+| **02**    | `02_automotive_protocols.py` | 20 min      | Intermediate             | CAN, CAN-FD, LIN, FlexRay                   |
+| **03**    | `03_debug_protocols.py`      | 15 min      | Intermediate             | JTAG, SWD, USB                              |
+| **04**    | `04_parallel_bus.py`         | 15 min      | Advanced                 | IEEE-488 (GPIB), Centronics, ISA            |
+| **05**    | `05_encoded_protocols.py`    | 15 min      | Advanced                 | Manchester, I2S, HDLC                       |
+| **06**    | `06_auto_detection.py`       | 15 min      | Advanced                 | Protocol auto-detection, baud rate recovery |
+| **Total** |                              | **100 min** | **Beginner to Advanced** | **20+ protocol decoders**                   |
 
 ---
 
@@ -283,13 +283,13 @@ This runs all demonstrations and reports coverage, validation status, and failur
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Analyze automotive diagnostics | `05_domain_specific/01_automotive_diagnostics.py` | Protocol → OBD-II/J1939/UDS |
-| Perform advanced signal integrity analysis | `04_advanced_analysis/03_signal_integrity.py` | Protocol → SI analysis |
-| Build complete RE workflow | `16_complete_workflows/01_protocol_discovery.py` | Protocol → Full workflow |
-| Detect unknown protocol patterns | `04_advanced_analysis/05_pattern_discovery.py` | Protocol → Pattern recognition |
-| Analyze jitter and timing | `04_advanced_analysis/01_jitter_analysis.py` | Protocol → Timing quality |
+| Goal                                       | Next Demo                                         | Path                           |
+| ------------------------------------------ | ------------------------------------------------- | ------------------------------ |
+| Analyze automotive diagnostics             | `05_domain_specific/01_automotive_diagnostics.py` | Protocol → OBD-II/J1939/UDS    |
+| Perform advanced signal integrity analysis | `04_advanced_analysis/03_signal_integrity.py`     | Protocol → SI analysis         |
+| Build complete RE workflow                 | `16_complete_workflows/01_protocol_discovery.py`  | Protocol → Full workflow       |
+| Detect unknown protocol patterns           | `04_advanced_analysis/05_pattern_discovery.py`    | Protocol → Pattern recognition |
+| Analyze jitter and timing                  | `04_advanced_analysis/01_jitter_analysis.py`      | Protocol → Timing quality      |
 
 ### Recommended Learning Sequence
 
@@ -536,14 +536,14 @@ Compare Oscura results with commercial tools:
 
 The Protocol Decoding section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_serial_comprehensive | Serial protocols | Decode UART, SPI, I2C, 1-Wire |
-| 02_automotive_protocols | Automotive buses | Decode CAN, CAN-FD, LIN, FlexRay |
-| 03_debug_protocols | Debug interfaces | Decode JTAG, SWD, USB |
-| 04_parallel_bus | Parallel buses | Decode GPIB, Centronics, ISA |
-| 05_encoded_protocols | Encoded protocols | Decode Manchester, I2S, HDLC |
-| 06_auto_detection | Auto-detection | Infer protocols, recover baud rates |
+| Demo                    | Focus             | Outcome                             |
+| ----------------------- | ----------------- | ----------------------------------- |
+| 01_serial_comprehensive | Serial protocols  | Decode UART, SPI, I2C, 1-Wire       |
+| 02_automotive_protocols | Automotive buses  | Decode CAN, CAN-FD, LIN, FlexRay    |
+| 03_debug_protocols      | Debug interfaces  | Decode JTAG, SWD, USB               |
+| 04_parallel_bus         | Parallel buses    | Decode GPIB, Centronics, ISA        |
+| 05_encoded_protocols    | Encoded protocols | Decode Manchester, I2S, HDLC        |
+| 06_auto_detection       | Auto-detection    | Infer protocols, recover baud rates |
 
 After completing these six 100-minute demonstrations, you'll understand:
 

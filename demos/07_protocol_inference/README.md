@@ -49,15 +49,15 @@ print(f"Match: {result.name if result.name else 'Custom'}")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`auto_protocol_detect.py`|Unknown protocol identification|Basic|
-|`baud_rate_recovery.py`|Baud rate from signal|Basic|
-|`logic_level_detect.py`|TTL/CMOS/LVDS identification|Basic|
-|`state_machine_learning.py`|RPNI automaton inference|Advanced|
-|`crc_reverse.py`|CRC polynomial recovery|Intermediate|
-|`message_format.py`|Field boundary detection|Intermediate|
-|`wireshark_dissector.py`|Lua dissector generation|Advanced|
+| Script                      | Purpose                         | Complexity   |
+| --------------------------- | ------------------------------- | ------------ |
+| `auto_protocol_detect.py`   | Unknown protocol identification | Basic        |
+| `baud_rate_recovery.py`     | Baud rate from signal           | Basic        |
+| `logic_level_detect.py`     | TTL/CMOS/LVDS identification    | Basic        |
+| `state_machine_learning.py` | RPNI automaton inference        | Advanced     |
+| `crc_reverse.py`            | CRC polynomial recovery         | Intermediate |
+| `message_format.py`         | Field boundary detection        | Intermediate |
+| `wireshark_dissector.py`    | Lua dissector generation        | Advanced     |
 
 ## Related Demos
 

@@ -26,14 +26,14 @@ python demonstrations/02_basic_analysis/01_waveform_measurements.py
 
 ## Demonstrations
 
-| Demo | Time | Difficulty | Focus |
-|------|------|-----------|-------|
-| 01_export_formats | 10 min | Beginner | All export formats (CSV, JSON, HDF5, NPZ, MATLAB) |
-| 02_wavedrom_timing | 10 min | Intermediate | Timing diagrams with WaveDrom |
-| 03_wireshark_dissectors | 15 min | Advanced | Custom protocol dissectors |
-| 04_report_generation | 15 min | Intermediate | Automated analysis reports |
-| 05_visualization_gallery | 10 min | Beginner | Complete visualization showcase |
-| **Total** | **60 min** | **Intermediate** | **Export and visualization** |
+| Demo                     | Time       | Difficulty       | Focus                                             |
+| ------------------------ | ---------- | ---------------- | ------------------------------------------------- |
+| 01_export_formats        | 10 min     | Beginner         | All export formats (CSV, JSON, HDF5, NPZ, MATLAB) |
+| 02_wavedrom_timing       | 10 min     | Intermediate     | Timing diagrams with WaveDrom                     |
+| 03_wireshark_dissectors  | 15 min     | Advanced         | Custom protocol dissectors                        |
+| 04_report_generation     | 15 min     | Intermediate     | Automated analysis reports                        |
+| 05_visualization_gallery | 10 min     | Beginner         | Complete visualization showcase                   |
+| **Total**                | **60 min** | **Intermediate** | **Export and visualization**                      |
 
 ---
 
@@ -330,12 +330,12 @@ pip install jinja2
 
 ### If You Want to...
 
-| Goal | Next Demo | Path |
-|------|-----------|------|
-| Build complete analysis workflows | `16_complete_workflows/01_protocol_discovery.py` | Complete workflows |
-| Generate test signals | `17_signal_generation/01_signal_builder_comprehensive.py` | Signal generation |
-| Perform comparison testing | `18_comparison_testing/01_golden_reference.py` | Comparison testing |
-| Share findings with team | Use report generation | Documentation |
+| Goal                              | Next Demo                                                 | Path               |
+| --------------------------------- | --------------------------------------------------------- | ------------------ |
+| Build complete analysis workflows | `16_complete_workflows/01_protocol_discovery.py`          | Complete workflows |
+| Generate test signals             | `17_signal_generation/01_signal_builder_comprehensive.py` | Signal generation  |
+| Perform comparison testing        | `18_comparison_testing/01_golden_reference.py`            | Comparison testing |
+| Share findings with team          | Use report generation                                     | Documentation      |
 
 ### Recommended Next Sections
 
@@ -362,13 +362,13 @@ pip install jinja2
 
 Choose the right export format for your use case:
 
-| Format | Best For | Metadata | Size | Tools |
-|--------|----------|----------|------|-------|
-| CSV | Spreadsheet analysis, simple data | Limited | Medium | Excel, Python |
-| JSON | Structured data, web APIs | Full | Medium | JavaScript, Python |
-| HDF5 | Large datasets, scientific | Full | Small | MATLAB, Python |
-| NPZ | NumPy workflows | Limited | Small | Python (NumPy) |
-| MATLAB | MATLAB analysis | Full | Medium | MATLAB |
+| Format | Best For                          | Metadata | Size   | Tools              |
+| ------ | --------------------------------- | -------- | ------ | ------------------ |
+| CSV    | Spreadsheet analysis, simple data | Limited  | Medium | Excel, Python      |
+| JSON   | Structured data, web APIs         | Full     | Medium | JavaScript, Python |
+| HDF5   | Large datasets, scientific        | Full     | Small  | MATLAB, Python     |
+| NPZ    | NumPy workflows                   | Limited  | Small  | Python (NumPy)     |
+| MATLAB | MATLAB analysis                   | Full     | Medium | MATLAB             |
 
 ### Visualization Types
 
@@ -583,13 +583,13 @@ export_mat(
 
 The Export and Visualization section covers:
 
-| Demo | Focus | Outcome |
-|------|-------|---------|
-| 01_export_formats | All export formats | Multi-format data export |
-| 02_wavedrom_timing | Timing diagrams | Digital signal visualization |
-| 03_wireshark_dissectors | Protocol dissectors | Wireshark integration |
-| 04_report_generation | Automated reports | PDF/HTML/Markdown reports |
-| 05_visualization_gallery | Complete showcase | All visualization types |
+| Demo                     | Focus               | Outcome                      |
+| ------------------------ | ------------------- | ---------------------------- |
+| 01_export_formats        | All export formats  | Multi-format data export     |
+| 02_wavedrom_timing       | Timing diagrams     | Digital signal visualization |
+| 03_wireshark_dissectors  | Protocol dissectors | Wireshark integration        |
+| 04_report_generation     | Automated reports   | PDF/HTML/Markdown reports    |
+| 05_visualization_gallery | Complete showcase   | All visualization types      |
 
 After completing these 60-minute demonstrations, you'll understand:
 

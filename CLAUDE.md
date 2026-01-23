@@ -290,15 +290,15 @@ Tests → ./scripts/test.sh (SSOT)
 
 ## SSOT LOCATIONS
 
-| Information | Authoritative Source | NOT Here |
-|------------|---------------------|----------|
-| Version | `pyproject.toml` [project.version] | README, docs |
-| Changes history | `CHANGELOG.md` | git log, commit messages |
-| Dependencies | `pyproject.toml` [project.dependencies] | requirements.txt |
-| Test config | `pyproject.toml` [tool.pytest] | pytest.ini |
-| Code style | `.claude/coding-standards.yaml` | inline comments |
-| Project metadata | `.claude/project-metadata.yaml` | multiple files |
-| Orchestration | `.claude/config.yaml` | agent files |
+| Information      | Authoritative Source                    | NOT Here                 |
+| ---------------- | --------------------------------------- | ------------------------ |
+| Version          | `pyproject.toml` [project.version]      | README, docs             |
+| Changes history  | `CHANGELOG.md`                          | git log, commit messages |
+| Dependencies     | `pyproject.toml` [project.dependencies] | requirements.txt         |
+| Test config      | `pyproject.toml` [tool.pytest]          | pytest.ini               |
+| Code style       | `.claude/coding-standards.yaml`         | inline comments          |
+| Project metadata | `.claude/project-metadata.yaml`         | multiple files           |
+| Orchestration    | `.claude/config.yaml`                   | agent files              |
 
 **Rule**: NEVER duplicate SSOT content - always reference authoritative source
 
@@ -357,15 +357,15 @@ Monitor via: `/context` command
 
 ## WHERE THINGS LIVE
 
-| Need | Location |
-|------|----------|
-| Add file format loader | `src/oscura/loaders/` |
-| Add measurement analyzer | `src/oscura/analyzers/` |
-| Add protocol decoder | `src/oscura/analyzers/protocols/` |
-| Working examples | `examples/` (organized by category) |
-| Test fixtures | `tests/conftest.py`, `tests/fixtures/` |
-| Test data generation | `scripts/test-data/generate_comprehensive_test_data.py` |
-| Coding standards | `.claude/coding-standards.yaml` |
+| Need                     | Location                                                |
+| ------------------------ | ------------------------------------------------------- |
+| Add file format loader   | `src/oscura/loaders/`                                   |
+| Add measurement analyzer | `src/oscura/analyzers/`                                 |
+| Add protocol decoder     | `src/oscura/analyzers/protocols/`                       |
+| Working examples         | `examples/` (organized by category)                     |
+| Test fixtures            | `tests/conftest.py`, `tests/fixtures/`                  |
+| Test data generation     | `scripts/test-data/generate_comprehensive_test_data.py` |
+| Coding standards         | `.claude/coding-standards.yaml`                         |
 
 **When uncertain**: Examine existing similar code for established patterns
 
@@ -373,15 +373,15 @@ Monitor via: `/context` command
 
 ## QUICK REFERENCE
 
-| Task | Command |
-|------|---------|
-| Run all tests | `./scripts/test.sh` |
-| Quality checks | `./scripts/check.sh` (MUST before commit) |
-| Auto-fix issues | `./scripts/fix.sh` |
-| Validate all | `python3 .claude/hooks/validate_all.py` |
-| Type check file | `uv run mypy <file> --strict` |
-| Lint file | `uv run ruff check <file>` |
-| Format file | `uv run ruff format <file>` |
+| Task            | Command                                   |
+| --------------- | ----------------------------------------- |
+| Run all tests   | `./scripts/test.sh`                       |
+| Quality checks  | `./scripts/check.sh` (MUST before commit) |
+| Auto-fix issues | `./scripts/fix.sh`                        |
+| Validate all    | `python3 .claude/hooks/validate_all.py`   |
+| Type check file | `uv run mypy <file> --strict`             |
+| Lint file       | `uv run ruff check <file>`                |
+| Format file     | `uv run ruff format <file>`               |
 
 ---
 

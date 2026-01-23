@@ -10,7 +10,7 @@ Show all available agents with their capabilities, keywords, and use cases.
 
 ## Usage
 
-```bash
+````bash
 /agents               # List all agents
 /agents code          # Search agents by keyword
 /agents --verbose     # Show routing keywords
@@ -212,3 +212,4 @@ Agent behavior controlled in `.claude/config.yaml:orchestration.agents`:
 ## Version
 
 v2.0.0 (2026-01-16) - Spec system removed, simplified routing
+````

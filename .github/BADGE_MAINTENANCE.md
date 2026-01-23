@@ -283,23 +283,27 @@ Quick reference for all badge URLs (for copy-paste or CI automation):
 
 ```markdown
 # Build Status
+
 https://github.com/oscura-re/oscura/actions/workflows/ci.yml/badge.svg?branch=main
 https://github.com/oscura-re/oscura/actions/workflows/code-quality.yml/badge.svg?branch=main
 https://github.com/oscura-re/oscura/actions/workflows/docs.yml/badge.svg?branch=main
 https://github.com/oscura-re/oscura/actions/workflows/test-quality.yml/badge.svg?branch=main
 
 # Package
+
 https://img.shields.io/pypi/v/oscura
 https://img.shields.io/badge/python-3.12+-blue.svg
 https://img.shields.io/badge/License-MIT-yellow.svg
 https://img.shields.io/pypi/dm/oscura
 
 # Code Quality
+
 https://codecov.io/gh/oscura-re/oscura/branch/main/graph/badge.svg
 https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
 https://raw.githubusercontent.com/oscura-re/oscura/main/docs/badges/interrogate_badge.svg
 
 # Project Status
+
 https://img.shields.io/badge/Maintained%3F-yes-green.svg
 https://img.shields.io/github/last-commit/oscura-re/oscura
 ```
