@@ -171,7 +171,7 @@ def _interpolate_soa_limit(voltage: float, limits: list[SOALimit]) -> float:
         Interpolated current limit in Amps
     """
     if len(limits) == 0:
-        return np.inf
+        return np.inf  # type: ignore[no-any-return]
 
     if len(limits) == 1:
         if voltage <= limits[0].v_max:

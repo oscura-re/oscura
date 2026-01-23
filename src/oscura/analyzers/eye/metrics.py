@@ -117,7 +117,7 @@ def eye_height(
                 break
         else:
             # No position found with eye opening
-            return np.nan
+            return np.nan  # type: ignore[no-any-return]
 
     if ber is None:
         # Simple min-max eye height
@@ -198,7 +198,7 @@ def eye_width(
                 time_indices.append(i)
 
     if len(separations) == 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Find contiguous region with good separation
     if len(time_indices) < 2:
@@ -285,7 +285,7 @@ def q_factor(eye: EyeDiagram, *, position: float = 0.5) -> float:
                 break
         else:
             # No position found with eye opening
-            return np.nan
+            return np.nan  # type: ignore[no-any-return]
 
     mu_high = np.mean(high_voltages)
     mu_low = np.mean(low_voltages)
@@ -295,7 +295,7 @@ def q_factor(eye: EyeDiagram, *, position: float = 0.5) -> float:
     denominator = sigma_high + sigma_low
 
     if denominator <= 0:
-        return np.inf if mu_high > mu_low else np.nan
+        return np.inf if mu_high > mu_low else np.nan  # type: ignore[no-any-return]
 
     q = (mu_high - mu_low) / denominator
 
@@ -331,7 +331,7 @@ def crossing_percentage(eye: EyeDiagram) -> float:
     amplitude = all_high - all_low
 
     if amplitude <= 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Find crossing points (where traces cross the center time)
     # Look at the rising and falling edges

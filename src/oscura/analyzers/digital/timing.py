@@ -456,13 +456,13 @@ def _phase_edge(
     edges2 = _get_edge_timestamps(trace2, "rising", 0.5)
 
     if len(edges1) < 2 or len(edges2) < 2:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Calculate period from first signal
     period1 = np.mean(np.diff(edges1))
 
     if period1 <= 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Calculate phase from edge differences
     phase_times: list[float] = []
@@ -475,7 +475,7 @@ def _phase_edge(
         phase_times.append(diffs[idx])
 
     if len(phase_times) == 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     mean_phase_time = np.mean(phase_times)
 
@@ -505,7 +505,7 @@ def _phase_fft(
     data2 = data2[:n]
 
     if n < 16:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Compute FFTs
     fft1 = np.fft.rfft(data1)
@@ -1038,13 +1038,13 @@ def peak_to_peak_jitter(
     edges = _get_edge_timestamps(trace, edge_type, threshold)
 
     if len(edges) < 3:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Calculate periods
     periods = np.diff(edges)
 
     if len(periods) < 2:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Pk-Pk jitter is the range of period variations
     jitter_pp = float(np.max(periods) - np.min(periods))

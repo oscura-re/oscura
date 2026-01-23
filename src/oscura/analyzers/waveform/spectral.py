@@ -613,7 +613,7 @@ def thd(
     _fund_idx, fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0 or fund_freq == 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Find harmonics
     harmonic_indices = _find_harmonic_indices(freq, fund_freq, n_harmonics)
@@ -629,7 +629,7 @@ def thd(
 
     if return_db:
         if thd_ratio <= 0:
-            return -np.inf
+            return -np.inf  # type: ignore[no-any-return]
         return float(20 * np.log10(thd_ratio))
     else:
         return float(thd_ratio * 100)
@@ -675,7 +675,7 @@ def snr(
     fund_idx, fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0 or fund_freq == 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Find harmonics to exclude
     harmonic_indices = _find_harmonic_indices(freq, fund_freq, n_harmonics)
@@ -712,7 +712,7 @@ def snr(
             noise_power += magnitude[i] ** 2
 
     if noise_power <= 0:
-        return np.inf
+        return np.inf  # type: ignore[no-any-return]
 
     snr_ratio = signal_power / noise_power
     return float(10 * np.log10(snr_ratio))
@@ -756,7 +756,7 @@ def sinad(
     fund_idx, _fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Signal power: use 3-bin window around fundamental to capture spectral leakage
     signal_power = 0.0
@@ -772,7 +772,7 @@ def sinad(
     nad_power = total_power - signal_power
 
     if nad_power <= 0:
-        return np.inf
+        return np.inf  # type: ignore[no-any-return]
 
     sinad_ratio = signal_power / nad_power
     return float(10 * np.log10(sinad_ratio))
@@ -806,7 +806,7 @@ def enob(
     sinad_db = sinad(trace, window=window, nfft=nfft)
 
     if np.isnan(sinad_db) or sinad_db <= 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     return float((sinad_db - 1.76) / 6.02)
 
@@ -849,7 +849,7 @@ def sfdr(
     fund_idx, _fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0:
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     # Create mask for spurs (exclude fundamental and DC)
     spur_mask = np.ones(len(magnitude), dtype=bool)
@@ -868,12 +868,12 @@ def sfdr(
     # Find largest spur
     spur_magnitudes = magnitude[spur_mask]
     if len(spur_magnitudes) == 0:
-        return np.inf
+        return np.inf  # type: ignore[no-any-return]
 
     max_spur = np.max(spur_magnitudes)
 
     if max_spur <= 0:
-        return np.inf
+        return np.inf  # type: ignore[no-any-return]
 
     sfdr_ratio = fund_mag / max_spur
     return float(20 * np.log10(sfdr_ratio))

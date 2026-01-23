@@ -108,7 +108,7 @@ def on_resistance(
 
     mask = np.abs(i_data) >= min_current
     if not np.any(mask):
-        return np.nan
+        return np.nan  # type: ignore[no-any-return]
 
     v_on = v_data[mask]
     i_on = i_data[mask]
