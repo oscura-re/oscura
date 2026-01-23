@@ -8,19 +8,7 @@ This section contains 3 demonstrations showing how to use Oscura's intelligent g
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Run `demonstrations/00_getting_started/` first
-- **Understanding of Basic Analysis** - Familiarity with `demonstrations/02_basic_analysis/`
-- **Signal Types Knowledge** - Know the difference between analog/digital signals
-- **Analysis Methods** - Understanding of common measurements (amplitude, frequency, FFT)
-
-Check your setup:
-
-```bash
-python demonstrations/00_getting_started/00_hello_world.py
-# Should show: ✓ All measurements validated!
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -62,34 +50,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/13_guidance/01_smart_recommendations.py
-
-# Or from the demo directory
-cd demonstrations/13_guidance
-python 01_smart_recommendations.py
-```
-
-### Option 2: Run All Guidance Demos
-
-```bash
-# From the project root
-python demonstrations/13_guidance/01_smart_recommendations.py && \
-python demonstrations/13_guidance/02_analysis_wizards.py && \
-python demonstrations/13_guidance/03_onboarding_helpers.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_smart_recommendations.py`) before exploring advanced examples.
 
 ---
 

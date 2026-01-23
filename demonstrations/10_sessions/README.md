@@ -8,20 +8,7 @@ This section contains 5 demonstrations designed to teach you how to use Oscura's
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Python 3.12+** - Required for Oscura
-- **Completed Getting Started** - Understanding of core types and traces
-- **Basic analysis experience** - Familiarity with measurements and protocol decoding
-- **Understanding of multi-file workflows** - Complete `09_batch_processing/` helps but not required
-
-Check your readiness:
-
-```bash
-# Should complete without errors
-python demonstrations/00_getting_started/00_hello_world.py
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -280,46 +267,11 @@ Analysis:
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/10_sessions/01_analysis_session.py
-
-# Or from the demo directory
-cd demonstrations/10_sessions
-python 01_analysis_session.py
-```
-
-Expected output: Session creation, recording management, comparison results.
-
-### Option 2: Run All Session Demos
-
-Run all five demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/10_sessions/01_analysis_session.py && \
-python demonstrations/10_sessions/02_can_session.py && \
-python demonstrations/10_sessions/03_blackbox_session.py && \
-python demonstrations/10_sessions/04_session_persistence.py && \
-python demonstrations/10_sessions/05_interactive_analysis.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including sessions and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_analysis_session.py`) before exploring advanced examples.
 
 ---
 

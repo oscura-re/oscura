@@ -8,15 +8,7 @@ This section contains 4 demonstrations covering specialized applications across 
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Finish `00_getting_started/` first
-- **Completed Basic Analysis** - Finish `02_basic_analysis/` REQUIRED
-- **Completed Advanced Analysis** - Finish `04_advanced_analysis/` recommended
-- **Python 3.12+** - Oscura requires Python 3.12 or higher
-- **Oscura installed** - Install with `pip install oscura` or `uv add oscura`
-- **Domain knowledge** - Understanding of target industry domain helpful
-- **Industry standards** - Familiarity with relevant standards (SAE, ISO, CISPR)
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -108,44 +100,11 @@ These demonstrations can be completed **in any order** based on your domain of i
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to focus on your domain:
-
-```bash
-# From the project root
-python demonstrations/05_domain_specific/01_automotive_diagnostics.py
-
-# Or from the demo directory
-cd demonstrations/05_domain_specific
-python 01_automotive_diagnostics.py
-```
-
-Expected output: Domain-specific analysis with industry-standard validation.
-
-### Option 2: Run All Domain-Specific Demos
-
-Run all four demos in sequence:
-
-```bash
-# From the project root
-for demo in demonstrations/05_domain_specific/*.py; do
-    python "$demo"
-done
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations and reports coverage, validation status, and failures.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_automotive_diagnostics.py`) before exploring advanced examples.
 
 ---
 

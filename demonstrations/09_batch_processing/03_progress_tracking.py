@@ -147,6 +147,7 @@ class ProgressTrackingDemo(BaseDemo):
             - file_sizes: Simulated file sizes
             - failure_indices: Indices that will fail
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         num_files = 30
         file_sizes = np.random.randint(100, 1000, size=num_files)  # KB
         failure_indices = [7, 15, 22]  # Simulate some failures

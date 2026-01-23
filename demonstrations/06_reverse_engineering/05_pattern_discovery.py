@@ -71,6 +71,7 @@ class PatternDiscoveryDemo(BaseDemo):
         Returns:
             Dictionary with message sequences and metadata
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         self.section("Generating Message Sequences")
 
         messages = []

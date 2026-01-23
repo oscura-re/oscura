@@ -8,19 +8,7 @@ This section contains 4 demonstrations showing how to perform golden reference c
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Basic Analysis** - Run `demonstrations/02_basic_analysis/` first
-- **Understanding of Statistics** - Mean, standard deviation, correlation
-- **Signal Generation Knowledge** - Familiarity with `demonstrations/17_signal_generation/`
-- **Quality Concepts** - Pass/fail criteria, tolerance bands, specifications
-
-Check your setup:
-
-```bash
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-# Should show successful measurements
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -63,35 +51,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/18_comparison_testing/01_golden_reference.py
-
-# Or from the demo directory
-cd demonstrations/18_comparison_testing
-python 01_golden_reference.py
-```
-
-### Option 2: Run All Comparison Testing Demos
-
-```bash
-# From the project root
-python demonstrations/18_comparison_testing/01_golden_reference.py && \
-python demonstrations/18_comparison_testing/02_limit_testing.py && \
-python demonstrations/18_comparison_testing/03_mask_testing.py && \
-python demonstrations/18_comparison_testing/04_regression_testing.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_golden_reference.py`) before exploring advanced examples.
 
 ---
 

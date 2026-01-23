@@ -8,20 +8,7 @@ This section contains 4 demonstrations designed to teach you how to assess signa
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Python 3.12+** - Required for Oscura
-- **Completed Basic Analysis** - Understanding of measurements and statistics
-- **NumPy experience** - Familiarity with array operations and statistics
-- **Understanding of signal quality** - SNR, noise, distortion concepts help
-
-Check your readiness:
-
-```bash
-# Should complete without errors
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-python demonstrations/02_basic_analysis/02_statistics.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -301,45 +288,11 @@ Diagnostic Steps:
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/12_quality_tools/01_ensemble_methods.py
-
-# Or from the demo directory
-cd demonstrations/12_quality_tools
-python 01_ensemble_methods.py
-```
-
-Expected output: Quality scores, warnings, recommendations with detailed explanations.
-
-### Option 2: Run All Quality Tools Demos
-
-Run all four demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/12_quality_tools/01_ensemble_methods.py && \
-python demonstrations/12_quality_tools/02_quality_scoring.py && \
-python demonstrations/12_quality_tools/03_warning_system.py && \
-python demonstrations/12_quality_tools/04_recommendations.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including quality tools and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_ensemble_methods.py`) before exploring advanced examples.
 
 ---
 

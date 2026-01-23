@@ -8,19 +8,7 @@ This section contains 3 demonstrations showing how to generate synthetic signals
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Run `demonstrations/00_getting_started/` first
-- **Understanding of Waveforms** - Familiarity with sine, square, triangle waves
-- **Protocol Knowledge** - Basic understanding of UART, SPI, I2C (for protocol generation)
-- **Signal Quality Concepts** - Jitter, noise, distortion fundamentals
-
-Check your setup:
-
-```bash
-python demonstrations/00_getting_started/00_hello_world.py
-# Should show: ✓ All measurements validated!
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -63,34 +51,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/17_signal_generation/01_signal_builder_comprehensive.py
-
-# Or from the demo directory
-cd demonstrations/17_signal_generation
-python 01_signal_builder_comprehensive.py
-```
-
-### Option 2: Run All Signal Generation Demos
-
-```bash
-# From the project root
-python demonstrations/17_signal_generation/01_signal_builder_comprehensive.py && \
-python demonstrations/17_signal_generation/02_protocol_generation.py && \
-python demonstrations/17_signal_generation/03_impairment_simulation.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_signal_builder_comprehensive.py`) before exploring advanced examples.
 
 ---
 

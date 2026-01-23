@@ -77,6 +77,7 @@ class PerformanceLoadingDemo(BaseDemo):
 
     def generate_test_data(self) -> dict[str, Any]:
         """Generate synthetic test files of various sizes."""
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         self.info("Generating large synthetic test files...")
 
         # Create temporary directory for test files

@@ -8,19 +8,7 @@ This section contains 4 demonstrations showing compliance with IEEE 181 (pulse m
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Basic Analysis** - Run `demonstrations/02_basic_analysis/` first
-- **Understanding of Standards** - Familiarity with IEEE standards concepts
-- **Measurement Knowledge** - Rise time, fall time, THD, RMS concepts
-- **Domain Expertise** - Understanding of relevant domain (power, automotive, etc.)
-
-Check your setup:
-
-```bash
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-# Should show successful measurements
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -67,35 +55,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/19_standards_compliance/01_ieee_181.py
-
-# Or from the demo directory
-cd demonstrations/19_standards_compliance
-python 01_ieee_181.py
-```
-
-### Option 2: Run All Standards Compliance Demos
-
-```bash
-# From the project root
-python demonstrations/19_standards_compliance/01_ieee_181.py && \
-python demonstrations/19_standards_compliance/02_ieee_1241.py && \
-python demonstrations/19_standards_compliance/03_ieee_1459.py && \
-python demonstrations/19_standards_compliance/04_ieee_2414.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_ieee_181.py`) before exploring advanced examples.
 
 ---
 

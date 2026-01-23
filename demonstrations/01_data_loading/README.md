@@ -8,21 +8,7 @@ This section contains 7 demonstrations covering oscilloscope, logic analyzer, au
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Finish `00_getting_started/` first
-- **Python 3.12+** - Oscura requires Python 3.12 or higher
-- **Oscura installed** - Install with `pip install oscura` or `uv add oscura`
-- **Basic file format knowledge** - Understanding CSV, binary formats helps but isn't required
-- **Optional dependencies** - Some demos require h5py, scipy.io for specific formats
-
-Check optional dependencies:
-
-```bash
-pip install oscura[all]  # Includes all optional format loaders
-# OR
-uv add oscura --all-extras
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -126,44 +112,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to focus on a specific format:
-
-```bash
-# From the project root
-python demonstrations/01_data_loading/01_oscilloscopes.py
-
-# Or from the demo directory
-cd demonstrations/01_data_loading
-python 01_oscilloscopes.py
-```
-
-Expected output: Format-specific metadata and successful validation.
-
-### Option 2: Run All Data Loading Demos
-
-Run all seven demos in sequence:
-
-```bash
-# From the project root
-for demo in demonstrations/01_data_loading/*.py; do
-    python "$demo"
-done
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations and reports coverage, validation status, and failures.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_oscilloscopes.py`) before exploring advanced examples.
 
 ---
 

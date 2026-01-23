@@ -8,14 +8,7 @@ This section contains 6 demonstrations covering waveform measurements, statistic
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Finish `00_getting_started/` first
-- **Completed Data Loading** - Finish `01_data_loading/` recommended
-- **Python 3.12+** - Oscura requires Python 3.12 or higher
-- **Oscura installed** - Install with `pip install oscura` or `uv add oscura`
-- **Basic signal processing knowledge** - Understanding time/frequency domain helps
-- **NumPy/SciPy** - Automatically installed with Oscura
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -119,44 +112,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to focus on a specific technique:
-
-```bash
-# From the project root
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-
-# Or from the demo directory
-cd demonstrations/02_basic_analysis
-python 01_waveform_measurements.py
-```
-
-Expected output: Measurements with IEEE standard compliance validation.
-
-### Option 2: Run All Basic Analysis Demos
-
-Run all six demos in sequence:
-
-```bash
-# From the project root
-for demo in demonstrations/02_basic_analysis/*.py; do
-    python "$demo"
-done
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations and reports coverage, validation status, and failures.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_waveform_measurements.py`) before exploring advanced examples.
 
 ---
 

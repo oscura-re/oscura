@@ -104,6 +104,7 @@ class CompositionDemo(BaseDemo):
 
     def generate_test_data(self) -> dict:
         """Generate test signals."""
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         # Clean signal
         signal = generate_sine_wave(
             frequency=1000.0,

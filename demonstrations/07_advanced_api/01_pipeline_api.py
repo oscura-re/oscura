@@ -56,6 +56,7 @@ class PipelineAPIDemo(BaseDemo):
 
     def generate_test_data(self) -> dict:
         """Generate test signals for pipeline processing."""
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         # Signal with DC offset and noise (needs filtering)
         noisy_signal = generate_sine_wave(
             frequency=1000.0,

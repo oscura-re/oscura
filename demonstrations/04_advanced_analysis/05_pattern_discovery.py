@@ -58,6 +58,7 @@ class PatternDiscoveryDemo(BaseDemo):
         3. Toggle sequence: Specific toggle patterns
         4. Mixed patterns: Combined periodic and aperiodic patterns
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         # 1. Packet stream with headers
         # Header: 0xAA55 (sync bytes), followed by length, data, CRC
         packets = []

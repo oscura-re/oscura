@@ -8,20 +8,7 @@ This section contains 6 demonstrations designed to teach you how to extend Oscur
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Understanding of core types and basic measurements
-- **Python 3.12+** - Required for Oscura
-- **Basic Python development experience** - Understanding of classes, decorators, and type hints
-- **Familiarity with Oscura measurements** - Complete `02_basic_analysis/01_waveform_measurements.py` first
-
-Check your understanding:
-
-```bash
-# Should complete without errors
-python demonstrations/00_getting_started/00_hello_world.py
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -249,47 +236,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/08_extensibility/01_plugin_basics.py
-
-# Or from the demo directory
-cd demonstrations/08_extensibility
-python 01_plugin_basics.py
-```
-
-Expected output: Plugin discovery results, metadata display, loading confirmation.
-
-### Option 2: Run All Extensibility Demos
-
-Run all six demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/08_extensibility/01_plugin_basics.py && \
-python demonstrations/08_extensibility/02_custom_measurement.py && \
-python demonstrations/08_extensibility/03_custom_algorithm.py && \
-python demonstrations/08_extensibility/04_plugin_development.py && \
-python demonstrations/08_extensibility/05_measurement_registry.py && \
-python demonstrations/08_extensibility/06_plugin_templates.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including extensibility and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_plugin_basics.py`) before exploring advanced examples.
 
 ---
 

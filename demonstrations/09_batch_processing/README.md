@@ -8,22 +8,7 @@ This section contains 4 demonstrations designed to teach you how to process larg
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Python 3.12+** - Required for Oscura
-- **Understanding of basic measurements** - Complete `02_basic_analysis/01_waveform_measurements.py`
-- **Multiple CPU cores** - For observing parallel speedup (optional)
-- **Familiarity with Python concurrency** - Understanding of threads vs processes helps
-
-Check your environment:
-
-```bash
-# Check CPU cores (for parallelism)
-python -c "import os; print(f'CPU cores: {os.cpu_count()}')"
-
-# Verify Oscura works
-python demonstrations/00_getting_started/00_hello_world.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -244,44 +229,11 @@ Advanced Batch        0.23     2.55x     219.6
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/09_batch_processing/01_parallel_batch.py
-
-# Or from the demo directory
-cd demonstrations/09_batch_processing
-python 01_parallel_batch.py
-```
-
-Expected output: Timing comparisons, progress indicators, aggregated results.
-
-### Option 2: Run All Batch Processing Demos
-
-Run all three demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/09_batch_processing/01_parallel_batch.py && \
-python demonstrations/09_batch_processing/02_result_aggregation.py && \
-python demonstrations/09_batch_processing/03_progress_tracking.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including batch processing and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_parallel_batch.py`) before exploring advanced examples.
 
 ---
 

@@ -78,6 +78,7 @@ class UnknownProtocolDemo(BaseDemo):
         Returns:
             Dictionary with message samples for analysis
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         self.section("Generating Proprietary Protocol Messages")
 
         # Protocol specification (unknown to the RE process)

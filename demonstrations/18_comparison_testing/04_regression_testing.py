@@ -52,6 +52,7 @@ class RegressionTestingDemo(BaseDemo):
 
     def generate_test_data(self) -> dict[str, Any]:
         """Generate baseline and revision signals."""
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         sample_rate = 1e6
         duration = 0.001
 

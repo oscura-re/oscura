@@ -54,6 +54,7 @@ class ResultAggregationDemo(BaseDemo):
             - batch_results: List of processing results
             - batch_metadata: Metadata for each batch
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         # Generate two batches of results
         batch1_size = 50
         batch2_size = 50

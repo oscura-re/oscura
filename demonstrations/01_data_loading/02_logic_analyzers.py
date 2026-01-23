@@ -374,11 +374,32 @@ class LogicAnalyzerLoadingDemo(BaseDemo):
             all_valid = False
 
         # Validate digital transitions exist
-        if results["total_transitions"] < 100:
-            self.error(f"Too few transitions: {results['total_transitions']}")
+        # Expected transitions calculated from generation parameters:
+        # CLK: 100 kHz * 1 ms = 100 cycles = 200 transitions (rising + falling)
+        # DATA: 10 kHz * 1 ms = 10 cycles = 20 transitions
+        # CS: 2 transitions (high→low at sample 200, low→high at sample 800)
+        # Total expected: 200 + 20 + 2 = 222 transitions
+        clk_freq = 100e3  # From _create_sigrok_synthetic (line 96)
+        data_freq = 10e3  # From _create_sigrok_synthetic (line 107)
+        duration = 0.001  # From _create_sigrok_synthetic (line 89)
+        cs_transitions = 2  # From _create_sigrok_synthetic (lines 120)
+
+        expected_transitions = (
+            2 * clk_freq * duration  # CLK: 2 edges per cycle
+            + 2 * data_freq * duration  # DATA: 2 edges per cycle
+            + cs_transitions  # CS: 2 transitions
+        )
+        min_transitions = expected_transitions * 0.8  # Allow 20% tolerance for sampling effects
+
+        if results["total_transitions"] < min_transitions:
+            self.error(
+                f"Too few transitions: {results['total_transitions']} (expected >={min_transitions:.0f})"
+            )
             all_valid = False
         else:
-            self.success(f"Digital transitions detected ({results['total_transitions']} total)")
+            self.success(
+                f"Digital transitions detected ({results['total_transitions']} total, expected ~{expected_transitions:.0f})"
+            )
 
         if all_valid:
             self.success("All logic analyzer validations passed!")

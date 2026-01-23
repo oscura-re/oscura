@@ -75,6 +75,7 @@ class SignalClassificationDemo(BaseDemo):
         Returns:
             Dictionary with test signal traces
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         self.section("Generating Test Signals")
 
         sample_rate = 1e6  # 1 MHz

@@ -72,6 +72,7 @@ class AdvancedSearchDemo(BaseDemo):
         Returns:
             Dictionary with test data and ground truth
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         self.info("Generating binary test data with patterns...")
 
         # ===== Pattern 1: Protocol Headers =====

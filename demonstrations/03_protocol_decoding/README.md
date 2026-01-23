@@ -8,14 +8,7 @@ This section contains 6 demonstrations covering 20+ industry-standard protocols 
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Finish `00_getting_started/` first
-- **Completed Basic Analysis** - Finish `02_basic_analysis/` recommended
-- **Python 3.12+** - Oscura requires Python 3.12 or higher
-- **Oscura installed** - Install with `pip install oscura` or `uv add oscura`
-- **Protocol knowledge** - Basic understanding of serial/parallel communication helps
-- **Digital signal basics** - Understanding logic levels and timing
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -104,44 +97,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to focus on specific protocols:
-
-```bash
-# From the project root
-python demonstrations/03_protocol_decoding/01_serial_comprehensive.py
-
-# Or from the demo directory
-cd demonstrations/03_protocol_decoding
-python 01_serial_comprehensive.py
-```
-
-Expected output: Decoded packets with validation against expected data.
-
-### Option 2: Run All Protocol Decoding Demos
-
-Run all six demos in sequence:
-
-```bash
-# From the project root
-for demo in demonstrations/03_protocol_decoding/*.py; do
-    python "$demo"
-done
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations and reports coverage, validation status, and failures.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_serial_comprehensive.py`) before exploring advanced examples.
 
 ---
 

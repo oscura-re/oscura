@@ -58,6 +58,7 @@ class VisualizationGalleryDemo(BaseDemo):
         Returns:
             Dictionary containing various signal types
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         sample_rate = 1e6  # 1 MHz
         duration = 0.01  # 10 ms
         num_samples = int(duration * sample_rate)

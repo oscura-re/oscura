@@ -8,19 +8,7 @@ This section contains 5 demonstrations showing how to export data in various for
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Basic Analysis** - Run `demonstrations/02_basic_analysis/` first
-- **Understanding of Data Formats** - CSV, JSON, HDF5 concepts
-- **Familiarity with Visualization** - Basic plotting concepts
-- **Protocol Knowledge** - Understanding of packet structures (for dissectors)
-
-Check your setup:
-
-```bash
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-# Should show successful measurements
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -69,36 +57,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/15_export_visualization/01_export_formats.py
-
-# Or from the demo directory
-cd demonstrations/15_export_visualization
-python 01_export_formats.py
-```
-
-### Option 2: Run All Export/Visualization Demos
-
-```bash
-# From the project root
-python demonstrations/15_export_visualization/01_export_formats.py && \
-python demonstrations/15_export_visualization/02_wavedrom_timing.py && \
-python demonstrations/15_export_visualization/03_wireshark_dissectors.py && \
-python demonstrations/15_export_visualization/04_report_generation.py && \
-python demonstrations/15_export_visualization/05_visualization_gallery.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_export_formats.py`) before exploring advanced examples.
 
 ---
 

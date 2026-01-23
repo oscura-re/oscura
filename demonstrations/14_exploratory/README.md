@@ -8,19 +8,7 @@ This section contains 4 demonstrations showing how to characterize unknown signa
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Basic Analysis** - Run `demonstrations/02_basic_analysis/` first
-- **Understanding of FFT** - Familiarity with frequency domain analysis
-- **Pattern Recognition Concepts** - Basic understanding of pattern matching
-- **Statistical Knowledge** - Mean, standard deviation, correlation
-
-Check your setup:
-
-```bash
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-# Should show successful measurements
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -63,35 +51,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/14_exploratory/01_unknown_signals.py
-
-# Or from the demo directory
-cd demonstrations/14_exploratory
-python 01_unknown_signals.py
-```
-
-### Option 2: Run All Exploratory Demos
-
-```bash
-# From the project root
-python demonstrations/14_exploratory/01_unknown_signals.py && \
-python demonstrations/14_exploratory/02_fuzzy_matching.py && \
-python demonstrations/14_exploratory/03_signal_recovery.py && \
-python demonstrations/14_exploratory/04_exploratory_analysis.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_unknown_signals.py`) before exploring advanced examples.
 
 ---
 

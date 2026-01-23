@@ -65,6 +65,7 @@ class BatchOptimizationDemo(BaseDemo):
             - num_files: Number of test files
             - expected_speedup: Expected performance improvements
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         num_files = 50  # Enough to see parallelization benefits
         sample_rate = 1e6  # 1 MHz
         duration = 0.02  # 20 ms per trace

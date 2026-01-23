@@ -76,6 +76,7 @@ class StatisticsDemo(BaseDemo):
         2. Signal with outliers: Shows outlier detection techniques
         3. Pulse train with noise: Demonstrates bimodal distribution
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         # 1. Noisy sine wave (1 kHz, 3V amplitude, 30 dB SNR)
         noisy_sine = generate_sine_wave(
             frequency=1000.0,  # 1 kHz
@@ -344,11 +345,16 @@ class StatisticsDemo(BaseDemo):
             print(f"  ✗ Mean: {stats['mean']:.6f}V (expected near 0)")
             all_valid = False
 
-        # Range should be approximately 6V (2 x 3V amplitude + noise)
-        if 5.5 < stats["range"] < 7.0:
-            print(f"  ✓ Range: {stats['range']:.6f}V (expected ~6V)")
+        # Range should be approximately 6V (2 x 3V amplitude from generation + noise tolerance)
+        # Generated with amplitude=3.0V → peak-to-peak ≈ 6V, allowing ±0.5V for 30dB SNR noise
+        expected_range = 2 * 3.0  # 6V from generation parameters
+        range_tolerance = 0.5  # ±0.5V for noise
+        if (expected_range - range_tolerance) < stats["range"] < (expected_range + range_tolerance):
+            print(f"  ✓ Range: {stats['range']:.6f}V (expected ~{expected_range}V)")
         else:
-            print(f"  ✗ Range: {stats['range']:.6f}V (expected 5.5-7.0V)")
+            print(
+                f"  ✗ Range: {stats['range']:.6f}V (expected {expected_range - range_tolerance}-{expected_range + range_tolerance}V)"
+            )
             all_valid = False
 
         # Std deviation should be reasonable (includes signal + noise)
@@ -452,11 +458,23 @@ class StatisticsDemo(BaseDemo):
 
         pulse_stats = results["pulse_stats"]
 
-        # Mean should be around 2.5V (50% duty cycle x 5V)
-        if 2.0 < pulse_stats["mean"] < 3.0:
-            print(f"  ✓ Pulse mean: {pulse_stats['mean']:.4f}V (expected ~2.5V)")
+        # Mean should be around 2.5V (50% duty cycle x 5V amplitude from generation)
+        # Generated with amplitude=5.0V, duty_cycle=50% (default) → mean = 0.5 * 5.0 = 2.5V
+        pulse_amplitude = 5.0  # From generation parameters (line 110)
+        pulse_duty_cycle = 0.5  # 50% from pulse_width=500µs / period=1000µs (lines 108-109)
+        expected_pulse_mean = pulse_duty_cycle * pulse_amplitude  # 2.5V
+        mean_tolerance = 0.5  # ±0.5V for 35dB SNR noise
+
+        if (
+            (expected_pulse_mean - mean_tolerance)
+            < pulse_stats["mean"]
+            < (expected_pulse_mean + mean_tolerance)
+        ):
+            print(f"  ✓ Pulse mean: {pulse_stats['mean']:.4f}V (expected ~{expected_pulse_mean}V)")
         else:
-            print(f"  ✗ Pulse mean: {pulse_stats['mean']:.4f}V (expected 2.0-3.0V)")
+            print(
+                f"  ✗ Pulse mean: {pulse_stats['mean']:.4f}V (expected {expected_pulse_mean - mean_tolerance}-{expected_pulse_mean + mean_tolerance}V)"
+            )
             all_valid = False
 
         # Bimodal distribution detection

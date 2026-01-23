@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Common Constants Module** (demonstrations/common/constants.py): New SSOT (Single Source of Truth) module defining 8 standard constants used across 40+ demonstrations: TOLERANCE_STRICT (0.01), TOLERANCE_NORMAL (0.05), TOLERANCE_RELAXED (0.10), FLOAT_EPSILON (1e-14), FLOAT_TOLERANCE (1e-6), SINE_RMS_FACTOR (0.707...), SQRT2 (1.414...), RANDOM_SEED (42). Eliminates magic numbers and ensures consistent validation thresholds across all demonstrations. Updated demonstrations/common/__init__.py to export all constants.
+
 ### Fixed
 
+- **Demonstration Validation Brittleness** (demonstrations/02_basic_analysis/01_waveform_measurements.py, demonstrations/02_basic_analysis/02_statistics.py, demonstrations/01_data_loading/02_logic_analyzers.py): Replaced hardcoded validation values with calculations derived from generation parameters. Rise/fall time validations now calculate expected sampling-limited values (0.784 × sample_period) instead of hardcoded 784e-9. Range validations compute expected values from amplitude parameters (2 × 3.0V) with explicit noise tolerance. Transition count validation calculates expected transitions from signal frequencies and durations instead of hardcoded threshold. Changes ensure demonstrations remain valid when generation parameters (sample_rate, amplitude, frequency) are modified. Added explanatory comments documenting why each calculation is performed
 - **Side-Channel Demonstration** (demonstrations/05_domain_specific/04_side_channel.py): Improved signal-to-noise ratio in test data generation for DPA and CPA attacks, updated validation logic to accept timing attack success as passing criterion
 - **Hook Logging** (.claude/hooks/shared/logging_utils.py): Fixed Path.cwd() misuse causing spurious .claude directories in subdirectories (demonstrations/, .vscode/). Now respects CLAUDE_PROJECT_DIR environment variable. Cleaned up existing spurious directories and added **/.claude/ to .gitignore
 

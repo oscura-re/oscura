@@ -8,19 +8,7 @@ This section contains 3 foundational demonstrations designed to validate your in
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Python 3.12+** - Oscura requires Python 3.12 or higher
-- **Oscura installed** - Install with `pip install oscura` or `uv add oscura`
-- **Basic familiarity with signals** - Understanding of analog/digital signals helps but isn't required
-- **Terminal or Python IDE** - Any standard Python environment works
-
-Check your Python version:
-
-```bash
-python --version
-# Output should be: Python 3.12.x or higher
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -169,44 +157,11 @@ Real-world reverse engineering involves data from many different instruments. Os
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to validate a specific concept:
-
-```bash
-# From the project root
-python demonstrations/00_getting_started/00_hello_world.py
-
-# Or from the demo directory
-cd demonstrations/00_getting_started
-python 00_hello_world.py
-```
-
-Expected output: Green success messages with measurements shown.
-
-### Option 2: Run All Getting Started Demos
-
-Run all three demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/00_getting_started/00_hello_world.py && \
-python demonstrations/00_getting_started/01_core_types.py && \
-python demonstrations/00_getting_started/02_supported_formats.py
-```
-
-### Option 3: Validate Your Installation
-
-Validate all demonstrations in the project (includes getting started):
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations and reports coverage, validation status, and any failures.
+**Category-specific tip:** Start with the first demonstration (e.g., `00_hello_world.py`) before exploring advanced examples.
 
 ---
 

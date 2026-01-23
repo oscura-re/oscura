@@ -127,6 +127,10 @@ class WaveformMeasurementsDemo(BaseDemo):
         """Run comprehensive waveform measurements demonstration."""
         results = {}
 
+        # Store generation parameters for validation
+        pulse_train = data["pulse_train"]
+        results["_pulse_sample_rate"] = pulse_train.metadata.sample_rate
+
         self.section("Oscura Waveform Measurements")
         self.info("Demonstrating all core measurement capabilities")
         self.info("Using pulse train signals to show timing measurements")
@@ -257,7 +261,7 @@ class WaveformMeasurementsDemo(BaseDemo):
 
         return results
 
-    def validate(self, results: dict[str, Any]) -> bool:
+    def validate(self, results: dict[str, Any], data: dict[str, Any] | None = None) -> bool:
         """Validate measurement results."""
         self.info("Validating measurements...")
 
@@ -293,22 +297,29 @@ class WaveformMeasurementsDemo(BaseDemo):
         ):
             all_valid = False
 
-        # Rise time: Nominal 10 ns, but measured as 784 ns due to sampling limitation
-        # At 1 MHz sampling (1 µs resolution), cannot resolve 10 ns edges accurately
-        # The 784 ns value is CORRECT for this sample rate - demonstrates real measurement limitations
+        # Rise time validation: Calculate expected measurement from sampling parameters
+        # Nominal rise time is 10 ns (from generation), but measurement is limited by sampling
+        sample_rate = results["_pulse_sample_rate"]  # Retrieved from results
+        sample_period = 1 / sample_rate  # 1 µs at 1 MHz
+        # For sub-sample-period edges, measured time is ~0.784 * sample_period
+        # This is a measurement artifact from discrete sampling, not the true signal rise time
+        expected_rise_time = 0.784 * sample_period  # ~784 ns at 1 MHz sampling
+
         if not validate_approximately(
             results["pulse_rise_time"],
-            784e-9,
+            expected_rise_time,
             tolerance=0.1,
             name="Rise time (sampling-limited)",
         ):
             all_valid = False
 
-        # Fall time: Same sampling limitation effect (nominal 10 ns → measured 784 ns)
+        # Fall time validation: Same sampling limitation effect
         # Real-world lesson: sample rate must be >> signal bandwidth to resolve fast edges
+        expected_fall_time = 0.784 * sample_period  # Same coefficient as rise time
+
         if not validate_approximately(
             results["pulse_fall_time"],
-            784e-9,
+            expected_fall_time,
             tolerance=0.1,
             name="Fall time (sampling-limited)",
         ):
