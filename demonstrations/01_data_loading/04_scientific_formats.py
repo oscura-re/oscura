@@ -44,14 +44,14 @@ from demonstrations.common import (
 
 # Check for optional dependencies
 try:
-    import h5py
+    import h5py  # noqa: F401
 
     HDF5_AVAILABLE = True
 except ImportError:
     HDF5_AVAILABLE = False
 
 try:
-    from scipy.io import wavfile
+    from scipy.io import wavfile  # noqa: F401
 
     WAV_AVAILABLE = True
 except ImportError:
@@ -112,7 +112,7 @@ class ScientificFormatsDemo(BaseDemo):
         """Create synthetic TDMS multi-channel data acquisition."""
         sample_rate = 100e3  # 100 kHz
         duration = 0.01  # 10 ms
-        num_samples = int(sample_rate * duration)
+        _num_samples = int(sample_rate * duration)  # For reference only
 
         # Simulate 4-channel DAQ
         # Channel 1: Temperature sensor (sine wave, slowly varying)
@@ -367,14 +367,12 @@ class ScientificFormatsDemo(BaseDemo):
         # Analyze each group
         group_info = []
         for group_name, group_data in groups.items():
-            num_channels = sum(1 for key in group_data.keys() if key.startswith("ch"))
+            num_channels = sum(1 for key in group_data if key.startswith("ch"))
             sample_rate = group_data["sample_rate"]
             description = group_data["description"]
 
             # Calculate total size
-            total_samples = sum(
-                len(group_data[key]) for key in group_data.keys() if key.startswith("ch")
-            )
+            total_samples = sum(len(group_data[key]) for key in group_data if key.startswith("ch"))
             size_bytes = total_samples * 8  # float64
 
             group_info.append(
@@ -510,10 +508,10 @@ class ScientificFormatsDemo(BaseDemo):
         # HDF5
         hdf5_groups = len(data["hdf5"]["groups"])
         hdf5_channels = sum(
-            sum(1 for k in g.keys() if k.startswith("ch")) for g in data["hdf5"]["groups"].values()
+            sum(1 for k in g if k.startswith("ch")) for g in data["hdf5"]["groups"].values()
         )
         hdf5_size = sum(
-            sum(len(g[k]) * 8 for k in g.keys() if k.startswith("ch"))
+            sum(len(g[k]) * 8 for k in g if k.startswith("ch"))
             for g in data["hdf5"]["groups"].values()
         )
         comparison.append(

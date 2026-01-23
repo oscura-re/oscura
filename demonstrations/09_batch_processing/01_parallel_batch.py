@@ -130,11 +130,9 @@ class ParallelBatchDemo(BaseDemo):
             }
 
             # Collect results as they complete
-            completed = 0
-            for future in as_completed(futures):
+            for completed, future in enumerate(as_completed(futures), start=1):
                 result = future.result()
                 thread_results.append(result)
-                completed += 1
 
                 if completed % 5 == 0:
                     self.info(f"  Progress: {completed}/{num_files} files completed")

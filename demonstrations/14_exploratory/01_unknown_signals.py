@@ -393,7 +393,7 @@ class UnknownSignalsDemo(BaseDemo):
         # Frequency domain features
         fft = np.fft.rfft(data)
         magnitude = np.abs(fft)
-        power = magnitude**2
+        _power = magnitude**2  # For power spectral density if needed
 
         features["spectral_centroid"] = np.sum(np.arange(len(magnitude)) * magnitude) / (
             np.sum(magnitude) + 1e-10
@@ -466,7 +466,7 @@ class UnknownSignalsDemo(BaseDemo):
 
             # Check for clock-like pattern
             fft = np.fft.rfft(signal.data)
-            freqs = np.fft.rfftfreq(len(signal.data), 1 / signal.metadata.sample_rate)
+            _freqs = np.fft.rfftfreq(len(signal.data), 1 / signal.metadata.sample_rate)
             magnitude = np.abs(fft)
             peaks = np.where(magnitude > 0.5 * np.max(magnitude))[0]
 

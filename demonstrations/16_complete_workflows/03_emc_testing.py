@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import sys
 import time
+import typing
 from pathlib import Path
 from typing import Any
 
@@ -46,7 +47,7 @@ class EMCTestingWorkflowDemo(BaseDemo):
     """Complete EMC compliance testing workflow with reporting."""
 
     # CISPR 32 Class B limits
-    CISPR32_CLASS_B_CONDUCTED = {
+    CISPR32_CLASS_B_CONDUCTED: typing.ClassVar[dict[float, tuple[int, int]]] = {
         # Frequency (MHz): (QP limit dBμV, AVG limit dBμV)
         0.15: (66, 56),
         0.50: (56, 46),
@@ -54,7 +55,7 @@ class EMCTestingWorkflowDemo(BaseDemo):
         30.0: (60, 50),
     }
 
-    CISPR32_CLASS_B_RADIATED = {
+    CISPR32_CLASS_B_RADIATED: typing.ClassVar[dict[int, int]] = {
         # Frequency (MHz): (QP limit dBμV/m at 10m)
         30: 30,
         230: 37,
@@ -372,7 +373,7 @@ class EMCTestingWorkflowDemo(BaseDemo):
                 {
                     "frequency_mhz": freq_mhz,
                     "measured_db": measured,
-                    "limit_db": qp_limit if limit_type == "conducted" else qp_limit,
+                    "limit_db": qp_limit,
                     "margin_db": margin,
                     "pass": margin > 0,
                 }

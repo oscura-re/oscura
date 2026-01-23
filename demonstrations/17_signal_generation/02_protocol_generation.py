@@ -213,7 +213,7 @@ class ProtocolGenerationDemo(BaseDemo):
         # Count clock edges
         clk_edges = np.sum(np.abs(np.diff(spi_clk)) > 1.0)
         self.result("  Clock edges", clk_edges)
-        self.result("  Expected edges", "64 (4 bytes × 8 bits × 2 edges)")
+        self.result("  Expected edges", "64 (4 bytes x 8 bits x 2 edges)")
 
         results["spi_clk_samples"] = len(spi_clk)
         results["spi_clk_edges"] = int(clk_edges)
@@ -243,8 +243,8 @@ class ProtocolGenerationDemo(BaseDemo):
         scl_edges = np.sum(np.abs(np.diff(i2c_scl)) > 1.0)
         scl_pulses = scl_edges // 2
         self.result("  SCL pulses", int(scl_pulses))
-        # Expected: 8 (addr) + 1 (ack) + 3 × (8 data + 1 ack) = 36 bits
-        self.result("  Expected pulses", "36 (addr + ack + 3 × (data + ack))")
+        # Expected: 8 (addr) + 1 (ack) + 3 x (8 data + 1 ack) = 36 bits
+        self.result("  Expected pulses", "36 (addr + ack + 3 x (data + ack))")
 
         results["i2c_scl_samples"] = len(i2c_scl)
         results["i2c_start_conditions"] = int(start_conditions)
@@ -361,7 +361,7 @@ class ProtocolGenerationDemo(BaseDemo):
         else:
             self.success(f"SPI CLK samples: {results['spi_clk_samples']}")
 
-        # SPI clock edges: 4 bytes × 8 bits × 2 edges = 64 edges
+        # SPI clock edges: 4 bytes x 8 bits x 2 edges = 64 edges
         if not validate_approximately(
             results["spi_clk_edges"], 64, tolerance=0.05, name="SPI clock edges"
         ):

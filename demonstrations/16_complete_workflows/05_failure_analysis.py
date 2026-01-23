@@ -357,9 +357,8 @@ class FailureAnalysisWorkflowDemo(BaseDemo):
         """Compare parameters between good and faulty signals."""
         diffs = {}
 
-        for param in good:
+        for param, good_val in good.items():
             if param in faulty:
-                good_val = good[param]
                 faulty_val = faulty[param]
                 delta = faulty_val - good_val
                 percent_change = (delta / good_val * 100) if good_val != 0 else 0

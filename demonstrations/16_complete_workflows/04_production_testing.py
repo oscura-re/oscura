@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import sys
 import time
+import typing
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +46,7 @@ class ProductionTestingWorkflowDemo(BaseDemo):
     """Complete production testing workflow with automated pass/fail."""
 
     # Production test limits (relaxed for demonstration to account for measurement algorithms)
-    TEST_LIMITS = {
+    TEST_LIMITS: typing.ClassVar[dict[str, dict[str, Any]]] = {
         "amplitude": {"min": 4.5, "max": 5.5, "unit": "V"},
         "frequency": {"min": 999.0, "max": 1001.0, "unit": "kHz"},
         "rise_time": {"min": 5.0, "max": 100.0, "unit": "ns"},  # Relaxed upper limit

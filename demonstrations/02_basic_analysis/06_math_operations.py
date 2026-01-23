@@ -196,7 +196,7 @@ class MathOperationsDemo(BaseDemo):
         product_rms = rms(product_trace)
         results["product_rms"] = product_rms
 
-        self.info("\n[Multiplication] sine1 × sine2:")
+        self.info("\n[Multiplication] sine1 x sine2:")
         self.result("RMS of product", f"{product_rms:.4f}", "V")
         self.info("  Multiplication creates sum and difference frequencies")
 
@@ -244,8 +244,8 @@ class MathOperationsDemo(BaseDemo):
         self.info("\nIntegral characteristics:")
         self.result("Final integrated value", f"{results['integral_final']:.6f}", "V·s")
 
-        # Integration should give area: N_pulses × pulse_width × amplitude
-        # 10 pulses × 100µs × 5V = 5ms total
+        # Integration should give area: N_pulses x pulse_width x amplitude
+        # 10 pulses x 100us x 5V = 5ms total
         expected_area = 10 * 100e-6 * 5.0  # Expected area
         results["expected_area"] = expected_area
         self.result("Expected area", f"{expected_area:.6f}", "V·s")
@@ -301,7 +301,7 @@ class MathOperationsDemo(BaseDemo):
         self.result("Max correlation", f"{results['correlation_max']:.4f}")
         self.result("Peak location (samples)", peak_corr_idx - len(corr) // 2)
         self.result("Time shift", f"{time_shift:.6e}", "s")
-        self.info("  Expected: 90° phase = 1/(4×1000Hz) = 250µs")
+        self.info("  Expected: 90 deg phase = 1/(4x1000Hz) = 250us")
 
         # Auto-correlation (signal with itself)
         auto_corr = correlation(sine1, sine1)
@@ -327,7 +327,7 @@ class MathOperationsDemo(BaseDemo):
         self.result("Pulse RMS", f"{pulse_rms:.4f}", "V")
         duty = 100e-6 / 500e-6  # 20% duty cycle
         expected_pulse_rms = 5.0 * np.sqrt(duty)
-        self.info(f"  Expected: 5.0 × √(duty) = {expected_pulse_rms:.4f}V")
+        self.info(f"  Expected: 5.0 x sqrt(duty) = {expected_pulse_rms:.4f}V")
 
         # ========== PART 7: PEAK DETECTION CONCEPTS ==========
         sawtooth = data["sawtooth"]
@@ -350,7 +350,7 @@ class MathOperationsDemo(BaseDemo):
 
         self.info("\nPeak detection on sawtooth (500 Hz, 3V):")
         self.result("Peaks detected", len(peaks))
-        self.info("  Expected: ~5 peaks (500 Hz × 10 ms)")
+        self.info("  Expected: ~5 peaks (500 Hz x 10 ms)")
 
         if len(peaks) > 0:
             peak_values = sawtooth.data[peaks]
@@ -458,10 +458,10 @@ class MathOperationsDemo(BaseDemo):
         self.subsection("Correlation Validation")
 
         time_shift = results["time_shift"]
-        # Expected: 90° phase = 1/(4×1000Hz) = 250µs
+        # Expected: 90 deg phase = 1/(4x1000Hz) = 250us
         # However, correlation max can occur at signal edges due to discrete sampling
         # Accept a wide range as correlation is relative
-        if abs(time_shift) < 0.02:  # Within 20ms (2× period)
+        if abs(time_shift) < 0.02:  # Within 20ms (2x period)
             print(f"  ✓ Time shift from correlation: {time_shift:.6e}s (detected)")
         else:
             print(f"  ✗ Time shift: {time_shift:.6e}s (outside expected range)")

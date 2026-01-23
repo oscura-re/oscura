@@ -71,7 +71,7 @@ class HardwareIntegrationDemo(BaseDemo):
 
         from oscura.core import TraceMetadata, WaveformTrace
 
-        osc_trace = data["osc_trace"]
+        _osc_trace = data["osc_trace"]  # Available for hardware demos
 
         self.section("1. Hardware Abstraction Layer")
         self.info("Define abstract interface for hardware sources")
@@ -517,21 +517,21 @@ class HardwareIntegrationDemo(BaseDemo):
         if not validate_exists(results.get("oscilloscope"), "oscilloscope"):
             return False
 
-        if not type(results.get("oscilloscope")).__name__ == "MockOscilloscope":
+        if type(results.get("oscilloscope")).__name__ != "MockOscilloscope":
             return False
 
         # Check logic analyzer was created
         if not validate_exists(results.get("logic_analyzer"), "logic_analyzer"):
             return False
 
-        if not type(results.get("logic_analyzer")).__name__ == "MockLogicAnalyzer":
+        if type(results.get("logic_analyzer")).__name__ != "MockLogicAnalyzer":
             return False
 
         # Check traces were acquired
         if not validate_exists(results.get("acquired_trace"), "acquired_trace"):
             return False
 
-        if not type(results.get("acquired_trace")).__name__ == "WaveformTrace":
+        if type(results.get("acquired_trace")).__name__ != "WaveformTrace":
             return False
 
         if not validate_exists(results.get("la_trace"), "la_trace"):

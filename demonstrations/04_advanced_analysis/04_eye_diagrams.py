@@ -162,7 +162,7 @@ class EyeDiagramDemo(BaseDemo):
         num_samples = len(bit_pattern) * samples_per_bit
 
         signal = np.zeros(num_samples)
-        t = np.arange(num_samples) / sample_rate
+        _t = np.arange(num_samples) / sample_rate  # Time vector for reference
 
         # Generate ideal NRZ
         for i, bit in enumerate(bit_pattern):
@@ -351,9 +351,9 @@ class EyeDiagramDemo(BaseDemo):
         self.info("  Wider = more timing margin for clock recovery")
 
         self.info("\n[Q-factor]")
-        self.info("  Signal quality metric: Q = (μ_high - μ_low) / (σ_high + σ_low)")
-        self.info("  Higher Q → lower BER")
-        self.info("  Q = 7 → BER ≈ 1e-12")
+        self.info("  Signal quality metric: Q = (mu_high - mu_low) / (sigma_high + sigma_low)")
+        self.info("  Higher Q -> lower BER")
+        self.info("  Q = 7 -> BER ~= 1e-12")
 
         self.info("\n[Crossing Percentage]")
         self.info("  Where eye crosses vertically (ideal = 50%)")

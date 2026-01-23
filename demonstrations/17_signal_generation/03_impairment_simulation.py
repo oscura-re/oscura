@@ -108,15 +108,15 @@ class ImpairmentSimulationDemo(BaseDemo):
         jitter_std = 50e-12  # 50 ps RMS jitter
         time_base = np.arange(len(clean_clock)) / sample_rate
         random_jitter = np.random.randn(len(clean_clock)) * jitter_std
-        jittered_time = time_base + random_jitter
+        _jittered_time = time_base + random_jitter  # Time vector with jitter
 
         # Resample with jitter (approximate by adding high-frequency noise to edges)
         # For demonstration, add noise proportional to derivative (edges)
         derivative = np.diff(clean_clock, prepend=clean_clock[0])
-        random_jitter_signal = clean_clock + derivative * np.random.randn(len(clean_clock)) * 0.01
+        _random_jitter_signal = clean_clock + derivative * np.random.randn(len(clean_clock)) * 0.01
 
         self.result("Random jitter (RMS)", f"{jitter_std * 1e12:.1f}", "ps")
-        self.result("Peak-to-peak jitter", f"{jitter_std * 6 * 1e12:.1f}", "ps (6σ)")
+        self.result("Peak-to-peak jitter", f"{jitter_std * 6 * 1e12:.1f}", "ps (6-sigma)")
 
         # Deterministic jitter (periodic modulation)
         det_jitter_freq = 60  # 60 Hz
@@ -124,7 +124,9 @@ class ImpairmentSimulationDemo(BaseDemo):
         deterministic_jitter = det_jitter_amplitude * np.sin(
             2 * np.pi * det_jitter_freq * time_base
         )
-        det_jittered_time = time_base + deterministic_jitter
+        _det_jittered_time = (
+            time_base + deterministic_jitter
+        )  # Time vector with deterministic jitter
 
         self.result("Deterministic jitter freq", f"{det_jitter_freq}", "Hz")
         self.result("Deterministic jitter amp", f"{det_jitter_amplitude * 1e12:.1f}", "ps")
@@ -204,7 +206,7 @@ class ImpairmentSimulationDemo(BaseDemo):
 
         # Apply drift as linear ramp
         drift_envelope = np.linspace(0, drift_fraction, num_samples)
-        drifted_signal = clean_sine * (1 + drift_envelope)
+        _drifted_signal = clean_sine * (1 + drift_envelope)  # Signal with drift applied
 
         self.result("Temperature drift rate", f"{temp_drift_rate * 1e6:.0f}", "ppm/°C")
         self.result("Temperature change", f"{temp_change}", "°C")
@@ -235,7 +237,7 @@ class ImpairmentSimulationDemo(BaseDemo):
         # Add ground bounce at transitions
         ground_bounce = data_transitions * ground_bounce_amplitude * 0.1  # Scaled for visibility
 
-        data_with_bounce = clean_data + ground_bounce
+        _data_with_bounce = clean_data + ground_bounce  # Data with ground bounce
 
         self.result("Number of drivers", num_drivers)
         self.result("Ground inductance", f"{ground_inductance * 1e9:.1f}", "nH")
@@ -253,11 +255,11 @@ class ImpairmentSimulationDemo(BaseDemo):
         emi_amplitudes = [0.01, 0.005, 0.003]  # Decreasing amplitude with frequency
 
         emi_signal = np.zeros(num_samples)
-        for freq, amp in zip(emi_frequencies, emi_amplitudes):
+        for freq, amp in zip(emi_frequencies, emi_amplitudes, strict=True):
             emi_signal += amp * np.sin(2 * np.pi * freq * time_base[:num_samples])
 
         # Add EMI to clean sine
-        sine_with_emi = clean_sine + emi_signal
+        _sine_with_emi = clean_sine + emi_signal  # Signal with EMI added
 
         self.result("EMI frequencies", f"{emi_frequencies}", "Hz")
         self.result("EMI amplitudes", f"{emi_amplitudes}", "V")

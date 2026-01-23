@@ -291,7 +291,7 @@ class LogicAnalyzerLoadingDemo(BaseDemo):
 
         # Analyze SPI timing
         sclk = saleae_channels["SCLK"]
-        mosi = saleae_channels["MOSI"]
+        _mosi = saleae_channels["MOSI"]  # Reserved for future SPI data analysis
 
         # Find clock period
         sclk_rising = np.where(np.diff(sclk.data.astype(int)) > 0)[0]

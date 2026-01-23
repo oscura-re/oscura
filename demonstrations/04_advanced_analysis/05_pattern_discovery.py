@@ -63,7 +63,7 @@ class PatternDiscoveryDemo(BaseDemo):
         packets = []
         header = bytes([0xAA, 0x55])  # Sync pattern
 
-        for i in range(20):
+        for _i in range(20):
             # Variable length packets (16-64 bytes)
             payload_len = np.random.randint(16, 64)
             payload = np.random.randint(0, 256, payload_len, dtype=np.uint8).tobytes()

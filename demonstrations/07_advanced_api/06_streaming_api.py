@@ -28,9 +28,13 @@ import numpy as np
 # Add demonstrations to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING
+
 from demonstrations.common import BaseDemo, generate_sine_wave, validate_approximately
 from oscura import StreamingAnalyzer, rms
-from oscura.core.types import WaveformTrace
+
+if TYPE_CHECKING:
+    from oscura.core.types import WaveformTrace
 
 
 def signal_generator(
@@ -47,7 +51,7 @@ def signal_generator(
         current_chunk_size = min(chunk_samples, remaining)
 
         t = np.arange(current_chunk_size) / sample_rate + samples_generated / sample_rate
-        data = np.sin(2 * np.pi * frequency * t)
+        _data = np.sin(2 * np.pi * frequency * t)  # For validation if needed
 
         chunk = generate_sine_wave(
             frequency=frequency,

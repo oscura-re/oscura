@@ -392,7 +392,7 @@ class MultiChannelDemo(BaseDemo):
                 continue
 
             self.info(f"\n{sensor_type} Sensors ({len(group_channels)} channels):")
-            for name, trace in group_channels:
+            for _name, trace in group_channels:
                 mean = float(np.mean(trace.data))
                 std = float(np.std(trace.data))
                 self.info(f"  {trace.metadata.channel_name}: mean={mean:.2f}, std={std:.3f}")
@@ -417,14 +417,14 @@ class MultiChannelDemo(BaseDemo):
 
         # Analyze analog channels
         self.subsection("Analog Channels")
-        for name, trace in analog.items():
+        for trace in analog.values():
             v_rms = float(np.sqrt(np.mean(trace.data**2)))
             self.result(f"  {trace.metadata.channel_name}", f"RMS={v_rms:.3f} V")
         self.info("")
 
         # Analyze digital channels
         self.subsection("Digital Channels")
-        for name, trace in digital.items():
+        for trace in digital.values():
             # Count transitions
             transitions = np.sum(np.abs(np.diff(trace.data)) > 0.5)
             duty_cycle = float(np.mean(trace.data)) * 100
@@ -591,8 +591,8 @@ Best practices for multi-channel waveform analysis:
    ✓ Document channel assignments
 
 5. MEMORY MANAGEMENT
-   • For N channels with M samples each: Memory = N × M × 8 bytes
-   • 4 channels × 10M samples = 320 MB
+   • For N channels with M samples each: Memory = N x M x 8 bytes
+   • 4 channels x 10M samples = 320 MB
    • Consider chunked loading for very long captures
    • Use channel selection to load only needed channels
 

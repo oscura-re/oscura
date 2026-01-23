@@ -253,7 +253,7 @@ Examples:
         self.subsection("Logging Levels")
         for verbosity in range(3):
             setup_cli_logging(verbosity)
-            logger = logging.getLogger("oscura.demo")
+            _logger = logging.getLogger("oscura.demo")  # For demonstration
             level_name = ["WARNING", "INFO", "DEBUG"][verbosity]
             self.info(f"Verbosity {verbosity} = {level_name}")
 

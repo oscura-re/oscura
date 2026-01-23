@@ -31,30 +31,25 @@ from demonstrations.common.validation import (
 )
 
 __all__ = [
-    # Base class
     "BaseDemo",
-    # Data generation
+    "add_noise",
+    "format_duration",
+    "format_list",
+    "format_percentage",
+    "format_size",
+    "format_table",
+    "format_value",
+    "generate_complex_signal",
+    "generate_pulse_train",
     "generate_sine_wave",
     "generate_square_wave",
-    "generate_pulse_train",
-    "generate_complex_signal",
-    "add_noise",
-    # Formatting
-    "format_value",
-    "format_percentage",
-    "format_table",
-    "format_duration",
-    "format_size",
-    "format_list",
-    # Plotting
-    "plot_waveform",
-    "plot_spectrum",
     "plot_comparison",
-    # Validation
-    "validate_results",
-    "validate_range",
+    "plot_spectrum",
+    "plot_waveform",
+    "validate_approximately",
     "validate_exists",
     "validate_length",
+    "validate_range",
+    "validate_results",
     "validate_type",
-    "validate_approximately",
 ]

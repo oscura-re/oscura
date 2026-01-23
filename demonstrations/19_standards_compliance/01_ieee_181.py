@@ -157,8 +157,8 @@ class IEEE181Demo(BaseDemo):
         self.info("  ✓ Fall time: 90% to 10% threshold")
         self.info("  ✓ Period: Time between consecutive rising edges")
         self.info("  ✓ Duty cycle: Pulse width / period")
-        self.info("  ✓ Overshoot: (Peak - High) / (High - Low) × 100%")
-        self.info("  ✓ Undershoot: (Low - Valley) / (High - Low) × 100%")
+        self.info("  ✓ Overshoot: (Peak - High) / (High - Low) x 100%")
+        self.info("  ✓ Undershoot: (Low - Valley) / (High - Low) x 100%")
 
         self.success("IEEE 181-2011 compliance demonstration complete!")
 

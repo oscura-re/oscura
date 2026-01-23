@@ -274,7 +274,7 @@ class RecommendationsDemo(BaseDemo):
             quality = "Poor"
 
         # Primary domain
-        time_variation = np.std(np.abs(np.diff(data)))
+        _time_variation = np.std(np.abs(np.diff(data)))  # For domain classification
         freq_concentration = np.max(magnitude) / np.sum(magnitude)
         if freq_concentration > 0.3:
             domain = "Frequency"
@@ -490,7 +490,7 @@ class RecommendationsDemo(BaseDemo):
         chars = results["characteristics"]
         recs = results["recommendations"]
 
-        for signal_name in chars.keys():
+        for signal_name in chars:
             if signal_name not in recs:
                 self.error(f"Missing recommendations for {signal_name}")
                 all_valid = False

@@ -94,7 +94,7 @@ class JupyterNotebooksDemo(BaseDemo):
         )
 
         simple_trace = data["simple_trace"]
-        complex_trace = data["complex_trace"]
+        _complex_trace = data["complex_trace"]  # Available for advanced demos
 
         self.section("1. IPython Magic Commands")
         self.info("Oscura provides magic commands for notebook convenience")
@@ -116,7 +116,7 @@ class JupyterNotebooksDemo(BaseDemo):
 
         # Demonstrate magic functionality (without actual IPython)
         self.subsection("Magic Command Simulation")
-        magics = OscuraMagics()
+        _magics = OscuraMagics()  # Available for magic commands
 
         # Set current trace
         set_current_trace(simple_trace, "demo_signal.csv")
@@ -168,7 +168,7 @@ class JupyterNotebooksDemo(BaseDemo):
             (5e-12, "5 p"),
         ]
 
-        for value, expected in test_values:
+        for value, _expected in test_values:
             formatted = meas_display._format_value(value)
             self.result(f"{value:.2e}", formatted)
 
@@ -325,13 +325,13 @@ class JupyterNotebooksDemo(BaseDemo):
         if not validate_exists(results.get("trace_display"), "trace_display"):
             return False
 
-        if not type(results.get("trace_display")).__name__ == "TraceDisplay":
+        if type(results.get("trace_display")).__name__ != "TraceDisplay":
             return False
 
         if not validate_exists(results.get("meas_display"), "meas_display"):
             return False
 
-        if not type(results.get("meas_display")).__name__ == "MeasurementDisplay":
+        if type(results.get("meas_display")).__name__ != "MeasurementDisplay":
             return False
 
         # Check measurements

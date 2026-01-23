@@ -26,10 +26,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from demonstrations.common import BaseDemo, generate_sine_wave
-from oscura.core.types import Trace
 from oscura.sessions import GenericSession
+
+if TYPE_CHECKING:
+    from oscura.core.types import Trace
 
 
 class TraceSource:
@@ -322,7 +325,7 @@ class InteractiveAnalysisDemo(BaseDemo):
         # Part 8: Session summary
         self.subsection("8. Interactive Session Summary")
 
-        analysis_results = session.analyze()
+        _analysis_results = session.analyze()  # Available for detailed inspection
 
         self.result("Total recordings", len(session.recordings))
         self.result("Hypotheses tested", len(session.metadata["hypotheses"]))

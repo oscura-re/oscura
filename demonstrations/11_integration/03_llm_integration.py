@@ -85,7 +85,7 @@ class LLMIntegrationDemo(BaseDemo):
         from oscura.analyzers.waveform.spectral import thd
 
         signal = data["signal"]
-        uart_signal = data["uart_signal"]
+        _uart_signal = data["uart_signal"]  # Available for protocol demonstrations
 
         self.section("1. Structured JSON Output")
         self.info("Format analysis results for LLM consumption")

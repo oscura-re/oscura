@@ -130,7 +130,7 @@ class FieldInferenceDemo(BaseDemo):
 
         # Show example message breakdown
         self.subsection("Example Message Structure")
-        example = messages[0]
+        _example = messages[0]  # For reference
         self.info("Message 0 (ground truth):")
         self.info(f"  Bytes 0-1:   Magic = 0x{MAGIC:04X} (constant)")
         self.info("  Bytes 2-3:   Sequence = 0 (counter)")

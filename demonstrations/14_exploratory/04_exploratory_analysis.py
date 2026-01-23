@@ -266,7 +266,7 @@ class ExploratoryAnalysisDemo(BaseDemo):
 
         # Frequency content
         fft = np.fft.rfft(data)
-        freqs = np.fft.rfftfreq(len(data), 1 / signal.metadata.sample_rate)
+        _freqs = np.fft.rfftfreq(len(data), 1 / signal.metadata.sample_rate)
         magnitude = np.abs(fft)
 
         n_significant = np.sum(magnitude > 0.1 * np.max(magnitude))
@@ -292,7 +292,7 @@ class ExploratoryAnalysisDemo(BaseDemo):
 
         # Analyze spectrum
         fft = np.fft.rfft(signal.data)
-        freqs = np.fft.rfftfreq(len(signal.data), 1 / signal.metadata.sample_rate)
+        _freqs = np.fft.rfftfreq(len(signal.data), 1 / signal.metadata.sample_rate)
         magnitude = np.abs(fft)
 
         # Hypothesis 1: Multi-tone signal

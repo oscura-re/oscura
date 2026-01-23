@@ -106,7 +106,7 @@ class TriggeringDemo(BaseDemo):
         pulse_times = [0.001, 0.003, 0.005, 0.007]  # 1ms, 3ms, 5ms, 7ms
         pulse_widths = [100e-6, 200e-6, 300e-6, 150e-6]  # Various widths
 
-        for timestamp, width in zip(pulse_times, pulse_widths):
+        for timestamp, width in zip(pulse_times, pulse_widths, strict=True):
             start_idx = int(timestamp * sample_rate)
             end_idx = int((timestamp + width) * sample_rate)
             if end_idx < num_samples:

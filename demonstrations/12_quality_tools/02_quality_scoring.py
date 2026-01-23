@@ -24,12 +24,16 @@ import numpy as np
 # Add demonstrations to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING
+
 from demonstrations.common import (
     BaseDemo,
     add_noise,
     generate_sine_wave,
 )
-from oscura.core.types import WaveformTrace
+
+if TYPE_CHECKING:
+    from oscura.core.types import WaveformTrace
 
 
 class QualityScoringDemo(BaseDemo):
@@ -244,7 +248,7 @@ class QualityScoringDemo(BaseDemo):
 
         # Frequency domain analysis
         fft = np.fft.rfft(data)
-        freqs = np.fft.rfftfreq(len(data), 1 / signal.metadata.sample_rate)
+        _freqs = np.fft.rfftfreq(len(data), 1 / signal.metadata.sample_rate)  # For reference
         magnitude = np.abs(fft)
 
         # Find fundamental
@@ -322,10 +326,7 @@ class QualityScoringDemo(BaseDemo):
         max_consecutive_at_min = self._max_consecutive_true(at_min)
 
         # If more than 5 consecutive samples at extreme, likely clipping
-        if max_consecutive_at_max > 5 or max_consecutive_at_min > 5:
-            return True
-
-        return False
+        return max_consecutive_at_max > 5 or max_consecutive_at_min > 5
 
     def _max_consecutive_true(self, mask: np.ndarray) -> int:
         """Count maximum consecutive True values in boolean array."""

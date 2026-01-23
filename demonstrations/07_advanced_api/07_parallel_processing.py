@@ -204,7 +204,7 @@ class ParallelProcessingDemo(BaseDemo):
 
             with ProcessPoolExecutor(max_workers=workers) as executor:
                 futures = [executor.submit(process_signal, params) for params in signal_params[:20]]
-                results = [f.result() for f in as_completed(futures)]
+                _results = [f.result() for f in as_completed(futures)]  # Collect all results
 
             elapsed = time.time() - start_time
             scaling_results[workers] = elapsed
@@ -261,14 +261,14 @@ class ParallelProcessingDemo(BaseDemo):
         heavy_params = signal_params[:20]  # Smaller batch for demonstration
 
         start_time = time.time()
-        seq_heavy_results = [process_signal_heavy(params) for params in heavy_params]
+        _seq_heavy_results = [process_signal_heavy(params) for params in heavy_params]
         seq_heavy_time = time.time() - start_time
 
         # Parallel heavy processing
         start_time = time.time()
 
         with ProcessPoolExecutor(max_workers=cpu_count) as executor:
-            par_heavy_results = list(executor.map(process_signal_heavy, heavy_params))
+            _par_heavy_results = list(executor.map(process_signal_heavy, heavy_params))
 
         par_heavy_time = time.time() - start_time
 

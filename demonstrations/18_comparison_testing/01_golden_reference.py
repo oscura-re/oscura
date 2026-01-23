@@ -207,10 +207,10 @@ class GoldenReferenceDemo(BaseDemo):
         self.result("  Max difference", f"{np.max(good_diff):.6f}", "V")
 
         # Check if difference is noise-like (Gaussian distribution)
-        # For Gaussian: mean ≈ 0, most values within ±3σ
+        # For Gaussian: mean ~= 0, most values within ±3-sigma
         within_3sigma = np.sum(np.abs(good_diff) <= 3 * np.std(good_diff))
         gaussian_percentage = (within_3sigma / len(good_diff)) * 100
-        self.result("  Within ±3σ", f"{gaussian_percentage:.2f}%")
+        self.result("  Within ±3-sigma", f"{gaussian_percentage:.2f}%")
         self.result("  Expected for Gaussian", "99.7%")
 
         results["good_diff_std"] = float(np.std(good_diff))

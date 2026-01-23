@@ -60,8 +60,16 @@ def compose(*funcs: TraceFunc) -> TraceFunc:
         # Apply functions in reverse order (right to left)
         return reduce(lambda val, func: func(val), reversed(funcs), x)
 
-    # Preserve function metadata
-    composed.__name__ = "compose(" + ", ".join(f.__name__ for f in funcs) + ")"
+    # Preserve function metadata (handle functools.partial which lacks __name__)
+    func_names = []
+    for f in funcs:
+        if hasattr(f, "__name__"):
+            func_names.append(f.__name__)
+        elif hasattr(f, "func"):  # functools.partial
+            func_names.append(f.func.__name__)
+        else:
+            func_names.append(repr(f))
+    composed.__name__ = "compose(" + ", ".join(func_names) + ")"
     composed.__doc__ = f"Composition of {len(funcs)} functions"
 
     return composed

@@ -260,7 +260,7 @@ local pf_length = ProtoField.uint16("{protocol_name.lower()}.length", "Length", 
 '''
 
         # Add annotation fields
-        for key, value in annotations.items():
+        for key in annotations:
             field_name = key.replace("_", " ").title()
             lua_code += (
                 f'local pf_{key} = ProtoField.string("{protocol_name.lower()}.{key}", '

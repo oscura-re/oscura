@@ -131,11 +131,14 @@ class CompositionDemo(BaseDemo):
         self.subsection("1. Function Composition")
         self.info("Combine functions into new functions")
 
-        # Create composed function
-        remove_dc = lambda t: high_pass(t, cutoff=100.0)
-        remove_noise = lambda t: low_pass(t, cutoff=5000.0)
+        # Create composed functions
+        def remove_dc(t):
+            return high_pass(t, cutoff=100.0)
 
-        # Compose: remove_dc ∘ remove_noise
+        def remove_noise(t):
+            return low_pass(t, cutoff=5000.0)
+
+        # Compose: remove_dc followed by remove_noise
         clean_signal = compose(remove_noise, remove_dc)
 
         # Apply composed function

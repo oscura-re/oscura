@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import sys
 import time
+import typing
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +46,7 @@ class DeviceCharacterizationWorkflowDemo(BaseDemo):
     """Complete device characterization workflow."""
 
     # Datasheet specifications for fictional device
-    DATASHEET_SPECS = {
+    DATASHEET_SPECS: typing.ClassVar[dict[str, dict[str, Any]]] = {
         "output_voltage": {"min": 4.75, "typ": 5.0, "max": 5.25, "unit": "V"},
         "load_regulation": {"min": None, "typ": 1.0, "max": 2.0, "unit": "%"},
         "rise_time": {"min": None, "typ": 10.0, "max": 20.0, "unit": "ns"},
@@ -158,7 +159,7 @@ class DeviceCharacterizationWorkflowDemo(BaseDemo):
         self.subsection("1.1 Measurement Sweep")
         sweep_results = []
 
-        for i, condition in enumerate(test_conditions):
+        for _i, condition in enumerate(test_conditions):
             measurements = self._characterize_signal(condition["signal"])
             measurements["temperature"] = condition["temperature"]
             measurements["load"] = condition["load"]
@@ -398,7 +399,7 @@ class DeviceCharacterizationWorkflowDemo(BaseDemo):
         statistics = {}
 
         # Get list of all parameters (exclude conditions)
-        params = [k for k in sweep_results[0].keys() if k not in ["temperature", "load", "supply"]]
+        params = [k for k in sweep_results[0] if k not in ["temperature", "load", "supply"]]
 
         for param in params:
             values = [r[param] for r in sweep_results]

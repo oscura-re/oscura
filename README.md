@@ -138,7 +138,7 @@ print(f"Changed IDs: {diff.details['changed_ids']}")
 session.export_dbc("vehicle.dbc")
 ```
 
-**More examples:** [19 demo categories](demos/) covering every capability
+**More examples:** [20 demo categories](demonstrations/) with 112 comprehensive demonstrations covering every capability
 
 ---
 

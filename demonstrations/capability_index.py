@@ -209,7 +209,7 @@ class CapabilityIndexer:
         if not gaps_only:
             # Demonstrations by section
             demos_by_section: dict[str, list[str]] = defaultdict(list)
-            for demo_path in self.demo_capabilities.keys():
+            for demo_path in self.demo_capabilities:
                 section = demo_path.split("/")[0]
                 demos_by_section[section].append(demo_path)
 

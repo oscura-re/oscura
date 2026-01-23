@@ -74,7 +74,9 @@ def format_table(rows: list[list[str]], headers: list[str] | None = None) -> str
     # Format rows
     formatted_rows = []
     for i, row in enumerate(all_rows):
-        formatted_row = " | ".join(str(item).ljust(width) for item, width in zip(row, col_widths))
+        formatted_row = " | ".join(
+            str(item).ljust(width) for item, width in zip(row, col_widths, strict=True)
+        )
         formatted_rows.append(formatted_row)
 
         # Add separator after header

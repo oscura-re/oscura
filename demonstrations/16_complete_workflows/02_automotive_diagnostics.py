@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import sys
 import time
+import typing
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +43,7 @@ from demonstrations.common import BaseDemo
 class AutomotiveDiagnosticsWorkflowDemo(BaseDemo):
     """Complete automotive diagnostics workflow with reporting."""
 
-    DTC_DATABASE = {
+    DTC_DATABASE: typing.ClassVar[dict[str, tuple[str, str]]] = {
         "P0300": ("Random/Multiple Cylinder Misfire", "Critical"),
         "P0301": ("Cylinder 1 Misfire", "Critical"),
         "P0171": ("System Too Lean (Bank 1)", "Major"),

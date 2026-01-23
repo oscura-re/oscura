@@ -24,11 +24,15 @@ import numpy as np
 # Add demonstrations to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING
+
 from demonstrations.common import (
     BaseDemo,
     generate_sine_wave,
 )
-from oscura.core.types import WaveformTrace
+
+if TYPE_CHECKING:
+    from oscura.core.types import WaveformTrace
 
 
 class OnboardingHelpersDemo(BaseDemo):

@@ -66,7 +66,7 @@ class CRCRecoveryDemo(BaseDemo):
             Dictionary with test cases for CRC recovery
         """
         try:
-            from oscura.inference.crc_reverse import STANDARD_CRCS
+            from oscura.inference.crc_reverse import STANDARD_CRCS  # noqa: F401
         except ImportError:
             self.warning("CRC reverse module not available, using manual generation")
             return self._generate_manual_crc_data()

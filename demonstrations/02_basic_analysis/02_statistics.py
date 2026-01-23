@@ -147,8 +147,8 @@ class StatisticsDemo(BaseDemo):
         self.result("Sample count", stats["count"])
 
         self.info("\nInterpretation:")
-        self.info(f"  Mean ≈ 0 for AC signal → {stats['mean']:.6f}V")
-        self.info(f"  Range ≈ 2 × 3V = 6V → {stats['range']:.6f}V")
+        self.info(f"  Mean ~= 0 for AC signal -> {stats['mean']:.6f}V")
+        self.info(f"  Range ~= 2 x 3V = 6V -> {stats['range']:.6f}V")
         self.info("  Std deviation captures noise + signal variation")
 
         # ========== PART 2: PERCENTILES AND QUARTILES ==========
@@ -265,7 +265,7 @@ class StatisticsDemo(BaseDemo):
         results["z_outlier_percentage"] = z_percentage
 
         self.info("\nOutlier detection (3-sigma / z-score method):")
-        self.result("Threshold", "3σ")
+        self.result("Threshold", "3-sigma")
         self.result("Outliers detected", z_outliers)
         self.result("Outlier percentage", f"{z_percentage:.2f}", "%")
 
@@ -344,7 +344,7 @@ class StatisticsDemo(BaseDemo):
             print(f"  ✗ Mean: {stats['mean']:.6f}V (expected near 0)")
             all_valid = False
 
-        # Range should be approximately 6V (2 × 3V amplitude + noise)
+        # Range should be approximately 6V (2 x 3V amplitude + noise)
         if 5.5 < stats["range"] < 7.0:
             print(f"  ✓ Range: {stats['range']:.6f}V (expected ~6V)")
         else:
@@ -408,7 +408,7 @@ class StatisticsDemo(BaseDemo):
         self.subsection("Histogram Validation")
 
         counts = results["histogram_counts"]
-        edges = results["histogram_edges"]
+        _edges = results["histogram_edges"]  # Available for plotting if needed
 
         if len(counts) == 50:
             print(f"  ✓ Histogram bins: {len(counts)} (expected 50)")
@@ -452,7 +452,7 @@ class StatisticsDemo(BaseDemo):
 
         pulse_stats = results["pulse_stats"]
 
-        # Mean should be around 2.5V (50% duty cycle × 5V)
+        # Mean should be around 2.5V (50% duty cycle x 5V)
         if 2.0 < pulse_stats["mean"] < 3.0:
             print(f"  ✓ Pulse mean: {pulse_stats['mean']:.4f}V (expected ~2.5V)")
         else:

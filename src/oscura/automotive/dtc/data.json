@@ -266,7 +266,12 @@
       "category": "Powertrain",
       "severity": "High",
       "system": "Throttle Control",
-      "possible_causes": ["TPS circuit shorted to voltage", "Faulty TPS sensor", "Wiring harness open", "ECM problem"]
+      "possible_causes": [
+        "TPS circuit shorted to voltage",
+        "Faulty TPS sensor",
+        "Wiring harness open",
+        "ECM problem"
+      ]
     },
     "P0125": {
       "code": "P0125",
@@ -860,7 +865,12 @@
       "category": "Powertrain",
       "severity": "Medium",
       "system": "Emissions Control",
-      "possible_causes": ["EGR valve stuck closed", "EGR passages clogged", "Faulty EGR valve", "Vacuum leak"]
+      "possible_causes": [
+        "EGR valve stuck closed",
+        "EGR passages clogged",
+        "Faulty EGR valve",
+        "Vacuum leak"
+      ]
     },
     "P0401": {
       "code": "P0401",
@@ -881,7 +891,12 @@
       "category": "Powertrain",
       "severity": "Medium",
       "system": "Emissions Control",
-      "possible_causes": ["EGR valve stuck open", "Faulty EGR valve", "EGR vacuum solenoid fault", "ECM problem"]
+      "possible_causes": [
+        "EGR valve stuck open",
+        "Faulty EGR valve",
+        "EGR vacuum solenoid fault",
+        "ECM problem"
+      ]
     },
     "P0403": {
       "code": "P0403",
@@ -943,7 +958,12 @@
       "category": "Powertrain",
       "severity": "Low",
       "system": "Emissions Control",
-      "possible_causes": ["Loose or missing fuel cap", "EVAP system leak", "Faulty purge valve", "Faulty vent valve"]
+      "possible_causes": [
+        "Loose or missing fuel cap",
+        "EVAP system leak",
+        "Faulty purge valve",
+        "Faulty vent valve"
+      ]
     },
     "P0441": {
       "code": "P0441",
@@ -1055,7 +1075,12 @@
       "category": "Powertrain",
       "severity": "Low",
       "system": "Idle Control",
-      "possible_causes": ["Vacuum leak", "IAC valve fault", "Dirty throttle body", "PCV valve problem"]
+      "possible_causes": [
+        "Vacuum leak",
+        "IAC valve fault",
+        "Dirty throttle body",
+        "PCV valve problem"
+      ]
     },
     "P0507": {
       "code": "P0507",
@@ -1063,7 +1088,12 @@
       "category": "Powertrain",
       "severity": "Low",
       "system": "Idle Control",
-      "possible_causes": ["Vacuum leak", "IAC valve stuck open", "PCV valve stuck open", "EVAP purge valve leaking"]
+      "possible_causes": [
+        "Vacuum leak",
+        "IAC valve stuck open",
+        "PCV valve stuck open",
+        "EVAP purge valve leaking"
+      ]
     },
     "P0600": {
       "code": "P0600",
@@ -1097,7 +1127,12 @@
       "category": "Powertrain",
       "severity": "Critical",
       "system": "Engine Control Module",
-      "possible_causes": ["ECM not programmed", "ECM programming incomplete", "Wrong software version", "ECM fault"]
+      "possible_causes": [
+        "ECM not programmed",
+        "ECM programming incomplete",
+        "Wrong software version",
+        "ECM fault"
+      ]
     },
     "P0603": {
       "code": "P0603",
@@ -1170,7 +1205,12 @@
       "category": "Powertrain",
       "severity": "Medium",
       "system": "Charging System",
-      "possible_causes": ["Faulty alternator", "Wiring harness problem", "Poor electrical connection", "ECM fault"]
+      "possible_causes": [
+        "Faulty alternator",
+        "Wiring harness problem",
+        "Poor electrical connection",
+        "ECM fault"
+      ]
     },
     "P0625": {
       "code": "P0625",
@@ -1243,7 +1283,12 @@
       "category": "Powertrain",
       "severity": "High",
       "system": "Transmission",
-      "possible_causes": ["Faulty input speed sensor", "Wiring harness problem", "Sensor reluctor damaged", "TCM fault"]
+      "possible_causes": [
+        "Faulty input speed sensor",
+        "Wiring harness problem",
+        "Sensor reluctor damaged",
+        "TCM fault"
+      ]
     },
     "P0720": {
       "code": "P0720",
@@ -1446,7 +1491,12 @@
       "category": "Chassis",
       "severity": "High",
       "system": "ABS",
-      "possible_causes": ["Faulty valve relay", "Relay circuit problem", "ABS module fault", "Wiring harness issue"]
+      "possible_causes": [
+        "Faulty valve relay",
+        "Relay circuit problem",
+        "ABS module fault",
+        "Wiring harness issue"
+      ]
     },
     "C0161": {
       "code": "C0161",
@@ -2156,7 +2206,12 @@
       "category": "Body",
       "severity": "Low",
       "system": "Lighting System",
-      "possible_causes": ["Burned out bulb", "Wiring harness problem", "Lamp socket corrosion", "BCM fault"]
+      "possible_causes": [
+        "Burned out bulb",
+        "Wiring harness problem",
+        "Lamp socket corrosion",
+        "BCM fault"
+      ]
     },
     "B0601": {
       "code": "B0601",
@@ -2177,7 +2232,12 @@
       "category": "Body",
       "severity": "Low",
       "system": "Lighting System",
-      "possible_causes": ["Burned out turn signal bulb", "Wiring harness problem", "Flasher relay fault", "BCM fault"]
+      "possible_causes": [
+        "Burned out turn signal bulb",
+        "Wiring harness problem",
+        "Flasher relay fault",
+        "BCM fault"
+      ]
     },
     "B0603": {
       "code": "B0603",
@@ -2185,7 +2245,12 @@
       "category": "Body",
       "severity": "Low",
       "system": "Lighting System",
-      "possible_causes": ["Burned out turn signal bulb", "Wiring harness problem", "Flasher relay fault", "BCM fault"]
+      "possible_causes": [
+        "Burned out turn signal bulb",
+        "Wiring harness problem",
+        "Flasher relay fault",
+        "BCM fault"
+      ]
     },
     "B0604": {
       "code": "B0604",
@@ -2297,7 +2362,12 @@
       "category": "Body",
       "severity": "Low",
       "system": "Keyless Entry",
-      "possible_causes": ["Key fob battery weak", "Key fob not synchronized", "BCM fault", "Receiver antenna fault"]
+      "possible_causes": [
+        "Key fob battery weak",
+        "Key fob not synchronized",
+        "BCM fault",
+        "Receiver antenna fault"
+      ]
     },
     "B1300": {
       "code": "B1300",
@@ -2396,7 +2466,12 @@
       "category": "Network",
       "severity": "Critical",
       "system": "CAN Bus",
-      "possible_causes": ["TCM not powered", "CAN bus wiring problem", "TCM internal fault", "CAN bus short circuit"]
+      "possible_causes": [
+        "TCM not powered",
+        "CAN bus wiring problem",
+        "TCM internal fault",
+        "CAN bus short circuit"
+      ]
     },
     "U0102": {
       "code": "U0102",
@@ -2469,7 +2544,12 @@
       "category": "Network",
       "severity": "High",
       "system": "CAN Bus",
-      "possible_causes": ["BCM not powered", "CAN bus wiring problem", "BCM internal fault", "Ground connection issue"]
+      "possible_causes": [
+        "BCM not powered",
+        "CAN bus wiring problem",
+        "BCM internal fault",
+        "Ground connection issue"
+      ]
     },
     "U0141": {
       "code": "U0141",
@@ -2477,7 +2557,12 @@
       "category": "Network",
       "severity": "High",
       "system": "CAN Bus",
-      "possible_causes": ["BCM not powered", "CAN bus wiring problem", "Module internal fault", "Connector problem"]
+      "possible_causes": [
+        "BCM not powered",
+        "CAN bus wiring problem",
+        "Module internal fault",
+        "Connector problem"
+      ]
     },
     "U0151": {
       "code": "U0151",

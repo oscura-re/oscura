@@ -216,7 +216,7 @@ class StreamingLargeFilesDemo(BaseDemo):
 
         filepath = file_info["filepath"]
         num_samples = file_info["num_samples"]
-        sample_rate = file_info["sample_rate"]
+        _sample_rate = file_info["sample_rate"]  # For metadata reference
         chunk_size = 1_000_000  # 1M samples per chunk
 
         self.result("File", str(filepath.name))

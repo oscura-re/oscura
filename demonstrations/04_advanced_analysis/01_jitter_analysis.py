@@ -163,7 +163,7 @@ class JitterAnalysisDemo(BaseDemo):
 
         # Generate waveform from edge timestamps
         signal = np.zeros(num_samples)
-        t = np.arange(num_samples) / sample_rate
+        _t = np.arange(num_samples) / sample_rate  # Time vector for reference
 
         for i, edge_time in enumerate(edge_times):
             if edge_time > duration:

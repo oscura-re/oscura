@@ -215,11 +215,11 @@ class WarningSystemDemo(BaseDemo):
             if warnings:
                 for warning in warnings:
                     severity_symbol = {
-                        "INFO": "ℹ",
-                        "WARNING": "⚠",
-                        "ERROR": "✗",
-                        "CRITICAL": "‼",
-                    }.get(warning.severity, "•")
+                        "INFO": "i",
+                        "WARNING": "!",
+                        "ERROR": "X",
+                        "CRITICAL": "!!",
+                    }.get(warning.severity, "*")
                     self.info(f"{severity_symbol} {warning}")
             else:
                 self.success("No warnings")

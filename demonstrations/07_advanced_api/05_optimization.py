@@ -186,7 +186,7 @@ class OptimizationDemo(BaseDemo):
         start = time.time()
         eager_filtered = high_pass(medium, cutoff=100.0)
         eager_filtered = low_pass(eager_filtered, cutoff=5000.0)
-        eager_rms = rms(eager_filtered)
+        _eager_rms = rms(eager_filtered)  # Result computed immediately
         eager_time = time.time() - start
 
         # Lazy evaluation (deferred computation)
@@ -256,12 +256,12 @@ class OptimizationDemo(BaseDemo):
         test_signal = replace(medium, data=medium.data.copy())
 
         start = time.time()
-        result_copy = process_copy(test_signal, 2.0)
+        _result_copy = process_copy(test_signal, 2.0)  # Creates new trace
         time_copy = time.time() - start
 
         test_signal2 = replace(medium, data=medium.data.copy())
         start = time.time()
-        result_inplace = process_in_place(test_signal2, 2.0)
+        _result_inplace = process_in_place(test_signal2, 2.0)  # Modifies in place
         time_inplace = time.time() - start
 
         self.info("\nProcessing strategies:")
@@ -293,7 +293,7 @@ class OptimizationDemo(BaseDemo):
 
         # Batched processing with list comprehension
         start = time.time()
-        batched_results = [rms(sig) for sig in signals]
+        _batched_results = [rms(sig) for sig in signals]  # All results computed
         batched_time = time.time() - start
 
         self.info(f"Batch processing ({batch_size} signals):")
@@ -312,8 +312,8 @@ class OptimizationDemo(BaseDemo):
 
         # Without reuse
         start = time.time()
-        thd1 = thd(medium)  # Computes FFT
-        thd2 = thd(medium)  # Recomputes FFT (if cache disabled)
+        _thd1 = thd(medium)  # Computes FFT
+        _thd2 = thd(medium)  # Recomputes FFT (if cache disabled)
         time_no_reuse = time.time() - start
 
         # With FFT caching (automatic reuse)
@@ -321,8 +321,8 @@ class OptimizationDemo(BaseDemo):
         clear_fft_cache()
 
         start = time.time()
-        thd1_cached = thd(medium)  # Computes FFT
-        thd2_cached = thd(medium)  # Reuses cached FFT
+        _thd1_cached = thd(medium)  # Computes FFT
+        _thd2_cached = thd(medium)  # Reuses cached FFT
         time_with_reuse = time.time() - start
 
         self.info("Computation reuse:")
@@ -356,7 +356,7 @@ class OptimizationDemo(BaseDemo):
             "lazy_time": lazy_time_exec,
             "sequential_time": sequential_time,
             "batched_time": batched_time,
-            "thd_with_cache": thd1_cached,
+            "thd_with_cache": _thd1_cached,
         }
 
     def validate(self, results: dict) -> bool:

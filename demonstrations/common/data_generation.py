@@ -118,7 +118,7 @@ def generate_pulse_train(
         WaveformTrace with pulse train
     """
     num_samples = int(duration * sample_rate)
-    t = np.arange(num_samples) / sample_rate
+    _t = np.arange(num_samples) / sample_rate  # Time vector for reference
     signal = np.zeros(num_samples)
 
     # Calculate pulse positions
@@ -176,7 +176,7 @@ def generate_complex_signal(
     signal = np.zeros(num_samples)
 
     # Add each frequency component
-    for freq, amp in zip(fundamentals, amplitudes):
+    for freq, amp in zip(fundamentals, amplitudes, strict=True):
         signal += amp * np.sin(2 * np.pi * freq * t)
 
     # Add noise if requested

@@ -278,8 +278,9 @@ database:
         self.subsection("Configuration with Environment Variables")
         print(env_config)
 
-        # Set example environment variables
-        os.environ["OSCURA_OUTPUT_DIR"] = "/tmp/oscura_results"
+        # Set example environment variables (safe for demonstration)
+        # Note: Using /tmp is acceptable for demos; use tempfile.mkdtemp() in production
+        os.environ["OSCURA_OUTPUT_DIR"] = "/tmp/oscura_results"  # noqa: S108
         os.environ["OSCURA_LOG_LEVEL"] = "DEBUG"
         os.environ["DB_USER"] = "oscura_user"
 

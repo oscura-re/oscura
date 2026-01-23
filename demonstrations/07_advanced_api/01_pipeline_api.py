@@ -85,7 +85,7 @@ class PipelineAPIDemo(BaseDemo):
     def run_demonstration(self, data: dict) -> dict:
         """Run pipeline API demonstration."""
         noisy = data["noisy_signal"]
-        clean = data["clean_signal"]
+        _clean = data["clean_signal"]  # For reference
 
         self.section("Pipeline API: Multi-Stage Processing")
 

@@ -94,7 +94,7 @@ class UnknownProtocolDemo(BaseDemo):
         messages = []
 
         # Generate various message types
-        for _ in range(15):
+        for sequence in range(15):
             # Select message type
             msg_type = np.random.choice(list(msg_types.keys()))
 
@@ -126,7 +126,6 @@ class UnknownProtocolDemo(BaseDemo):
             msg.append(crc)
 
             messages.append(bytes(msg))
-            sequence += 1
 
         self.messages = messages
         self.info(f"Generated {len(messages)} protocol messages")

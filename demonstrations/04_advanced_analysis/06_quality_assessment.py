@@ -145,7 +145,7 @@ class QualityAssessmentDemo(BaseDemo):
         self.info("Demonstrating IEEE 1241-2010 compliant quality metrics")
         self.info("Using sine wave signals with varying quality levels")
 
-        signal_freq = data["signal_freq"]
+        _signal_freq = data["signal_freq"]  # For reference (100 kHz)
 
         # ========== PART 1: IDEAL SIGNAL (REFERENCE) ==========
         self.subsection("Part 1: Ideal Signal (Reference Quality)")

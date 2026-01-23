@@ -31,10 +31,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import json
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from demonstrations.common import BaseDemo, generate_sine_wave
-from oscura.core.types import Trace
 from oscura.sessions import GenericSession
+
+if TYPE_CHECKING:
+    from oscura.core.types import Trace
 
 
 class TraceSource:

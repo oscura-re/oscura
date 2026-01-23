@@ -45,6 +45,10 @@ class SignalWithOperators:
         """Initialize signal wrapper."""
         self.trace = trace
 
+    def __hash__(self):
+        """Return hash based on trace data."""
+        return hash(id(self.trace))
+
     def __add__(self, other):
         """Add two signals using + operator."""
         if isinstance(other, SignalWithOperators):
