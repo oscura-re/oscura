@@ -149,6 +149,39 @@ class TestCompose:
         assert composed.__doc__ is not None
         assert "2" in composed.__doc__  # Number of functions
 
+    def test_compose_with_partial_function_name(self, sample_trace):
+        """Test compose handles functools.partial in function names."""
+
+        def scale(trace: WaveformTrace, factor: float) -> WaveformTrace:
+            return WaveformTrace(data=trace.data * factor, metadata=trace.metadata)
+
+        scale.__name__ = "scale"
+
+        # Create partial function
+        double = partial(scale, factor=2.0)
+
+        # Compose with partial - should extract name from partial.func
+        composed = compose(double)
+
+        assert "scale" in composed.__name__
+
+    def test_compose_with_callable_without_name(self, sample_trace):
+        """Test compose handles callables without __name__ or func attributes."""
+
+        class CallableWithoutName:
+            """Callable object without __name__ attribute."""
+
+            def __call__(self, trace: WaveformTrace) -> WaveformTrace:
+                return WaveformTrace(data=trace.data * 2, metadata=trace.metadata)
+
+        callable_obj = CallableWithoutName()
+
+        # Compose with callable that has neither __name__ nor func
+        composed = compose(callable_obj)
+
+        # Should use repr() for the name
+        assert "CallableWithoutName" in composed.__name__
+
 
 # =============================================================================
 # pipe() Tests
