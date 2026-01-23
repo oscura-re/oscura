@@ -68,7 +68,7 @@ def q_factor_from_ber(ber: float) -> float:
         IEEE 2414-2020: Q = sqrt(2) * erfc_inv(2 * BER)
     """
     if ber <= 0 or ber >= 0.5:
-        return float("nan")
+        return np.nan
 
     # BER = 0.5 * erfc(Q / sqrt(2))
     # erfc(Q / sqrt(2)) = 2 * BER
@@ -141,7 +141,7 @@ def tj_at_ber(
     q = q_factor_from_ber(ber)
 
     if np.isnan(q):
-        return float("nan")
+        return np.nan
 
     # TJ = 2 * Q * RJ_rms + DJ_pp
     tj = 2 * q * rj_rms + dj_pp

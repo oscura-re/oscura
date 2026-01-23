@@ -449,11 +449,11 @@ class FIRFilter(Filter):
         """Check if filter has linear phase (symmetric or antisymmetric coefficients)."""
         if self._coeffs is None:
             return False
+        len(self._coeffs)
         # Check symmetry
         symmetric = np.allclose(self._coeffs, self._coeffs[::-1])
         antisymmetric = np.allclose(self._coeffs, -self._coeffs[::-1])
-        result: bool = bool(symmetric or antisymmetric)
-        return result
+        return symmetric or antisymmetric
 
     def apply(
         self,

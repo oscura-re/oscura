@@ -163,7 +163,7 @@ def propagation_delay(
     if len(delays) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     delays_arr = np.array(delays, dtype=np.float64)
 
@@ -208,7 +208,7 @@ def setup_time(
     if len(clock_edges) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     # Get all data edges (both rising and falling)
     data_edges = _get_edge_timestamps(data_trace, "both", data_stable_level)
@@ -216,7 +216,7 @@ def setup_time(
     if len(data_edges) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     # For each clock edge, find the most recent data edge
     setup_times: list[float] = []
@@ -232,7 +232,7 @@ def setup_time(
     if len(setup_times) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     result = np.array(setup_times, dtype=np.float64)
 
@@ -277,7 +277,7 @@ def hold_time(
     if len(clock_edges) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     # Get all data edges
     data_edges = _get_edge_timestamps(data_trace, "both", data_stable_level)
@@ -285,7 +285,7 @@ def hold_time(
     if len(data_edges) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     # For each clock edge, find the next data edge
     hold_times: list[float] = []
@@ -301,7 +301,7 @@ def hold_time(
     if len(hold_times) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     result = np.array(hold_times, dtype=np.float64)
 
@@ -341,7 +341,7 @@ def slew_rate(
     if len(trace.data) < 3:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     data = trace.data
     sample_period = trace.metadata.time_base
@@ -353,7 +353,7 @@ def slew_rate(
     if amplitude <= 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     # Calculate reference voltages
     v_low = low + ref_levels[0] * amplitude
@@ -395,7 +395,7 @@ def slew_rate(
     if len(slew_rates) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return float("nan")
+        return np.nan
 
     result = np.array(slew_rates, dtype=np.float64)
 
@@ -456,13 +456,13 @@ def _phase_edge(
     edges2 = _get_edge_timestamps(trace2, "rising", 0.5)
 
     if len(edges1) < 2 or len(edges2) < 2:
-        return float("nan")
+        return np.nan
 
     # Calculate period from first signal
     period1 = np.mean(np.diff(edges1))
 
     if period1 <= 0:
-        return float("nan")
+        return np.nan
 
     # Calculate phase from edge differences
     phase_times: list[float] = []
@@ -475,7 +475,7 @@ def _phase_edge(
         phase_times.append(diffs[idx])
 
     if len(phase_times) == 0:
-        return float("nan")
+        return np.nan
 
     mean_phase_time = np.mean(phase_times)
 
@@ -505,7 +505,7 @@ def _phase_fft(
     data2 = data2[:n]
 
     if n < 16:
-        return float("nan")
+        return np.nan
 
     # Compute FFTs
     fft1 = np.fft.rfft(data1)
@@ -1038,13 +1038,13 @@ def peak_to_peak_jitter(
     edges = _get_edge_timestamps(trace, edge_type, threshold)
 
     if len(edges) < 3:
-        return float("nan")
+        return np.nan
 
     # Calculate periods
     periods = np.diff(edges)
 
     if len(periods) < 2:
-        return float("nan")
+        return np.nan
 
     # Pk-Pk jitter is the range of period variations
     jitter_pp = float(np.max(periods) - np.min(periods))

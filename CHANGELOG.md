@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **Type Hints** (src/oscura/utils/lazy.py, src/oscura/analyzers/patterns/discovery.py, src/oscura/analyzers/jitter/ber.py, src/oscura/core/cache.py, src/oscura/analyzers/patterns/sequences.py, src/oscura/filtering/base.py, src/oscura/analyzers/waveform/spectral.py, src/oscura/analyzers/power/soa.py, src/oscura/analyzers/power/conduction.py, src/oscura/analyzers/digital/timing.py, src/oscura/utils/memory_advanced.py, src/oscura/analyzers/eye/metrics.py): Fixed all 32 mypy "Returning Any from function declared to return <type>" errors by replacing `np.nan`, `np.inf`, and `-np.inf` returns with `float("nan")`, `float("inf")`, and `float("-inf")` respectively. Added explicit type annotations for numpy method returns (`.shape`, `.tobytes()`, `.nbytes`) to satisfy strict type checking. Maintains identical runtime behavior while achieving full mypy --strict compliance.
-
 ### Added
 
 - **Demonstration Framework Architecture Documentation** (demonstrations/ARCHITECTURE.md): Comprehensive guide (400+ lines) explaining the demonstration system for contributors and maintainers. Covers: BaseDemo template pattern and lifecycle (init → execute → generate_test_data → run_demonstration → validate); validation framework with validate_approximately, validate_range helpers and tolerance levels (STRICT/NORMAL/RELAXED); data generation principles (self-contained, deterministic, realistic); capability tracking system and API coverage reporting; common utilities overview (BaseDemo, data_generation, constants, validation); best practices for writing new demonstrations (8 key principles); file organization and naming conventions; execution flow; and troubleshooting guide. Enables consistent demonstration development across 112 existing demonstrations and supports 20+ categories.
