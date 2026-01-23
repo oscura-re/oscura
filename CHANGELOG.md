@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Core Types Demo** (`demonstrations/00_getting_started/01_core_types.py`): Comprehensive demonstration teaching Oscura's fundamental data structures (TraceMetadata, WaveformTrace, DigitalTrace, ProtocolPacket, CalibrationInfo) with practical examples of creating, accessing, and converting between trace types
 
+### Changed
+
+- **CI/CD Pipeline Optimization** (`.github/workflows/merge-queue.yml`, `docs/architecture/ci-cd-optimization.md`): Optimized merge queue workflow from 15 minutes to 2-3 minutes (85% faster) while maintaining safety guarantees. Replaced full test suite duplication with lightweight validation (merge conflict check, build verification, smoke tests, config validation). Reduces total merge time from 30 minutes to 17 minutes (43% faster) and cuts GitHub Actions compute cost by 50% (450min → 225min per merge). See `docs/architecture/ci-cd-optimization.md` for detailed analysis and rationale.
+
 ### Documentation
 
 - **README.md Comprehensive Refinement - Final Pass** (`README.md`):
