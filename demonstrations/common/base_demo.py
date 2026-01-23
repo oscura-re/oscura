@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
 import time
 import traceback
@@ -78,19 +79,39 @@ class BaseDemo(ABC):
     def execute(self) -> bool:
         """Execute the demonstration with full framework.
 
+        Supports optional --data-file argument for custom data experimentation.
+        If no data file is specified, generates synthetic test data.
+
         Returns:
             True if demonstration passed, False otherwise
         """
+        # Parse command-line arguments
+        parser = argparse.ArgumentParser(
+            description=f"{self.name}: {self.description}",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+        parser.add_argument(
+            "--data-file",
+            type=str,
+            help="Path to custom data file (NPZ format). If not provided, generates synthetic test data.",
+        )
+        args = parser.parse_args()
+
         self.start_time = time.time()
 
         try:
             # Print header
             self._print_header()
 
-            # Generate test data
-            self.section("Generating Test Data")
-            data = self.generate_test_data()
-            self.info(f"Test data generated: {len(data)} datasets")
+            # Generate or load test data
+            self.section("Preparing Data")
+            if args.data_file:
+                self.info(f"Loading custom data from: {args.data_file}")
+                data = self.load_custom_data(args.data_file)
+            else:
+                self.info("Generating synthetic test data")
+                data = self.generate_test_data()
+            self.info(f"Test data prepared: {len(data)} datasets")
 
             # Run demonstration
             self.section("Running Demonstration")
@@ -146,6 +167,44 @@ class BaseDemo(ABC):
         Returns:
             True if validation passed, False otherwise
         """
+
+    def load_custom_data(self, data_file: str) -> dict[str, Any]:
+        """Load custom data from file.
+
+        Currently supports NPZ format only. The NPZ file should contain datasets
+        with names matching what the demonstration expects from generate_test_data().
+
+        Args:
+            data_file: Path to data file (NPZ format)
+
+        Returns:
+            Dictionary of loaded data matching generate_test_data() format
+
+        Raises:
+            FileNotFoundError: If data file doesn't exist
+            ValueError: If data file format is invalid or unsupported
+        """
+        import numpy as np
+
+        file_path = Path(data_file)
+        if not file_path.exists():
+            raise FileNotFoundError(f"Data file not found: {data_file}")
+
+        if file_path.suffix.lower() != ".npz":
+            raise ValueError(
+                f"Unsupported file format: {file_path.suffix}. Only NPZ files are currently supported."
+            )
+
+        # Load NPZ file
+        with np.load(file_path, allow_pickle=True) as npz_data:
+            # Convert to dictionary
+            data = {
+                key: npz_data[key].item() if npz_data[key].shape == () else npz_data[key]
+                for key in npz_data.files
+            }
+
+        self.info(f"Loaded {len(data)} datasets from {file_path.name}")
+        return data
 
     def section(self, title: str) -> None:
         """Print a section header.
