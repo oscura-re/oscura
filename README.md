@@ -267,50 +267,50 @@ session.export_dbc("vehicle.dbc")
 
 | Demo                                                | What You'll Learn                                 |
 | --------------------------------------------------- | ------------------------------------------------- |
-| [01_waveform_analysis](demos/01_waveform_analysis/) | Load Tektronix/Rigol captures, basic measurements |
-| [02_file_format_io](demos/02_file_format_io/)       | CSV, HDF5, NumPy, custom binary formats           |
-| [04_serial_protocols](demos/04_serial_protocols/)   | UART, SPI, I2C decoding with auto-detection       |
-| [05_protocol_decoding](demos/05_protocol_decoding/) | Protocol auto-detection pipeline                  |
+| [02_basic_analysis](demonstrations/02_basic_analysis/) | Load Tektronix/Rigol captures, basic measurements |
+| [01_data_loading](demonstrations/01_data_loading/)       | CSV, HDF5, NumPy, custom binary formats           |
+| [03_protocol_decoding](demonstrations/03_protocol_decoding/)   | UART, SPI, I2C decoding with auto-detection       |
+| [03_protocol_decoding](demonstrations/03_protocol_decoding/) | Protocol auto-detection pipeline                  |
 
 ### Reverse Engineering (Intermediate)
 
 | Demo                                                                  | What You'll Learn                                     |
 | --------------------------------------------------------------------- | ----------------------------------------------------- |
-| [07_protocol_inference](demos/07_protocol_inference/)                 | State machine learning, CRC recovery, field detection |
-| [08_automotive_protocols](demos/08_automotive_protocols/)             | CAN, CAN-FD, LIN, FlexRay analysis                    |
-| [17_signal_reverse_engineering](demos/17_signal_reverse_engineering/) | Complete unknown signal analysis workflow             |
-| [18_advanced_inference](demos/18_advanced_inference/)                 | Bayesian inference, binary format DSL                 |
+| [06_reverse_engineering](demonstrations/06_reverse_engineering/)                 | State machine learning, CRC recovery, field detection |
+| [05_domain_specific](demonstrations/05_domain_specific/)             | CAN, CAN-FD, LIN, FlexRay analysis                    |
+| [06_reverse_engineering](demonstrations/06_reverse_engineering/) | Complete unknown signal analysis workflow             |
+| [12_quality_tools](demonstrations/12_quality_tools/)                 | Bayesian inference, binary format DSL                 |
 
 ### Security & Compliance (Advanced)
 
 | Demo                                                    | What You'll Learn                                  |
 | ------------------------------------------------------- | -------------------------------------------------- |
-| [12_spectral_compliance](demos/12_spectral_compliance/) | FFT, THD, SNR, SINAD (IEEE 1241)                   |
-| [13_jitter_analysis](demos/13_jitter_analysis/)         | TIE, RJ/DJ decomposition, eye diagrams (IEEE 2414) |
-| [14_power_analysis](demos/14_power_analysis/)           | DC-DC converter analysis, efficiency (IEEE 1459)   |
-| [15_signal_integrity](demos/15_signal_integrity/)       | TDR, S-parameters, setup/hold timing               |
-| [16_emc_compliance](demos/16_emc_compliance/)           | CISPR, FCC, MIL-STD electromagnetic compatibility  |
+| [02_basic_analysis](demonstrations/02_basic_analysis/) | FFT, THD, SNR, SINAD (IEEE 1241)                   |
+| [04_advanced_analysis](demonstrations/04_advanced_analysis/)         | TIE, RJ/DJ decomposition, eye diagrams (IEEE 2414) |
+| [04_advanced_analysis](demonstrations/04_advanced_analysis/)           | DC-DC converter analysis, efficiency (IEEE 1459)   |
+| [04_advanced_analysis](demonstrations/04_advanced_analysis/)       | TDR, S-parameters, setup/hold timing               |
+| [05_domain_specific](demonstrations/05_domain_specific/)           | CISPR, FCC, MIL-STD electromagnetic compatibility  |
 
 ### Complete Workflows (Expert)
 
 | Demo                                                  | What You'll Learn                        |
 | ----------------------------------------------------- | ---------------------------------------- |
-| [19_complete_workflows](demos/19_complete_workflows/) | End-to-end reverse engineering pipelines |
+| [16_complete_workflows](demonstrations/16_complete_workflows/) | End-to-end reverse engineering pipelines |
 
 ### Run Your First Demo
 
 ```bash
 # Generate test data
-python demos/generate_all_demo_data.py
+python demonstrations/generate_all_data.py
 
 # Run waveform analysis demo
-python demos/01_waveform_analysis/comprehensive_wfm_analysis.py
+python demonstrations/02_basic_analysis/01_waveform_measurements.py
 
 # Run protocol inference demo
-python demos/07_protocol_inference/01_state_machine_inference.py
+python demonstrations/06_reverse_engineering/03_state_machines.py
 ```
 
-**Browse all demos:** [demos/](demos/) | [Demo index with descriptions](demos/README.md)
+**Browse all demos:** [demonstrations/](demonstrations/) | [Demonstrations overview](demonstrations/README.md)
 
 ---
 

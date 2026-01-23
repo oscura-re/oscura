@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Side-Channel Demonstration** (demonstrations/05_domain_specific/04_side_channel.py): Improved signal-to-noise ratio in test data generation for DPA and CPA attacks, updated validation logic to accept timing attack success as passing criterion
+
+### Removed
+
+- **Vestigial Directories**: Removed deprecated demos/ (63 files) and examples/ (1 file) directories, fully superseded by comprehensive demonstrations/ system with 112 validated demos across 20 sections
+
+### Changed
+
+- **Documentation** (README.md, CONTRIBUTING.md): Updated all demo references to point to new demonstrations/ structure with correct section mappings
+
 ### Added
 
 - **Demonstrations** (demonstrations/15_export_visualization/06_comprehensive_export.py): Comprehensive export demonstration covering all 8 export formats (CSV, JSON, HDF5, NPZ, MATLAB, PWL, HTML, Markdown) with format conversion workflows, round-trip validation, and format selection guidelines

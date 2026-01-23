@@ -6,7 +6,7 @@ First off, thank you for considering contributing to Oscura! It's people like yo
 
 Oscura follows a "demos as documentation" approach:
 
-- **Learn by Example**: All capabilities are demonstrated in [demos/](demos/) with working code
+- **Learn by Example**: All capabilities are demonstrated in [demonstrations/](demonstrations/) with working code
 - **Demo READMEs**: Each demo category has a comprehensive README explaining concepts
 - **API Reference**: Generated documentation at [docs/api/](docs/api/)
 
@@ -395,7 +395,7 @@ def example_function(param1: str, param2: int = 0) -> bool:
 
 ```bash
 oscura/
-├── demos/                  # Primary documentation (working examples)
+├── demonstrations/                  # Primary documentation (working examples)
 │   ├── 01_waveform_analysis/       # Waveform loading and analysis
 │   ├── 02_file_format_io/          # CSV, HDF5, NumPy formats
 │   ├── 03_custom_daq/              # Custom DAQ loaders
