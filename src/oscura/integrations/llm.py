@@ -663,7 +663,7 @@ class OpenAIClient:
 
         # Import and initialize OpenAI client
         try:
-            import openai  # type: ignore[ignore-without-code]
+            import openai
 
             self._openai = openai
         except ImportError:
@@ -991,7 +991,7 @@ class AnthropicClient:
 
         # Import and initialize Anthropic client
         try:
-            import anthropic  # type: ignore[ignore-without-code]
+            import anthropic
 
             self._anthropic = anthropic
         except ImportError:
@@ -1668,7 +1668,7 @@ class FailoverLLMClient:
         def operation(client: LLMClient) -> str:
             if hasattr(client, "chat_completion"):
                 messages = [{"role": "user", "content": prompt}]
-                response = client.chat_completion(messages, **kwargs)  # type: ignore[ignore-without-code]
+                response = client.chat_completion(messages, **kwargs)
                 return response.answer  # type: ignore[no-any-return]
             else:
                 response = client.query(prompt, {})
@@ -1697,7 +1697,7 @@ class FailoverLLMClient:
             trace = DictTrace(trace_data)
 
             if hasattr(client, "analyze_trace"):
-                response = client.analyze_trace(trace, "Analyze this signal")  # type: ignore[ignore-without-code]
+                response = client.analyze_trace(trace, "Analyze this signal")
             else:
                 response = client.analyze(trace, "Analyze this signal")
 
@@ -1729,7 +1729,7 @@ class FailoverLLMClient:
             trace = CharTrace(signal_characteristics)
 
             if hasattr(client, "suggest_measurements"):
-                response = client.suggest_measurements(trace)  # type: ignore[ignore-without-code]
+                response = client.suggest_measurements(trace)
             else:
                 response = client.analyze(trace, "What measurements should I perform?")
 
@@ -1795,7 +1795,7 @@ def is_provider_available(provider: str) -> bool:
         if not os.environ.get("OPENAI_API_KEY"):
             return False
         try:
-            import openai  # type: ignore[ignore-without-code]
+            import openai
 
             return True
         except ImportError:
@@ -1805,7 +1805,7 @@ def is_provider_available(provider: str) -> bool:
         if not os.environ.get("ANTHROPIC_API_KEY"):
             return False
         try:
-            import anthropic  # type: ignore[ignore-without-code]
+            import anthropic
 
             return True
         except ImportError:

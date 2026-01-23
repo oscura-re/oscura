@@ -450,7 +450,7 @@ class BlackBoxSession(AnalysisSession):
             return result
 
         # For integer types, just convert
-        return data.astype(np.uint8)  # type: ignore[return-value]
+        return data.astype(np.uint8)
 
     def _find_changed_regions(self, diffs: NDArray[np.bool_]) -> list[tuple[int, int, str]]:
         """Find contiguous regions of changes."""

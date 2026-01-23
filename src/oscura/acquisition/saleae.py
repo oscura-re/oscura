@@ -164,12 +164,12 @@ class SaleaeSource:
         self._ensure_connection()
 
         # Set sample rate
-        self.saleae.set_sample_rate_by_minimum(sample_rate)  # type: ignore[union-attr]
+        self.saleae.set_sample_rate_by_minimum(sample_rate)
 
         # Enable/disable channels
         for ch in range(16):  # Max 16 digital channels
             if ch in self.digital_channels:
-                self.saleae.set_capture_pretrigger_buffer_size(  # type: ignore[union-attr]
+                self.saleae.set_capture_pretrigger_buffer_size(
                     int(sample_rate * duration), is_set=True
                 )
 
@@ -204,7 +204,7 @@ class SaleaeSource:
         acquisition_start = datetime.now()
 
         # Start capture
-        self.saleae.capture_start()  # type: ignore[union-attr]
+        self.saleae.capture_start()
 
         # Wait for capture to complete
         import time
@@ -212,7 +212,7 @@ class SaleaeSource:
         time.sleep(self.duration)
 
         # Stop capture
-        self.saleae.capture_stop()  # type: ignore[union-attr]
+        self.saleae.capture_stop()
 
         # Export data
         # Note: Actual Saleae API would save to file, then we'd load it.

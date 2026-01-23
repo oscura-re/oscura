@@ -131,20 +131,20 @@ class MultiTraceWorkflow:
 
         try:
             if ext == ".csv":
-                from oscura.loaders.csv import (  # type: ignore[import-not-found]
-                    load_csv,  # type: ignore[import-not-found]
+                from oscura.loaders.csv import (
+                    load_csv,
                 )
 
                 return load_csv(str(path))
             elif ext == ".bin":
-                from oscura.loaders.binary import (  # type: ignore[import-not-found]
-                    load_binary,  # type: ignore[import-not-found]
+                from oscura.loaders.binary import (
+                    load_binary,
                 )
 
                 return load_binary(str(path))
             elif ext in (".h5", ".hdf5"):
-                from oscura.loaders.hdf5 import (  # type: ignore[import-not-found]
-                    load_hdf5,  # type: ignore[import-not-found]
+                from oscura.loaders.hdf5 import (
+                    load_hdf5,
                 )
 
                 return load_hdf5(str(path))

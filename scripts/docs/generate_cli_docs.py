@@ -2,7 +2,7 @@
 """Generate CLI documentation from actual Click commands.
 
 Usage:
-    uv run python scripts/generate_cli_docs.py > docs/cli-auto.md
+    uv run python scripts/docs/generate_cli_docs.py > docs/cli-auto.md
 """
 
 from click.testing import CliRunner

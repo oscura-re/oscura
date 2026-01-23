@@ -142,9 +142,9 @@ class Prior:
             ValueError: If distribution is not recognized.
         """
         if self.distribution == "normal":
-            return float(stats.norm.pdf(x, loc=self.params["mean"], scale=self.params["std"]))  # type: ignore[no-any-return]
+            return float(stats.norm.pdf(x, loc=self.params["mean"], scale=self.params["std"]))
         elif self.distribution == "uniform":
-            return float(  # type: ignore[no-any-return]
+            return float(
                 stats.uniform.pdf(
                     x, loc=self.params["low"], scale=self.params["high"] - self.params["low"]
                 )
@@ -157,15 +157,15 @@ class Prior:
             density = stats.uniform.pdf(log_x, loc=log_low, scale=log_high - log_low)
             # Jacobian correction: d(log x)/dx = 1/x
             result = density / np.maximum(x, 1e-100)
-            return result  # type: ignore[return-value, no-any-return]
+            return result
         elif self.distribution == "beta":
-            return float(stats.beta.pdf(x, a=self.params["a"], b=self.params["b"]))  # type: ignore[no-any-return]
+            return float(stats.beta.pdf(x, a=self.params["a"], b=self.params["b"]))
         elif self.distribution == "gamma":
-            return float(stats.gamma.pdf(x, a=self.params["shape"], scale=self.params["scale"]))  # type: ignore[no-any-return]
+            return float(stats.gamma.pdf(x, a=self.params["shape"], scale=self.params["scale"]))
         elif self.distribution == "half_normal":
-            return float(stats.halfnorm.pdf(x, scale=self.params["scale"]))  # type: ignore[no-any-return]
+            return float(stats.halfnorm.pdf(x, scale=self.params["scale"]))
         elif self.distribution == "geometric":
-            return float(stats.geom.pmf(x, p=self.params["p"]))  # type: ignore[no-any-return]
+            return float(stats.geom.pmf(x, p=self.params["p"]))
         else:
             raise ValueError(f"PDF not implemented for {self.distribution}")
 
@@ -182,25 +182,25 @@ class Prior:
             ValueError: If distribution is not recognized.
         """
         if self.distribution == "normal":
-            return stats.norm.rvs(loc=self.params["mean"], scale=self.params["std"], size=n)  # type: ignore[no-any-return]
+            return stats.norm.rvs(loc=self.params["mean"], scale=self.params["std"], size=n)
         elif self.distribution == "uniform":
-            return stats.uniform.rvs(  # type: ignore[no-any-return]
+            return stats.uniform.rvs(
                 loc=self.params["low"], scale=self.params["high"] - self.params["low"], size=n
             )
         elif self.distribution == "log_uniform":
             # Sample uniformly on log scale, then exponentiate
             log_low = np.log(self.params["low"])
             log_high = np.log(self.params["high"])
-            log_samples = stats.uniform.rvs(loc=log_low, scale=log_high - log_low, size=n)  # type: ignore[no-any-return]
-            return np.exp(log_samples)  # type: ignore[no-any-return]
+            log_samples = stats.uniform.rvs(loc=log_low, scale=log_high - log_low, size=n)
+            return np.exp(log_samples)
         elif self.distribution == "beta":
-            return stats.beta.rvs(a=self.params["a"], b=self.params["b"], size=n)  # type: ignore[no-any-return]
+            return stats.beta.rvs(a=self.params["a"], b=self.params["b"], size=n)
         elif self.distribution == "gamma":
-            return stats.gamma.rvs(a=self.params["shape"], scale=self.params["scale"], size=n)  # type: ignore[no-any-return]
+            return stats.gamma.rvs(a=self.params["shape"], scale=self.params["scale"], size=n)
         elif self.distribution == "half_normal":
-            return stats.halfnorm.rvs(scale=self.params["scale"], size=n)  # type: ignore[no-any-return]
+            return stats.halfnorm.rvs(scale=self.params["scale"], size=n)
         elif self.distribution == "geometric":
-            return stats.geom.rvs(p=self.params["p"], size=n)  # type: ignore[no-any-return]
+            return stats.geom.rvs(p=self.params["p"], size=n)
         else:
             raise ValueError(f"Sampling not implemented for {self.distribution}")
 

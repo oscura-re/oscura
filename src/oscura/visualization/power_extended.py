@@ -578,7 +578,7 @@ def plot_loss_breakdown(
     pie_result = ax.pie(
         values,
         labels=labels,
-        autopct=autopct_val,  # type: ignore[arg-type]
+        autopct=autopct_val,
         colors=colors[: len(labels)],
         startangle=90,
         explode=[0.02] * len(labels),

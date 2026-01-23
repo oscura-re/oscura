@@ -226,9 +226,7 @@ class CompressingTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHand
         # Determine the file that just got rotated
         current_time = int(self.rolloverAt - self.interval)
         time_tuple = time.gmtime(current_time) if self.utc else time.localtime(current_time)
-        dfn = self.rotation_filename(
-            self.baseFilename + "." + self.suffix % time_tuple[:6]  # type: ignore[arg-type]
-        )
+        dfn = self.rotation_filename(self.baseFilename + "." + self.suffix % time_tuple[:6])
 
         # Handle the existing rotated file
         if Path(dfn).exists():

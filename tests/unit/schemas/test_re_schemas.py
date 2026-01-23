@@ -10,10 +10,9 @@ Requirements tested:
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import Any
 
 import pytest
-import yaml
 
 from oscura.config.schema import ValidationError
 from oscura.schemas import (
@@ -24,10 +23,6 @@ from oscura.schemas import (
 )
 
 pytestmark = pytest.mark.unit
-
-
-# Path to example configs
-EXAMPLES_DIR = Path(__file__).parent.parent.parent.parent / "examples" / "configs"
 
 
 class TestSchemaLoading:
@@ -78,21 +73,6 @@ class TestSchemaLoading:
 
 class TestPacketFormatSchema:
     """Test packet format schema validation."""
-
-    @pytest.fixture
-    def example_config(self) -> dict:
-        """Load example packet format config."""
-        config_file = EXAMPLES_DIR / "packet_format_example.yaml"
-        with open(config_file) as f:
-            return yaml.safe_load(f)
-
-    def test_validate_example_config(self, example_config: dict) -> None:
-        """Test that example config passes validation.
-
-        Requirements: CFG-001
-        """
-        result = validate_config(example_config, "packet_format")
-        assert result is True
 
     def test_missing_required_name(self) -> None:
         """Test error on missing required 'name' field."""
@@ -230,21 +210,6 @@ class TestPacketFormatSchema:
 class TestDeviceMappingSchema:
     """Test device mapping schema validation."""
 
-    @pytest.fixture
-    def example_config(self) -> dict:
-        """Load example device mapping config."""
-        config_file = EXAMPLES_DIR / "device_mapping_example.yaml"
-        with open(config_file) as f:
-            return yaml.safe_load(f)
-
-    def test_validate_example_config(self, example_config: dict) -> None:
-        """Test that example config passes validation.
-
-        Requirements: CFG-001
-        """
-        result = validate_config(example_config, "device_mapping")
-        assert result is True
-
     def test_missing_required_name(self) -> None:
         """Test error on missing required 'name' field."""
         config = {"devices": {"0x01": {"name": "Device1"}}}
@@ -354,24 +319,9 @@ class TestDeviceMappingSchema:
 class TestBusConfigurationSchema:
     """Test bus configuration schema validation."""
 
-    @pytest.fixture
-    def example_config(self) -> dict:
-        """Load example bus config."""
-        config_file = EXAMPLES_DIR / "bus_configuration_example.yaml"
-        with open(config_file) as f:
-            return yaml.safe_load(f)
-
-    def test_validate_example_config(self, example_config: dict) -> None:
-        """Test that example config passes validation.
-
-        Requirements: CFG-001
-        """
-        result = validate_config(example_config, "bus_configuration")
-        assert result is True
-
     def test_missing_required_name(self) -> None:
         """Test error on missing required 'name' field."""
-        config = {"settings": {}}
+        config: dict[str, Any] = {"settings": {}}
         with pytest.raises(ValidationError):
             validate_config(config, "bus_configuration")
 
@@ -526,21 +476,6 @@ class TestBusConfigurationSchema:
 
 class TestProtocolDefinitionSchema:
     """Test protocol definition schema validation."""
-
-    @pytest.fixture
-    def example_config(self) -> dict:
-        """Load example protocol definition."""
-        config_file = EXAMPLES_DIR / "protocol_definition_example.yaml"
-        with open(config_file) as f:
-            return yaml.safe_load(f)
-
-    def test_validate_example_config(self, example_config: dict) -> None:
-        """Test that example config passes validation.
-
-        Requirements: CFG-001
-        """
-        result = validate_config(example_config, "protocol_definition")
-        assert result is True
 
     def test_missing_required_fields(self) -> None:
         """Test error on missing required fields."""

@@ -416,7 +416,7 @@ class CANSession(AnalysisSession):
             recording1=name1,
             recording2=name2,
             changed_bytes=total_byte_changes,
-            changed_regions=changed_regions,  # type: ignore[arg-type]
+            changed_regions=changed_regions,
             similarity_score=similarity,
             details={
                 "changed_message_ids": changed_message_ids,

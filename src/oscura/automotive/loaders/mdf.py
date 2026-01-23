@@ -47,7 +47,7 @@ def load_mdf(file_path: Path | str) -> CANMessageList:
         >>> print(f"Unique IDs: {len(messages.unique_ids())}")
     """
     try:
-        from asammdf import MDF  # type: ignore[import-untyped]
+        from asammdf import MDF
     except ImportError as e:
         raise ImportError(
             "asammdf is required for MDF/MF4 file support. "

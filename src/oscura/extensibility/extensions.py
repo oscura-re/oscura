@@ -189,7 +189,7 @@ class HookContext:
     def __post_init__(self):  # type: ignore[no-untyped-def]
         """Initialize metadata if None."""
         if self.metadata is None:
-            self.metadata = {}  # type: ignore[unreachable]
+            self.metadata = {}
 
 
 @dataclass
@@ -235,6 +235,13 @@ class ExtensionPointRegistry:
     """
 
     _instance: ExtensionPointRegistry | None = None
+    _extension_points: dict[str, ExtensionPointSpec]
+    _algorithms: dict[str, dict[str, RegisteredAlgorithm]]
+    _hooks: dict[str, list[RegisteredHook]]
+    _hook_error_policy: HookErrorPolicy
+    _log_hook_errors: bool
+    _initialized: bool
+    _registration_counter: int
 
     def __new__(cls) -> ExtensionPointRegistry:
         """Ensure singleton instance.
@@ -244,13 +251,13 @@ class ExtensionPointRegistry:
         """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._extension_points: dict[str, ExtensionPointSpec] = {}  # type: ignore[misc, attr-defined]
-            cls._instance._algorithms: dict[str, dict[str, RegisteredAlgorithm]] = {}  # type: ignore[misc, attr-defined]
-            cls._instance._hooks: dict[str, list[RegisteredHook]] = {}  # type: ignore[misc, attr-defined]
+            cls._instance._extension_points: dict[str, ExtensionPointSpec] = {}
+            cls._instance._algorithms: dict[str, dict[str, RegisteredAlgorithm]] = {}
+            cls._instance._hooks: dict[str, list[RegisteredHook]] = {}
             cls._instance._hook_error_policy = HookErrorPolicy.CONTINUE
             cls._instance._log_hook_errors = True
-            cls._instance._initialized = False  # type: ignore[has-type]
-            cls._instance._registration_counter = 0  # type: ignore[misc, attr-defined]
+            cls._instance._initialized = False
+            cls._instance._registration_counter = 0
         return cls._instance
 
     def initialize(self) -> None:
@@ -258,7 +265,7 @@ class ExtensionPointRegistry:
 
         Registers the standard extension points that come with Oscura.
         """
-        if self._initialized:  # type: ignore[has-type]
+        if self._initialized:
             return
 
         # Register standard extension points
@@ -336,9 +343,9 @@ class ExtensionPointRegistry:
             ... )
             >>> registry.register_point(spec)
         """
-        if spec.name in self._extension_points:  # type: ignore[attr-defined]
+        if spec.name in self._extension_points:
             raise ValueError(f"Extension point '{spec.name}' already registered")
-        self._extension_points[spec.name] = spec  # type: ignore[attr-defined]
+        self._extension_points[spec.name] = spec
         logger.debug(f"Registered extension point: {spec.name} v{spec.version}")
 
     def get_point(self, name: str) -> ExtensionPointSpec:
@@ -353,12 +360,12 @@ class ExtensionPointRegistry:
         Raises:
             KeyError: If extension point not found
         """
-        if name not in self._extension_points:  # type: ignore[attr-defined]
+        if name not in self._extension_points:
             raise KeyError(
                 f"Extension point '{name}' not found. "
-                f"Available: {list(self._extension_points.keys())}"  # type: ignore[attr-defined]
+                f"Available: {list(self._extension_points.keys())}"
             )
-        return self._extension_points[name]  # type: ignore[no-any-return, attr-defined]
+        return self._extension_points[name]
 
     def list_points(self) -> list[ExtensionPointSpec]:
         """List all registered extension points.
@@ -366,7 +373,7 @@ class ExtensionPointRegistry:
         Returns:
             List of extension point specifications
         """
-        return list(self._extension_points.values())  # type: ignore[attr-defined]
+        return list(self._extension_points.values())
 
     def exists(self, name: str) -> bool:
         """Check if extension point exists.
@@ -377,7 +384,7 @@ class ExtensionPointRegistry:
         Returns:
             True if exists
         """
-        return name in self._extension_points  # type: ignore[attr-defined]
+        return name in self._extension_points
 
     # =========================================================================
     # Algorithm Management (EXT-002, EXT-003, EXT-004)
@@ -433,14 +440,14 @@ class ExtensionPointRegistry:
         if not callable(func):
             raise TypeError(f"Algorithm must be callable, got {type(func).__name__}")
 
-        if category not in self._algorithms:  # type: ignore[attr-defined]
-            self._algorithms[category] = {}  # type: ignore[attr-defined]
+        if category not in self._algorithms:
+            self._algorithms[category] = {}
 
-        if name in self._algorithms[category]:  # type: ignore[attr-defined]
+        if name in self._algorithms[category]:
             raise ValueError(f"Algorithm '{name}' already registered in category '{category}'")
 
         # Increment registration counter
-        self._registration_counter += 1  # type: ignore[attr-defined]
+        self._registration_counter += 1
 
         algo = RegisteredAlgorithm(
             name=name,
@@ -453,10 +460,10 @@ class ExtensionPointRegistry:
             complexity=complexity,
             capabilities=capabilities or {},
             memory_usage=memory_usage,
-            registration_order=self._registration_counter,  # type: ignore[attr-defined]
+            registration_order=self._registration_counter,
         )
 
-        self._algorithms[category][name] = algo  # type: ignore[attr-defined]
+        self._algorithms[category][name] = algo
         logger.debug(f"Registered algorithm: {name} in category {category}")
 
     def get_algorithm(self, category: str, name: str) -> RegisteredAlgorithm:
@@ -472,11 +479,11 @@ class ExtensionPointRegistry:
         Raises:
             KeyError: If not found
         """
-        if category not in self._algorithms:  # type: ignore[attr-defined]
+        if category not in self._algorithms:
             raise KeyError(f"Category '{category}' not found")
-        if name not in self._algorithms[category]:  # type: ignore[attr-defined]
+        if name not in self._algorithms[category]:
             raise KeyError(f"Algorithm '{name}' not found in category '{category}'")
-        return self._algorithms[category][name]  # type: ignore[no-any-return, attr-defined]
+        return self._algorithms[category][name]
 
     def select_algorithm(
         self,
@@ -524,14 +531,14 @@ class ExtensionPointRegistry:
         References:
             EXT-003: Algorithm Selection (auto-selection by capability matching)
         """
-        if category not in self._algorithms:  # type: ignore[attr-defined]
+        if category not in self._algorithms:
             raise KeyError(f"Category '{category}' not found")
 
         if name:
             return self.get_algorithm(category, name)
 
         # Auto-select based on criteria
-        candidates = list(self._algorithms[category].values())  # type: ignore[attr-defined]
+        candidates = list(self._algorithms[category].values())
 
         if not candidates:
             raise KeyError(f"No algorithms registered in category '{category}'")
@@ -622,7 +629,7 @@ class ExtensionPointRegistry:
                 return -a.priority
 
         candidates.sort(key=sort_key)
-        return candidates[0]  # type: ignore[no-any-return]
+        return candidates[0]
 
     def list_algorithms(
         self,
@@ -653,10 +660,10 @@ class ExtensionPointRegistry:
         References:
             EXT-004: Priority System (tie-breaking rules by name or registration order)
         """
-        if category not in self._algorithms:  # type: ignore[attr-defined]
+        if category not in self._algorithms:
             raise KeyError(f"Category '{category}' not found")
 
-        algos = list(self._algorithms[category].values())  # type: ignore[attr-defined]
+        algos = list(self._algorithms[category].values())
 
         if ordered:
             if tie_break == "registration":
@@ -674,7 +681,7 @@ class ExtensionPointRegistry:
         Returns:
             List of category names
         """
-        return list(self._algorithms.keys())  # type: ignore[attr-defined]
+        return list(self._algorithms.keys())
 
     def benchmark_algorithms(
         self,
@@ -719,7 +726,7 @@ class ExtensionPointRegistry:
         import time
         import tracemalloc
 
-        if category not in self._algorithms:  # type: ignore[attr-defined]
+        if category not in self._algorithms:
             raise KeyError(f"Category '{category}' not found")
 
         if metrics is None:
@@ -727,7 +734,7 @@ class ExtensionPointRegistry:
 
         results = {}
 
-        for name, algo in self._algorithms[category].items():  # type: ignore[attr-defined]
+        for name, algo in self._algorithms[category].items():
             algo_results = {}
 
             if "execution_time" in metrics:
@@ -783,11 +790,11 @@ class ExtensionPointRegistry:
             EXT-004: Priority System
         """
         for category, priorities in config.items():
-            if category not in self._algorithms:  # type: ignore[attr-defined]
+            if category not in self._algorithms:
                 continue
             for name, priority in priorities.items():
-                if name in self._algorithms[category]:  # type: ignore[attr-defined]
-                    self._algorithms[category][name].priority = priority  # type: ignore[attr-defined]
+                if name in self._algorithms[category]:
+                    self._algorithms[category][name].priority = priority
                     logger.debug(f"Set priority for {category}/{name} to {priority}")
 
     # =========================================================================
@@ -819,8 +826,8 @@ class ExtensionPointRegistry:
         References:
             EXT-005: Hook System
         """
-        if hook_point not in self._hooks:  # type: ignore[attr-defined]
-            self._hooks[hook_point] = []  # type: ignore[attr-defined]
+        if hook_point not in self._hooks:
+            self._hooks[hook_point] = []
 
         hook = RegisteredHook(
             hook_point=hook_point,
@@ -829,9 +836,9 @@ class ExtensionPointRegistry:
             name=name or func.__name__,
         )
 
-        self._hooks[hook_point].append(hook)  # type: ignore[attr-defined]
+        self._hooks[hook_point].append(hook)
         # Sort by priority (highest first)
-        self._hooks[hook_point].sort(key=lambda h: -h.priority)  # type: ignore[attr-defined]
+        self._hooks[hook_point].sort(key=lambda h: -h.priority)
 
         logger.debug(f"Registered hook '{hook.name}' at point '{hook_point}'")
 
@@ -862,11 +869,11 @@ class ExtensionPointRegistry:
         References:
             EXT-005: Hook System (hook chaining, error isolation)
         """
-        if hook_point not in self._hooks:  # type: ignore[attr-defined]
+        if hook_point not in self._hooks:
             return context
 
         # Execute hooks in priority order (hook chaining - EXT-005)
-        for hook in self._hooks[hook_point]:  # type: ignore[attr-defined]
+        for hook in self._hooks[hook_point]:
             try:
                 context = hook.func(context)
                 if context.abort:
@@ -913,11 +920,11 @@ class ExtensionPointRegistry:
             Dict mapping hook points to list of hook names
         """
         if hook_point:
-            if hook_point not in self._hooks:  # type: ignore[attr-defined]
+            if hook_point not in self._hooks:
                 return {hook_point: []}
-            return {hook_point: [h.name for h in self._hooks[hook_point]]}  # type: ignore[attr-defined]
+            return {hook_point: [h.name for h in self._hooks[hook_point]]}
 
-        return {point: [h.name for h in hooks] for point, hooks in self._hooks.items()}  # type: ignore[attr-defined]
+        return {point: [h.name for h in hooks] for point, hooks in self._hooks.items()}
 
     def clear_hooks(self, hook_point: str | None = None) -> None:
         """Clear registered hooks.
@@ -926,9 +933,9 @@ class ExtensionPointRegistry:
             hook_point: Specific hook point to clear, or None for all
         """
         if hook_point:
-            self._hooks.pop(hook_point, None)  # type: ignore[attr-defined]
+            self._hooks.pop(hook_point, None)
         else:
-            self._hooks.clear()  # type: ignore[attr-defined]
+            self._hooks.clear()
 
     # =========================================================================
     # Custom Decoder Registration (EXT-006)
@@ -994,7 +1001,7 @@ class ExtensionPointRegistry:
             Decoder class
         """
         algo = self.get_algorithm("protocol_decoder", protocol)
-        return algo.func  # type: ignore[return-value]
+        return algo.func
 
     def list_decoders(self) -> list[str]:
         """List all registered protocol decoders.
@@ -1002,9 +1009,9 @@ class ExtensionPointRegistry:
         Returns:
             List of protocol names
         """
-        if "protocol_decoder" not in self._algorithms:  # type: ignore[attr-defined]
+        if "protocol_decoder" not in self._algorithms:
             return []
-        return list(self._algorithms["protocol_decoder"].keys())  # type: ignore[attr-defined]
+        return list(self._algorithms["protocol_decoder"].keys())
 
 
 # Global registry instance

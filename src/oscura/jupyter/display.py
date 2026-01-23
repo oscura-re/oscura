@@ -33,7 +33,7 @@ except ImportError:
         def __init__(self, data: str) -> None:
             self.data = data
 
-    def display(*args: Any, **kwargs: Any) -> None:  # type: ignore[no-redef,misc]
+    def display(*args: Any, **kwargs: Any) -> None:
         """Fallback display when IPython not available."""
         for arg in args:
             print(arg)

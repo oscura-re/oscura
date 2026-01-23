@@ -32,7 +32,7 @@ def load_blf(file_path: Path | str) -> CANMessageList:
         >>> print(f"Unique IDs: {len(messages.unique_ids())}")
     """
     try:
-        import can  # type: ignore[import-untyped]
+        import can
     except ImportError as e:
         raise ImportError(
             "python-can is required for BLF file support. "

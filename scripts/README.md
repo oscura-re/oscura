@@ -6,7 +6,7 @@
 
 ## Essential Workflow (Start Here)
 
-These 8 scripts handle 99% of daily development tasks:
+These 7 scripts handle 99% of daily development tasks:
 
 ```bash
 ./scripts/setup.sh              # Initial setup & dependencies
@@ -16,10 +16,9 @@ These 8 scripts handle 99% of daily development tasks:
 ./scripts/doctor.sh             # Diagnose environment problems
 ./scripts/clean.sh              # Clean build artifacts
 ./scripts/pre-push.sh           # Full CI verification (~10-15 min)
-./scripts/audit_scripts.sh      # Audit script consistency
 ```
 
-**That's it!** Everything else is in specialized subdirectories.
+**That's it!** Everything else is organized in specialized subdirectories below.
 
 ---
 
@@ -48,6 +47,8 @@ testing/verify_test_data.sh     # Verify test data integrity
 
 ```bash
 test-data/generate_comprehensive_test_data.py  # Generate complete test suite
+test-data/generate_integration_pcaps.py        # Generate integration test PCAPs
+test-data/generate_minimal_format_pcaps.py     # Generate format-specific PCAPs
 test-data/generate_synthetic_wfm.py            # Generate WFM files
 test-data/verify_synthetic_test_data.py        # Verify generated data
 test-data/download_test_data.sh                # Download external test data
@@ -56,6 +57,7 @@ test-data/download_test_data.sh                # Download external test data
 ### quality/ - Additional QA Tools
 
 ```bash
+quality/audit_scripts.sh        # Audit script consistency
 quality/lint.sh                 # Lint only (no format)
 quality/format.sh               # Format only (no lint)
 quality/pre-push-validation.sh  # Pre-push validation helper
@@ -67,6 +69,7 @@ quality/validate_vscode.sh      # Validate VS Code config
 ### docs/ - Documentation Tools
 
 ```bash
+docs/generate_cli_docs.py       # Generate CLI reference docs
 docs/validate_docs.py           # Check doc links/structure
 docs/validate_api_docs.py       # Verify API docs completeness
 docs/generate_diagrams.py       # Generate architecture diagrams
@@ -176,7 +179,7 @@ uv run python validate_test_markers.py
 
 ## Design Philosophy
 
-### Top-Level (8 scripts)
+### Top-Level (7 scripts)
 
 **Essential workflow scripts used daily by everyone.**
 
@@ -291,10 +294,10 @@ pip install uv
 
 ## Script Statistics
 
-- **Top-level**: 8 essential scripts
+- **Top-level**: 7 essential scripts
 - **Subdirectories**: 10 categorized directories
-- **Total scripts**: 39 active scripts (47 including tools/)
-- **Lines of code**: ~15,000 lines (including lib/common.sh)
+- **Total scripts**: 72 active scripts (51 shell, 21 Python)
+- **Lines of code**: ~15,000+ lines (including lib/common.sh)
 
 ---
 
@@ -319,7 +322,7 @@ pip install uv
 
 ```bash
 # Check script consistency
-./scripts/audit_scripts.sh
+./scripts/quality/audit_scripts.sh
 
 # Verify all scripts are executable
 ./scripts/setup.sh
@@ -339,5 +342,5 @@ grep -r "scripts/" . --include="*.sh" --include="*.py" | grep -v "^Binary"
 
 ---
 
-**Last Updated**: 2026-01-15
-**Status**: Reorganized - 8 essential, 31 specialized
+**Last Updated**: 2026-01-23
+**Status**: Optimized - 7 essential scripts, 65 specialized tools organized in 10 subdirectories

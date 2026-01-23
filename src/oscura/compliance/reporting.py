@@ -466,7 +466,7 @@ def _convert_html_to_pdf(html_path: Path, pdf_path: Path) -> None:
     """Convert HTML to PDF using available tools."""
     try:
         # Try weasyprint first
-        from weasyprint import HTML  # type: ignore[import-not-found]
+        from weasyprint import HTML
 
         HTML(str(html_path)).write_pdf(str(pdf_path))
     except ImportError:

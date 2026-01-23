@@ -335,7 +335,7 @@ class SimulatedSource(RealtimeSource):
         ) % (2 * np.pi)
 
         # Cast to the expected return type
-        return signal.astype(np.float64)  # type: ignore[return-value,no-any-return]
+        return signal.astype(np.float64)
 
     def start(self) -> None:
         """Start acquisition."""

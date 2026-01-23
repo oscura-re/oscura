@@ -80,10 +80,11 @@ run_fix "ruff.sh" "--fix"
 print_header "Shell"
 run_fix "shfmt.sh" "--fix"
 
-# Markup/Data - formatting (YAML, JSON, Markdown)
+# Markup/Data - formatting (YAML, JSON, Markdown, TOML)
 print_header "Markup & Data"
 run_fix "markdownlint.sh" "--fix"
 run_fix "prettier.sh" "--fix"
+run_fix "taplo.sh" "--fix"
 
 # Cleanup - remove backup and generated files
 print_header "Cleanup"

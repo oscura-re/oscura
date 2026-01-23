@@ -597,7 +597,7 @@ class MessageFormatInferrer:
                     name=f"field_{len(fields)}",
                     offset=offset,
                     size=size,
-                    field_type=field_type,  # type: ignore[arg-type]
+                    field_type=field_type,
                     entropy=float(field_data["entropy"]),
                     variance=float(field_data["variance"]),
                     confidence=confidence,
@@ -669,14 +669,14 @@ class MessageFormatInferrer:
                         int(msg[offset]) << 16 | int(msg[offset + 1]) << 8 | int(msg[offset + 2])
                     )
                 int_values.append(val_int)
-            values = list(int_values)  # type: ignore[assignment]
+            values = list(int_values)
         else:
             # For larger fields, use bytes
             tuple_values: list[tuple[int, ...]] = []
             for msg in messages:
                 val_tuple = tuple(int(b) for b in msg[offset : offset + size])
                 tuple_values.append(val_tuple)
-            values = list(tuple_values)  # type: ignore[assignment]
+            values = list(tuple_values)
 
         # Calculate statistics
         if size > 4:
@@ -909,14 +909,14 @@ class MessageFormatInferrer:
                             | int(msg[offset + 2])
                         )
                     int_values.append(val_int)
-                values = list(int_values)  # type: ignore[assignment]
+                values = list(int_values)
             else:
                 # For larger fields, use bytes
                 tuple_values: list[tuple[int, ...]] = []
                 for msg in messages:
                     val_tuple = tuple(int(b) for b in msg[offset : offset + size])
                     tuple_values.append(val_tuple)
-                values = list(tuple_values)  # type: ignore[assignment]
+                values = list(tuple_values)
 
             # Calculate statistics
             if size > 4:
@@ -942,7 +942,7 @@ class MessageFormatInferrer:
                 name=f"field_{i}",
                 offset=offset,
                 size=size,
-                field_type=field_type,  # type: ignore[arg-type]
+                field_type=field_type,
                 entropy=float(entropy),
                 variance=float(variance),
                 confidence=confidence,
@@ -1055,7 +1055,7 @@ class MessageFormatInferrer:
             return ("constant", 1.0)
 
         # Check for counter field
-        if not isinstance(values[0], tuple) and self._detect_counter_field(  # type: ignore[misc, unreachable]
+        if not isinstance(values[0], tuple) and self._detect_counter_field(
             [v for v in values if isinstance(v, int)]
         ):
             return ("counter", 0.9)
@@ -1068,7 +1068,7 @@ class MessageFormatInferrer:
 
         # Check for length field (small values, near start)
         if offset < 8 and size <= 2:
-            if not isinstance(values[0], tuple):  # type: ignore[unreachable]
+            if not isinstance(values[0], tuple):
                 max_val = max(v for v in values if isinstance(v, int))
                 if max_val < msg_len * 2:  # Reasonable length value
                     return ("length", 0.6)
@@ -1302,6 +1302,6 @@ def find_dependencies(
     # Auto-infer schema if not provided
     if schema is None:
         # Cast to expected type (msg_arrays contains only NDArray after conversion)
-        schema = inferrer.infer_format(msg_arrays)  # type: ignore[arg-type]
+        schema = inferrer.infer_format(msg_arrays)
 
-    return inferrer.find_dependencies(msg_arrays, schema)  # type: ignore[arg-type]
+    return inferrer.find_dependencies(msg_arrays, schema)

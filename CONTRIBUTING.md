@@ -94,8 +94,8 @@ cd oscura
 ./scripts/setup.sh
 
 # Verify setup
-./scripts/verify-setup.sh
-```bash
+./scripts/doctor.sh
+````
 
 **Alternative (manual steps):**
 
@@ -239,7 +239,7 @@ For comprehensive test documentation, see **[docs/testing/test-suite-guide.md](d
 ````bash
 ./scripts/test.sh              # Full tests with coverage (8-10 min)
 ./scripts/test.sh --fast       # Quick tests without coverage (5-7 min)
-```bash
+````
 
 **Manual test commands** (only if needed for specific scenarios):
 
@@ -502,4 +502,3 @@ By contributing, you agree that your contributions will be licensed under the MI
 ---
 
 Thank you for contributing to Oscura!
-````

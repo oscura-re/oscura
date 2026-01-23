@@ -261,7 +261,7 @@ def _find_metadata_value(
             if np.isscalar(value):
                 return float(value)  # type: ignore[arg-type]
             elif isinstance(value, np.ndarray) and value.size == 1:
-                return float(value.item())  # type: ignore[arg-type]
+                return float(value.item())
 
         # Case-insensitive match
         name_lower = name.lower()
@@ -271,7 +271,7 @@ def _find_metadata_value(
                 if np.isscalar(value):
                     return float(value)  # type: ignore[arg-type]
                 elif isinstance(value, np.ndarray) and value.size == 1:
-                    return float(value.item())  # type: ignore[arg-type]
+                    return float(value.item())
 
     # Check for metadata dict
     if "metadata" in keys:

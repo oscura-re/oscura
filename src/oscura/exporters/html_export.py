@@ -654,7 +654,7 @@ def _try_render_plotly(fig: Any, interactive: bool) -> str | None:
         return None
 
     try:
-        import plotly.graph_objects as go  # type: ignore[import-not-found]
+        import plotly.graph_objects as go
 
         if isinstance(fig, go.Figure):
             return fig.to_html(  # type: ignore[no-any-return]

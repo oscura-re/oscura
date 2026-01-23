@@ -28,33 +28,33 @@ if TYPE_CHECKING:
 logger = logging.getLogger("oscura.cli.compare")
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("file1", type=click.Path(exists=True))  # type: ignore[misc]
-@click.argument("file2", type=click.Path(exists=True))  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+@click.command()
+@click.argument("file1", type=click.Path(exists=True))
+@click.argument("file2", type=click.Path(exists=True))
+@click.option(
     "--threshold",
     type=float,
     default=5.0,
     help="Report differences greater than this percentage (default: 5%).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--output",
     type=click.Choice(["json", "csv", "html", "table"], case_sensitive=False),
     default="table",
     help="Output format (default: table).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--save-report",
     type=click.Path(),
     default=None,
     help="Save detailed HTML comparison report.",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--align",
     is_flag=True,
     help="Align signals using cross-correlation before comparison.",
 )
-@click.pass_context  # type: ignore[misc]
+@click.pass_context
 def compare(
     ctx: click.Context,
     file1: str,

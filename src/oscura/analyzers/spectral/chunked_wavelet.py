@@ -321,8 +321,8 @@ def cwt_chunked_generator(
     wavelet: str = "morl",
     *,
     chunk_size: int | float = 1e6,
-    **kwargs: Any,  # type: ignore[name-defined]
-) -> Iterator[tuple[NDArray[Any], NDArray[Any]]]:  # type: ignore[name-defined]
+    **kwargs: Any,
+) -> Iterator[tuple[NDArray[Any], NDArray[Any]]]:
     """Generator version that yields CWT chunks.
 
     Yields CWT coefficients for each chunk, useful for streaming processing.

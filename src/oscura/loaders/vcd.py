@@ -174,7 +174,7 @@ def load_vcd(
         )
 
         return DigitalTrace(
-            data=data.astype(np.bool_),  # type: ignore[arg-type]
+            data=data.astype(np.bool_),
             metadata=metadata,
             edges=edges,
         )

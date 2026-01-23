@@ -453,7 +453,7 @@ class FIRFilter(Filter):
         # Check symmetry
         symmetric = np.allclose(self._coeffs, self._coeffs[::-1])
         antisymmetric = np.allclose(self._coeffs, -self._coeffs[::-1])
-        return symmetric or antisymmetric  # type: ignore[no-any-return]
+        return symmetric or antisymmetric
 
     def apply(
         self,

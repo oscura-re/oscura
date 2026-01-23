@@ -143,9 +143,9 @@ def _export_docx(
         REPORT-019
     """
     try:
-        from docx import Document  # type: ignore[import-not-found]
-        from docx.enum.text import (  # type: ignore[import-not-found]
-            WD_ALIGN_PARAGRAPH,  # type: ignore[import-not-found]
+        from docx import Document
+        from docx.enum.text import (
+            WD_ALIGN_PARAGRAPH,
         )
         from docx.shared import (  # noqa: F401  # type: ignore[import-not-found]
             Inches,

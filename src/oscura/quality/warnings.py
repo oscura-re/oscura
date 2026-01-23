@@ -152,9 +152,9 @@ class SignalQualityAnalyzer:
         """
         # Extract data and sample rate
         if hasattr(trace, "data"):
-            data = trace.data  # type: ignore[ignore-without-code]
+            data = trace.data
             if sample_rate is None and hasattr(trace, "metadata"):
-                sample_rate = trace.metadata.sample_rate  # type: ignore[ignore-without-code]
+                sample_rate = trace.metadata.sample_rate
         else:
             data = trace  # type: ignore[assignment]
 

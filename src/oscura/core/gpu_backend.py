@@ -158,7 +158,7 @@ class GPUBackend:
         """
         if self.gpu_available and self._cp is not None:
             if isinstance(array, self._cp.ndarray):
-                return self._cp.asnumpy(array)  # type: ignore[no-any-return]
+                return self._cp.asnumpy(array)
         return np.asarray(array)
 
     def _to_gpu(self, array: NDArray[Any]) -> Any:
@@ -445,7 +445,7 @@ class GPUBackend:
             return self._to_cpu(counts), self._to_cpu(edges)
         else:
             # CPU fallback
-            return np.histogram(data, bins=bins, range=range, density=density)  # type: ignore[no-any-return]
+            return np.histogram(data, bins=bins, range=range, density=density)
 
     def dot(
         self,
@@ -477,10 +477,10 @@ class GPUBackend:
             gpu_a = self._to_gpu(a)
             gpu_b = self._to_gpu(b)
             result = self._cp.dot(gpu_a, gpu_b)
-            return self._to_cpu(result)  # type: ignore[return-value]
+            return self._to_cpu(result)
         else:
             # CPU fallback
-            return np.dot(a, b)  # type: ignore[return-value, no-any-return]
+            return np.dot(a, b)
 
     def matmul(
         self,
@@ -511,10 +511,10 @@ class GPUBackend:
             gpu_a = self._to_gpu(a)
             gpu_b = self._to_gpu(b)
             result = self._cp.matmul(gpu_a, gpu_b)
-            return self._to_cpu(result)  # type: ignore[return-value]
+            return self._to_cpu(result)
         else:
             # CPU fallback
-            return np.matmul(a, b)  # type: ignore[return-value, no-any-return]
+            return np.matmul(a, b)
 
 
 # Module-level singleton for convenient access

@@ -51,12 +51,14 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Build protocol specification
 
 **Expected Output:**
+
 - Protocol type and parameters (baud rate, bit rate, clock frequency)
 - Message format specification with field sizes
 - Example decoded messages
 - Confidence scores for each analysis step
 
 **Success Criteria:**
+
 - Successfully decode at least 5 consecutive messages
 - Field boundaries aligned with observed protocol structure
 - Detected parameters match data rate characteristics
@@ -107,12 +109,14 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Export for mechanic or engineer review
 
 **Expected Output:**
+
 - List of active and historical DTCs
 - Live sensor data (RPM, temperature, fuel pressure, etc.)
 - Fault correlation analysis
 - Formatted diagnostic report in PDF/HTML
 
 **Success Criteria:**
+
 - All DTCs decoded without CRC errors
 - Sensor values in realistic ranges for vehicle
 - Report includes both raw and interpreted data
@@ -167,12 +171,14 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Export detailed measurements
 
 **Expected Output:**
+
 - Signal integrity report with all key metrics
 - Eye diagram showing operation margin
 - IEEE 181 measurement validation
 - Recommendation list for design improvements
 
 **Success Criteria:**
+
 - All measurements compliant with IEEE 181-2011
 - Eye opening >50% of unit interval
 - Rise/fall times within specification
@@ -228,6 +234,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Create diagnostic report
 
 **Expected Output:**
+
 - Power supply output voltage and current waveforms
 - Ripple spectrum showing frequency components
 - Transient response measurements
@@ -235,6 +242,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
 - Recommendations for ripple reduction
 
 **Success Criteria:**
+
 - Ripple <2% of nominal output voltage
 - Transient response within spec (typically <100 us)
 - Harmonic content decays properly
@@ -290,6 +298,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Recommend solutions
 
 **Expected Output:**
+
 - Identified logic families for all signals
 - Voltage level measurements
 - Noise margin calculations
@@ -297,6 +306,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
 - Risk mitigation recommendations
 
 **Success Criteria:**
+
 - All logic families correctly identified
 - Noise margins >300 mV (typical)
 - No setup/hold violations detected
@@ -352,6 +362,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Identify timing violations
 
 **Expected Output:**
+
 - Clock frequency and period measurements
 - Jitter analysis (periodic and random components)
 - PLL lock-time and stability measurements
@@ -359,6 +370,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
 - Compliance report against specifications
 
 **Success Criteria:**
+
 - Phase jitter <100 ps (typical)
 - Period jitter <0.5% of clock period
 - PLL lock achieved within 100 cycles
@@ -417,6 +429,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Reliability recommendations
 
 **Expected Output:**
+
 - Decoded memory transactions
 - Timing measurements for all critical paths
 - Signal integrity analysis
@@ -425,6 +438,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
 - Margin analysis and recommendations
 
 **Success Criteria:**
+
 - All memory transactions decoded correctly
 - Setup/hold time margins >200 ps
 - Data valid window sufficient for sampling
@@ -489,6 +503,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
    - Generate analysis report
 
 **Expected Output:**
+
 - Demodulated signal and bit stream
 - Decoded wireless protocol packets
 - Modulation type and parameters
@@ -497,6 +512,7 @@ End-to-end workflows for common hardware reverse engineering and signal analysis
 - Signal analysis report
 
 **Success Criteria:**
+
 - All packets decoded without errors
 - SNR >20 dB for reliable operation
 - EVM <10% for QAM-based systems
@@ -533,24 +549,28 @@ python3 demonstrations/validate_all.py
 ## Tips for Success
 
 **Protocol Reverse Engineering:**
+
 - Capture at least 10-20 message exchanges for pattern analysis
 - Use triggering to isolate specific operations
 - Compare multiple capture files to confirm patterns
 - Validate inferred fields against device behavior
 
 **Automotive Diagnostics:**
+
 - Capture at engine start, idle, and load conditions
 - Extract both OBD-II Mode 01 (live data) and Mode 03 (DTCs)
 - Cross-reference DTC codes with sensor data
 - Include timestamp information for fault correlation
 
 **Signal Integrity:**
+
 - Use differential probing for balanced signals
 - Minimize probe parasitic effects with de-embedding
 - Capture steady-state and transient conditions
 - Use multiple timebase scales for complete picture
 
 **Wireless Analysis:**
+
 - Maintain >20 dB SNR for reliable demodulation
 - Capture multiple frames to detect protocol errors
 - Validate demodulation quality with constellation diagram

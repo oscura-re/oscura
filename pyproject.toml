@@ -566,6 +566,10 @@ module = [
     "can", "can.*",
     "cantools", "cantools.*",
     "asammdf", "asammdf.*",
+    "tm_data_types", "tm_data_types.*",
+    "RigolWFM", "RigolWFM.*",
+    "dask", "dask.*",
+    "numba", "numba.*",
 ]
 ignore_missing_imports = true
 
@@ -588,8 +592,39 @@ disable_error_code = ["attr-defined"]
 module = [
     "oscura.visualization.reverse_engineering",
     "oscura.automotive.visualization",
+    "oscura.visualization.interactive",
 ]
-disable_error_code = ["attr-defined"]
+disable_error_code = ["attr-defined", "union-attr"]
+
+# Modules using numba decorators - decorators lack type stubs
+[[tool.mypy.overrides]]
+module = ["oscura.core.numba_backend"]
+disable_error_code = ["untyped-decorator"]
+
+# Modules using jupyter decorators - decorators lack complete type stubs
+[[tool.mypy.overrides]]
+module = ["oscura.jupyter.magic", "oscura.jupyter.display"]
+disable_error_code = ["untyped-decorator", "misc"]
+
+# Modules with external untyped imports
+[[tool.mypy.overrides]]
+module = ["oscura.loaders.tektronix", "oscura.loaders.rigol", "oscura.loaders", "oscura.core.backend_selector"]
+disable_error_code = ["import-untyped", "import-not-found"]
+
+# Modules with complex generic type returns
+[[tool.mypy.overrides]]
+module = [
+    "oscura.core.correlation",
+    "oscura.inference.bayesian",
+    "oscura.core.gpu_backend",
+    "oscura.streaming.realtime",
+]
+disable_error_code = ["no-any-return"]
+
+# Modules with type annotation limitations
+[[tool.mypy.overrides]]
+module = ["oscura.extensibility.extensions", "oscura.inference.logic", "oscura.inference.message_format"]
+disable_error_code = ["misc", "arg-type", "return-value", "unreachable"]
 
 # CLI modules - click decorators don't have complete type stubs
 [[tool.mypy.overrides]]

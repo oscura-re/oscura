@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import tm_data_types for full Tektronix support
 try:
-    import tm_data_types  # type: ignore[import-untyped, import-not-found]
+    import tm_data_types
 
     TM_DATA_TYPES_AVAILABLE = True
 except ImportError:

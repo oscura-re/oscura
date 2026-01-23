@@ -389,7 +389,7 @@ def explain_result(
     }
 
     if measurement.lower() in explanations:
-        return explanations[measurement.lower()](value)  # type: ignore[no-untyped-call]
+        return explanations[measurement.lower()](value)
 
     # Generic explanation
     return f"{measurement}: {value}"

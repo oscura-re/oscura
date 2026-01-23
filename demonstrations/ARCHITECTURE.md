@@ -178,6 +178,7 @@ TOLERANCE_RELAXED = 0.10     # 10% - Noisy measurements (jitter, harmonics)
 ### Validation Best Practices
 
 1. **Derive expected values from generation parameters**
+
    ```python
    # Generate signal with known parameters
    freq_hz = 1000.0
@@ -189,6 +190,7 @@ TOLERANCE_RELAXED = 0.10     # 10% - Noisy measurements (jitter, harmonics)
    ```
 
 2. **Account for measurement uncertainty**
+
    ```python
    # Digital measurement on analog signal has inherent quantization error
    # Use relaxed tolerance for derived measurements
@@ -197,6 +199,7 @@ TOLERANCE_RELAXED = 0.10     # 10% - Noisy measurements (jitter, harmonics)
    ```
 
 3. **Validate multiple aspects of results**
+
    ```python
    # Check both presence and correctness
    if "frequency" not in results:
@@ -234,6 +237,7 @@ def generate_test_data(self) -> dict:
 ```
 
 **Why**: Makes demonstrations:
+
 - Reproducible without managing external files
 - Fast (no I/O overhead)
 - Self-documenting (parameters show intent)
@@ -348,6 +352,7 @@ The index generates reports showing:
 - **Coverage gaps**: APIs without demonstrations
 
 Example:
+
 ```
 Total Demonstrations: 112
 Capabilities Demonstrated: 48
@@ -363,11 +368,13 @@ Coverage Gaps:
 ### Adding New Capability Tracking
 
 1. Add capability name to `capabilities` list in `__init__()`:
+
    ```python
    capabilities=["oscura.new_feature", "oscura.new_feature.submodule"]
    ```
 
 2. Run capability indexer to verify:
+
    ```bash
    python demonstrations/capability_index.py --gaps-only
    ```
@@ -383,13 +390,16 @@ Coverage Gaps:
 Core template class providing:
 
 **Initialization**:
+
 - `__init__(name, description, capabilities, ieee_standards, related_demos)` - Metadata setup
 
 **Execution**:
+
 - `execute()` - Main orchestrator (handles lifecycle, timing, error handling)
 - `load_custom_data(data_file)` - Load NPZ files for custom data experimentation
 
 **Formatting**:
+
 - `section(title)` - Print major section header (with borders)
 - `subsection(title)` - Print subsection header (with dashes)
 - `info(message)` - Print informational message
@@ -399,6 +409,7 @@ Core template class providing:
 - `result(key, value, unit)` - Print measurement result with optional unit
 
 **Utilities**:
+
 - `get_data_dir()` - Path to demonstrations/data/
 - `get_output_dir()` - Path to demonstrations/data/outputs/<demo_name>/
 
@@ -407,11 +418,13 @@ Core template class providing:
 Functions for creating realistic synthetic signals:
 
 **Wave Generators**:
+
 - `generate_sine_wave(frequency, amplitude, duration, sample_rate, offset, phase)` - Pure sine wave
 - `generate_square_wave(frequency, amplitude, duration, sample_rate, duty_cycle, offset)` - Square wave
 - `generate_pulse_train(pulse_width, period, amplitude, duration, sample_rate, rise_time, fall_time)` - Realistic digital pulses
 
 **Complex Signals**:
+
 - `generate_complex_signal(fundamentals, amplitudes, duration, sample_rate, snr_db)` - Multiple frequency components
 - `add_noise(trace, snr_db)` - Add white Gaussian noise with specified SNR
 
@@ -420,6 +433,7 @@ Functions for creating realistic synthetic signals:
 SSOT for constants used across demonstrations:
 
 **Tolerances**:
+
 ```python
 TOLERANCE_STRICT = 0.01      # 1% precise measurements
 TOLERANCE_NORMAL = 0.05      # 5% typical measurements
@@ -427,18 +441,21 @@ TOLERANCE_RELAXED = 0.10     # 10% noisy measurements
 ```
 
 **Precision**:
+
 ```python
 FLOAT_EPSILON = 1e-14        # Near-zero threshold
 FLOAT_TOLERANCE = 1e-6       # Relative comparison tolerance
 ```
 
 **Mathematical**:
+
 ```python
 SINE_RMS_FACTOR = 1/√2       # Peak to RMS conversion
 SQRT2 = √2                   # RMS to peak conversion
 ```
 
 **Random**:
+
 ```python
 RANDOM_SEED = 42             # Deterministic test data generation
 ```
@@ -685,21 +702,25 @@ demonstrations/
 ### Running Demonstrations
 
 **Run all demonstrations** (112 total):
+
 ```bash
 python demonstrations/validate_all.py
 ```
 
 **Run single demonstration**:
+
 ```bash
 python demonstrations/00_getting_started/00_hello_world.py
 ```
 
 **Run with custom data**:
+
 ```bash
 python demonstrations/02_basic_analysis/03_spectral_analysis.py --data-file my_data.npz
 ```
 
 **Run specific section**:
+
 ```bash
 python demonstrations/validate_all.py --section 02_basic_analysis
 ```
@@ -731,6 +752,7 @@ python demonstrations/validate_all.py --section 02_basic_analysis
 ### Single Source of Truth (SSOT)
 
 Constants live in one place:
+
 - Tolerances in `demonstrations/common/constants.py`
 - Test data generation parameters in individual demos
 - Validation logic in `demonstrations/common/validation.py`
@@ -763,6 +785,7 @@ Constants live in one place:
 **Problem**: `ImportError: No module named 'oscura'`
 
 **Solution**: Ensure Oscura is installed:
+
 ```bash
 cd /path/to/oscura
 uv sync  # Install dependencies
@@ -773,6 +796,7 @@ uv sync  # Install dependencies
 **Problem**: `✗ Amplitude: 1.95 != 2.0 (diff 0.05 > 0.02)`
 
 **Solution**: Check tolerance levels:
+
 ```python
 # If measurement is inherently noisy, use TOLERANCE_RELAXED
 validate_approximately(value, expected, tolerance=TOLERANCE_RELAXED)
@@ -783,6 +807,7 @@ validate_approximately(value, expected, tolerance=TOLERANCE_RELAXED)
 **Problem**: `ValueError: Unsupported file format: .csv`
 
 **Solution**: Currently only NPZ format is supported. Convert data:
+
 ```python
 import numpy as np
 
@@ -803,10 +828,13 @@ np.savez_compressed("data.npz", signal=data)
    - `validate(results)` - Validate correctness
 4. **Use common utilities** from `demonstrations/common/`
 5. **Test locally**:
+
    ```bash
    python demonstrations/XX_category/YY_demo.py
    ```
+
 6. **Verify in validation suite**:
+
    ```bash
    python demonstrations/validate_all.py
    ```

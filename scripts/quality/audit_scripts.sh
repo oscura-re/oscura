@@ -2,7 +2,7 @@
 # =============================================================================
 # audit_scripts.sh - Script Interface Audit
 # =============================================================================
-# Usage: ./scripts/audit_scripts.sh [-h|--help]
+# Usage: ./scripts/quality/audit_scripts.sh [-h|--help]
 # =============================================================================
 # Analyzes all scripts for consistency and best practices
 
@@ -10,8 +10,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=lib/common.sh
-source "${SCRIPT_DIR}/lib/common.sh"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -42,8 +42,9 @@ echo ""
 echo -e "  ${DIM}Repository:${NC} ${REPO_ROOT}"
 echo -e "  ${DIM}Timestamp:${NC}  $(date '+%Y-%m-%d %H:%M:%S')"
 
-# Find all shell scripts
-mapfile -t scripts < <(find "${SCRIPT_DIR}" -type f -name "*.sh" ! -name "audit_scripts.sh" | sort)
+# Find all shell scripts (search parent scripts/ directory)
+SCRIPTS_DIR="$(dirname "${SCRIPT_DIR}")"
+mapfile -t scripts < <(find "${SCRIPTS_DIR}" -type f -name "*.sh" ! -name "audit_scripts.sh" | sort)
 
 echo ""
 echo -e "  ${DIM}Found ${#scripts[@]} shell scripts${NC}"
@@ -59,7 +60,7 @@ declare -A has_set_euo
 
 # Analyze each script
 for script in "${scripts[@]}"; do
-  name="${script#"${SCRIPT_DIR}"/}"
+  name="${script#"${SCRIPTS_DIR}"/}"
 
   # Check for usage line
   if grep -q "^# Usage:" "${script}"; then

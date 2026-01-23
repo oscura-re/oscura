@@ -378,7 +378,7 @@ def _load_all_channels_tektronix(
         LoaderError: If the file cannot be read or parsed.
     """
     try:
-        import tm_data_types  # type: ignore[import-not-found, import-untyped]
+        import tm_data_types
     except ImportError:
         # Fall back to single channel loading
         trace = load(path, format="tektronix")

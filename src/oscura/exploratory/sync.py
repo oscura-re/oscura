@@ -347,7 +347,7 @@ def parse_variable_length_packets(
                         search_data,
                         sync_pattern,
                         pattern_bits=sync_bits,
-                        max_errors=0,  # type: ignore[arg-type]
+                        max_errors=0,
                     )
 
                     if matches:
