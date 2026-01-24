@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Documentation** (README.md): Accurate repositioning emphasizing workflow automation value, adds "Built On" transparency section showing integration with sigrok/scipy/ChipWhisperer, clarifies unique contributions (hypothesis-driven RE, DBC generation, Wireshark dissector automation) vs integrated capabilities (protocol decoding, signal processing), provides guidance on when to use Oscura vs other tools, maintains honest positioning as workflow automation platform that chains established tools
+
 ## [0.5.1] - 2026-01-24
 
 **Clean History Release**: Production-ready framework with ultra-clean git history.
