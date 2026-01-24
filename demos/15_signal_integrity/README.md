@@ -2,7 +2,7 @@
 
 > TDR impedance profiling, S-parameters, crosstalk, eye metrics
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
@@ -23,10 +23,10 @@ This demo category covers signal integrity analysis for high-speed digital desig
 
 ### Standards Compliance
 
-|Standard|Coverage|Notes|
-|---|---|---|
-|IEEE 370-2020|Partial|Interconnect fixture|
-|IPC-TM-650|Partial|TDR testing|
+| Standard      | Coverage | Notes                |
+| ------------- | -------- | -------------------- |
+| IEEE 370-2020 | Partial  | Interconnect fixture |
+| IPC-TM-650    | Partial  | TDR testing          |
 
 ## Quick Start
 
@@ -57,13 +57,13 @@ print(f"Q-factor: {metrics.q_factor:.2f}")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`tdr_impedance.py`|TDR-based impedance extraction|Intermediate|
-|`impedance_profile.py`|Z0 along transmission line|Intermediate|
-|`sparameters.py`|Touchstone S-parameter analysis|Advanced|
-|`eye_metrics.py`|Eye height/width/opening|Basic|
-|`crosstalk.py`|NEXT/FEXT characterization|Advanced|
+| Script                 | Purpose                         | Complexity   |
+| ---------------------- | ------------------------------- | ------------ |
+| `tdr_impedance.py`     | TDR-based impedance extraction  | Intermediate |
+| `impedance_profile.py` | Z0 along transmission line      | Intermediate |
+| `sparameters.py`       | Touchstone S-parameter analysis | Advanced     |
+| `eye_metrics.py`       | Eye height/width/opening        | Basic        |
+| `crosstalk.py`         | NEXT/FEXT characterization      | Advanced     |
 
 ## Related Demos
 

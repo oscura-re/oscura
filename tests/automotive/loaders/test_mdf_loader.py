@@ -10,13 +10,26 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-import asammdf  # noqa: F401
 import numpy as np
 import pytest
 
+try:
+    import asammdf  # noqa: F401
+
+    ASAMMDF_AVAILABLE = True
+except ImportError:
+    ASAMMDF_AVAILABLE = False
+
 from oscura.automotive.loaders.mdf import load_mdf
 
-pytestmark = [pytest.mark.unit, pytest.mark.loader]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.loader,
+    pytest.mark.skipif(
+        not ASAMMDF_AVAILABLE,
+        reason="asammdf not available (install with: pip install 'oscura[automotive]')",
+    ),
+]
 
 
 class TestMDFLoader:

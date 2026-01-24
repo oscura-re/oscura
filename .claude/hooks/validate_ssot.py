@@ -5,13 +5,19 @@ Pre-commit hook that ensures:
 - No duplicate configuration files exist
 - SSOT directories contain unique configurations
 - Generated files are properly marked and tracked
+- No config duplication across files
+- No documentation duplication
+- Forbidden files (per coding-standards.yaml) don't exist
+- Version info comes from declared SSOT (pyproject.toml)
+- Dependencies come from pyproject.toml
+- Test config in pyproject.toml, not elsewhere
 
 Validates against coding-standards.yaml SSOT policy.
 
 Exits with non-zero status if SSOT violations are found.
 
-Version: 1.0.0
-Created: 2026-01-17
+Version: 2.0.0
+Last Updated: 2026-01-22
 """
 
 from __future__ import annotations
@@ -227,6 +233,179 @@ def check_generated_files() -> tuple[bool, list[str]]:
     return True, []
 
 
+def check_forbidden_files() -> tuple[bool, list[str]]:
+    """Check for forbidden files per coding-standards.yaml.
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+
+    # Load forbidden file patterns from coding-standards.yaml
+    forbidden_patterns: list[str] = []
+    if CODING_STANDARDS.exists():
+        try:
+            standards = load_yaml_simple(CODING_STANDARDS)
+            ssot_config = standards.get("ssot", {})
+            forbidden_patterns = ssot_config.get("forbidden_files", [])
+        except Exception:
+            pass
+
+    if not forbidden_patterns:
+        return True, []
+
+    # Check for forbidden files
+    forbidden_found = False
+    for pattern in forbidden_patterns:
+        # Convert glob pattern to Path pattern
+        matches = list(REPO_ROOT.glob(pattern))
+
+        if matches:
+            forbidden_found = True
+            errors.append(f"❌ Forbidden file pattern '{pattern}' found:")
+            for match in matches:
+                rel_path = match.relative_to(REPO_ROOT)
+                errors.append(f"     - {rel_path}")
+            errors.append(
+                "     Tip: These files violate SSOT policy. "
+                "Move content to appropriate SSOT location."
+            )
+
+    if not forbidden_found:
+        print("✅ No forbidden files found")
+
+    return not forbidden_found, errors
+
+
+def check_version_source() -> tuple[bool, list[str]]:
+    """Check version info comes from declared SSOT.
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+
+    # Load SSOT definition
+    version_ssot = "pyproject.toml"
+    if CODING_STANDARDS.exists():
+        try:
+            standards = load_yaml_simple(CODING_STANDARDS)
+            ssot_config = standards.get("ssot", {})
+            version_source = ssot_config.get("version", "")
+            if ":" in version_source:
+                version_ssot = version_source.split(":")[0]
+        except Exception:
+            pass
+
+    # Check if version is defined in SSOT location
+    pyproject_path = REPO_ROOT / version_ssot
+    if not pyproject_path.exists():
+        errors.append(f"❌ Version SSOT file not found: {version_ssot}")
+        return False, errors
+
+    # Check for version defined elsewhere (common violations)
+    version_violations = [
+        REPO_ROOT / "setup.py",
+        REPO_ROOT / "setup.cfg",
+        REPO_ROOT / "__version__.py",
+        REPO_ROOT / "src" / "__version__.py",
+    ]
+
+    violations_found = False
+    for violation_file in version_violations:
+        if violation_file.exists():
+            # Check if it contains version definition
+            try:
+                content = violation_file.read_text()
+                if "__version__" in content or "version =" in content:
+                    violations_found = True
+                    errors.append(
+                        f"❌ Version defined in {violation_file.name} "
+                        f"(should only be in {version_ssot})"
+                    )
+            except Exception:
+                pass
+
+    if not violations_found:
+        print(f"✅ Version source correctly defined in {version_ssot}")
+
+    return not violations_found, errors
+
+
+def check_dependency_source() -> tuple[bool, list[str]]:
+    """Check dependencies come from declared SSOT.
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+
+    # Load SSOT definition
+    dep_ssot = "pyproject.toml"
+    if CODING_STANDARDS.exists():
+        try:
+            standards = load_yaml_simple(CODING_STANDARDS)
+            ssot_config = standards.get("ssot", {})
+            dep_source = ssot_config.get("dependencies", "")
+            if ":" in dep_source:
+                dep_ssot = dep_source.split(":")[0]
+        except Exception:
+            pass
+
+    # Check for dependencies defined elsewhere
+    dep_violations = [
+        (REPO_ROOT / "requirements.txt", "requirements.txt"),
+        (REPO_ROOT / "requirements-dev.txt", "requirements-dev.txt"),
+        (REPO_ROOT / "setup.py", "setup.py"),
+        (REPO_ROOT / "setup.cfg", "setup.cfg"),
+        (REPO_ROOT / "Pipfile", "Pipfile"),
+    ]
+
+    violations_found = False
+    for violation_file, name in dep_violations:
+        if violation_file.exists():
+            violations_found = True
+            errors.append(f"❌ Dependencies defined in {name} (should only be in {dep_ssot})")
+
+    if not violations_found:
+        print(f"✅ Dependencies correctly defined in {dep_ssot}")
+
+    return not violations_found, errors
+
+
+def check_test_config_source() -> tuple[bool, list[str]]:
+    """Check test config in pyproject.toml, not elsewhere.
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+
+    # Check for test config in other locations
+    test_config_violations = [
+        (REPO_ROOT / "pytest.ini", "pytest.ini"),
+        (REPO_ROOT / "setup.cfg", "setup.cfg (pytest section)"),
+        (REPO_ROOT / "tox.ini", "tox.ini"),
+    ]
+
+    violations_found = False
+    for violation_file, name in test_config_violations:
+        if violation_file.exists():
+            # Check if it contains pytest config
+            try:
+                content = violation_file.read_text()
+                if "[pytest]" in content or "[tool:pytest]" in content:
+                    violations_found = True
+                    errors.append(f"❌ Test config in {name} (should be in pyproject.toml)")
+            except Exception:
+                pass
+
+    if not violations_found:
+        print("✅ Test config correctly defined in pyproject.toml")
+
+    return not violations_found, errors
+
+
 def main() -> int:
     """Main entry point.
 
@@ -258,10 +437,39 @@ def main() -> int:
         all_passed = False
         all_errors.extend(generated_errors)
 
+    # Check forbidden files
+    forbidden_ok, forbidden_errors = check_forbidden_files()
+    if not forbidden_ok:
+        all_passed = False
+        all_errors.extend(forbidden_errors)
+
+    # Check version source
+    version_ok, version_errors = check_version_source()
+    if not version_ok:
+        all_passed = False
+        all_errors.extend(version_errors)
+
+    # Check dependency source
+    dep_ok, dep_errors = check_dependency_source()
+    if not dep_ok:
+        all_passed = False
+        all_errors.extend(dep_errors)
+
+    # Check test config source
+    test_ok, test_errors = check_test_config_source()
+    if not test_ok:
+        all_passed = False
+        all_errors.extend(test_errors)
+
     # Print summary
     print("\n" + "=" * 70)
     if all_passed:
         print("  ✅ ALL CHECKS PASSED")
+        print("  - No duplicate configurations")
+        print("  - No forbidden files")
+        print("  - Version source is SSOT")
+        print("  - Dependencies source is SSOT")
+        print("  - Test config source is SSOT")
     else:
         print("  ❌ VALIDATION FAILED")
         print("=" * 70)

@@ -161,6 +161,45 @@
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src"
       }
+    },
+    // ========================================================================
+    // Validation & Script Debugging
+    // ========================================================================
+    {
+      "name": "Debug Validator (validate_all.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/validate_all.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug Validator (validate_config_consistency.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/validate_config_consistency.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug Validator (validate_ssot.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/validate_ssot.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug Health Check",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/health_check.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
     }
   ],
   // ==========================================================================

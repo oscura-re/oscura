@@ -100,17 +100,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ matrix.python-version }}
 
       - name: Verify test data (optional)
         run: ./scripts/verify_test_data.sh
@@ -230,7 +223,7 @@ jobs:
       - name: Run fast unit tests (${{ matrix.test-group }})
         run: |
           echo "Running tests with ${{ steps.test-config.outputs.workers }} workers"
-          uv run pytest ${{ steps.test-config.outputs.paths }} \
+          uv run python -m pytest ${{ steps.test-config.outputs.paths }} \
             -m "unit and not memory_intensive and not slow and not performance" \
             -n ${{ steps.test-config.outputs.workers }} \
             --maxprocesses=${{ steps.test-config.outputs.workers }} \
@@ -274,17 +267,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ matrix.python-version }}
 
       - name: Verify test data (optional)
         run: ./scripts/verify_test_data.sh
@@ -292,13 +278,14 @@ jobs:
 
       - name: Run integration tests
         run: |
-          uv run pytest tests/integration \
+          uv run python -m pytest tests/integration \
             -m "integration" \
             -n 2 \
             --maxprocesses=2 \
             --dist loadscope \
             --hypothesis-profile=ci \
             --benchmark-disable \
+            -p no:benchmark \
             --tb=short \
             --maxfail=10 \
             --reruns 2 \
@@ -331,17 +318,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ matrix.python-version }}
 
       - name: Verify test data (optional)
         run: ./scripts/verify_test_data.sh
@@ -349,7 +329,7 @@ jobs:
 
       - name: Run validation tests
         run: |
-          uv run pytest tests/validation \
+          uv run python -m pytest tests/validation \
             -m "validation" \
             -n 2 \
             --maxprocesses=2 \
@@ -390,21 +370,14 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ matrix.python-version }}
 
       - name: Run stress tests
         run: |
-          uv run pytest tests/stress \
+          uv run python -m pytest tests/stress \
             -m "stress" \
             -n 2 \
             --maxprocesses=2 \
@@ -445,21 +418,14 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ matrix.python-version }}
 
       - name: Run performance tests
         run: |
-          uv run pytest tests/performance \
+          uv run python -m pytest tests/performance \
             -m "performance or benchmark" \
             -n 2 \
             --maxprocesses=2 \
@@ -532,4 +498,64 @@ jobs:
             exit 1
           fi
 
-          echo "All required test suites passed!"
+  # ==========================================================================
+  # Notify on Failure (scheduled runs only)
+  # ==========================================================================
+  notify-failure:
+    name: Notify Test Failures
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [setup, unit-fast, integration, validation, summary]
+    if: failure() && github.event_name == 'schedule'
+    steps:
+      - name: Create issue for test failures
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const body = `## Nightly Test Failure Detected
+
+            The nightly comprehensive test run has detected failures.
+
+            **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            **Failed jobs:**
+            - Unit (Fast): ${{ needs.unit-fast.result }}
+            - Integration: ${{ needs.integration.result }}
+            - Validation: ${{ needs.validation.result }}
+
+            **Next steps:**
+            1. Review the failed test results in the workflow artifacts
+            2. Identify which tests failed
+            3. Fix the test failures or update tests if behavior changed
+            4. Re-run the workflow to verify fixes
+
+            **Note:** This issue was auto-generated by the nightly test workflow.
+            `;
+
+            // Check if issue already exists for today
+            const today = new Date().toISOString().split('T')[0];
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'nightly-test-failure',
+              per_page: 100
+            });
+
+            // Check if there's already an issue from today
+            const todayIssue = issues.data.find(issue =>
+              issue.created_at.startsWith(today)
+            );
+
+            if (!todayIssue) {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Nightly Tests] Failures detected on ${today}`,
+                body: body,
+                labels: ['nightly-test-failure', 'bug', 'testing']
+              });
+            } else {
+              core.info('Issue already exists for today, skipping creation');
+            }

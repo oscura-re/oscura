@@ -115,7 +115,8 @@ class TestDiscoveryWorkflow:
             )
 
         # Step 2: Create CANSession
-        session = CANSession(messages=messages)
+        session = CANSession(name="Discovery Test")
+        session._messages = messages
 
         assert len(session) == 200
         assert len(session.unique_ids()) == 2
@@ -246,6 +247,10 @@ class TestDiscoveryWorkflow:
 
 
 @pytest.mark.integration
+@pytest.mark.skipif(
+    not DBC_AVAILABLE,
+    reason="cantools not available (install with: pip install 'oscura[automotive]')",
+)
 class TestDBCRoundtrip:
     """Test DBC file generation and round-trip."""
 
@@ -298,7 +303,8 @@ class TestDBCRoundtrip:
 
             test_values.append({"rpm": rpm, "speed": speed})
 
-        session = CANSession(messages=messages)
+        session = CANSession(name="DBC Test")
+        session._messages = messages
 
         # Document signals
         # Note: We need to use a discovery document approach since
@@ -394,6 +400,10 @@ class TestDBCRoundtrip:
 
 
 @pytest.mark.integration
+@pytest.mark.skipif(
+    not (DBC_AVAILABLE and CSV_AVAILABLE),
+    reason="cantools or CSV loader not available (install with: pip install 'oscura[automotive]')",
+)
 class TestMultipleFormatLoading:
     """Test loading from different file formats."""
 
@@ -431,7 +441,8 @@ class TestMultipleFormatLoading:
         assert 0x280 in messages.unique_ids()
 
         # Step 3: Analyze
-        session = CANSession(messages=messages)
+        session = CANSession(name="CSV Test")
+        session._messages = messages
         analysis = session.analyze_message(0x280)
 
         assert analysis.message_count == 100
@@ -526,7 +537,8 @@ class TestCorrelationWorkflow:
                 )
             )
 
-        session = CANSession(messages=messages)
+        session = CANSession(name="Correlation Test")
+        session._messages = messages
 
         # Step 2: Detect correlation between RPM and throttle
         rpm_messages = session._messages.filter_by_id(0x280)
@@ -608,7 +620,8 @@ class TestCorrelationWorkflow:
                 )
             )
 
-        session = CANSession(messages=messages)
+        session = CANSession(name="OBD Correlation Test")
+        session._messages = messages
 
         # Define signals
         obd_signal = SignalDefinition(
@@ -680,7 +693,8 @@ class TestLargeDataset:
         assert len(messages) == 11000
 
         # Step 2: Measure analysis time
-        session = CANSession(messages=messages)
+        session = CANSession(name="Large Dataset Test")
+        session._messages = messages
 
         start_time = time.time()
         inventory = session.inventory()
@@ -733,7 +747,8 @@ class TestLargeDataset:
                 data = bytes([arb_id & 0xFF, i] + [0] * 6)
                 messages.append(CANMessage(arbitration_id=arb_id, timestamp=timestamp, data=data))
 
-        session = CANSession(messages=messages)
+        session = CANSession(name="Filtering Test")
+        session._messages = messages
         assert len(session) == 256 * 20  # 5,120 messages
 
         # Test filtering by IDs
@@ -770,7 +785,8 @@ class TestLargeDataset:
                 )
             )
 
-        session = CANSession(messages=messages)
+        session = CANSession(name="Memory Efficiency Test")
+        session._messages = messages
 
         # Should be able to access messages efficiently
         assert len(session) == 5000
@@ -819,7 +835,8 @@ class TestEndToEndScenarios:
                 )
 
         # Discovery workflow
-        session = CANSession(messages=messages)
+        session = CANSession(name="Unknown Vehicle Test")
+        session._messages = messages
 
         # Step 1: Inventory
         inventory = session.inventory()

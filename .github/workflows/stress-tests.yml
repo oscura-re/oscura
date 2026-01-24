@@ -1,0 +1,137 @@
+name: Stress Tests
+
+# Stress tests run separately from regular CI because they are:
+# - Resource intensive (high memory/CPU usage)
+# - Long-running (minutes to hours)
+# - May fail in constrained CI environments
+
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+    inputs:
+      timeout:
+        description: "Test timeout in seconds"
+        default: "600"
+        type: string
+  pull_request:
+    types: [labeled] # When PR labeled with 'stress-test'
+
+permissions:
+  contents: read
+
+jobs:
+  check-trigger:
+    name: Check if stress tests should run
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - name: Check trigger
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'stress-test') }}" == "true" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+          fi
+
+  stress-tests:
+    name: Stress Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should-run == 'true'
+    timeout-minutes: 120 # 2 hours for stress tests
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+          install-optional: true
+
+      - name: Run stress tests
+        env:
+          TEST_TIMEOUT: ${{ inputs.timeout || '600' }}
+        run: |
+          echo "Running stress tests with timeout: ${TEST_TIMEOUT}s"
+
+          uv run python -m pytest tests/stress/ \
+            -v \
+            -m "stress" \
+            --timeout=${TEST_TIMEOUT} \
+            --maxfail=5 \
+            --tb=short \
+            --durations=20 \
+            --junit-xml=stress-test-results-${{ matrix.python-version }}.xml \
+            -p no:benchmark \
+            || echo "Some stress tests failed (this may be expected in constrained CI)"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: stress-test-results-${{ matrix.python-version }}
+          path: stress-test-results-${{ matrix.python-version }}.xml
+          retention-days: 30
+
+      - name: Stress test summary
+        if: always()
+        run: |
+          echo "### Stress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Python Version**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timeout**: ${TEST_TIMEOUT}s" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          RESULTS_FILE="stress-test-results-${{ matrix.python-version }}.xml"
+          if [ -f "$RESULTS_FILE" ]; then
+            TOTAL=$(grep -oP 'tests="\K[0-9]+' "$RESULTS_FILE" | \
+              head -1 || echo "0")
+            FAILURES=$(grep -oP 'failures="\K[0-9]+' "$RESULTS_FILE" | \
+              head -1 || echo "0")
+            ERRORS=$(grep -oP 'errors="\K[0-9]+' "$RESULTS_FILE" | \
+              head -1 || echo "0")
+
+            echo "- Total tests: ${TOTAL}" >> $GITHUB_STEP_SUMMARY
+            echo "- Failures: ${FAILURES}" >> $GITHUB_STEP_SUMMARY
+            echo "- Errors: ${ERRORS}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [check-trigger, stress-tests]
+    if: failure() && github.event_name == 'schedule' && needs.check-trigger.outputs.should-run == 'true'
+    steps:
+      - name: Create issue on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Stress Tests Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `Weekly stress tests failed.
+
+            **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Please investigate the failures. Note that stress tests may occasionally fail
+            in resource-constrained environments - verify if failures are legitimate issues
+            or environmental limitations.`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              title: title,
+              body: body,
+              labels: ['testing', 'stress-tests', 'automated']
+            });

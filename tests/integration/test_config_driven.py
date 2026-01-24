@@ -63,7 +63,7 @@ def device_mapping_config(config_dir: Path) -> dict:
 @pytest.fixture
 def bus_config(config_dir: Path) -> dict:
     """Load bus config example."""
-    config_path = config_dir / "bus_config_example.yaml"
+    config_path = config_dir / "bus_configuration_example.yaml"
     if not config_path.exists():
         pytest.skip("Bus config not found")
 

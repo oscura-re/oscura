@@ -2,7 +2,7 @@
 
 > IEEE 1459-2010 compliant power measurements, DC-DC efficiency, ripple analysis
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
@@ -23,10 +23,10 @@ This demo category covers power electronics analysis per IEEE 1459-2010. Oscura 
 
 ### Standards Compliance
 
-|Standard|Coverage|Notes|
-|---|---|---|
-|IEEE 1459-2010|Full|Power quality definitions|
-|IEC 61000-3-2|Partial|Harmonic limits|
+| Standard       | Coverage | Notes                     |
+| -------------- | -------- | ------------------------- |
+| IEEE 1459-2010 | Full     | Power quality definitions |
+| IEC 61000-3-2  | Partial  | Harmonic limits           |
 
 ## Quick Start
 
@@ -56,13 +56,13 @@ print(f"Efficiency: {eff * 100:.1f}%")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`ac_power_basics.py`|P, Q, S, power factor|Basic|
-|`dcdc_efficiency.py`|Converter efficiency curves|Intermediate|
-|`ripple_measurement.py`|Output voltage ripple|Basic|
-|`switching_loss.py`|MOSFET loss estimation|Advanced|
-|`ieee1459_compliance.py`|Full IEEE 1459 validation|Advanced|
+| Script                   | Purpose                     | Complexity   |
+| ------------------------ | --------------------------- | ------------ |
+| `ac_power_basics.py`     | P, Q, S, power factor       | Basic        |
+| `dcdc_efficiency.py`     | Converter efficiency curves | Intermediate |
+| `ripple_measurement.py`  | Output voltage ripple       | Basic        |
+| `switching_loss.py`      | MOSFET loss estimation      | Advanced     |
+| `ieee1459_compliance.py` | Full IEEE 1459 validation   | Advanced     |
 
 ## Related Demos
 

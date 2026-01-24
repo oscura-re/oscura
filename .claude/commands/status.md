@@ -10,23 +10,23 @@ Display comprehensive orchestration system health, running agents, and resource 
 
 ## Usage
 
-```bash
+````bash
 /status            # Human-readable dashboard
 /status --json     # JSON output for scripting
-```
+```python
 
 ## Examples
 
 ```bash
 /status            # Show system health dashboard
 /status --json     # Get JSON status for automation
-```
+```markdown
 
 ## Information Displayed
 
 ### Agent Status
 
-- Currently running agents (from `.claude/agent-registry.json`)
+- Currently running agents (from `.claude/agent-outputs/*.json`)
 - Recently completed agents (last 10)
 - Failed agents requiring attention
 - Agent resource usage and runtime
@@ -35,7 +35,7 @@ Display comprehensive orchestration system health, running agents, and resource 
 
 - Current context usage percentage
 - Tokens used vs. available
-- Warning threshold status (see `config.yaml:orchestration.context.*` for thresholds)
+- Warning threshold status (see `config.yaml:orchestration.context` for thresholds)
 - Recommendations for optimization
 
 ### System Health
@@ -64,7 +64,7 @@ Display comprehensive orchestration system health, running agents, and resource 
 
 **Warning** 🟡
 
-- Context usage between warning and critical thresholds (see `config.yaml:orchestration.context.*`)
+- Context usage between warning and critical thresholds (see `config.yaml:orchestration.context`)
 - Agents running for >30 minutes
 - Old completion reports (see `config.yaml:retention.agent_outputs`)
 - Archive cleanup recommended
@@ -78,7 +78,7 @@ Display comprehensive orchestration system health, running agents, and resource 
 
 ## Sample Output
 
-```
+```python
 Orchestration System Status
 ============================
 
@@ -101,7 +101,7 @@ System Health:
 
 Recommendations:
   • No action required - system operating normally
-```
+```python
 
 ## JSON Output Format
 
@@ -134,13 +134,13 @@ Recommendations:
   },
   "recommendations": []
 }
-```
+```markdown
 
 ## Implementation
 
 This command reads:
 
-- `.claude/agent-registry.json` - Agent state
+- `.claude/agent-outputs/*.json` - Agent state
 - `.coordination/active_work.json` - Current work
 - `.coordination/completed.jsonl` - Completion history
 - `.coordination/locks/` - Active coordination locks
@@ -150,5 +150,10 @@ This command reads:
 
 - `/context` - Detailed context optimization advice
 - `/cleanup` - Run maintenance tasks
-- `.claude/hooks/check_context_usage.sh` - Context monitoring hook
+- `context monitoring` - Context monitoring hook
 - `.claude/config.yaml` - Threshold configuration
+
+## Version History
+
+- v1.0.0 (2026-01-16): Initial creation with system health monitoring
+````

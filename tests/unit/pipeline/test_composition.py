@@ -149,6 +149,52 @@ class TestCompose:
         assert composed.__doc__ is not None
         assert "2" in composed.__doc__  # Number of functions
 
+    def test_compose_with_partial_function(self, sample_trace):
+        """Test compose works correctly with functools.partial objects."""
+
+        def scale(trace: WaveformTrace, factor: float) -> WaveformTrace:
+            return WaveformTrace(data=trace.data * factor, metadata=trace.metadata)
+
+        # Create partial function
+        double = partial(scale, factor=2.0)
+        triple = partial(scale, factor=3.0)
+
+        # Compose with partial functions
+        composed = compose(triple, double)
+
+        # Apply: double first, then triple = 2 * 3 = 6x
+        result = composed(sample_trace)
+
+        expected = sample_trace.data * 6.0
+        np.testing.assert_array_almost_equal(result.data, expected)
+
+    def test_compose_with_callable_object(self, sample_trace):
+        """Test compose works correctly with callable objects."""
+
+        class Doubler:
+            """Callable object that doubles trace values."""
+
+            def __call__(self, trace: WaveformTrace) -> WaveformTrace:
+                return WaveformTrace(data=trace.data * 2, metadata=trace.metadata)
+
+        class Tripler:
+            """Callable object that triples trace values."""
+
+            def __call__(self, trace: WaveformTrace) -> WaveformTrace:
+                return WaveformTrace(data=trace.data * 3, metadata=trace.metadata)
+
+        doubler = Doubler()
+        tripler = Tripler()
+
+        # Compose callable objects
+        composed = compose(tripler, doubler)
+
+        # Apply: double first, then triple = 2 * 3 = 6x
+        result = composed(sample_trace)
+
+        expected = sample_trace.data * 6.0
+        np.testing.assert_array_almost_equal(result.data, expected)
+
 
 # =============================================================================
 # pipe() Tests

@@ -2,15 +2,9 @@ name: Code Quality
 
 on:
   pull_request:
-    paths:
-      - "src/**/*.py"
-      - "pyproject.toml"
-      - ".github/workflows/code-quality.yml"
+    branches: [main]
   push:
     branches: [main]
-    paths:
-      - "src/**/*.py"
-      - "pyproject.toml"
   workflow_dispatch:
 
 # Auto-cancel outdated runs for the same branch/PR
@@ -31,6 +25,29 @@ env:
   RETENTION_LONG: 90 # Long-term quality metrics
 
 jobs:
+  # ==========================================================================
+  # Path Detection - Check if code quality checks should run
+  # ==========================================================================
+  detect-changes:
+    name: Detect Code Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-run: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'src/**/*.py'
+              - 'pyproject.toml'
+              - '.github/workflows/code-quality.yml'
+
   # NOTE: Docstring coverage is checked in ci.yml via pre-commit hooks
   # Badge generation happens in docs.yml workflow
   # This avoids redundant checking across workflows
@@ -42,22 +59,17 @@ jobs:
     name: Docstring Style Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run pydocstyle
         id: pydocstyle
@@ -106,22 +118,17 @@ jobs:
     name: Dead Code Detection
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run vulture
         id: vulture
@@ -170,22 +177,17 @@ jobs:
     name: Code Complexity Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Check cyclomatic complexity
         id: radon-cc
@@ -290,22 +292,17 @@ jobs:
     name: Import Architecture Validation
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run import-linter
         id: import-linter
@@ -353,63 +350,80 @@ jobs:
           if-no-files-found: ignore
 
   # ==========================================================================
-  # Final Status Check
+  # Final Status Check - ALWAYS RUNS
   # ==========================================================================
   quality-gates-success:
-    name: Quality Gates Status
+    name: Code Quality
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [docstring-style, dead-code, complexity, import-architecture]
+    needs: [detect-changes, docstring-style, dead-code, complexity, import-architecture]
     if: always()
     steps:
-      - name: Check required gates
+      - name: Check code quality results
+        run: |
+          echo "Detect Changes: ${{ needs.detect-changes.result }}"
+          echo "Should Run: ${{ needs.detect-changes.outputs.should-run }}"
+          echo "Docstring Style: ${{ needs.docstring-style.result }}"
+          echo "Dead Code: ${{ needs.dead-code.result }}"
+          echo "Complexity: ${{ needs.complexity.result }}"
+          echo "Import Architecture: ${{ needs.import-architecture.result }}"
+
+          # If no code changes, all quality checks will be skipped (not failed)
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "No code changes detected - quality checks skipped"
+            echo "✅ Code Quality checks passed (no code changes to check)"
+            exit 0
+          fi
+
+          # Check if any required jobs failed (skipped is OK, cancelled is treated as skip)
+          if [[ "${{ needs.docstring-style.result }}" == "failure" || \
+                "${{ needs.dead-code.result }}" == "failure" || \
+                "${{ needs.complexity.result }}" == "failure" || \
+                "${{ needs.import-architecture.result }}" == "failure" ]]; then
+            echo "Some code quality checks failed"
+            exit 1
+          fi
+
+          echo "All code quality checks passed!"
+          exit 0
+
+      - name: Generate summary
+        if: always()
         run: |
           echo "### Code Quality Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
 
-          # Note: Docstring coverage is checked in ci.yml (pre-commit hooks)
-          echo "| Docstring Coverage | ✓ (checked in ci.yml) |" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "✅ **No code changes detected - checks skipped**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Code quality checks only run when Python source files" \
+              "or pyproject.toml change." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
 
-          # Docstring style result
-          style_result="${{ needs.docstring-style.result }}"
-          style_icon="${{ needs.docstring-style.result == 'success' && '✓' || '⚠' }}"
-          echo "| Docstring Style | $style_icon $style_result (informational) |" >> $GITHUB_STEP_SUMMARY
+            # Note: Docstring coverage is checked in ci.yml (pre-commit hooks)
+            echo "| Docstring Coverage | ✓ (checked in ci.yml) |" >> $GITHUB_STEP_SUMMARY
 
-          # Dead code result
-          dead_result="${{ needs.dead-code.result }}"
-          dead_icon="${{ needs.dead-code.result == 'success' && '✓' || '⚠' }}"
-          echo "| Dead Code Detection | $dead_icon $dead_result (informational) |" >> $GITHUB_STEP_SUMMARY
+            # Docstring style result
+            style_result="${{ needs.docstring-style.result }}"
+            style_icon="${{ needs.docstring-style.result == 'success' && '✓' || '⚠' }}"
+            echo "| Docstring Style | $style_icon $style_result (informational) |" >> $GITHUB_STEP_SUMMARY
 
-          # Complexity result
-          complex_result="${{ needs.complexity.result }}"
-          complex_icon="${{ needs.complexity.result == 'success' && '✓' || '⚠' }}"
-          echo "| Complexity Analysis | $complex_icon $complex_result (informational) |" >> $GITHUB_STEP_SUMMARY
+            # Dead code result
+            dead_result="${{ needs.dead-code.result }}"
+            dead_icon="${{ needs.dead-code.result == 'success' && '✓' || '⚠' }}"
+            echo "| Dead Code Detection | $dead_icon $dead_result (informational) |" >> $GITHUB_STEP_SUMMARY
 
-          # Import architecture result
-          import_result="${{ needs.import-architecture.result }}"
-          import_icon="${{ needs.import-architecture.result == 'success' && '✓' || '⚠' }}"
-          echo "| Import Architecture | $import_icon $import_result (informational) |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+            # Complexity result
+            complex_result="${{ needs.complexity.result }}"
+            complex_icon="${{ needs.complexity.result == 'success' && '✓' || '⚠' }}"
+            echo "| Complexity Analysis | $complex_icon $complex_result (informational) |" >> $GITHUB_STEP_SUMMARY
 
-          # All checks in this workflow are informational
-          if [[ "${{ needs.docstring-style.result }}" != "success" ]]; then
-            echo "::warning::Docstring style check found issues (informational only)"
+            # Import architecture result
+            import_result="${{ needs.import-architecture.result }}"
+            import_icon="${{ needs.import-architecture.result == 'success' && '✓' || '⚠' }}"
+            echo "| Import Architecture | $import_icon $import_result (informational) |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Quality checks completed!**" >> $GITHUB_STEP_SUMMARY
           fi
-
-          if [[ "${{ needs.dead-code.result }}" != "success" ]]; then
-            echo "::warning::Dead code detected (informational only)"
-          fi
-
-          if [[ "${{ needs.complexity.result }}" != "success" ]]; then
-            echo "::warning::High complexity functions detected (informational only)"
-          fi
-
-          if [[ "${{ needs.import-architecture.result }}" != "success" ]]; then
-            echo "::warning::Import architecture violations detected (informational only)"
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Quality checks completed!**" >> $GITHUB_STEP_SUMMARY
-          echo "All informational quality checks completed (required checks in ci.yml)"

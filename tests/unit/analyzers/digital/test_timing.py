@@ -1012,13 +1012,14 @@ class TestRecoverClockFFT:
     def test_recover_clock_fft_insufficient_samples(self) -> None:
         """Test FFT clock recovery with insufficient samples."""
         sample_rate = 1e6
-        signal = np.ones(10)  # Only 10 samples
+        signal = np.ones(10)  # Only 10 samples (need 64)
         trace = make_waveform_trace(signal, sample_rate)
 
         with pytest.raises(InsufficientDataError) as exc_info:
             recover_clock_fft(trace)
 
-        assert "at least 16 samples" in str(exc_info.value)
+        assert "at least 64 samples" in str(exc_info.value)
+        assert "edge-based clock recovery" in str(exc_info.value)
 
     def test_recover_clock_fft_no_valid_frequencies(self) -> None:
         """Test FFT clock recovery with no frequencies in range."""
@@ -1028,11 +1029,12 @@ class TestRecoverClockFFT:
         signal = make_clock_signal(clock_freq, sample_rate, n_cycles=100)
         trace = make_waveform_trace(signal, sample_rate)
 
-        # Request impossible frequency range
-        result = recover_clock_fft(trace, min_freq=90e6, max_freq=100e6)
+        # Request impossible frequency range (10 MHz signal but looking at 90-100 MHz)
+        with pytest.raises(ValueError) as exc_info:
+            recover_clock_fft(trace, min_freq=90e6, max_freq=100e6)
 
-        assert np.isnan(result.frequency)
-        assert result.confidence == 0.0
+        assert "No frequency components found" in str(exc_info.value)
+        assert "90000000 Hz, 100000000 Hz" in str(exc_info.value)
 
     def test_recover_clock_fft_period(self) -> None:
         """Test that FFT recovery calculates correct period."""

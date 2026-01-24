@@ -140,13 +140,13 @@ Information and Computation, 75(2), 87-106.
 
 ## Comparison with RPNI
 
-|Feature|L\* (Active)|RPNI (Passive)|
-|---|---|---|---|---|---|---|
-|Learning type|Active (queries oracle)|Passive (fixed dataset)|
-|Minimal DFA|Yes|No (may have extra states)|
-|Negative examples|Not required|Optional|
-|Live learning|Yes|No|
-|Query complexity|O(|Q|²|Σ|)|N/A|## See Also
+| Feature           | L\* (Active)            | RPNI (Passive)             |
+| ----------------- | ----------------------- | -------------------------- | --- | --- | --- | --- | ----------- |
+| Learning type     | Active (queries oracle) | Passive (fixed dataset)    |
+| Minimal DFA       | Yes                     | No (may have extra states) |
+| Negative examples | Not required            | Optional                   |
+| Live learning     | Yes                     | No                         |
+| Query complexity  | O(                      | Q                          | ²   | Σ   | )   | N/A | ## See Also |
 
 - `oscura.inference.state_machine`: RPNI passive learning
 - `examples/lstar_demo.py`: Complete usage examples

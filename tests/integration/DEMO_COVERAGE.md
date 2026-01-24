@@ -355,28 +355,28 @@ This document maps Oscura demos to the integration test scenarios they cover. Us
 
 ### Tests DELETED (covered by demos)
 
-|Test File|LOC|Reason|Demo Coverage|
-|---|---|---|---|
-|`test_chunked_consistency.py`|434|Tests NumPy FFT, not Oscura|N/A (vendor lib)|
-|`test_wfm_to_analysis.py` (partial)|236|Basic WFM workflows|Demo 01, 06|
+| Test File                           | LOC | Reason                      | Demo Coverage    |
+| ----------------------------------- | --- | --------------------------- | ---------------- |
+| `test_chunked_consistency.py`       | 434 | Tests NumPy FFT, not Oscura | N/A (vendor lib) |
+| `test_wfm_to_analysis.py` (partial) | 236 | Basic WFM workflows         | Demo 01, 06      |
 
 **Total Deleted**: 670 LOC
 
 ### Tests MERGED/CONSOLIDATED
 
-|Original Files|New File|LOC Reduction|Reason|
-|---|---|---|---|
-|`test_end_to_end_workflows.py` + `test_module_interactions.py`|`test_integration_workflows.py`|~1,006|Overlapping workflows|
+| Original Files                                                 | New File                        | LOC Reduction | Reason                |
+| -------------------------------------------------------------- | ------------------------------- | ------------- | --------------------- |
+| `test_end_to_end_workflows.py` + `test_module_interactions.py` | `test_integration_workflows.py` | ~1,006        | Overlapping workflows |
 
 **Total Reduction Target**: 2,221 LOC (47%)
 
 ### Tests KEPT (edge cases only)
 
-|Test File|LOC|Reason|Edge Cases|
-|---|---|---|---|
-|`test_wfm_to_analysis.py`|231|Edge case handling|Malformed files, memory limits|
-|`test_config_driven.py`|~450|Validation rules|Complex configs, error handling|
-|`test_real_captures.py`|352|Vendor quirks|Tektronix format edge cases|
+| Test File                 | LOC  | Reason             | Edge Cases                      |
+| ------------------------- | ---- | ------------------ | ------------------------------- |
+| `test_wfm_to_analysis.py` | 231  | Edge case handling | Malformed files, memory limits  |
+| `test_config_driven.py`   | ~450 | Validation rules   | Complex configs, error handling |
+| `test_real_captures.py`   | 352  | Vendor quirks      | Tektronix format edge cases     |
 
 ---
 

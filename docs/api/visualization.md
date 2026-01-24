@@ -1,6 +1,6 @@
 # Oscura Visualization API
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08
+> **Version**: 0.4.0 | **Last Updated**: 2026-01-19
 
 The Oscura Visualization API provides comprehensive plotting functions for waveform and spectral analysis. All visualization functions are accessible from the top-level API as `osc.plot_*()`.
 

@@ -1,6 +1,6 @@
 # OOM Prevention Guide for Oscura Test Suite
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08
+> **Version**: 0.4.0 | **Last Updated**: 2026-01-19
 
 ## Problem Overview
 
@@ -69,14 +69,14 @@ pytest -m "memory_intensive" --maxfail=5
 
 Splits tests into 6 categories with optimized worker counts:
 
-|Category|Tests|Workers|Memory Impact|
-|---|---|---|---|
-|unit_fast|~1800|4|Low|
-|unit_memory|~200|2|High|
-|integration|~170|2|Medium|
-|validation|~140|2|Medium|
-|stress|~74|1|High|
-|performance|~50|1|Variable|
+| Category    | Tests | Workers | Memory Impact |
+| ----------- | ----- | ------- | ------------- |
+| unit_fast   | ~1800 | 4       | Low           |
+| unit_memory | ~200  | 2       | High          |
+| integration | ~170  | 2       | Medium        |
+| validation  | ~140  | 2       | Medium        |
+| stress      | ~74   | 1       | High          |
+| performance | ~50   | 1       | Variable      |
 
 **Usage**:
 
@@ -341,12 +341,12 @@ pytest --memray --memray-bin-path=./memray-results/
 
 ### Expected Results
 
-|Metric|Before|After|Improvement|
-|---|---|---|---|
-|Peak Memory|>8GB|~3-4GB|50%+|
-|Completion Rate|34%|100%|3x|
-|Time (sequential)|N/A (OOM)|~45min|Complete|
-|Time (parallel)|N/A (OOM)|~15min|Complete|
+| Metric            | Before    | After  | Improvement |
+| ----------------- | --------- | ------ | ----------- |
+| Peak Memory       | >8GB      | ~3-4GB | 50%+        |
+| Completion Rate   | 34%       | 100%   | 3x          |
+| Time (sequential) | N/A (OOM) | ~45min | Complete    |
+| Time (parallel)   | N/A (OOM) | ~15min | Complete    |
 
 ## Troubleshooting
 

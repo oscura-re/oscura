@@ -1,7 +1,7 @@
 # Pipeline API Reference
 
-> **Version**: 0.1.0
-> **Last Updated**: 2026-01-08
+> **Version**: 0.4.0
+> **Last Updated**: 2026-01-19
 
 ## Overview
 
@@ -57,16 +57,16 @@ class Pipeline(TraceTransformer):
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`steps`|`Sequence[tuple[str, TraceTransformer]]`|List of (name, transformer) tuples defining stages|
+| Parameter | Type                                     | Description                                        |
+| --------- | ---------------------------------------- | -------------------------------------------------- |
+| `steps`   | `Sequence[tuple[str, TraceTransformer]]` | List of (name, transformer) tuples defining stages |
 
 **Attributes:**
 
-|Attribute|Type|Description|
-|---|---|---|
-|`steps`|`list[tuple[str, TraceTransformer]]`|Pipeline stages as list of tuples|
-|`named_steps`|`dict[str, TraceTransformer]`|Dictionary mapping names to transformers|
+| Attribute     | Type                                 | Description                              |
+| ------------- | ------------------------------------ | ---------------------------------------- |
+| `steps`       | `list[tuple[str, TraceTransformer]]` | Pipeline stages as list of tuples        |
+| `named_steps` | `dict[str, TraceTransformer]`        | Dictionary mapping names to transformers |
 
 **Returns:** Transformed WaveformTrace after passing through all stages.
 
@@ -172,9 +172,9 @@ def fit(self, trace: WaveformTrace) -> Pipeline
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`trace`|`WaveformTrace`|Reference trace to fit to|
+| Parameter | Type            | Description               |
+| --------- | --------------- | ------------------------- |
+| `trace`   | `WaveformTrace` | Reference trace to fit to |
 
 **Returns:** Self for method chaining.
 
@@ -204,9 +204,9 @@ def transform(self, trace: WaveformTrace) -> WaveformTrace
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`trace`|`WaveformTrace`|Input trace|
+| Parameter | Type            | Description |
+| --------- | --------------- | ----------- |
+| `trace`   | `WaveformTrace` | Input trace |
 
 **Returns:** Transformed WaveformTrace.
 
@@ -234,10 +234,10 @@ def get_intermediate(
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`step_name`|`str`|Name of the pipeline step|
-|`key`|`str \|None`|Optional key for transformer-internal results|
+| Parameter   | Type         | Description                                   |
+| ----------- | ------------ | --------------------------------------------- |
+| `step_name` | `str`        | Name of the pipeline step                     |
+| `key`       | `str \|None` | Optional key for transformer-internal results |
 
 **Returns:** WaveformTrace output from that stage (if key=None), or specific intermediate result.
 
@@ -297,9 +297,9 @@ def list_intermediates(
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`step_name`|`str \|None`|If specified, list intermediates for that step only|
+| Parameter   | Type         | Description                                         |
+| ----------- | ------------ | --------------------------------------------------- |
+| `step_name` | `str \|None` | If specified, list intermediates for that step only |
 
 **Returns:** List of keys for a step, or dict mapping all steps to their intermediates.
 
@@ -462,9 +462,9 @@ Creates a single function that applies functions in reverse order: `compose(f, g
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`*funcs`|`Callable[[WaveformTrace], WaveformTrace]`|Functions to compose in reverse order|
+| Parameter | Type                                       | Description                           |
+| --------- | ------------------------------------------ | ------------------------------------- |
+| `*funcs`  | `Callable[[WaveformTrace], WaveformTrace]` | Functions to compose in reverse order |
 
 **Returns:** Composite function.
 
@@ -505,10 +505,10 @@ Applies functions sequentially: `pipe(x, f, g, h)` equals `h(g(f(x)))`.
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`data`|`WaveformTrace`|Initial trace to process|
-|`*funcs`|`Callable[[WaveformTrace], WaveformTrace]`|Functions to apply in order|
+| Parameter | Type                                       | Description                 |
+| --------- | ------------------------------------------ | --------------------------- |
+| `data`    | `WaveformTrace`                            | Initial trace to process    |
+| `*funcs`  | `Callable[[WaveformTrace], WaveformTrace]` | Functions to apply in order |
 
 **Returns:** Transformed WaveformTrace.
 
@@ -549,9 +549,9 @@ Transforms a multi-argument function into a series of single-argument functions.
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`func`|`Callable[..., WaveformTrace]`|Function to curry|
+| Parameter | Type                           | Description       |
+| --------- | ------------------------------ | ----------------- |
+| `func`    | `Callable[..., WaveformTrace]` | Function to curry |
 
 **Returns:** Curried version of the function.
 

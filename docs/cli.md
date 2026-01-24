@@ -1,523 +1,263 @@
 # CLI Reference
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08 | **Applies to**: Oscura 0.1.0
+> **Auto-generated** from actual CLI commands
 
-Command-line interface documentation for Oscura.
-
-## Usage
-
-```bash
-oscura [OPTIONS] COMMAND [ARGS]...
-```
-
-Or with uv:
-
-```bash
-uv run oscura [OPTIONS] COMMAND [ARGS]...
-```
-
-## Global Options
-
-|Option|Description|
-|---|---|
-|`-V, --version`|Show version and exit|
-|`--config FILE`|Path to configuration file|
-|`--verbose, -v`|Increase verbosity (use multiple times for more)|
-|`--quiet, -q`|Suppress non-error output|
-|`--no-color`|Disable colored output|
-|`--help`|Show help message|
-
----
-
-## Commands
-
-### analyze
-
-Analyze a waveform file and display measurements.
-
-```bash
-oscura analyze FILE [OPTIONS]
-```
-
-**Arguments:**
-
-|Argument|Description|
-|---|---|
-|`FILE`|Waveform file to analyze|
-
-**Options:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--format, -f`|Output format (text, json, csv)|text|
-|`--output, -o`|Output file (default: stdout)|-|
-|`--measurements, -m`|Measurements to perform (comma-separated)|all|
-|`--channel, -c`|Channel to analyze|auto|
-
-**Available Measurements:**
-
-- `frequency` - Signal frequency
-- `period` - Signal period
-- `amplitude` - Peak-to-peak amplitude
-- `rise_time` - 10-90% rise time
-- `fall_time` - 90-10% fall time
-- `duty_cycle` - Duty cycle percentage
-- `rms` - RMS voltage
-- `mean` - Mean voltage
-- `thd` - Total harmonic distortion
-- `snr` - Signal-to-noise ratio
-
-**Examples:**
-
-```bash
-# Basic analysis
-oscura analyze capture.wfm
-
-# JSON output
-oscura analyze capture.wfm --format json
-
-# Specific measurements
-oscura analyze capture.wfm -m frequency,rise_time,duty_cycle
-
-# Save to file
-oscura analyze capture.wfm -o results.json --format json
-```
-
-**Example Output:**
+## Overview
 
 ```
-Waveform Analysis: capture.wfm
-============================================================
-File:          capture.wfm
-Samples:       1,000,000
-Sample Rate:   1.00 GS/s
-Duration:      1.000 ms
-Channel:       CH1
+Usage: cli [OPTIONS] COMMAND [ARGS]...
 
-Measurements:
-  Frequency:     10.00 MHz
-  Period:        100.00 ns
-  Amplitude:     3.30 V (pk-pk)
-  Rise Time:     2.50 ns
-  Fall Time:     2.80 ns
-  Duty Cycle:    50.2%
-  RMS:           1.17 V
-  Mean:          0.02 V
-```
+  Oscura - Signal Analysis Framework for Oscilloscope Data.
 
----
+  Command-line tools for characterizing buffers, decoding protocols, analyzing
+  spectra, and comparing signals.
 
-### decode
+  Args:     ctx: Click context object.     verbose: Verbosity level (0=WARNING,
+  1=INFO, 2+=DEBUG).
 
-Decode a protocol from a waveform.
+  Examples:     oscura characterize signal.wfm     oscura decode uart.wfm
+  --protocol auto     oscura batch '*.wfm' --analysis characterize     oscura
+  compare before.wfm after.wfm     oscura shell  # Interactive REPL
 
-```bash
-oscura decode FILE --protocol PROTOCOL [OPTIONS]
-```
+Options:
+  -v, --verbose  Increase verbosity (-v for INFO, -vv for DEBUG).
+  --version      Show the version and exit.
+  --help         Show this message and exit.
 
-**Arguments:**
-
-|Argument|Description|
-|---|---|
-|`FILE`|Waveform file to decode|
-
-**Required Options:**
-
-|Option|Description|
-|---|---|
-|`--protocol, -p`|Protocol type (uart, spi, i2c, can, etc.)|
-
-**Protocol-Specific Options:**
-
-**UART:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--baud`|Baud rate|115200|
-|`--data-bits`|Data bits (5-9)|8|
-|`--parity`|Parity (none, even, odd)|none|
-|`--stop-bits`|Stop bits (1, 1.5, 2)|1|
-
-**SPI:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--clock-channel`|Clock signal channel|-|
-|`--data-channel`|Data signal channel|-|
-|`--cs-channel`|Chip select channel|-|
-|`--cpol`|Clock polarity (0, 1)|0|
-|`--cpha`|Clock phase (0, 1)|0|
-
-**I2C:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--sda-channel`|SDA channel|-|
-|`--scl-channel`|SCL channel|-|
-|`--address-bits`|Address bits (7, 10)|7|
-
-**CAN:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--bitrate`|CAN bitrate|500000|
-|`--extended`|Extended (29-bit) IDs|false|
-
-**General Options:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--format, -f`|Output format (text, json, hex, binary)|text|
-|`--output, -o`|Output file|stdout|
-|`--timestamps`|Include timestamps|true|
-|`--errors`|Show decode errors|true|
-
-**Examples:**
-
-```bash
-# Decode UART
-oscura decode capture.wfm -p uart --baud 9600
-
-# Decode SPI with custom settings
-oscura decode multi.wfm -p spi --clock-channel D0 --data-channel D1 --cpol 1 --cpha 1
-
-# Decode I2C and save as JSON
-oscura decode capture.wfm -p i2c --sda-channel D0 --scl-channel D1 -f json -o decoded.json
-
-# Decode CAN with extended IDs
-oscura decode can_capture.wfm -p can --bitrate 500000 --extended
-```
-
-**Example Output:**
+Commands:
+  batch         Batch process multiple files.
+  characterize  Characterize buffer, signal, or power measurements.
+  compare       Compare two signal captures.
+  decode        Decode serial protocol data.
+  shell         Start an interactive Oscura shell.
+  tutorial      Run an interactive tutorial.
 
 ```
-Protocol Decode: UART @ 115200 baud
-============================================================
-[0.000000s] TX: 48 65 6C 6C 6F  "Hello"
-[0.000434s] TX: 0D 0A           "\r\n"
-[0.001205s] RX: 4F 4B           "OK"
-[0.001639s] RX: 0D 0A           "\r\n"
 
-Summary:
-  Messages decoded: 4
-  Bytes transferred: 9
-  Errors: 0
-```
-
----
-
-### report
-
-Generate a comprehensive analysis report.
-
-```bash
-oscura report FILE [OPTIONS]
-```
-
-**Arguments:**
-
-|Argument|Description|
-|---|---|
-|`FILE`|Waveform file to analyze|
-
-**Options:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--output, -o`|Output file path|report.pdf|
-|`--format, -f`|Output format (pdf, html, pptx, md)|pdf|
-|`--title`|Report title|"Signal Analysis Report"|
-|`--author`|Report author|-|
-|`--template`|Report template|standard|
-|`--include-plots`|Include waveform plots|true|
-|`--include-raw-data`|Include raw measurement data|false|
-
-**Available Templates:**
-
-- `standard` - Comprehensive technical report
-- `summary` - Executive summary only
-- `detailed` - Full analysis with all measurements
-- `minimal` - Basic measurements only
-
-**Examples:**
-
-```bash
-# Generate PDF report
-oscura report capture.wfm -o analysis.pdf
-
-# Generate HTML report
-oscura report capture.wfm -f html -o report.html
-
-# PowerPoint presentation
-oscura report capture.wfm -f pptx -o presentation.pptx --title "Q4 Signal Analysis"
-
-# Markdown for documentation
-oscura report capture.wfm -f md -o report.md
-```
-
----
-
-### infer
-
-Automatically detect and infer protocol parameters.
-
-```bash
-oscura infer FILE [OPTIONS]
-```
-
-**Arguments:**
-
-|Argument|Description|
-|---|---|
-|`FILE`|Waveform file to analyze|
-
-**Options:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--format, -f`|Output format (text, json)|text|
-|`--confidence`|Minimum confidence threshold|0.7|
-|`--max-protocols`|Maximum protocols to suggest|3|
-
-**Examples:**
-
-```bash
-# Infer protocol
-oscura infer unknown_capture.wfm
-
-# JSON output for scripting
-oscura infer capture.wfm -f json
-```
-
-**Example Output:**
+## `oscura batch`
 
 ```
-Protocol Inference: unknown_capture.wfm
-============================================================
+Usage: cli batch [OPTIONS] PATTERN
 
-Detected Protocols (confidence >= 70%):
+  Batch process multiple files.
 
-1. UART (confidence: 95.2%)
-   - Baud rate: 115200 (estimated)
-   - Data bits: 8
-   - Parity: none
-   - Stop bits: 1
+  Processes all files matching the given pattern with the specified analysis.
+  Supports parallel processing for faster execution on multi-core systems.
 
-2. SPI (confidence: 23.1%)
-   - Not recommended (low confidence)
+  Args:     ctx: Click context object.     pattern: Glob pattern to match files.
+  analysis: Type of analysis (characterize, decode, spectrum).     parallel:
+  Number of parallel workers.     output: Output format (json, csv, html,
+  table).     save_summary: Path to save CSV summary file.
+  continue_on_error: Continue processing if individual files fail.
 
-Recommendation: Use UART decoder with --baud 115200
-```
+  Raises:     Exception: If batch processing fails or no files found.
 
----
+  Examples:
 
-### info
+          # Process all WFM files with characterization
+          $ oscura batch '*.wfm' --analysis characterize
 
-Display information about a waveform file.
+          # Parallel processing with 4 workers
+          $ oscura batch 'test_run_*/*.wfm' \
+              --analysis characterize \
+              --parallel 4 \
+              --save-summary results.csv
 
-```bash
-oscura info FILE [OPTIONS]
-```
+          # Decode all captures, continue on errors
+          $ oscura batch 'captures/*.wfm' \
+              --analysis decode \
+              --continue-on-error
 
-**Arguments:**
-
-|Argument|Description|
-|---|---|
-|`FILE`|Waveform file to inspect|
-
-**Options:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--format, -f`|Output format (text, json)|text|
-|`--verbose, -v`|Show detailed information|false|
-
-**Examples:**
-
-```bash
-# Quick info
-oscura info capture.wfm
-
-# Detailed info
-oscura info capture.wfm -v
-
-# JSON output
-oscura info capture.wfm -f json
-```
-
-**Example Output:**
+Options:
+  --analysis [characterize|decode|spectrum]
+                                  Type of analysis to perform on each file.
+                                  [required]
+  --parallel INTEGER              Number of files to process concurrently
+                                  (default: 1).
+  --output [json|csv|html|table]  Output format (default: table).
+  --save-summary PATH             Save aggregated results to file (CSV format).
+  --continue-on-error             Continue processing even if individual files
+                                  fail.
+  --help                          Show this message and exit.
 
 ```
-File Information: capture.wfm
-============================================================
-Format:        Tektronix WFM
-File Size:     15.2 MB
-Channels:      4 (CH1, CH2, CH3, CH4)
-Sample Rate:   1.00 GS/s
-Samples:       10,000,000
-Duration:      10.000 ms
-Vertical:      8-bit resolution
-Created:       2026-01-05 14:32:18
-Instrument:    MSO64
-```
 
----
-
-### convert
-
-Convert waveform files between formats.
-
-```bash
-oscura convert INPUT OUTPUT [OPTIONS]
-```
-
-**Arguments:**
-
-|Argument|Description|
-|---|---|
-|`INPUT`|Source waveform file|
-|`OUTPUT`|Destination file|
-
-**Options:**
-
-|Option|Description|Default|
-|---|---|---|
-|`--format, -f`|Output format (auto-detected from extension)|auto|
-|`--channel, -c`|Channel(s) to export|all|
-|`--downsample`|Downsample factor|1|
-|`--compress`|Compression level (0-9)|0|
-
-**Supported Output Formats:**
-
-- `.csv` - Comma-separated values
-- `.npz` - NumPy compressed archive
-- `.h5` / `.hdf5` - HDF5 format
-- `.mat` - MATLAB format
-- `.json` - JSON with base64 data
-
-**Examples:**
-
-```bash
-# Convert to CSV
-oscura convert capture.wfm data.csv
-
-# Convert to HDF5 with compression
-oscura convert capture.wfm data.h5 --compress 6
-
-# Export specific channel
-oscura convert capture.wfm ch1_only.csv --channel CH1
-
-# Downsample for smaller files
-oscura convert large.wfm smaller.npz --downsample 10
-```
-
----
-
-### config
-
-Manage Oscura configuration.
-
-```bash
-oscura config [OPTIONS]
-```
-
-**Options:**
-
-|Option|Description|
-|---|---|
-|`--init`|Create default configuration file|
-|`--show`|Display current configuration|
-|`--path`|Show configuration file path|
-|`--set KEY=VALUE`|Set a configuration value|
-
-**Examples:**
-
-```bash
-# Initialize config
-oscura config --init
-
-# Show current settings
-oscura config --show
-
-# Set a value
-oscura config --set default_format=json
-```
-
----
-
-### version
-
-Display version and system information.
-
-```bash
-oscura version [OPTIONS]
-```
-
-**Options:**
-
-|Option|Description|
-|---|---|
-|`--verbose, -v`|Show detailed system info|
-
-**Example Output:**
+## `oscura characterize`
 
 ```
-Oscura 0.1.0
+Usage: cli characterize [OPTIONS] FILE
 
-Python:     3.12.1
-Platform:   Linux-6.8.0-88-generic-x86_64
-NumPy:      1.26.3
-GPU:        Not available
+  Characterize buffer, signal, or power measurements.
+
+  Analyzes a waveform file and extracts timing, quality, and performance
+  characteristics. Supports automatic logic family detection and optional
+  comparison to a reference signal.
+
+  Args:     ctx: Click context object.     file: Path to waveform file to
+  characterize.     analysis_type: Type of characterization (buffer, signal,
+  power).     logic_family: Logic family for buffer characterization.
+  compare: Path to reference file for comparison analysis.     output: Output
+  format (json, csv, html, table).     save_report: Path to save HTML report
+  file.
+
+  Raises:     Exception: If characterization fails or file cannot be loaded.
+
+  Examples:
+
+          # Simple buffer characterization
+          $ oscura characterize 74hc04_output.wfm
+
+          # Full characterization with reference
+          $ oscura characterize signal.wfm \
+              --logic-family CMOS_3V3 \
+              --compare golden_reference.wfm \
+              --save-report report.html
+
+          # Power analysis
+          $ oscura characterize power_rail.wfm --type power --output json
+
+Options:
+  --type [buffer|signal|power]    Type of characterization to perform.
+  --logic-family [ttl|cmos|cmos_3v3|cmos_5v|lvttl|lvcmos|auto]
+                                  Logic family for buffer characterization
+                                  (default: auto-detect).
+  --compare PATH                  Reference file for comparison analysis.
+  --output [json|csv|html|table]  Output format (default: table).
+  --save-report PATH              Save HTML report to file.
+  --help                          Show this message and exit.
+
 ```
 
----
+## `oscura compare`
 
-## Exit Codes
+```
+Usage: cli compare [OPTIONS] FILE1 FILE2
 
-|Code|Description|
-|---|---|
-|0|Success|
-|1|General error|
-|2|Invalid arguments|
-|3|File not found|
-|4|Unsupported format|
-|5|Decode error|
-|130|Interrupted (Ctrl+C)|
+  Compare two signal captures.
 
-## Environment Variables
+  Analyzes differences between two waveforms including timing drift, amplitude
+  changes, noise variations, and spectral differences.
 
-|Variable|Description|
-|---|---|
-|`OSCURA_CONFIG`|Configuration file path|
-|`OSCURA_DATA_DIR`|Default data directory|
-|`OSCURA_GPU`|Enable GPU (true/false)|
-|`OSCURA_LOG_LEVEL`|Log level (DEBUG, INFO, WARNING, ERROR)|
-|`NO_COLOR`|Disable colored output|
+  Args:     ctx: Click context object.     file1: Path to first waveform file.
+  file2: Path to second waveform file.     threshold: Percentage threshold for
+  reporting differences.     output: Output format (json, csv, html, table).
+  save_report: Path to save HTML comparison report.     align: Align signals
+  using cross-correlation before comparison.
 
-## Configuration File
+  Raises:     Exception: If comparison fails or files cannot be loaded.
 
-Default location: `~/.config/oscura/config.yaml`
+  Examples:
 
-```yaml
-# Oscura Configuration
-default_sample_rate: 1e9
-output_format: text
-plot_style: default
-gpu_enabled: false
+          # Simple comparison
+          $ oscura compare before.wfm after.wfm
 
-# Protocol defaults
-uart:
-  baud_rate: 115200
-  data_bits: 8
-  parity: none
+          # Report only significant differences (>10%)
+          $ oscura compare golden.wfm measured.wfm --threshold 10
 
-# Report settings
-report:
-  author: 'Engineering Team'
-  template: standard
-  include_plots: true
+          # Full comparison with alignment and HTML report
+          $ oscura compare reference.wfm test.wfm \
+              --align \
+              --save-report comparison.html
+
+          # JSON output for automation
+          $ oscura compare before.wfm after.wfm --output json
+
+Options:
+  --threshold FLOAT               Report differences greater than this
+                                  percentage (default: 5%).
+  --output [json|csv|html|table]  Output format (default: table).
+  --save-report PATH              Save detailed HTML comparison report.
+  --align                         Align signals using cross-correlation before
+                                  comparison.
+  --help                          Show this message and exit.
+
 ```
 
-## See Also
+## `oscura decode`
 
-- [API Reference](api/index.md) - Python API documentation
+```
+Usage: cli decode [OPTIONS] FILE
+
+  Decode serial protocol data.
+
+  Automatically detects and decodes common serial protocols (UART, SPI, I2C,
+  CAN). Can highlight errors with surrounding context for debugging.
+
+  Args:     ctx: Click context object.     file: Path to waveform file to
+  decode.     protocol: Protocol type (uart, spi, i2c, can, auto).
+  baud_rate: Baud rate for UART (None for auto-detect).     parity: Parity
+  setting for UART (none, even, odd).     stop_bits: Number of stop bits for
+  UART (1 or 2).     show_errors: Show only packets with errors.     output:
+  Output format (json, csv, html, table).
+
+  Raises:     Exception: If decoding fails or file cannot be loaded.
+
+  Examples:
+
+          # Auto-detect and decode protocol
+          $ oscura decode serial_capture.wfm
+
+          # Decode specific protocol with parameters
+          $ oscura decode uart.wfm \
+              --protocol UART \
+              --baud-rate 9600 \
+              --parity even \
+              --stop-bits 2
+
+          # Show only errors for debugging
+          $ oscura decode problematic.wfm --show-errors
+
+          # Generate JSON output
+          $ oscura decode i2c.wfm --protocol I2C --output json
+
+Options:
+  --protocol [uart|spi|i2c|can|auto]
+                                  Protocol type (default: auto-detect).
+  --baud-rate INTEGER             Baud rate for UART (auto-detect if not
+                                  specified).
+  --parity [none|even|odd]        Parity for UART (default: none).
+  --stop-bits [1|2]               Stop bits for UART (default: 1).
+  --show-errors                   Show only errors with context.
+  --output [json|csv|html|table]  Output format (default: table).
+  --help                          Show this message and exit.
+
+```
+
+## `oscura shell`
+
+```
+Usage: cli shell [OPTIONS]
+
+  Start an interactive Oscura shell.
+
+  Opens a Python REPL with Oscura pre-imported and ready to use. Features tab
+  completion, persistent history, and helpful shortcuts.
+
+  Example:     $ oscura shell     Oscura Shell v0.3.0     >>> trace =
+  load("signal.wfm")     >>> rise_time(trace)
+
+Options:
+  --help  Show this message and exit.
+
+```
+
+## `oscura tutorial`
+
+```
+Usage: cli tutorial [OPTIONS] [TUTORIAL_ID]
+
+  Run an interactive tutorial.
+
+  Provides step-by-step guidance for learning Oscura.
+
+  Args:     tutorial_id: ID of the tutorial to run (or None to list).
+  list_tutorials: If True, list available tutorials.
+
+  Examples:     oscura tutorial --list           # List available tutorials
+  oscura tutorial getting_started  # Run the getting started tutorial
+
+Options:
+  --list  List available tutorials
+  --help  Show this message and exit.
+
+```

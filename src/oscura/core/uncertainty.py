@@ -108,7 +108,7 @@ class MeasurementWithUncertainty:
             JCGM 100:2008 Section 5.1.6
         """
         if self.value == 0:
-            return np.inf
+            return float(np.inf)  # type: ignore[no-any-return]
         return abs(self.uncertainty / self.value)
 
     @property
@@ -173,7 +173,7 @@ class UncertaintyEstimator:
             JCGM 100:2008 Section 4.2 (Type A evaluation)
         """
         if len(data) < 2:
-            return np.nan
+            return float(np.nan)  # type: ignore[no-any-return]
         return float(np.std(data, ddof=1))  # Sample std (Bessel correction)
 
     @staticmethod
@@ -190,7 +190,7 @@ class UncertaintyEstimator:
             JCGM 100:2008 Section 4.2.3
         """
         if len(data) < 2:
-            return np.nan
+            return float(np.nan)  # type: ignore[no-any-return]
         return float(np.std(data, ddof=1) / np.sqrt(len(data)))
 
     @staticmethod

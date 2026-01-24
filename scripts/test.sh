@@ -167,8 +167,8 @@ PYTEST_ARGS=()
 if [[ ${WORKERS} -gt 0 ]]; then
   # OPTIMAL: Use worksteal for dynamic load balancing (better than loadscope)
   PYTEST_ARGS+=(-n "${WORKERS}" --dist=worksteal)
-  # Disable benchmarks when using xdist (benchmarks cannot run in parallel)
-  PYTEST_ARGS+=(--benchmark-disable)
+  # Disable pytest-benchmark plugin when using xdist (prevents warning escalation)
+  PYTEST_ARGS+=(-p no:benchmark)
 fi
 
 # Add timeout
@@ -183,7 +183,13 @@ if [[ "${MODE}" == "coverage" ]]; then
     --cov=src/oscura
     --cov-report=term-missing
     --cov-report=html
+    --cov-report=xml # For diff-cover tool
   )
+fi
+
+# Fast mode: exclude slow tests
+if [[ "${MODE}" == "fast" ]]; then
+  PYTEST_ARGS+=(-m "not slow")
 fi
 
 # Add verbosity
@@ -211,7 +217,7 @@ fi
 print_section "Executing tests"
 
 # Run pytest via uv
-if uv run pytest "${PYTEST_ARGS[@]}"; then
+if uv run python -m pytest "${PYTEST_ARGS[@]}"; then
   EXIT_CODE=0
   print_pass "Tests completed successfully"
 else

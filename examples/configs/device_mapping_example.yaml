@@ -1,0 +1,52 @@
+# Example device mapping configuration
+# Maps device IDs to human-readable names and parameters
+
+name: example_devices
+version: "1.0"
+description: "Example device mappings for demonstration"
+
+devices:
+  "0x10":
+    name: "Temperature Sensor"
+    short_name: "TempSens"
+    description: "Primary temperature sensor"
+    category: "sensors"
+    sample_rate: 10.0 # 10 Hz
+    channels: 1
+
+  "0x20":
+    name: "Pressure Sensor"
+    short_name: "PressureSens"
+    description: "Main pressure sensor"
+    category: "sensors"
+    sample_rate: 100.0 # 100 Hz
+    channels: 1
+
+  "0x30":
+    name: "Main Controller"
+    short_name: "MainCtrl"
+    description: "Primary system controller"
+    category: "controllers"
+    channels: 1
+
+categories:
+  sensors:
+    description: "Environmental sensors"
+    color: "#4CAF50"
+
+  controllers:
+    description: "System controllers"
+    color: "#2196F3"
+
+channels:
+  "0":
+    name: "Channel A"
+    description: "Primary data channel"
+  "1":
+    name: "Channel B"
+    description: "Secondary data channel"
+
+unknown_device:
+  policy: "warn"
+  default_name: "Unknown Device"
+  default_category: "uncategorized"

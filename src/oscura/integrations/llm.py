@@ -23,6 +23,8 @@ Examples:
     ... )
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import os
@@ -1545,7 +1547,7 @@ def get_client_auto(**config_kwargs: Any) -> LLMClient:
 
 def get_client_with_failover(
     providers: list[str] | None = None, **config_kwargs: Any
-) -> "FailoverLLMClient":
+) -> FailoverLLMClient:
     """Get LLM client with automatic failover between providers.
 
     Failover logic (try OpenAI, fallback to Anthropic).

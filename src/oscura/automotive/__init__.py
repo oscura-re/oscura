@@ -17,8 +17,10 @@ Key features:
 
 Example:
     >>> from oscura.automotive.can import CANSession
+    >>> from oscura.automotive.sources import FileSource
     >>> # Load automotive log file
-    >>> session = CANSession.from_log("capture.blf")
+    >>> session = CANSession(name="Analysis")
+    >>> session.add_recording("main", FileSource("capture.blf"))
     >>> # View message inventory
     >>> inventory = session.inventory()
     >>> # Analyze specific message
@@ -40,9 +42,7 @@ Example:
     P0420: Catalyst System Efficiency Below Threshold (Bank 1)
 """
 
-from __future__ import annotations
-
-__version__ = "0.1.0"
+__version__ = "0.4.0"  # pragma: no cover
 
 __all__ = [
     "CANMessage",

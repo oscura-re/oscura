@@ -53,7 +53,8 @@ class TestYAxisRangeOptimization:
 
     def test_outlier_exclusion(self):
         """Test that outliers are excluded from range."""
-        # Create data with outliers
+        # Create data with outliers (fixed seed for deterministic test)
+        np.random.seed(42)
         data = np.random.randn(1000)
         data[0] = 100.0  # Outlier
         data[1] = -100.0  # Outlier
@@ -66,6 +67,7 @@ class TestYAxisRangeOptimization:
 
     def test_symmetric_range(self):
         """Test symmetric range mode for bipolar signals."""
+        np.random.seed(43)  # Fixed seed for deterministic test
         data = np.random.randn(1000)
         y_min, y_max = calculate_optimal_y_range(data, symmetric=True)
 

@@ -11,115 +11,31 @@ PreToolUse hook that prevents writing to sensitive files and validates path safe
 Runs before Write, Edit, and NotebookEdit tool calls.
 Blocking hook: Returns non-zero exit code to prevent dangerous operations.
 
+Version: 2.0.0
+Updated: 2026-01-19 - FAIL CLOSED security, fixed TOCTOU races, uses shared utilities
+
 Configuration:
 - BLOCKED_PATTERNS: Patterns that always block (security-critical)
 - WARNED_PATTERNS: Patterns that warn user but allow (configs)
 - Respects project root boundaries
 """
+
 import json
 import os
 import sys
-from fnmatch import fnmatch
 from pathlib import Path
 
-# Patterns that BLOCK file writes (security-critical)
-BLOCKED_PATTERNS = {
-    # Credentials and secrets
-    ".env",
-    ".env.local",
-    ".env.production",
-    ".env.development",
-    ".env.test",
-    ".env.*.local",
-    "*.key",
-    "*.pem",
-    "*.p12",
-    "*.pfx",
-    "secrets.*",
-    "credentials.*",
-    "*.keystore",
-    "*.jks",
-    # Git internals (modifying these can corrupt repo)
-    ".git/config",
-    ".git/HEAD",
-    ".git/index",
-    ".git/objects/**",
-    ".git/refs/**",
-    ".git/hooks/**",
-    # SSH keys
-    "*.pub",
-    "id_rsa",
-    "id_ed25519",
-    "id_ecdsa",
-    # Cloud credentials
-    "serviceaccount.json",
-    "gcloud-service-key.json",
-    # Database
-    "*.db",
-    "*.sqlite",
-    "*.sqlite3",
-}
+# Add shared module to path
+sys.path.insert(0, str(Path(__file__).parent))
+from shared import get_hook_logger
+from shared.security import is_blocked_path, is_warned_path
 
-# Patterns that WARN but allow (important configs)
-WARNED_PATTERNS = {
-    "pyproject.toml",
-    "package.json",
-    "Cargo.toml",
-    "go.mod",
-    ".claude/settings.json",
-    "tsconfig.json",
-    ".vscode/settings.json",
-    "uv.lock",
-    "package-lock.json",
-    "Cargo.lock",
-    "go.sum",
-}
+# Logger
+logger = get_hook_logger(__name__)
 
-# Excluded directories (no validation needed - handled by auto_format)
-EXCLUDED_DIRS = {".venv", "node_modules", "__pycache__", ".git", ".mypy_cache", ".ruff_cache"}
-
-
-def matches_pattern(path: Path, pattern: str) -> bool:
-    """Check if path matches a glob pattern.
-
-    Supports:
-    - Simple filename patterns: "*.key", ".env"
-    - Directory patterns: ".git/config"
-    - Recursive patterns: ".git/objects/**" (matches all files under .git/objects/)
-    """
-    path_str = str(path)
-
-    # Check filename match
-    if fnmatch(path.name, pattern):
-        return True
-
-    # Handle recursive patterns with /**
-    if "**" in pattern:
-        # Pattern like ".git/objects/**" should match ".git/objects/ab/cdef123"
-        base_pattern = pattern.replace("/**", "")
-        # Check if any parent directory matches the base pattern
-        for parent in [path, *path.parents]:
-            parent_str = str(parent)
-            # Path is under the matched directory (don't match the directory itself)
-            if (parent_str.endswith(base_pattern) or f"/{base_pattern}" in parent_str) and str(
-                path
-            ) != parent_str:
-                return True
-        # Also check if path starts with the pattern prefix
-        if base_pattern in path_str:
-            idx = path_str.find(base_pattern)
-            # Verify it's a proper path component match
-            if idx == 0 or path_str[idx - 1] == "/":
-                remaining = path_str[idx + len(base_pattern) :]
-                if remaining.startswith("/"):
-                    return True
-
-    # Check if pattern matches the full relative path
-    if fnmatch(path_str, pattern):
-        return True
-
-    # Check relative path components for simple patterns
-    return any(fnmatch(part, pattern) for part in path.parts)
+# Excluded directories (skip validation - these are build/cache dirs that tools manage)
+# NOTE: .git is NOT here because we explicitly block .git writes via security.py
+EXCLUDED_DIRS = {".venv", "node_modules", "__pycache__", ".mypy_cache", ".ruff_cache"}
 
 
 def validate_path(file_path: str, project_root: str) -> tuple[bool, str | None]:
@@ -144,26 +60,42 @@ def validate_path(file_path: str, project_root: str) -> tuple[bool, str | None]:
         if not path.is_absolute():
             path = project_path / path
 
-        # Security: Check for symlinks BEFORE resolving (symlink attack prevention)
-        # Walk up the path checking each component for symlinks
-        check_path = path
-        while check_path != check_path.parent:
-            if check_path.is_symlink():
-                # Symlink exists - verify it doesn't escape project root
-                link_target = check_path.resolve()
-                try:
-                    link_target.relative_to(project_path)
-                except ValueError:
-                    return False, f"Symlink escapes project root: {check_path} -> {link_target}"
-            check_path = check_path.parent
+        # Security: Use resolve(strict=False) to avoid TOCTOU races
+        # This resolves the path without following symlinks at the end
+        try:
+            abs_path = path.resolve(strict=False)
+        except Exception as e:
+            return False, f"Path resolution failed: {e}"
 
-        abs_path = path.resolve()
-
-        # Check if within project root
+        # Check if within project root AFTER resolution
         try:
             abs_path.relative_to(project_path)
         except ValueError:
             return False, f"Path outside project root: {abs_path}"
+
+        # Check for symlinks in resolved path components
+        # This prevents symlink attacks while avoiding TOCTOU
+        current = abs_path
+        while current != project_path:
+            if current.is_symlink():
+                # Resolve symlink and check if it stays within project
+                try:
+                    link_target = current.readlink()
+                    if link_target.is_absolute():
+                        # Absolute symlink - check if within project
+                        try:
+                            link_target.relative_to(project_path)
+                        except ValueError:
+                            return (
+                                False,
+                                f"Symlink escapes project root: {current} -> {link_target}",
+                            )
+                except (OSError, RuntimeError):
+                    return False, f"Failed to read symlink: {current}"
+
+            current = current.parent
+            if current == current.parent:  # Reached root
+                break
 
     except (ValueError, OSError) as e:
         return False, f"Invalid path: {e}"
@@ -176,15 +108,15 @@ def validate_path(file_path: str, project_root: str) -> tuple[bool, str | None]:
     if any(excluded in path.parts for excluded in EXCLUDED_DIRS):
         return True, None
 
-    # Check BLOCKED patterns (security-critical)
-    for pattern in BLOCKED_PATTERNS:
-        if matches_pattern(path, pattern):
-            return False, f"Blocked: Writing to {pattern} files is prohibited (security)"
+    # Use security module for pattern matching
+    is_blocked, block_message = is_blocked_path(abs_path, project_path)
+    if is_blocked:
+        return False, block_message
 
     # Check WARNED patterns (important configs)
-    for pattern in WARNED_PATTERNS:
-        if matches_pattern(path, pattern):
-            return True, f"Warning: Modifying {path.name} (critical config file)"
+    needs_warning, warn_message = is_warned_path(abs_path, project_path)
+    if needs_warning:
+        return True, warn_message
 
     # Allow all other writes
     return True, None
@@ -202,12 +134,14 @@ def main() -> None:
 
         # Only validate Write, Edit, and NotebookEdit tools
         if tool_name not in {"Write", "Edit", "NotebookEdit"}:
+            logger.debug(f"Ignoring tool: {tool_name}")
             sys.exit(0)
 
         # Extract file path from tool input
         file_path = tool_input.get("file_path", "") or tool_input.get("notebook_path", "")
 
         if not file_path:
+            logger.debug("No file path to validate")
             sys.exit(0)
 
         # Get project root from environment
@@ -219,21 +153,28 @@ def main() -> None:
         if message:
             # Print warning or error to stderr
             if allowed:
+                logger.warning(f"{message}")
                 print(f"⚠ {message}", file=sys.stderr)
             else:
+                logger.error(f"BLOCKED: {message}")
                 print(f"🛑 {message}", file=sys.stderr)
+        else:
+            logger.debug(f"Validated: {file_path}")
 
         # Exit code determines if operation proceeds
         # 0 = allow, non-zero = block
         sys.exit(0 if allowed else 1)
 
-    except json.JSONDecodeError:
-        # Invalid JSON input - allow by default (fail open)
-        sys.exit(0)
+    except json.JSONDecodeError as e:
+        # FAIL CLOSED for security hook - block on parse errors
+        logger.error(f"Failed to parse stdin JSON: {e}")
+        print("🛑 Security hook error: Invalid JSON input", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
-        # Log errors to stderr but allow operation (fail open)
-        print(f"⚠ Path validation hook error: {e}", file=sys.stderr)
-        sys.exit(0)
+        # FAIL CLOSED for security hook - block on unexpected errors
+        logger.error(f"Hook failed: {e}", exc_info=True)
+        print(f"🛑 Security hook error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

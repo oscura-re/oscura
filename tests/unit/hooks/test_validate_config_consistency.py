@@ -21,9 +21,6 @@ import yaml
 
 pytestmark = [
     pytest.mark.unit,
-    pytest.mark.xfail(
-        reason="validate_config_consistency.py script not yet implemented", strict=False
-    ),
 ]
 
 
@@ -40,14 +37,14 @@ class TestValidateConfigConsistencyVersions:
         assert "Configuration is consistent" in result["stdout"]
 
     def test_reports_missing_orchestration_config(self, tmp_path: Path) -> None:
-        """Should report error when orchestration-config.yaml is missing."""
+        """Should report error when config.yaml is missing."""
         setup_valid_config(tmp_path)
-        (tmp_path / ".claude" / "orchestration-config.yaml").unlink()
+        (tmp_path / ".claude" / "config.yaml").unlink()
 
         result = run_validation(tmp_path)
 
         # Should still run but report the issue
-        assert "orchestration-config" in result["stdout"].lower() or result["returncode"] != 0
+        assert "config.yaml" in result["stdout"].lower() or result["returncode"] != 0
 
 
 class TestValidateConfigConsistencyAgentRefs:
@@ -122,13 +119,31 @@ def setup_valid_config(tmp_path: Path) -> None:
     (claude_dir / "commands").mkdir()
     (claude_dir / "hooks").mkdir()
 
-    # Create orchestration-config.yaml
-    orchestration_config = {
+    # Create src/oscura directory
+    src_dir = tmp_path / "src" / "oscura"
+    src_dir.mkdir(parents=True)
+
+    # Create pyproject.toml
+    pyproject_content = """[project]
+name = "test-project"
+version = "0.1.0"
+description = "Test project"
+"""
+    (tmp_path / "pyproject.toml").write_text(pyproject_content)
+
+    # Create __init__.py with version
+    init_content = '''"""Test package."""
+__version__ = "0.1.0"
+'''
+    (src_dir / "__init__.py").write_text(init_content)
+
+    # Create config.yaml (main orchestration config)
+    config = {
         "version": "3.2.0",
         "swarm": {"max_batch_size": 2, "recommended_batch_size": 1},
         "context_management": {"warning_threshold_percent": 60, "critical_threshold_percent": 75},
     }
-    (claude_dir / "orchestration-config.yaml").write_text(yaml.dump(orchestration_config))
+    (claude_dir / "config.yaml").write_text(yaml.dump(config))
 
     # Create coding-standards.yaml
     coding_standards = {

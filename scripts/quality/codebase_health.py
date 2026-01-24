@@ -182,7 +182,7 @@ class TestStatsCheck(HealthCheck):
         """
         try:
             result = subprocess.run(
-                ["pytest", "--collect-only", "-q", "--no-header"],
+                [sys.executable, "-m", "pytest", "--collect-only", "-q", "--no-header"],
                 capture_output=True,
                 text=True,
                 cwd=PROJECT_ROOT,
@@ -231,7 +231,7 @@ class DeadFixturesCheck(HealthCheck):
         """
         try:
             result = subprocess.run(
-                ["pytest", "--dead-fixtures", "-q"],
+                [sys.executable, "-m", "pytest", "--dead-fixtures", "-q"],
                 capture_output=True,
                 text=True,
                 cwd=PROJECT_ROOT,
@@ -282,7 +282,7 @@ class DuplicateTestCheck(HealthCheck):
         """
         try:
             result = subprocess.run(
-                ["pytest", "--collect-only", "-q", "--no-header"],
+                [sys.executable, "-m", "pytest", "--collect-only", "-q", "--no-header"],
                 capture_output=True,
                 text=True,
                 cwd=PROJECT_ROOT,

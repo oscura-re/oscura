@@ -13,6 +13,8 @@ Key capabilities:
 - Comprehensive error reporting
 """
 
+from __future__ import annotations
+
 import ast
 import operator
 import struct
@@ -68,7 +70,7 @@ class FieldDefinition:
     element: dict[str, Any] | None = None  # Element definition for arrays
     count_field: str | None = None  # Field containing array count
     count: int | None = None  # Fixed array count
-    fields: list["FieldDefinition"] | None = None  # Nested fields for struct type
+    fields: list[FieldDefinition] | None = None  # Nested fields for struct type
 
     def __post_init__(self) -> None:
         """Handle size_ref as alias for size."""
@@ -117,7 +119,7 @@ class ProtocolDefinition:
     encoding: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> "ProtocolDefinition":
+    def from_yaml(cls, path: str | Path) -> ProtocolDefinition:
         """Load protocol definition from YAML file.
 
         : YAML parsing.
@@ -134,7 +136,7 @@ class ProtocolDefinition:
         return cls.from_dict(config)
 
     @classmethod
-    def from_dict(cls, config: dict[str, Any]) -> "ProtocolDefinition":
+    def from_dict(cls, config: dict[str, Any]) -> ProtocolDefinition:
         """Create from dictionary.
 
         : Configuration parsing.
@@ -168,7 +170,7 @@ class ProtocolDefinition:
     @classmethod
     def _parse_field_definition(
         cls, field_dict: dict[str, Any], default_endian: str
-    ) -> "FieldDefinition":
+    ) -> FieldDefinition:
         """Parse a single field definition from dictionary.
 
         Args:
@@ -365,7 +367,7 @@ class ProtocolDecoder:
         self._endian_map: dict[str, str] = {"big": ">", "little": "<"}
 
     @classmethod
-    def load(cls, path: str | Path) -> "ProtocolDecoder":
+    def load(cls, path: str | Path) -> ProtocolDecoder:
         """Load decoder from YAML protocol definition.
 
         : Load decoder from file.

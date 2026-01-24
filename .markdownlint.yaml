@@ -41,7 +41,8 @@ MD025:
   false
 
   # MD026: Trailing punctuation in heading
-MD026: false
+MD026:
+  false
 
   # MD022: Headings should be surrounded by blank lines
 MD022:

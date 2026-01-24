@@ -1,6 +1,6 @@
 # Expert/Extensibility API Reference
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08
+> **Version**: 0.4.0 | **Last Updated**: 2026-01-19
 
 Comprehensive API documentation for extending Oscura with custom algorithms, measurements, and plugins.
 
@@ -47,16 +47,16 @@ Singleton registry for custom algorithm implementations.
 
 **Methods:**
 
-|Method|Description|
-|---|---|
-|`register(name, func, category, validate=True)`|Register a custom algorithm|
-|`get(category, name)`|Retrieve algorithm by category and name|
-|`list_categories()`|List all registered categories|
-|`list_algorithms(category)`|List algorithms in a category|
-|`has_algorithm(category, name)`|Check if algorithm exists|
-|`unregister(category, name)`|Remove algorithm from registry|
-|`clear_category(category)`|Clear all algorithms in category|
-|`clear_all()`|Clear all registered algorithms|
+| Method                                          | Description                             |
+| ----------------------------------------------- | --------------------------------------- |
+| `register(name, func, category, validate=True)` | Register a custom algorithm             |
+| `get(category, name)`                           | Retrieve algorithm by category and name |
+| `list_categories()`                             | List all registered categories          |
+| `list_algorithms(category)`                     | List algorithms in a category           |
+| `has_algorithm(category, name)`                 | Check if algorithm exists               |
+| `unregister(category, name)`                    | Remove algorithm from registry          |
+| `clear_category(category)`                      | Clear all algorithms in category        |
+| `clear_all()`                                   | Clear all registered algorithms         |
 
 ### Functions
 
@@ -183,14 +183,14 @@ print(f"Available edge detectors: {detectors}")
 
 Common algorithm categories:
 
-|Category|Description|Example Algorithms|
-|---|---|---|
-|`edge_detector`|Edge detection algorithms|`threshold`, `hysteresis`, `canny`|
-|`peak_finder`|Peak detection algorithms|`simple`, `prominence`, `cwt`|
-|`window_func`|Window functions for FFT|`hanning`, `hamming`, `blackman`|
-|`filter`|Signal filtering algorithms|`lowpass`, `highpass`, `bandpass`|
-|`interpolator`|Interpolation methods|`linear`, `cubic`, `spline`|
-|`preprocessor`|Signal preprocessing|`detrend`, `normalize`, `clip`|
+| Category        | Description                 | Example Algorithms                 |
+| --------------- | --------------------------- | ---------------------------------- |
+| `edge_detector` | Edge detection algorithms   | `threshold`, `hysteresis`, `canny` |
+| `peak_finder`   | Peak detection algorithms   | `simple`, `prominence`, `cwt`      |
+| `window_func`   | Window functions for FFT    | `hanning`, `hamming`, `blackman`   |
+| `filter`        | Signal filtering algorithms | `lowpass`, `highpass`, `bandpass`  |
+| `interpolator`  | Interpolation methods       | `linear`, `cubic`, `spline`        |
+| `preprocessor`  | Signal preprocessing        | `detrend`, `normalize`, `clip`     |
 
 ---
 
@@ -244,14 +244,14 @@ Registry for custom measurements.
 
 **Methods:**
 
-|Method|Description|
-|---|---|
-|`register(name, func, units, category, ...)`|Register a custom measurement|
-|`get(name)`|Get measurement definition by name|
-|`has_measurement(name)`|Check if measurement exists|
-|`list_measurements(category=None, tags=None)`|List registered measurements|
-|`get_metadata(name)`|Get metadata for a measurement|
-|`unregister(name)`|Remove measurement from registry|
+| Method                                        | Description                        |
+| --------------------------------------------- | ---------------------------------- |
+| `register(name, func, units, category, ...)`  | Register a custom measurement      |
+| `get(name)`                                   | Get measurement definition by name |
+| `has_measurement(name)`                       | Check if measurement exists        |
+| `list_measurements(category=None, tags=None)` | List registered measurements       |
+| `get_metadata(name)`                          | Get metadata for a measurement     |
+| `unregister(name)`                            | Remove measurement from registry   |
 
 ### Functions
 
@@ -421,14 +421,14 @@ print(f"Tags: {metadata['tags']}")
 
 Common measurement categories:
 
-|Category|Description|Examples|
-|---|---|---|
-|`amplitude`|Amplitude measurements|`peak`, `rms`, `crest_factor`|
-|`timing`|Time-domain measurements|`period`, `frequency`, `duty_cycle`|
-|`edge`|Edge-related measurements|`rise_time`, `fall_time`, `slew_rate`|
-|`frequency`|Frequency-domain measurements|`thd`, `snr`, `sinad`|
-|`quality`|Signal quality metrics|`enob`, `sfdr`, `snr_estimate`|
-|`statistical`|Statistical measurements|`mean`, `std`, `skewness`|
+| Category      | Description                   | Examples                              |
+| ------------- | ----------------------------- | ------------------------------------- |
+| `amplitude`   | Amplitude measurements        | `peak`, `rms`, `crest_factor`         |
+| `timing`      | Time-domain measurements      | `period`, `frequency`, `duty_cycle`   |
+| `edge`        | Edge-related measurements     | `rise_time`, `fall_time`, `slew_rate` |
+| `frequency`   | Frequency-domain measurements | `thd`, `snr`, `sinad`                 |
+| `quality`     | Signal quality metrics        | `enob`, `sfdr`, `snr_estimate`        |
+| `statistical` | Statistical measurements      | `mean`, `std`, `skewness`             |
 
 ---
 
@@ -478,14 +478,14 @@ Manager for discovering and loading third-party plugins.
 
 **Methods:**
 
-|Method|Description|
-|---|---|
-|`discover_plugins(group=None)`|Discover available plugins via entry points|
-|`load_plugin(group, name, reload=False)`|Load a plugin by group and name|
-|`get_plugin(group, name)`|Get loaded plugin callable|
-|`is_loaded(group, name)`|Check if plugin is already loaded|
-|`list_loaded_plugins()`|List all loaded plugins|
-|`unload_plugin(group, name)`|Unload plugin from cache|
+| Method                                   | Description                                 |
+| ---------------------------------------- | ------------------------------------------- |
+| `discover_plugins(group=None)`           | Discover available plugins via entry points |
+| `load_plugin(group, name, reload=False)` | Load a plugin by group and name             |
+| `get_plugin(group, name)`                | Get loaded plugin callable                  |
+| `is_loaded(group, name)`                 | Check if plugin is already loaded           |
+| `list_loaded_plugins()`                  | List all loaded plugins                     |
+| `unload_plugin(group, name)`             | Unload plugin from cache                    |
 
 **Example:**
 
@@ -744,12 +744,12 @@ print(f"Plugin generated at: {plugin_dir}")
 
 ### Plugin Types
 
-|Type|Description|Use Cases|
-|---|---|---|
-|`decoder`|Protocol decoder|UART, SPI, I2C, CAN, FlexRay, custom protocols|
-|`analyzer`|Signal analyzer|FFT analysis, pattern detection, custom metrics|
-|`loader`|File format loader|Proprietary oscilloscope formats, custom data files|
-|`exporter`|Export handler|Custom export formats, database export, cloud upload|
+| Type       | Description        | Use Cases                                            |
+| ---------- | ------------------ | ---------------------------------------------------- |
+| `decoder`  | Protocol decoder   | UART, SPI, I2C, CAN, FlexRay, custom protocols       |
+| `analyzer` | Signal analyzer    | FFT analysis, pattern detection, custom metrics      |
+| `loader`   | File format loader | Proprietary oscilloscope formats, custom data files  |
+| `exporter` | Export handler     | Custom export formats, database export, cloud upload |
 
 ---
 

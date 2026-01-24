@@ -12,14 +12,16 @@ Created: 2025-12-25
 import argparse
 import hashlib
 import json
-import logging
 import os
 import shutil
 import sys
 import tempfile
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+# Add shared module to path
+sys.path.insert(0, str(Path(__file__).parent))
+from shared import get_hook_logger, load_yaml_with_fallback
 
 # =============================================================================
 # Configuration
@@ -33,91 +35,23 @@ PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR", str(REPO_ROOT)))
 CODING_STANDARDS_FILE = PROJECT_DIR / ".claude" / "coding-standards.yaml"
 SETTINGS_FILE = PROJECT_DIR / ".claude" / "settings.json"
 BACKUP_FILE = PROJECT_DIR / ".claude" / "settings.json.bak"
-LOG_FILE = PROJECT_DIR / ".claude" / "hooks" / "hook.log"
 HASH_FILE = PROJECT_DIR / ".claude" / "hooks" / ".settings_hash"
 
 # =============================================================================
 # Logging Setup
 # =============================================================================
 
-LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE, mode="a"), logging.StreamHandler()],
-)
-logger = logging.getLogger("generate_settings")
+logger = get_hook_logger(__name__)
 
 
 # =============================================================================
-# YAML Loading (with fallback)
+# YAML Loading (now using shared utilities)
 # =============================================================================
 
 
 def load_yaml(file_path: Path) -> dict[str, Any]:
-    """Load YAML file with PyYAML or fallback to basic parsing."""
-    try:
-        import yaml
-
-        with open(file_path) as f:
-            return yaml.safe_load(f) or {}
-    except ImportError:
-        logger.warning("PyYAML not installed. Using basic YAML parsing (limited support).")
-        return _basic_yaml_parse(file_path)
-
-
-def _basic_yaml_parse(file_path: Path) -> dict[str, Any]:
-    """Very basic YAML parser for simple key-value structures.
-
-    This is a fallback when PyYAML is not available. Only handles simple cases.
-    """
-    result: dict[str, Any] = {}
-    current_section = None
-    current_list: list[Any] | None = None
-
-    with open(file_path) as f:
-        for line in f:
-            line = line.rstrip()
-
-            # Skip empty lines and comments
-            if not line or line.strip().startswith("#"):
-                continue
-
-            # Count indentation
-            indent = len(line) - len(line.lstrip())
-            stripped = line.strip()
-
-            # Top-level key
-            if indent == 0 and ":" in stripped:
-                key, _, value = stripped.partition(":")
-                key = key.strip()
-                value = value.strip()
-
-                if value:
-                    result[key] = value.strip('"').strip("'")
-                else:
-                    result[key] = {}
-                    current_section = key
-                    current_list = None
-
-            # Section content (simplified - just store as string)
-            elif current_section is not None:
-                if stripped.startswith("-"):
-                    if current_list is None:
-                        current_list = []
-                        result[current_section] = current_list
-                    item = stripped[1:].strip().strip('"').strip("'")
-                    if item:
-                        current_list.append(item)
-                elif ":" in stripped:
-                    key, _, value = stripped.partition(":")
-                    key = key.strip()
-                    value = value.strip().strip('"').strip("'")
-                    if isinstance(result[current_section], dict):
-                        result[current_section][key] = value
-
-    return result
+    """Load YAML file using shared utility."""
+    return load_yaml_with_fallback(file_path)
 
 
 # =============================================================================

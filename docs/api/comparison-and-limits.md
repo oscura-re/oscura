@@ -1,7 +1,7 @@
 # Comparison and Limits API Reference
 
-> **Version**: 0.1.0
-> **Last Updated**: 2026-01-08
+> **Version**: 0.4.0
+> **Last Updated**: 2026-01-19
 
 ## Overview
 
@@ -74,14 +74,14 @@ if result.difference_trace:
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace1`|`WaveformTrace`|required|First trace (typically measured)|
-|`trace2`|`WaveformTrace`|required|Second trace (typically reference)|
-|`tolerance`|`float \|None`|`None`|Absolute tolerance for matching|
-|`tolerance_pct`|`float \|None`|`None`|Percentage tolerance (0-100)|
-|`method`|`"absolute" \|"relative" \|"statistical"`|`"absolute"`|Comparison method|
-|`include_difference`|`bool`|`True`|Include difference trace in result|
+| Parameter            | Type                                      | Default      | Description                        |
+| -------------------- | ----------------------------------------- | ------------ | ---------------------------------- |
+| `trace1`             | `WaveformTrace`                           | required     | First trace (typically measured)   |
+| `trace2`             | `WaveformTrace`                           | required     | Second trace (typically reference) |
+| `tolerance`          | `float \|None`                            | `None`       | Absolute tolerance for matching    |
+| `tolerance_pct`      | `float \|None`                            | `None`       | Percentage tolerance (0-100)       |
+| `method`             | `"absolute" \|"relative" \|"statistical"` | `"absolute"` | Comparison method                  |
+| `include_difference` | `bool`                                    | `True`       | Include difference trace in result |
 
 **Returns:** `ComparisonResult`
 
@@ -156,12 +156,12 @@ plt.show()
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace1`|`WaveformTrace`|required|First trace|
-|`trace2`|`WaveformTrace`|required|Second trace|
-|`mode`|`"full" \|"same" \|"valid"`|`"same"`|Correlation mode|
-|`normalize`|`bool`|`True`|Normalize to correlation coefficient (-1 to 1)|
+| Parameter   | Type                        | Default  | Description                                    |
+| ----------- | --------------------------- | -------- | ---------------------------------------------- |
+| `trace1`    | `WaveformTrace`             | required | First trace                                    |
+| `trace2`    | `WaveformTrace`             | required | Second trace                                   |
+| `mode`      | `"full" \|"same" \|"valid"` | `"same"` | Correlation mode                               |
+| `normalize` | `bool`                      | `True`   | Normalize to correlation coefficient (-1 to 1) |
 
 **Returns:** `tuple[NDArray[np.float64], NDArray[np.float64]]` - (lags, correlation_values)
 
@@ -199,13 +199,13 @@ else:
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace1`|`WaveformTrace`|required|First trace|
-|`trace2`|`WaveformTrace`|required|Second trace|
-|`method`|`"correlation" \|"rms" \|"mse" \|"cosine"`|`"correlation"`|Similarity metric|
-|`normalize_amplitude`|`bool`|`True`|Normalize amplitude before comparison|
-|`normalize_offset`|`bool`|`True`|Remove DC offset before comparison|
+| Parameter             | Type                                       | Default         | Description                           |
+| --------------------- | ------------------------------------------ | --------------- | ------------------------------------- |
+| `trace1`              | `WaveformTrace`                            | required        | First trace                           |
+| `trace2`              | `WaveformTrace`                            | required        | Second trace                          |
+| `method`              | `"correlation" \|"rms" \|"mse" \|"cosine"` | `"correlation"` | Similarity metric                     |
+| `normalize_amplitude` | `bool`                                     | `True`          | Normalize amplitude before comparison |
+| `normalize_offset`    | `bool`                                     | `True`          | Remove DC offset before comparison    |
 
 **Returns:** `float` - Similarity score from 0.0 (completely different) to 1.0 (identical)
 
@@ -287,14 +287,14 @@ golden = GoldenReference.load("golden_references/power_3v3.json")
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace`|`WaveformTrace`|required|Reference waveform trace|
-|`tolerance`|`float \|None`|`None`|Absolute tolerance value|
-|`tolerance_pct`|`float \|None`|`None`|Percentage tolerance (0-100)|
-|`tolerance_sigma`|`float \|None`|`None`|Tolerance as multiple of standard deviation|
-|`name`|`str`|`"golden"`|Name for the reference|
-|`description`|`str`|`""`|Optional description|
+| Parameter         | Type            | Default    | Description                                 |
+| ----------------- | --------------- | ---------- | ------------------------------------------- |
+| `trace`           | `WaveformTrace` | required   | Reference waveform trace                    |
+| `tolerance`       | `float \|None`  | `None`     | Absolute tolerance value                    |
+| `tolerance_pct`   | `float \|None`  | `None`     | Percentage tolerance (0-100)                |
+| `tolerance_sigma` | `float \|None`  | `None`     | Tolerance as multiple of standard deviation |
+| `name`            | `str`           | `"golden"` | Name for the reference                      |
+| `description`     | `str`           | `""`       | Optional description                        |
 
 **Returns:** `GoldenReference`
 
@@ -332,12 +332,12 @@ print(f"Lower violations: {len(result.lower_violations) if result.lower_violatio
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace`|`WaveformTrace`|required|Measured trace to compare|
-|`golden`|`GoldenReference`|required|Golden reference to compare against|
-|`align`|`bool`|`True`|Attempt to align traces by cross-correlation|
-|`interpolate`|`bool`|`True`|Interpolate if sample counts differ|
+| Parameter     | Type              | Default  | Description                                  |
+| ------------- | ----------------- | -------- | -------------------------------------------- |
+| `trace`       | `WaveformTrace`   | required | Measured trace to compare                    |
+| `golden`      | `GoldenReference` | required | Golden reference to compare against          |
+| `align`       | `bool`            | `True`   | Attempt to align traces by cross-correlation |
+| `interpolate` | `bool`            | `True`   | Interpolate if sample counts differ          |
 
 **Returns:** `GoldenComparisonResult`
 
@@ -447,16 +447,16 @@ spec = create_limit_spec(
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`upper`|`float \|None`|`None`|Upper limit value|
-|`lower`|`float \|None`|`None`|Lower limit value|
-|`center`|`float \|None`|`None`|Center value (used with tolerance)|
-|`tolerance`|`float \|None`|`None`|Absolute tolerance (+/- from center)|
-|`tolerance_pct`|`float \|None`|`None`|Percentage tolerance (+/- % of center)|
-|`guardband_pct`|`float`|`0.0`|Guardband as percentage of limit range|
-|`name`|`str`|`"spec"`|Specification name|
-|`unit`|`str`|`""`|Unit of measurement|
+| Parameter       | Type           | Default  | Description                            |
+| --------------- | -------------- | -------- | -------------------------------------- |
+| `upper`         | `float \|None` | `None`   | Upper limit value                      |
+| `lower`         | `float \|None` | `None`   | Lower limit value                      |
+| `center`        | `float \|None` | `None`   | Center value (used with tolerance)     |
+| `tolerance`     | `float \|None` | `None`   | Absolute tolerance (+/- from center)   |
+| `tolerance_pct` | `float \|None` | `None`   | Percentage tolerance (+/- % of center) |
+| `guardband_pct` | `float`        | `0.0`    | Guardband as percentage of limit range |
+| `name`          | `str`          | `"spec"` | Specification name                     |
+| `unit`          | `str`          | `""`     | Unit of measurement                    |
 
 **Returns:** `LimitSpec`
 
@@ -501,13 +501,13 @@ else:
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace`|`WaveformTrace \|NDArray`|required|Input trace or data array|
-|`limits`|`LimitSpec \|None`|`None`|LimitSpec defining the limits|
-|`upper`|`float \|None`|`None`|Upper limit (alternative to LimitSpec)|
-|`lower`|`float \|None`|`None`|Lower limit (alternative to LimitSpec)|
-|`reference`|`float \|None`|`None`|Reference value for relative limits|
+| Parameter   | Type                      | Default  | Description                            |
+| ----------- | ------------------------- | -------- | -------------------------------------- |
+| `trace`     | `WaveformTrace \|NDArray` | required | Input trace or data array              |
+| `limits`    | `LimitSpec \|None`        | `None`   | LimitSpec defining the limits          |
+| `upper`     | `float \|None`            | `None`   | Upper limit (alternative to LimitSpec) |
+| `lower`     | `float \|None`            | `None`   | Lower limit (alternative to LimitSpec) |
+| `reference` | `float \|None`            | `None`   | Reference value for relative limits    |
 
 **Returns:** `LimitTestResult`
 
@@ -556,11 +556,11 @@ print(f"Minimum margin: {margins.min_margin:.4f}")
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace`|`WaveformTrace \|NDArray`|required|Input trace or data array|
-|`limits`|`LimitSpec`|required|LimitSpec defining the limits|
-|`warning_threshold_pct`|`float`|`20.0`|Threshold for margin warning (percent)|
+| Parameter               | Type                      | Default  | Description                            |
+| ----------------------- | ------------------------- | -------- | -------------------------------------- |
+| `trace`                 | `WaveformTrace \|NDArray` | required | Input trace or data array              |
+| `limits`                | `LimitSpec`               | required | LimitSpec defining the limits          |
+| `warning_threshold_pct` | `float`                   | `20.0`   | Threshold for margin warning (percent) |
 
 **Returns:** `MarginAnalysis`
 
@@ -645,12 +645,12 @@ mask.add_region(
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`regions`|`list[dict]`|required|List of region dictionaries|
-|`name`|`str`|`"custom_mask"`|Mask name|
-|`x_unit`|`str`|`"samples"`|X axis unit|
-|`y_unit`|`str`|`"V"`|Y axis unit|
+| Parameter | Type         | Default         | Description                 |
+| --------- | ------------ | --------------- | --------------------------- |
+| `regions` | `list[dict]` | required        | List of region dictionaries |
+| `name`    | `str`        | `"custom_mask"` | Mask name                   |
+| `x_unit`  | `str`        | `"samples"`     | X axis unit                 |
+| `y_unit`  | `str`        | `"V"`           | Y axis unit                 |
 
 **Returns:** `Mask`
 
@@ -682,15 +682,15 @@ mask = eye_mask(
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`eye_width`|`float`|`0.5`|Width of eye opening (fraction of UI)|
-|`eye_height`|`float`|`0.4`|Height of eye opening (fraction of amplitude)|
-|`center_height`|`float`|`0.3`|Height of center violation region|
-|`x_margin`|`float`|`0.1`|X margin for boundary (fraction of UI)|
-|`y_margin`|`float`|`0.1`|Y margin for boundary (fraction of amplitude)|
-|`unit_interval`|`float`|`1.0`|Duration of unit interval|
-|`amplitude`|`float`|`1.0`|Signal amplitude|
+| Parameter       | Type    | Default | Description                                   |
+| --------------- | ------- | ------- | --------------------------------------------- |
+| `eye_width`     | `float` | `0.5`   | Width of eye opening (fraction of UI)         |
+| `eye_height`    | `float` | `0.4`   | Height of eye opening (fraction of amplitude) |
+| `center_height` | `float` | `0.3`   | Height of center violation region             |
+| `x_margin`      | `float` | `0.1`   | X margin for boundary (fraction of UI)        |
+| `y_margin`      | `float` | `0.1`   | Y margin for boundary (fraction of amplitude) |
+| `unit_interval` | `float` | `1.0`   | Duration of unit interval                     |
+| `amplitude`     | `float` | `1.0`   | Signal amplitude                              |
 
 **Returns:** `Mask` - Eye diagram mask with hexagonal center violation region and top/bottom violation regions
 
@@ -739,13 +739,13 @@ if result.violation_points:
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace`|`WaveformTrace`|required|Input waveform trace|
-|`mask`|`Mask`|required|Mask to test against|
-|`x_data`|`NDArray \|None`|`None`|X coordinates for each sample|
-|`normalize`|`bool`|`True`|Normalize Y data to [-1, 1] range|
-|`sample_rate`|`float \|None`|`None`|Sample rate override|
+| Parameter     | Type             | Default  | Description                       |
+| ------------- | ---------------- | -------- | --------------------------------- |
+| `trace`       | `WaveformTrace`  | required | Input waveform trace              |
+| `mask`        | `Mask`           | required | Mask to test against              |
+| `x_data`      | `NDArray \|None` | `None`   | X coordinates for each sample     |
+| `normalize`   | `bool`           | `True`   | Normalize Y data to [-1, 1] range |
+| `sample_rate` | `float \|None`   | `None`   | Sample rate override              |
 
 **Returns:** `MaskTestResult`
 

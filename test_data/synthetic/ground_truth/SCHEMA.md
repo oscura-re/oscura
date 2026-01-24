@@ -138,12 +138,12 @@ Used for network captures (.pcap).
 
 All ground truth files should include:
 
-|Field|Type|Required|Description|
-|---|---|---|---|
-|`file`|string|Yes|Name of the test data file|
-|`input_type`|string|Yes|One of: waveform, binary, digital, pcap|
-|`expected_domains`|array|Yes|Analysis domains that should produce results|
-|`description`|string|No|Human-readable description|
+| Field              | Type   | Required | Description                                  |
+| ------------------ | ------ | -------- | -------------------------------------------- |
+| `file`             | string | Yes      | Name of the test data file                   |
+| `input_type`       | string | Yes      | One of: waveform, binary, digital, pcap      |
+| `expected_domains` | array  | Yes      | Analysis domains that should produce results |
+| `description`      | string | No       | Human-readable description                   |
 
 ## Validation
 

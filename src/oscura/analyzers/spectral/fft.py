@@ -4,8 +4,6 @@ This module provides FFT-based spectral analysis including chunked processing
 for large datasets.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 import numpy as np

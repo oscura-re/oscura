@@ -86,7 +86,9 @@ def baseline_session() -> CANSession:
         )
         messages.append(msg)
 
-    return CANSession.from_messages(messages.messages)
+    session = CANSession(name="Test")
+    session._messages = messages
+    return session
 
 
 @pytest.fixture
@@ -151,7 +153,9 @@ def throttle_stimulus_session() -> CANSession:
         )
         messages.append(msg)
 
-    return CANSession.from_messages(messages.messages)
+    session = CANSession(name="Test")
+    session._messages = messages
+    return session
 
 
 @pytest.fixture
@@ -228,7 +232,9 @@ def brake_stimulus_session() -> CANSession:
         )
         messages.append(msg)
 
-    return CANSession.from_messages(messages.messages)
+    session = CANSession(name="Test")
+    session._messages = messages
+    return session
 
 
 @pytest.mark.unit
@@ -255,7 +261,8 @@ class TestStimulusResponseAnalyzer:
             )
             messages.append(msg)
 
-        stimulus = CANSession.from_messages(messages.messages)
+        stimulus = CANSession(name="Test")
+        stimulus._messages = messages
 
         analyzer = StimulusResponseAnalyzer()
         report = analyzer.detect_responses(baseline_session, stimulus)
@@ -369,8 +376,8 @@ class TestStimulusResponseAnalyzer:
 
     def test_empty_sessions(self):
         """Test comparing empty sessions."""
-        empty1 = CANSession.from_messages([])
-        empty2 = CANSession.from_messages([])
+        empty1 = CANSession(name="Empty1")
+        empty2 = CANSession(name="Empty2")
 
         analyzer = StimulusResponseAnalyzer()
         report = analyzer.detect_responses(empty1, empty2)
@@ -396,7 +403,8 @@ class TestFrequencyChange:
             )
             messages.append(msg)
 
-        stimulus = CANSession.from_messages(messages.messages)
+        stimulus = CANSession(name="Test")
+        stimulus._messages = messages
 
         analyzer = StimulusResponseAnalyzer()
         report = analyzer.detect_responses(baseline_session, stimulus, change_threshold=0.1)
@@ -427,7 +435,8 @@ class TestFrequencyChange:
             )
             messages.append(msg)
 
-        stimulus = CANSession.from_messages(messages.messages)
+        stimulus = CANSession(name="Test")
+        stimulus._messages = messages
 
         analyzer = StimulusResponseAnalyzer()
         report = analyzer.detect_responses(baseline_session, stimulus, change_threshold=0.1)
@@ -542,7 +551,8 @@ class TestRealWorldScenarios:
             )
             baseline_msgs.append(msg)
 
-        baseline = CANSession.from_messages(baseline_msgs.messages)
+        baseline = CANSession(name="Baseline")
+        baseline._messages = baseline_msgs
 
         # Stimulus with both signals changed
         stimulus_msgs = CANMessageList()
@@ -566,7 +576,8 @@ class TestRealWorldScenarios:
             )
             stimulus_msgs.append(msg)
 
-        stimulus = CANSession.from_messages(stimulus_msgs.messages)
+        stimulus = CANSession(name="Stimulus")
+        stimulus._messages = stimulus_msgs
 
         analyzer = StimulusResponseAnalyzer()
         changes = analyzer.analyze_signal_changes(baseline, stimulus, 0x100)

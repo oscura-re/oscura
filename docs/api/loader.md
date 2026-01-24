@@ -1,7 +1,7 @@
 # Loader API Reference
 
-> **Version**: 0.1.0
-> **Last Updated**: 2026-01-08
+> **Version**: 0.4.0
+> **Last Updated**: 2026-01-19
 
 ## Overview
 
@@ -44,12 +44,12 @@ def load(
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`path`|`str \|PathLike`|Path to the file to load|
-|`format`|`str \|None`|Optional format override (e.g., "tektronix", "rigol", "csv")|
-|`channel`|`str \|int \|None`|Optional channel name or index for multi-channel files|
-|`lazy`|`bool`|If True, use lazy loading for huge files|
+| Parameter | Type               | Description                                                  |
+| --------- | ------------------ | ------------------------------------------------------------ |
+| `path`    | `str \|PathLike`   | Path to the file to load                                     |
+| `format`  | `str \|None`       | Optional format override (e.g., "tektronix", "rigol", "csv") |
+| `channel` | `str \|int \|None` | Optional channel name or index for multi-channel files       |
+| `lazy`    | `bool`             | If True, use lazy loading for huge files                     |
 
 **Returns:** `WaveformTrace` or `DigitalTrace` depending on file content.
 
@@ -91,10 +91,10 @@ def load_all_channels(
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`path`|`str \|PathLike`|Path to the multi-channel waveform file|
-|`format`|`str \|None`|Optional format override|
+| Parameter | Type             | Description                             |
+| --------- | ---------------- | --------------------------------------- |
+| `path`    | `str \|PathLike` | Path to the multi-channel waveform file |
+| `format`  | `str \|None`     | Optional format override                |
 
 **Returns:** Dictionary mapping channel names to traces. Analog channels are named "ch1", "ch2", etc. Digital channels are named "d1", "d2", etc.
 
@@ -125,10 +125,10 @@ def load_lazy(
 
 **Parameters:**
 
-|Parameter|Type|Description|
-|---|---|---|
-|`path`|`str \|PathLike`|Path to the file|
-|`**kwargs`|-|Additional arguments (sample_rate, etc.)|
+| Parameter  | Type             | Description                              |
+| ---------- | ---------------- | ---------------------------------------- |
+| `path`     | `str \|PathLike` | Path to the file                         |
+| `**kwargs` | -                | Additional arguments (sample_rate, etc.) |
 
 **Returns:** `LazyWaveformTrace` or `WaveformTrace`.
 
@@ -161,18 +161,18 @@ print(get_supported_formats())
 
 ## Supported Formats
 
-|Extension|Format|Loader|
-|---|---|---|
-|`.wfm`|Tektronix/Rigol WFM|Auto-detect|
-|`.npz`|NumPy compressed|`numpy_loader`|
-|`.csv`|Comma-separated values|`csv_loader`|
-|`.h5`, `.hdf5`|HDF5|`hdf5_loader`|
-|`.sr`|Sigrok|`sigrok`|
-|`.pcap`, `.pcapng`|Packet capture|`pcap`|
-|`.wav`|Audio waveform|`wav`|
-|`.vcd`|Value Change Dump|`vcd`|
-|`.tdms`|NI TDMS|`tdms`|
-|`.s1p` - `.s8p`|Touchstone S-parameters|`touchstone`|
+| Extension          | Format                  | Loader         |
+| ------------------ | ----------------------- | -------------- |
+| `.wfm`             | Tektronix/Rigol WFM     | Auto-detect    |
+| `.npz`             | NumPy compressed        | `numpy_loader` |
+| `.csv`             | Comma-separated values  | `csv_loader`   |
+| `.h5`, `.hdf5`     | HDF5                    | `hdf5_loader`  |
+| `.sr`              | Sigrok                  | `sigrok`       |
+| `.pcap`, `.pcapng` | Packet capture          | `pcap`         |
+| `.wav`             | Audio waveform          | `wav`          |
+| `.vcd`             | Value Change Dump       | `vcd`          |
+| `.tdms`            | NI TDMS                 | `tdms`         |
+| `.s1p` - `.s8p`    | Touchstone S-parameters | `touchstone`   |
 
 ## Configurable Binary Loading
 

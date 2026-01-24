@@ -1,0 +1,123 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in Oscura
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below to help us investigate.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I try to..., I expect..., but instead...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the behavior
+      placeholder: |
+        1. Load a signal using...
+        2. Apply analyzer...
+        3. Observe error...
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: The analyzer should return...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened (include error messages, stack traces)
+      placeholder: |
+        Error: ...
+        Traceback: ...
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: minimal-example
+    attributes:
+      label: Minimal Reproducible Example
+      description: Minimal code that reproduces the issue
+      placeholder: |
+        from oscura import load
+        from oscura.analyzers import rise_time
+
+        signal = load("example.wfm")
+        result = rise_time(signal)  # Fails here
+      render: python
+    validations:
+      required: false
+
+  - type: input
+    id: oscura-version
+    attributes:
+      label: Oscura Version
+      description: Run `uv run python -c "import oscura; print(oscura.__version__)"`
+      placeholder: "0.3.4"
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: Run `python --version`
+      placeholder: "Python 3.12.5"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: Your OS and version
+      placeholder: "Ubuntu 22.04 / macOS 14.2 / Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context about the problem:
+        - File formats being processed
+        - Signal characteristics (sample rate, duration, channels)
+        - Hardware being used (if applicable)
+      placeholder: The signal is from a Saleae Logic capture...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm you've done the following
+      options:
+        - label: I've searched existing issues to ensure this isn't a duplicate
+          required: true
+        - label: I've tested with the latest version of Oscura
+          required: true
+        - label: I've included a minimal reproducible example
+          required: false

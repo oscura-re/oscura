@@ -1,6 +1,6 @@
 # Oscura Export API Documentation
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08
+> **Version**: 0.4.0 | **Last Updated**: 2026-01-19
 
 Complete guide to exporting trace data and analysis results in multiple formats.
 
@@ -382,13 +382,13 @@ export_multi_trace_mat(
 
 ### Version Comparison
 
-|Feature|Version 5|Version 7.3|
-|---|---|---|
-|File size limit|2 GB|Unlimited|
-|Compression|No|Yes|
-|Compatibility|All MATLAB/Octave|MATLAB R2006b+|
-|Speed|Fast|Moderate|
-|Requirements|scipy|scipy + h5py|
+| Feature         | Version 5         | Version 7.3    |
+| --------------- | ----------------- | -------------- |
+| File size limit | 2 GB              | Unlimited      |
+| Compression     | No                | Yes            |
+| Compatibility   | All MATLAB/Octave | MATLAB R2006b+ |
+| Speed           | Fast              | Moderate       |
+| Requirements    | scipy             | scipy + h5py   |
 
 ### Requirements
 
@@ -502,12 +502,12 @@ osc.export_json(
 
 Choose the right format for your use case:
 
-|Format|Best For|Pros|Cons|
-|---|---|---|---|
-|**CSV**|Human-readable data, Excel import|Universal, simple, text-based|Large file size, no compression|
-|**JSON**|Structured results, web APIs|Flexible, hierarchical, readable|Large file size for arrays|
-|**HDF5**|Large datasets, archival|Efficient, compressed, fast|Binary, needs h5py|
-|**MATLAB**|MATLAB/Octave analysis|Native MATLAB format, metadata|Needs scipy, limited to 2GB (v5)|
+| Format     | Best For                          | Pros                             | Cons                             |
+| ---------- | --------------------------------- | -------------------------------- | -------------------------------- |
+| **CSV**    | Human-readable data, Excel import | Universal, simple, text-based    | Large file size, no compression  |
+| **JSON**   | Structured results, web APIs      | Flexible, hierarchical, readable | Large file size for arrays       |
+| **HDF5**   | Large datasets, archival          | Efficient, compressed, fast      | Binary, needs h5py               |
+| **MATLAB** | MATLAB/Octave analysis            | Native MATLAB format, metadata   | Needs scipy, limited to 2GB (v5) |
 
 ### Decision Tree
 
