@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Documentation** (README.md): Complete rewrite emphasizing the gap Oscura fills (unified hardware RE framework vs fragmented tools), leading with problem/solution framing, demonstrating concrete capabilities with scannable tables, maintaining professional tone with inspirational messaging, and inviting community contribution
+
 ## [0.5.1] - 2026-01-24
 
 **Clean History Release**: Production-ready framework with ultra-clean git history.

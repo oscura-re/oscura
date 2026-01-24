@@ -1,13 +1,6 @@
 # Oscura
 
-**Hardware Reverse Engineering Framework**
-
-Extract complete system understanding from any signal source—oscilloscopes, logic analyzers, network captures, side-channel traces—through:
-
-- Unknown protocol reverse engineering (physical layer detection, message format inference, field boundaries, CRC recovery)
-- State machine extraction and protocol behavior analysis
-- Side-channel cryptanalysis (power analysis, timing attacks, EM leakage)
-- IEEE-compliant measurements and signal characterization
+**The missing link in hardware reverse engineering.** Binary analysis has Ghidra, radare2, and IDA—unified frameworks for dissecting compiled code. But what about the critical steps before you get a binary off a chip? Oscura provides the comprehensive toolkit for analyzing signals, decoding protocols, and extracting intelligence from hardware systems.
 
 [![CI](https://github.com/oscura-re/oscura/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/oscura-re/oscura/actions/workflows/ci.yml)
 [![Code Quality](https://github.com/oscura-re/oscura/actions/workflows/code-quality.yml/badge.svg?branch=main)](https://github.com/oscura-re/oscura/actions/workflows/code-quality.yml)
@@ -18,108 +11,96 @@ Extract complete system understanding from any signal source—oscilloscopes, lo
 
 ---
 
-## Vision
+## The Problem
 
-Hardware systems are obscured through proprietary protocols, undocumented interfaces, cryptographic obfuscation, and black-box designs. Whether imposed by vendors, governments, or time itself—**Oscura illuminates what others obscure.**
+Hardware reverse engineering is fragmented. You capture signals with an oscilloscope, decode protocols with custom scripts, analyze waveforms in MATLAB, infer message formats manually, and stitch everything together with duct tape and determination. Each tool solves one piece of the puzzle, but none connect them into a unified workflow.
 
-**Built For:**
+Meanwhile, binary reverse engineering matured decades ago with integrated platforms that handle disassembly, decompilation, debugging, and analysis in one place. Hardware deserves the same.
 
-- **Security researchers** analyzing embedded systems, IoT vulnerabilities, side-channel leakage
-- **Hardware engineers** validating signal integrity, power supply design, EMC compliance
-- **Protocol developers** testing implementations against IEEE standards
-- **Automotive engineers** analyzing CAN/LIN/FlexRay for diagnostics and security research
-- **Right-to-repair advocates** documenting and replicating undocumented interfaces
-- **Academic researchers** studying signal processing, cryptanalysis, and hardware security
-- **Vintage computing enthusiasts** preserving and analyzing retro hardware (1960s–present)
-- **Defense and intelligence analysts** for forensics and threat assessment
+## The Solution
 
-**What We Enable:**
+Oscura unifies the hardware reverse engineering pipeline from raw signal capture to protocol documentation:
 
-- **Protocol Reverse Engineering**: CRC recovery, message format inference, state machine extraction for security research, protocol development, right-to-repair documentation
-- **Signal Intelligence**: Auto-classify unknown signals (digital/analog, periodicity, SNR) to guide reverse engineering strategy
-- **Cryptographic Analysis**: Side-channel attacks (DPA/CPA, timing, mutual information) for vulnerability assessment and implementation validation
-- **Automotive Reverse Engineering**: CAN/LIN/FlexRay analysis (differential, stimulus-response, hypothesis-driven discovery) for aftermarket, diagnostics, security research (no vendor lock-in)
-- **Debug Interface Analysis**: JTAG/SWD/UART for firmware extraction, bootloader analysis, and development/recovery workflows
-- **Binary Format Recovery**: 100+ magic bytes, structure alignment, auto-parser generation for right-to-repair and vulnerability research
-- **Obsolete System Replication**: Logic family auto-detection (ECL/RTL/DTL/TTL, 1960s-present), IC timing validation, modern replacements for vintage hardware preservation
-- **Evidence-Based Discovery**: Hypothesis tracking, statistical validation, confidence scoring, full audit trails for reproducible reverse engineering
-- **Attack Surface Mapping**: State machine extraction, stimulus-response correlation, differential analysis for vulnerability discovery and exploitation
-- **Intelligence Sharing**: Wireshark dissectors (validated Lua), DBC files, auto-generated parsers, multi-format reports (PDF/HTML/PPTX) for collaboration
+- **Load** from any source: oscilloscopes (Tektronix, Rigol, LeCroy), logic analyzers (Sigrok, Saleae), network captures (PCAP), automotive logs (BLF, MDF4), side-channel traces (ChipWhisperer)
+- **Analyze** with IEEE-compliant measurements, spectral analysis, jitter characterization, power profiling, signal integrity validation
+- **Decode** 16+ protocols automatically or infer unknown protocols through statistical analysis, state machine learning, and CRC recovery
+- **Extract** intelligence through differential analysis, hypothesis testing, pattern recognition, and side-channel cryptanalysis
+- **Export** to industry formats: Wireshark dissectors, DBC files, binary parsers, comprehensive reports
 
----
-
-## Installation
-
-```bash
-# Production use
-pip install oscura
-
-# Development (recommended - includes quality tools)
-git clone https://github.com/oscura-re/oscura.git
-cd oscura
-./scripts/setup.sh
-```
-
-**Requirements:** Python 3.12+ | [See pyproject.toml for dependencies](pyproject.toml)
+All in Python. All tested. All ready for serious work.
 
 ---
 
 ## Quick Start
 
-### Decode Unknown Protocol in 5 Lines
+### Installation
+
+```bash
+# Production use
+pip install oscura
+
+# Development (recommended - includes all features)
+git clone https://github.com/oscura-re/oscura.git
+cd oscura
+./scripts/setup.sh
+```
+
+**Requirements:** Python 3.12+ | [Dependencies](pyproject.toml)
+
+### Five-Minute Examples
+
+**Decode an unknown protocol from oscilloscope capture:**
 
 ```python
 import oscura as osc
 
-# Load oscilloscope capture
+# Load Tektronix/Rigol/LeCroy waveform
 trace = osc.load("mystery_device.wfm")
 
-# Auto-detect and decode
+# Auto-detect protocol (UART, SPI, I2C, CAN, etc.)
 decoder = osc.auto_detect_protocol(trace)
 messages = decoder.decode(trace)
 print(f"Decoded {len(messages)} {decoder.name} messages")
 ```
 
-### Side-Channel Attack on AES
+**Extract AES key via power analysis:**
 
 ```python
 from oscura.loaders import load_chipwhisperer
 from oscura.analyzers.side_channel import CPAAnalyzer
 
-# Load power traces from ChipWhisperer capture
+# Load power traces
 traces = load_chipwhisperer("aes_traces.npy")
 
 # Correlation Power Analysis
 cpa = CPAAnalyzer(leakage_model="hamming_weight", target_byte=0)
 result = cpa.analyze(traces.traces, traces.plaintexts)
 
-print(f"Key byte: 0x{result.key_guess:02X}")
-print(f"Correlation: {result.max_correlation:.4f}")
-print(f"Confidence: {'HIGH' if result.max_correlation > 0.8 else 'LOW'}")
+print(f"Key byte: 0x{result.key_guess:02X} (correlation: {result.max_correlation:.4f})")
 ```
 
-### Black-Box Protocol Reverse Engineering
+**Reverse engineer a proprietary protocol:**
 
 ```python
 from oscura.sessions import BlackBoxSession
 
-# Create analysis session
+# Create analysis session with hypothesis tracking
 session = BlackBoxSession(name="IoT Device RE")
 
-# Differential analysis: compare device states
+# Differential analysis: idle vs active states
 session.add_recording("idle", "idle.bin")
 session.add_recording("button_press", "button.bin")
 diff = session.compare("idle", "button_press")
 
-# Automatic field detection
+# Automatic field detection with confidence scoring
 spec = session.generate_protocol_spec()
-print(f"Found {len(spec['fields'])} protocol fields")
+print(f"Identified {len(spec['fields'])} protocol fields")
 
-# Export Wireshark dissector
+# Export validated Wireshark dissector
 session.export_results("dissector", "protocol.lua")
 ```
 
-### Automotive CAN Bus Analysis
+**Analyze automotive CAN traffic:**
 
 ```python
 from oscura.automotive.can import CANSession
@@ -128,269 +109,271 @@ session = CANSession(name="Vehicle RE")
 session.add_recording("idle", "idle.blf")
 session.add_recording("accelerate", "accel.blf")
 
-# Identify changed CAN IDs
+# Identify control messages
 diff = session.compare("idle", "accelerate")
-print(f"Changed IDs: {diff.details['changed_ids']}")
+print(f"Changed CAN IDs: {diff.details['changed_ids']}")
 
-# Export DBC file for further analysis
+# Export to industry tools (CANalyzer, Vehicle Spy)
 session.export_dbc("vehicle.dbc")
 ```
 
-**More examples:** [20 demo categories](demonstrations/) with 112 comprehensive demonstrations covering every capability
+**Recover CRC specification from unknown protocol:**
+
+```python
+from oscura.inference.crc_reverse import CRCReverser
+
+# Just 4 message-checksum pairs needed
+messages = [b"\x01\x02\x03", b"\x04\x05\x06", b"\x07\x08\x09", b"\x0a\x0b\x0c"]
+checksums = [0x12, 0x34, 0x56, 0x78]
+
+# Recover complete CRC specification
+reverser = CRCReverser(message_bits=8)
+crc = reverser.find_crc(list(zip(messages, checksums)))
+
+print(f"Polynomial: 0x{crc.polynomial:02X}")
+print(f"Init: 0x{crc.init_value:02X}, XOR out: 0x{crc.xor_out:02X}")
+print(f"Standard: {crc.standard_name or 'Custom'}")  # Matches CRC-8, CRC-16, etc.
+```
+
+[**112 working demonstrations**](demonstrations/) across 19 categories show every capability in depth.
 
 ---
 
 ## Core Capabilities
 
-### Protocol Reverse Engineering & Development
+### What This Framework Does
 
-| Capability                    | Use Cases (Development / Reverse Engineering)                                                                                                                                                                                                 | Location                                                |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **CRC Recovery & Validation** | Checksum development validation / XOR differential technique recovers polynomial, init, xor_out, reflection flags from 4+ message-CRC pairs. Identifies 12+ standard algorithms or brute-forces custom CRCs for proprietary checksum breaking | [`inference/`](src/oscura/inference/)                   |
-| **Message Format Inference**  | Protocol documentation / IPART-style ensemble analysis (entropy, alignment, variance, distribution, n-grams) with confidence-scored field boundaries and automatic checksum/counter/timestamp detection                                       | [`inference/`](src/oscura/inference/)                   |
-| **State Machine Extraction**  | Protocol testing with L\* active learning (systematic querying) and RPNI passive learning / Map authentication flows, command sequences, and hidden states for attack surface analysis with evidence-based hypothesis testing                 | [`inference/`](src/oscura/inference/)                   |
-| **Binary Format Recovery**    | Firmware documentation / Magic byte detection (100+ formats including executables, images, archives), structure alignment inference (1/2/4/8/16-byte), auto-generate Python parsers and YAML specs for proprietary file format analysis       | [`inference/`](src/oscura/inference/)                   |
-| **Signal Intelligence**       | Automatic analysis guidance / Auto-classify digital vs analog signals, detect periodicity (autocorrelation + FFT), estimate SNR, recommend suitable measurement techniques for unknown signal sources                                         | [`inference/`](src/oscura/inference/)                   |
-| **Pattern Discovery**         | Sync marker identification / Find repeating signatures, frame boundaries, magic bytes in raw captures (malware C2, IoT traffic, proprietary protocols)                                                                                        | [`analyzers/patterns/`](src/oscura/analyzers/patterns/) |
-| **Physical Layer Detection**  | PCB debugging / Auto-detect baud rates, clock frequencies, logic levels for unknown test points and debug interfaces on embedded devices                                                                                                      | [`inference/`](src/oscura/inference/)                   |
-| **Stream Reassembly**         | Protocol validation / TCP/UDP stream reconstruction, framing detection, and packet boundary recovery from fragmented captures                                                                                                                 | [`inference/`](src/oscura/inference/)                   |
-| **BlackBox Workflow**         | End-to-end RE pipeline / Differential analysis → field hypothesis generation → state machine inference → multi-format export (Wireshark dissectors, DBC, parsers) with full evidence tracking and confidence scoring                          | [`sessions/`](src/oscura/sessions/)                     |
+| Capability | What You Get | Use Cases |
+|------------|--------------|-----------|
+| **Protocol Decoding** | 16 decoders (UART, SPI, I2C, CAN, LIN, FlexRay, JTAG, SWD, USB, I2S, 1-Wire, Manchester, HDLC, CAN-FD, J1939, IEEE-488) with auto-detection | Debug console access, firmware extraction, bus monitoring |
+| **Unknown Protocol RE** | CRC recovery, message format inference, state machine extraction, field boundary detection | Proprietary protocols, vendor lock-in bypass, legacy systems |
+| **Side-Channel Analysis** | DPA/CPA power analysis, timing attacks, mutual information leakage quantification | Cryptographic key extraction, vulnerability assessment, secure implementation validation |
+| **IEEE Measurements** | Standards-compliant (181/1241/1459/2414): pulse timing, ADC characterization, power quality, jitter decomposition | Signal integrity validation, compliance testing, component characterization |
+| **File Format Support** | 13+ formats: oscilloscopes (Tektronix WFM, Rigol, LeCroy TRC), logic analyzers (Sigrok, VCD), automotive (BLF, MDF4, DBC), network (PCAP), scientific (HDF5, TDMS, WAV) | Universal signal import, no vendor lock-in |
+| **Automotive Security** | CAN/LIN/FlexRay analysis, OBD-II/UDS decoding, hypothesis-driven field discovery, stimulus-response mapping | ECU security research, aftermarket development, diagnostics reverse engineering |
+| **Intelligence Sharing** | Auto-generate Wireshark dissectors (validated Lua), DBC files, binary parsers, PDF/HTML/PPTX reports | Collaboration, documentation, tool integration |
+| **Hardware Acquisition** | Direct control: oscilloscopes (PyVISA), logic analyzers (Saleae), CAN interfaces (SocketCAN), synthetic signal generation | Live capture, automated testing, comprehensive validation |
 
-### Cryptographic & Security Analysis
+### Where It Shines
 
-| Capability                      | Use Cases (Validation / Reverse Engineering)                                                                                                                                                                   | Location                                                        |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **Power Analysis (DPA/CPA)**    | Crypto implementation validation / Differential and Correlation Power Analysis for key extraction from smart cards, TPMs, secure enclaves with configurable leakage models (Hamming weight/distance)           | [`analyzers/side_channel/`](src/oscura/analyzers/side_channel/) |
-| **Timing Attack Analysis**      | Constant-time validation / Statistical timing analysis with mutual information calculation (quantify leakage in bits), effect size measurement (Cohen's d), and outlier detection for vulnerability assessment | [`analyzers/side_channel/`](src/oscura/analyzers/side_channel/) |
-| **ChipWhisperer Integration**   | Educational side-channel labs / Direct integration for power/EM trace collection and analysis with standardized formats (.npy, .trs)                                                                           | [`loaders/`](src/oscura/loaders/)                               |
-| **Jitter Analysis (IEEE 2414)** | Clock quality validation / TIE, period jitter, RJ/DJ decomposition for detecting clock glitching, fault injection attacks, and timing manipulation                                                             | [`analyzers/jitter/`](src/oscura/analyzers/jitter/)             |
-| **Power Supply Analysis**       | DC-DC converter design / Voltage rail characterization for identifying fault injection targets (brownout thresholds, transient response, ripple analysis)                                                      | [`analyzers/power/`](src/oscura/analyzers/power/)               |
+**Security Research:**
 
-### Protocol Decoding
+- Extract cryptographic keys through power/EM side channels
+- Identify authentication bypass vulnerabilities via state machine analysis
+- Map attack surfaces through differential signal analysis
+- Validate constant-time implementations with timing attack detection
 
-| Category             | Use Cases (Development / Reverse Engineering)                                 | Protocols                                     |
-| -------------------- | ----------------------------------------------------------------------------- | --------------------------------------------- |
-| **Serial**           | Sensor development, device debugging / Debug console access, flash extraction | UART, SPI, I2C, 1-Wire, I2S, Manchester, HDLC |
-| **Automotive**       | Diagnostics, aftermarket dev / ECU security analysis, CAN injection testing   | CAN, CAN-FD, LIN, FlexRay, J1939              |
-| **Debug Interfaces** | Firmware development, recovery / Firmware extraction, bootloader analysis     | JTAG (TAP state), SWD, USB                    |
-| **Parallel Bus**     | Vintage hardware restoration, instrument control / Industrial system security | IEEE-488 (GPIB), Centronics, ISA              |
+**Right-to-Repair & Modernization:**
 
-**Location:** [`analyzers/protocols/`](src/oscura/analyzers/protocols/) | [`automotive/`](src/oscura/automotive/)
+- Document undocumented protocols for replacement parts
+- Replicate vintage hardware (1960s-present logic families: ECL, RTL, DTL, TTL, CMOS)
+- Overcome vendor lock-in through protocol reverse engineering
+- Generate interoperable interfaces without vendor cooperation
 
-**Auto-detection:** Baud rate recovery, clock extraction, logic level adaptation, confidence scoring
+**Academic Research:**
 
-### File Format Support
+- Property-based testing with Hypothesis for algorithm validation
+- Full reproducibility through evidence tracking and audit trails
+- IEEE/ISO standards compliance for publishable results
+- 302 unit tests and 80%+ code coverage ensure reliability
 
-| Category            | Formats                                       | Location                                                |
-| ------------------- | --------------------------------------------- | ------------------------------------------------------- |
-| **Oscilloscopes**   | Tektronix (.wfm), Rigol (.wfm), LeCroy (.trc) | [`loaders/`](src/oscura/loaders/)                       |
-| **Logic Analyzers** | Sigrok (.sr), VCD (Value Change Dump)         | [`loaders/`](src/oscura/loaders/)                       |
-| **Network**         | PCAP, PCAPNG (Wireshark-compatible)           | [`loaders/`](src/oscura/loaders/)                       |
-| **Automotive**      | Vector BLF/ASC, ASAM MDF/MF4, DBC, CSV        | [`automotive/loaders/`](src/oscura/automotive/loaders/) |
-| **Scientific**      | TDMS (LabVIEW), HDF5, NumPy (.npz), WAV, CSV  | [`loaders/`](src/oscura/loaders/)                       |
-| **RF/Network**      | Touchstone S-parameters (.s1p-.s8p)           | [`loaders/`](src/oscura/loaders/)                       |
-| **Side-Channel**    | ChipWhisperer (.npy, .trs)                    | [`loaders/`](src/oscura/loaders/)                       |
+**Industrial & Automotive:**
 
-**Memory-efficient:** Lazy loading, memory-mapped files, chunked processing for TB-scale datasets
-
-### Automotive Engineering & Security
-
-| Capability                       | Use Cases (Development / Reverse Engineering)                                                                                                                                           | Location                                            |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| **Evidence-Based Discovery**     | Protocol documentation / Hypothesis-driven CAN message field detection with statistical validation, confidence scoring, and evidence tracking for reproducible reverse engineering      | [`automotive/can/`](src/oscura/automotive/can/)     |
-| **Stimulus-Response Mapping**    | Input correlation analysis / Correlate user actions (button press, sensor input, vehicle events) to CAN message changes for attack surface identification and control message discovery | [`automotive/can/`](src/oscura/automotive/can/)     |
-| **CAN State Machine Extraction** | ECU behavior modeling / Extract protocol state machines from CAN traffic for security analysis and vulnerability discovery                                                              | [`automotive/can/`](src/oscura/automotive/can/)     |
-| **Pattern Recognition**          | Signal validation / Auto-detect counters (rolling, wraparound), checksums (XOR, SUM, CRC), sensor encoding patterns in CAN messages                                                     | [`automotive/can/`](src/oscura/automotive/can/)     |
-| **Differential Analysis**        | Signal validation / Compare CAN captures (idle vs accelerate, locked vs unlocked) to identify control messages and security-critical signals                                            | [`automotive/can/`](src/oscura/automotive/can/)     |
-| **Discovery Persistence**        | Collaboration / Save/load RE progress in .tkcan format with hypothesis tracking for team collaboration and long-term projects                                                           | [`automotive/can/`](src/oscura/automotive/can/)     |
-| **DBC Export**                   | Protocol documentation / Generate Vector DBC files from discoveries for integration with industry tools (CANalyzer, Wireshark, Vehicle Spy)                                             | [`automotive/dbc/`](src/oscura/automotive/dbc/)     |
-| **J1939 Protocol**               | Heavy vehicle diagnostics / Complete J1939 decoder for truck, construction, agricultural equipment security research (PGN, SPN, suspect/FMI decoding)                                   | [`automotive/j1939/`](src/oscura/automotive/j1939/) |
-| **OBD-II Diagnostics**           | Diagnostics development / Complete OBD-II Mode 01-09 support for PIDs, freeze frames, DTCs, VIN extraction                                                                              | [`automotive/obd/`](src/oscura/automotive/obd/)     |
-| **UDS Protocol**                 | Security testing / Complete Unified Diagnostic Services decoder for ECU programming, security access, routine control, and diagnostic command fuzzing                                   | [`automotive/uds/`](src/oscura/automotive/uds/)     |
-
-### IEEE-Compliant Measurements
-
-| Standard               | Measurements                                       | Hardware Hacking Relevance                                 |
-| ---------------------- | -------------------------------------------------- | ---------------------------------------------------------- |
-| **IEEE 181** (Pulse)   | Rise/fall time, pulse width, overshoot, duty cycle | Signal integrity validation for protocol analysis          |
-| **IEEE 1241** (ADC)    | SNR, SINAD, THD, SFDR, ENOB                        | ADC characterization for side-channel analysis             |
-| **IEEE 1459** (Power)  | Active/reactive power, harmonics, power factor     | Power supply analysis for fault injection targeting        |
-| **IEEE 2414** (Jitter) | TIE, period jitter, RJ/DJ decomposition, BER       | Clock glitching attack detection, fault injection analysis |
-
-**Location:** [`analyzers/waveform/`](src/oscura/analyzers/waveform/) | [`analyzers/spectral/`](src/oscura/analyzers/spectral/) | [`analyzers/power/`](src/oscura/analyzers/power/) | [`analyzers/jitter/`](src/oscura/analyzers/jitter/)
-
-### Hardware Acquisition
-
-| Source           | Description                                     | Status      | Location                                  |
-| ---------------- | ----------------------------------------------- | ----------- | ----------------------------------------- |
-| **File-Based**   | All supported file formats                      | ✅ Complete | [`loaders/`](src/oscura/loaders/)         |
-| **SocketCAN**    | Linux CAN interfaces (vcan, physical CAN)       | ✅ Complete | [`acquisition/`](src/oscura/acquisition/) |
-| **Saleae Logic** | Direct Logic analyzer streaming                 | ✅ Complete | [`acquisition/`](src/oscura/acquisition/) |
-| **PyVISA**       | Oscilloscopes (Tektronix, Keysight, Rigol, R&S) | ✅ Complete | [`acquisition/`](src/oscura/acquisition/) |
-| **Synthetic**    | Programmable signal generation for testing      | ✅ Complete | [`acquisition/`](src/oscura/acquisition/) |
-
-### Export & Intelligence Sharing
-
-| Format                    | Hardware Hacking Use Case                                                                                                                                                                                   | Location                                            |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| **Wireshark Dissectors**  | Auto-generate validated Lua dissectors with ProtoField type mapping, variable-length field support, TCP/UDP port registration, and checksum validation for live traffic analysis and protocol documentation | [`export/wireshark/`](src/oscura/export/wireshark/) |
-| **Binary Parsers**        | Auto-generate Python parsers and YAML specifications from inferred binary formats for firmware analysis, file format documentation, and automated data extraction                                           | [`inference/`](src/oscura/inference/)               |
-| **DBC Files**             | Export CAN discoveries to Vector DBC format for integration with industry tools (CANalyzer, Vehicle Spy, Wireshark CAN plugins)                                                                             | [`automotive/dbc/`](src/oscura/automotive/dbc/)     |
-| **Multi-Format Reports**  | Generate comprehensive evidence reports in PDF, HTML, PPTX, and Markdown with charts, tables, hypothesis tracking, confidence scoring, and full audit trails for reproducible research                      | [`reporting/`](src/oscura/reporting/)               |
-| **Batch Processing**      | Generate comparison reports for entire capture directories with statistical analysis, correlation matrices, and trend visualization                                                                         | [`reporting/`](src/oscura/reporting/)               |
-| **Discovery Archives**    | Save/load reverse engineering progress in structured .tkcan format (YAML-based) with hypothesis tracking, field candidates, and validation status for team collaboration                                    | [`automotive/can/`](src/oscura/automotive/can/)     |
-| **WaveDrom Diagrams**     | Generate publication-quality timing diagrams from protocol specifications for documentation, academic papers, and technical communication                                                                   | [`export/`](src/oscura/export/)                     |
-| **Vintage Logic Reports** | Specialized reports for retro computing with IC identification, timing validation, modern replacement recommendations, and restoration guidance                                                             | [`reporting/`](src/oscura/reporting/)               |
-
-### Obsolete System Characterization & Replication
-
-**For vintage computing restoration, industrial equipment repair, and hardware preservation (1960s-present)**
-
-| Feature                         | Replication Use Case                                                                                                                                                                         | Location                                              |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| **Logic Family Auto-Detection** | Identify unknown vintage chips by voltage levels: ECL (-1.75V), RTL (3.6V), DTL (5V), PMOS (-12V), NMOS (+12V), TTL variants, HC-CMOS, 4000-series for functional cloning without datasheets | [`analyzers/digital/`](src/oscura/analyzers/digital/) |
-| **IC Timing Database**          | Validate against 74xx series, 4000 series specifications (propagation delay, setup/hold times) for functional replication and modern FPGA/CPLD implementations                               | [`analyzers/digital/`](src/oscura/analyzers/digital/) |
-| **IC Identification**           | Match measured timing characteristics to specific ICs (7400, 74LS138, 74HC595, etc.) for part identification when markings are illegible or missing                                          | [`analyzers/digital/`](src/oscura/analyzers/digital/) |
-| **Modern Replacement Mapping**  | Recommend current-production substitutes (74HC → 74LS, CD4000 → 74HC) for restoration projects when original parts are unavailable                                                           | [`analyzers/digital/`](src/oscura/analyzers/digital/) |
-| **Open-Collector Detection**    | Identify open-collector/open-drain outputs requiring pull-up resistors for accurate replication                                                                                              | [`analyzers/digital/`](src/oscura/analyzers/digital/) |
-| **Protocol Preservation**       | Extract and document undocumented legacy protocols (parallel buses, proprietary serial) for data recovery and system emulation                                                               | [`inference/`](src/oscura/inference/)                 |
+- CAN bus security research and aftermarket development
+- Signal integrity validation for high-speed designs
+- EMC compliance testing (CISPR, FCC, MIL-STD)
+- Component characterization without datasheets
 
 ---
 
-## Learn By Example
+## Technical Foundation
 
-**Demos are the documentation.** Each category includes working code with validation and comprehensive explanations.
+### Standards Compliance
 
-### Getting Started (Beginner)
+We implement specifications correctly, not approximately:
 
-| Demo                                                | What You'll Learn                                 |
-| --------------------------------------------------- | ------------------------------------------------- |
-| [01_waveform_analysis](demos/01_waveform_analysis/) | Load Tektronix/Rigol captures, basic measurements |
-| [02_file_format_io](demos/02_file_format_io/)       | CSV, HDF5, NumPy, custom binary formats           |
-| [04_serial_protocols](demos/04_serial_protocols/)   | UART, SPI, I2C decoding with auto-detection       |
-| [05_protocol_decoding](demos/05_protocol_decoding/) | Protocol auto-detection pipeline                  |
+| Standard | Coverage | Hardware RE Relevance |
+|----------|----------|-----------------------|
+| **IEEE 181** | Pulse timing, rise/fall, overshoot, duty cycle | Protocol physical layer validation, signal integrity |
+| **IEEE 1241** | SNR, SINAD, THD, SFDR, ENOB | ADC characterization for side-channel analysis |
+| **IEEE 1459** | Active/reactive power, harmonics, power factor | Power supply profiling, fault injection targeting |
+| **IEEE 2414** | TIE, period jitter, RJ/DJ decomposition, BER | Clock glitch detection, timing attack analysis |
 
-### Reverse Engineering (Intermediate)
+### Quality Metrics
 
-| Demo                                                                  | What You'll Learn                                     |
-| --------------------------------------------------------------------- | ----------------------------------------------------- |
-| [07_protocol_inference](demos/07_protocol_inference/)                 | State machine learning, CRC recovery, field detection |
-| [08_automotive_protocols](demos/08_automotive_protocols/)             | CAN, CAN-FD, LIN, FlexRay analysis                    |
-| [17_signal_reverse_engineering](demos/17_signal_reverse_engineering/) | Complete unknown signal analysis workflow             |
-| [18_advanced_inference](demos/18_advanced_inference/)                 | Bayesian inference, binary format DSL                 |
+Production-ready means tested rigorously:
 
-### Security & Compliance (Advanced)
+- **302 unit tests** with property-based validation (Hypothesis)
+- **80%+ code coverage** with branch coverage enabled
+- **Pre-commit hooks** (format, lint, type check) enforce consistency
+- **Merge queue CI** prevents untested code from landing
+- **Nightly stress tests** validate edge cases and memory usage
+- **Security scanning** (Bandit, Safety) on every commit
 
-| Demo                                                    | What You'll Learn                                  |
-| ------------------------------------------------------- | -------------------------------------------------- |
-| [12_spectral_compliance](demos/12_spectral_compliance/) | FFT, THD, SNR, SINAD (IEEE 1241)                   |
-| [13_jitter_analysis](demos/13_jitter_analysis/)         | TIE, RJ/DJ decomposition, eye diagrams (IEEE 2414) |
-| [14_power_analysis](demos/14_power_analysis/)           | DC-DC converter analysis, efficiency (IEEE 1459)   |
-| [15_signal_integrity](demos/15_signal_integrity/)       | TDR, S-parameters, setup/hold timing               |
-| [16_emc_compliance](demos/16_emc_compliance/)           | CISPR, FCC, MIL-STD electromagnetic compatibility  |
+View current metrics: [CI Dashboard](https://github.com/oscura-re/oscura/actions) | [Coverage Reports](https://codecov.io/gh/oscura-re/oscura)
 
-### Complete Workflows (Expert)
+### Architecture Principles
 
-| Demo                                                  | What You'll Learn                        |
-| ----------------------------------------------------- | ---------------------------------------- |
-| [19_complete_workflows](demos/19_complete_workflows/) | End-to-end reverse engineering pipelines |
+Built for extensibility and maintainability:
+
+- **Type-safe**: MyPy strict mode, comprehensive type hints
+- **Modular**: Protocol decoders, loaders, and analyzers are plug-and-play
+- **Memory-efficient**: Lazy loading, memory-mapped files, chunked processing (TB-scale datasets)
+- **Documented**: Google-style docstrings, 95% documentation coverage
+- **Reproducible**: Hypothesis tracking, confidence scoring, full audit trails
+
+---
+
+## Learn By Doing
+
+### 112 Demonstrations Across 19 Categories
+
+Every demo includes working code, validation, and comprehensive explanations. Demos are the documentation.
+
+**Getting Started (Beginner):**
+
+- [Waveform Analysis](demos/01_waveform_analysis/) - Load oscilloscope captures, basic measurements
+- [File Format I/O](demos/02_file_format_io/) - CSV, HDF5, NumPy, VCD, custom formats
+- [Serial Protocols](demos/04_serial_protocols/) - UART, SPI, I2C with auto-detection
+- [Protocol Decoding](demos/05_protocol_decoding/) - Auto-detect unknown protocols
+
+**Reverse Engineering (Intermediate):**
+
+- [Protocol Inference](demos/07_protocol_inference/) - State machines, CRC recovery, field detection
+- [Automotive Protocols](demos/08_automotive_protocols/) - CAN, LIN, FlexRay analysis
+- [Signal RE](demos/17_signal_reverse_engineering/) - Complete unknown signal workflow
+- [Advanced Inference](demos/18_advanced_inference/) - Bayesian methods, protocol DSL
+
+**Security & Compliance (Advanced):**
+
+- [Spectral Compliance](demos/12_spectral_compliance/) - FFT, THD, SNR, SINAD (IEEE 1241)
+- [Jitter Analysis](demos/13_jitter_analysis/) - TIE, RJ/DJ decomposition (IEEE 2414)
+- [Power Analysis](demos/14_power_analysis/) - DC-DC converters, efficiency (IEEE 1459)
+- [Signal Integrity](demos/15_signal_integrity/) - TDR, S-parameters, setup/hold timing
+- [EMC Compliance](demos/16_emc_compliance/) - CISPR, FCC, MIL-STD testing
+
+**Complete Workflows (Expert):**
+
+- [End-to-End Pipelines](demos/19_complete_workflows/) - Unknown signal → documented protocol
 
 ### Run Your First Demo
 
 ```bash
-# Generate test data
+# Generate synthetic test data
 python demos/generate_all_demo_data.py
 
-# Run waveform analysis demo
+# Analyze oscilloscope waveforms
 python demos/01_waveform_analysis/comprehensive_wfm_analysis.py
 
-# Run protocol inference demo
-python demos/07_protocol_inference/01_state_machine_inference.py
+# Reverse engineer unknown protocol
+python demos/07_protocol_inference/state_machine_learning.py
+
+# Side-channel power analysis
+python demos/14_power_analysis/dcdc_efficiency_demo.py
 ```
 
-**Browse all demos:** [demos/](demos/) | [Demo index with descriptions](demos/README.md)
+[**Browse all demos**](demos/) | [Demo index with descriptions](demos/README.md)
 
 ---
 
-## Command Line Interface
+## Command-Line Interface
 
 ```bash
 # Signal characterization
 oscura characterize capture.wfm
 
-# Protocol decoding
+# Protocol decoding with auto-detection
 oscura decode uart_capture.wfm --protocol uart --baud 115200
 
-# Batch processing
+# Batch processing entire directories
 oscura batch '*.wfm' --analysis characterize
 
-# Differential analysis
+# Differential analysis (compare baseline to modified)
 oscura compare baseline.wfm modified.wfm
 
-# Interactive REPL
+# Interactive REPL for exploration
 oscura shell
 
 # Generate synthetic test signals
 oscura generate --protocol spi --frequency 1MHz --output test.bin
 ```
 
-**Full reference:** [docs/cli.md](docs/cli.md)
+[**Full CLI reference**](docs/cli.md)
 
 ---
 
-## Quality & Testing
+## Why This Exists
 
-Comprehensive test suite with property-based testing, stress tests, and CI enforcement. Current metrics visible in [CI dashboard](https://github.com/oscura-re/oscura/actions) and [code coverage reports](https://codecov.io/gh/oscura-re/oscura).
+### Legitimate Use Cases
 
-```bash
-# Run test suite (uses pytest in parallel with coverage)
-./scripts/test.sh
+Hardware reverse engineering serves critical needs across security, repair, modernization, and defense:
 
-# Quality checks (linting, type checking, formatting)
-./scripts/check.sh
+**Security Research:** Vulnerability discovery requires understanding how hardware actually works, not how vendors claim it works. Side-channel analysis exposes cryptographic weaknesses. Protocol reverse engineering reveals authentication bypasses.
 
-# Auto-fix issues
-./scripts/fix.sh
+**Right-to-Repair:** Proprietary protocols and vendor lock-in prevent owners from fixing their own equipment. Reverse engineering restores agency. Open documentation enables interoperable replacements.
 
-# Full CI validation (pre-push)
-./scripts/pre-push.sh
-```
+**Modernization:** Legacy systems run critical infrastructure but use obsolete components. Replication requires extracting specifications from working hardware when documentation is lost or was never public.
 
-**Quality infrastructure:**
+**National Defense:** Intelligence and threat assessment depend on understanding adversary capabilities. Forensic analysis of captured equipment requires comprehensive signal analysis and protocol decoding.
 
-- Pre-commit hooks (format, lint, type check)
-- Merge queue CI (prevents untested commits)
-- Property-based testing (Hypothesis)
-- Nightly stress tests
-- Security scanning (Bandit, Safety)
+**Academic Research:** Understanding existing systems informs better designs. Teaching security requires demonstrating real vulnerabilities. Open tools advance the field collectively.
 
-**See:** [Testing architecture](docs/testing/) | [Quality gates](.github/workflows/)
+### The Open Source Philosophy
+
+We believe security through obscurity is a temporary business model at best and a vulnerability at worst. Real security comes from open scrutiny, not information hiding. Real value comes from services and expertise, not gatekeeping knowledge.
+
+Vendors who hide protocol specifications aren't protecting trade secrets—they're preventing interoperability and limiting repair. We're building tools to level that playing field.
+
+### Join the Effort
+
+Hardware reverse engineering requires diverse expertise: signal processing, cryptanalysis, protocol design, automotive systems, vintage computing, embedded security. No single person knows it all. **We need your knowledge.**
+
+- Reverse engineered a proprietary protocol? Contribute the decoder.
+- Built side-channel analysis techniques? Add them to the framework.
+- Work with file formats we don't support? Write a loader.
+- Found vulnerabilities using these tools? Share sanitized case studies.
+- Teaching hardware security? Use Oscura and improve the documentation.
+
+Every contribution pools our collective expertise and makes the next reverse engineering project easier for everyone.
 
 ---
 
-## Contributing
+## Getting Involved
 
-**We need your expertise.** Whether you're adding a new protocol decoder, improving inference algorithms, or documenting use cases - every contribution illuminates more hardware.
-
-### Quick Start
+### Contributing
 
 ```bash
+# Clone and setup development environment
 git clone https://github.com/oscura-re/oscura.git
 cd oscura
 ./scripts/setup.sh                    # Complete setup with hooks
-./scripts/test.sh                     # Verify environment
+
+# Run quality checks (required before commit)
+./scripts/check.sh                    # Linting, type checking, tests
+./scripts/test.sh                     # Full test suite with coverage
+
+# Validate everything passes
+python3 .claude/hooks/validate_all.py # Must show 5/5 passing
 ```
 
-### What We Need
+**What We Need:**
 
-- **Protocol Decoders:** Proprietary protocols you've reverse engineered
-- **File Format Loaders:** Oscilloscope/LA formats we don't support yet
-- **Inference Algorithms:** Better state machine learning, field detection
-- **Hardware Sources:** Integration with more DAQ systems
-- **Documentation:** Real-world case studies and tutorials
-- **Validation:** Test our tools on your captures
+| Contribution Type | Examples | Impact |
+|-------------------|----------|--------|
+| **Protocol Decoders** | Proprietary protocols you've reversed | Enable others to analyze same systems |
+| **File Format Loaders** | Oscilloscope/LA formats not yet supported | Eliminate conversion steps |
+| **Inference Algorithms** | Better state machine learning, CRC detection | Improve automatic analysis quality |
+| **Hardware Integration** | DAQ systems, instrument drivers | Enable live capture workflows |
+| **Real-World Validation** | Test on your captures, report issues | Ensure reliability across use cases |
+| **Documentation** | Tutorials, case studies, guides | Lower entry barrier for newcomers |
 
-**Full guide:** [CONTRIBUTING.md](CONTRIBUTING.md) | [Architecture docs](docs/architecture/)
+[**Contributing Guide**](CONTRIBUTING.md) | [Architecture Documentation](docs/architecture/)
+
+### Community
+
+- **Issues:** [GitHub Issues](https://github.com/oscura-re/oscura/issues) - Bug reports, feature requests
+- **Discussions:** [GitHub Discussions](https://github.com/oscura-re/oscura/discussions) - Questions, ideas, collaboration
+- **Security:** [SECURITY.md](SECURITY.md) - Responsible disclosure process
 
 ---
 
@@ -399,14 +382,14 @@ cd oscura
 ### User Guides
 
 - [Quick Start Guide](docs/guides/quick-start.md) - Installation and first steps
-- [Black-Box Protocol Analysis](docs/guides/blackbox-analysis.md) - Unknown protocol RE
+- [Black-Box Protocol Analysis](docs/guides/blackbox-analysis.md) - Unknown protocol RE workflow
 - [Side-Channel Analysis](docs/guides/side-channel-analysis.md) - DPA/CPA/timing attacks
 - [Hardware Acquisition](docs/guides/hardware-acquisition.md) - Direct instrument control
-- [Complete Workflows](docs/guides/workflows.md) - End-to-end analysis pipelines
+- [Complete Workflows](docs/guides/workflows.md) - End-to-end pipelines
 
 ### API Reference
 
-- [API Documentation](docs/api/) - Complete API reference
+- [API Documentation](docs/api/) - Complete function reference
 - [Session Management](docs/api/session-management.md) - Interactive analysis sessions
 - [CLI Reference](docs/cli.md) - Command-line interface
 
@@ -420,31 +403,25 @@ cd oscura
 
 ## Project Status
 
-**Latest Release:** [See current version and release notes](https://github.com/oscura-re/oscura/releases/latest)
+**Current Version:** [0.5.1](https://github.com/oscura-re/oscura/releases/latest) (2026-01-24)
 
 **Active Development Areas:**
 
-- Side-channel analysis and cryptographic attack frameworks
-- Vintage computing support (retro logic families, IC identification)
-- Industrial and automotive protocol decoders
-- Hardware acquisition from diverse sources
-- Inference and machine learning for unknown protocols
+- Side-channel cryptanalysis frameworks (DPA, CPA, timing, EM)
+- Vintage computing support (retro logic families, IC identification, 1960s-present)
+- Industrial and automotive protocol decoders (CAN-FD, J1939, OBD-II, UDS)
+- Unknown protocol inference (state machines, field detection, CRC recovery)
+- Hardware acquisition from diverse instruments and interfaces
 
-**See:** [Full changelog](CHANGELOG.md) | [Roadmap discussions](https://github.com/oscura-re/oscura/discussions)
+**Stability:** Production-ready for security research, right-to-repair, academic use. APIs may evolve as we add capabilities—breaking changes documented in [CHANGELOG](CHANGELOG.md).
 
----
-
-## Support
-
-- **Issues:** [GitHub Issues](https://github.com/oscura-re/oscura/issues) - Bug reports and feature requests
-- **Discussions:** [GitHub Discussions](https://github.com/oscura-re/oscura/discussions) - Questions and community
-- **Security:** [SECURITY.md](SECURITY.md) - Responsible disclosure
+[**Release History**](https://github.com/oscura-re/oscura/releases) | [**Roadmap Discussions**](https://github.com/oscura-re/oscura/discussions)
 
 ---
 
 ## Citation
 
-If Oscura helps your research, please cite:
+If Oscura contributes to your research, please cite:
 
 ```bibtex
 @software{oscura2026,
@@ -452,7 +429,7 @@ If Oscura helps your research, please cite:
   author = {Oscura Contributors},
   year = {2026},
   url = {https://github.com/oscura-re/oscura},
-  version = {0.5.0}
+  version = {0.5.1}
 }
 ```
 
@@ -460,16 +437,18 @@ If Oscura helps your research, please cite:
 
 ---
 
-## License
+## Legal
 
-MIT License - [LICENSE](LICENSE)
+**License:** [MIT License](LICENSE) - Permissive use, modification, distribution
 
-**Built with:** Python, NumPy, SciPy, Hypothesis
+**Disclaimer:** This framework is intended for legitimate security research, right-to-repair, academic study, and authorized testing. Users are responsible for compliance with applicable laws and regulations. Unauthorized access to systems or networks is illegal and unethical.
 
-**Standards:** IEEE 181/1241/1459/2414, ISO/IEC, CISPR
+**Dependencies:** Built with Python, NumPy, SciPy, Matplotlib, Hypothesis. See [pyproject.toml](pyproject.toml) for complete dependency list.
 
-**Supported by:** Security researchers, right-to-repair advocates, open source community
+**Supported by:** Security researchers, right-to-repair advocates, academic institutions, and the open source community.
 
 ---
 
-**Oscura** - _Illuminate what others obscure_
+**Oscura** - _Illuminate what others obscure._
+
+Hardware systems are black boxes by design, obscured through proprietary protocols, cryptographic obfuscation, and undocumented interfaces. Whether imposed by vendors, governments, or the passage of time—**we bring light to the darkness.** Join us in building the comprehensive hardware reverse engineering framework the field deserves.
