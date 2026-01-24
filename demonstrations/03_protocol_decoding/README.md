@@ -8,14 +8,7 @@ This section contains 6 demonstrations covering 20+ industry-standard protocols 
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Finish `00_getting_started/` first
-- **Completed Basic Analysis** - Finish `02_basic_analysis/` recommended
-- **Python 3.12+** - Oscura requires Python 3.12 or higher
-- **Oscura installed** - Install with `pip install oscura` or `uv add oscura`
-- **Protocol knowledge** - Basic understanding of serial/parallel communication helps
-- **Digital signal basics** - Understanding logic levels and timing
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -104,44 +97,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to focus on specific protocols:
-
-```bash
-# From the project root
-python demonstrations/03_protocol_decoding/01_serial_comprehensive.py
-
-# Or from the demo directory
-cd demonstrations/03_protocol_decoding
-python 01_serial_comprehensive.py
-```
-
-Expected output: Decoded packets with validation against expected data.
-
-### Option 2: Run All Protocol Decoding Demos
-
-Run all six demos in sequence:
-
-```bash
-# From the project root
-for demo in demonstrations/03_protocol_decoding/*.py; do
-    python "$demo"
-done
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations and reports coverage, validation status, and failures.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_serial_comprehensive.py`) before exploring advanced examples.
 
 ---
 
@@ -317,184 +277,25 @@ This runs all demonstrations and reports coverage, validation status, and failur
 
 ## Tips for Learning
 
-### Start with Known Protocols
+- **Start simple**: Begin with UART before complex buses (CAN, LIN, FlexRay)
+- **Validate decoded data**: Always verify against known reference signals
+- **Understand timing**: Each protocol has specific bit timing requirements
+- **Combine with analysis**: Use filtering and edge detection before decoding
 
-Begin with simple serial protocols before tackling complex automotive buses:
-
-```python
-from oscura import decode_uart
-
-# Start with UART - simplest protocol
-packets = decode_uart(trace, baud_rate=9600, data_bits=8, parity='N', stop_bits=1)
-
-for packet in packets:
-    print(f"Data: 0x{packet.data:02X}")
-```
-
-### Validate Decoded Data
-
-Always verify decoded data against known reference:
+## Decoder APIs
 
 ```python
-# Generate known UART transmission
-expected_bytes = [0x41, 0x42, 0x43]  # "ABC"
-trace = generate_uart_signal(expected_bytes, baud_rate=9600)
+from oscura import decode_uart, decode_spi, decode_i2c, decode_can, detect_protocol
 
-# Decode and validate
-packets = decode_uart(trace, baud_rate=9600)
-decoded_bytes = [p.data for p in packets]
-
-assert decoded_bytes == expected_bytes
+decode_uart(trace, 9600, 'N')    # UART with baud rate and parity
+decode_spi(clk, mosi, miso, cs)  # SPI multi-channel
+decode_i2c(sda, scl)             # I2C bus
+decode_can(trace, 500000)        # CAN with bitrate
+detect_protocol(trace)           # Auto-detect protocol type
+load_all_channels("capture.sr")  # Load multi-channel for complex protocols
 ```
 
-### Understand Protocol Timing
-
-Each protocol has specific timing requirements:
-
-```python
-# UART: Bit time = 1 / baud_rate
-bit_time = 1.0 / 9600  # 104.17 μs
-
-# SPI: Clock frequency determines bit rate
-spi_bit_time = 1.0 / spi_clock_freq
-
-# I2C: Standard mode = 100 kHz, Fast mode = 400 kHz
-i2c_clock = 100_000  # Hz
-```
-
-### Visualize Protocol Timing
-
-Plot decoded packets with timing information:
-
-```python
-import matplotlib.pyplot as plt
-
-packets = decode_uart(trace, baud_rate=9600)
-
-# Plot packet positions
-for i, packet in enumerate(packets):
-    plt.axvline(packet.timestamp, color='red', alpha=0.5)
-    plt.text(packet.timestamp, 0, f"0x{packet.data:02X}")
-
-plt.plot(trace.time(), trace.data)
-plt.show()
-```
-
-### Combine with Analysis
-
-Protocol decoding works best with signal analysis:
-
-```python
-# 1. Filter noise
-filtered = low_pass(trace, cutoff=baud_rate * 5)
-
-# 2. Detect edges
-edges = find_rising_edges(filtered, threshold=0.5)
-
-# 3. Decode protocol
-packets = decode_uart(filtered, baud_rate=9600)
-
-# 4. Validate timing
-for packet in packets:
-    validate_uart_timing(packet, baud_rate=9600)
-```
-
----
-
-## Understanding the Framework
-
-### Decoder API
-
-**Simple Decoding**:
-
-```python
-from oscura import decode_uart, decode_spi, decode_i2c, decode_can
-
-# UART decoding
-uart_packets = decode_uart(trace, baud_rate=9600, parity='N')
-
-# SPI decoding
-spi_packets = decode_spi(clk_trace, data_trace, mode=0)
-
-# I2C decoding
-i2c_packets = decode_i2c(sda_trace, scl_trace)
-
-# CAN decoding
-can_frames = decode_can(trace, bitrate=500000)
-```
-
-**Auto-Detection**:
-
-```python
-from oscura import detect_protocol
-
-# Automatic protocol detection
-result = detect_protocol(trace)
-print(f"Detected: {result.protocol} (confidence: {result.confidence})")
-
-if result.confidence > 0.8:
-    packets = result.decode()
-```
-
-**Multi-Channel Decoding**:
-
-```python
-from oscura import load_all_channels, decode_spi
-
-# Load multi-channel capture
-channels = load_all_channels("logic_capture.sr")
-
-# Decode SPI from multiple channels
-packets = decode_spi(
-    clk=channels["CLK"],
-    mosi=channels["MOSI"],
-    miso=channels["MISO"],
-    cs=channels["CS"]
-)
-```
-
-### Packet Structure
-
-**All decoded packets share common structure**:
-
-```python
-class ProtocolPacket:
-    timestamp: float      # Packet start time (seconds)
-    data: bytes          # Decoded payload
-    address: int | None  # Address (if applicable)
-    status: str          # 'valid', 'error', 'warning'
-    errors: list[str]    # Error descriptions
-    metadata: dict       # Protocol-specific info
-```
-
-### Protocol-Specific Features
-
-**UART**:
-
-```python
-uart_packet.parity_error   # Parity check failed
-uart_packet.framing_error  # Stop bit missing
-uart_packet.break_detected # Break condition
-```
-
-**CAN**:
-
-```python
-can_frame.identifier       # CAN ID (11-bit or 29-bit)
-can_frame.extended        # Extended ID flag
-can_frame.rtr             # Remote transmission request
-can_frame.error_frame     # Error frame detected
-can_frame.stuffing_error  # Bit stuffing violation
-```
-
-**I2C**:
-
-```python
-i2c_packet.address        # 7-bit or 10-bit address
-i2c_packet.read_write     # 'read' or 'write'
-i2c_packet.ack            # ACK/NACK status
-i2c_packet.repeated_start # Repeated start condition
-```
+**Packet structure**: timestamp, data (payload), address, status ('valid'/'error'/'warning'), errors, metadata
 
 ---
 

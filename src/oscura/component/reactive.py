@@ -530,7 +530,7 @@ def _fit_series_rlc(
         # Simple optimization
         from scipy.optimize import minimize
 
-        def objective(params: NDArray[np.float64]) -> np.floating[Any]:  # type: ignore[name-defined]
+        def objective(params: NDArray[np.float64]) -> np.floating[Any]:
             R, L, C = params
             Z_model = model(omega, R, L, C)
             return float(np.sum(np.abs(Z - Z_model) ** 2))  # type: ignore[return-value]
@@ -563,7 +563,7 @@ def _fit_parallel_rlc(
     try:
         from scipy.optimize import minimize
 
-        def objective(params: NDArray[np.float64]) -> np.floating[Any]:  # type: ignore[name-defined]
+        def objective(params: NDArray[np.float64]) -> np.floating[Any]:
             R, L, C = params
             Y_model = 1 / R + 1j * omega * C + 1 / (1j * omega * L + 1e-20)
             Z_model = 1 / (Y_model + 1e-20)

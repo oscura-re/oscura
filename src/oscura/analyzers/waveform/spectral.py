@@ -1603,7 +1603,7 @@ def fft_chunked(
     if n < segment_size:
         # Use standard FFT if data fits in one segment
         result = fft(trace, window=window, nfft=nfft)
-        return result[0], result[1]  # type: ignore[return-value]
+        return result[0], result[1]
 
     # Calculate overlap
     overlap_samples = int(segment_size * overlap_pct / 100.0)

@@ -198,10 +198,12 @@ class Lexer:
     def read_identifier(self) -> str:
         """Read identifier or keyword."""
         chars = []
-        while self.current_char() and (self.current_char().isalnum() or self.current_char() in "_"):  # type: ignore[union-attr, operator, syntax, operator]
-            chars.append(self.current_char())
+        ch = self.current_char()
+        while ch and (ch.isalnum() or ch in "_"):
+            chars.append(ch)
             self.advance()
-        return "".join(chars)  # type: ignore[arg-type]
+            ch = self.current_char()
+        return "".join(chars)
 
     def read_variable(self) -> str:
         """Read variable name ($varname)."""

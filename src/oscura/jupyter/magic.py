@@ -68,7 +68,7 @@ except ImportError:
     class Magics:  # type: ignore[no-redef]
         """Fallback Magics class when IPython not available."""
 
-    def magics_class(cls: type[Any]) -> type[Any]:  # type: ignore[no-redef,misc]
+    def magics_class(cls: type[Any]) -> type[Any]:
         """Dummy decorator when IPython not available."""
         return cls
 
@@ -82,14 +82,14 @@ except ImportError:
 
 
 @magics_class
-class OscuraMagics(Magics):  # type: ignore[misc]
+class OscuraMagics(Magics):
     """IPython magics for Oscura analysis.
 
     Provides convenient shortcuts for loading traces, running measurements,
     and displaying results in Jupyter notebooks.
     """
 
-    @line_magic  # type: ignore[misc, untyped-decorator]
+    @line_magic
     def oscura(self, line: str) -> Any:
         """Oscura line magic for quick operations.
 
@@ -263,7 +263,7 @@ Example:
 """
         print(help_text)
 
-    @cell_magic  # type: ignore[misc, untyped-decorator]
+    @cell_magic
     def analyze(self, line: str, cell: str) -> Any:
         """Cell magic for multi-line analysis.
 

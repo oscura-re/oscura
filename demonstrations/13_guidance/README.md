@@ -8,19 +8,7 @@ This section contains 3 demonstrations showing how to use Oscura's intelligent g
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Run `demonstrations/00_getting_started/` first
-- **Understanding of Basic Analysis** - Familiarity with `demonstrations/02_basic_analysis/`
-- **Signal Types Knowledge** - Know the difference between analog/digital signals
-- **Analysis Methods** - Understanding of common measurements (amplitude, frequency, FFT)
-
-Check your setup:
-
-```bash
-python demonstrations/00_getting_started/00_hello_world.py
-# Should show: ✓ All measurements validated!
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -62,34 +50,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/13_guidance/01_smart_recommendations.py
-
-# Or from the demo directory
-cd demonstrations/13_guidance
-python 01_smart_recommendations.py
-```
-
-### Option 2: Run All Guidance Demos
-
-```bash
-# From the project root
-python demonstrations/13_guidance/01_smart_recommendations.py && \
-python demonstrations/13_guidance/02_analysis_wizards.py && \
-python demonstrations/13_guidance/03_onboarding_helpers.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_smart_recommendations.py`) before exploring advanced examples.
 
 ---
 
@@ -318,38 +283,11 @@ Intelligent workflows:
 
 ## Tips for Success
 
-### Maximize Recommendation Quality
+**Maximize Recommendations**: Provide rich metadata (sample rate, vertical scale, descriptive channel names, source file context)
 
-Provide rich signal metadata:
+**Use Wizards**: Even if familiar with analysis, wizards show expert parameter selection patterns
 
-```python
-metadata = TraceMetadata(
-    sample_rate=100000.0,
-    vertical_scale=1.0,
-    channel_name="UART_TX",      # Descriptive names help
-    source_file="device_comms",  # Context aids recommendations
-)
-```
-
-### Use Wizards for Learning
-
-Even if you know the analysis, use wizards to learn best practices:
-
-```python
-# Wizard shows optimal parameter selection
-wizard = AnalysisWizard(trace)
-recommendations = wizard.suggest_parameters()
-# Learn what values experts would choose
-```
-
-### Leverage Onboarding for New Features
-
-When Oscura adds new capabilities, use onboarding helpers to discover them:
-
-```python
-# Discover newly added features
-onboarding.show_new_features(since_version="0.5.0")
-```
+**Discover New Features**: Use onboarding helpers to learn newly added capabilities
 
 ---
 

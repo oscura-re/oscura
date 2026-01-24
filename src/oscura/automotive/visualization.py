@@ -63,7 +63,7 @@ def plot_bus_timeline(
         msg_list: list[CANMessage] = [plot_messages]
     else:
         # Must be list[CANMessage] from slice
-        msg_list = plot_messages  # type: ignore[assignment]
+        msg_list = plot_messages
 
     # Extract timestamps and IDs
     timestamps = [_get_timestamp(msg) for msg in msg_list]

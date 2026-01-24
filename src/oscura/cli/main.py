@@ -126,15 +126,15 @@ def format_output(data: dict[str, Any], format_type: str) -> str:
     return formatter(data)
 
 
-@click.group()  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+@click.group()
+@click.option(
     "-v",
     "--verbose",
     count=True,
     help="Increase verbosity (-v for INFO, -vv for DEBUG).",
 )
-@click.version_option(version="0.1.0", prog_name="oscura")  # type: ignore[misc]
-@click.pass_context  # type: ignore[misc]
+@click.version_option(version="0.1.0", prog_name="oscura")
+@click.pass_context
 def cli(ctx: click.Context, verbose: int) -> None:
     """Oscura - Signal Analysis Framework for Oscilloscope Data.
 
@@ -168,7 +168,7 @@ def cli(ctx: click.Context, verbose: int) -> None:
     ctx.obj["verbose"] = verbose
 
 
-@click.command()  # type: ignore[misc]
+@click.command()
 def shell() -> None:
     """Start an interactive Oscura shell.
 
@@ -186,9 +186,9 @@ def shell() -> None:
     start_shell()
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("tutorial_id", required=False, default=None)  # type: ignore[misc]
-@click.option("--list", "list_tutorials", is_flag=True, help="List available tutorials")  # type: ignore[misc]
+@click.command()
+@click.argument("tutorial_id", required=False, default=None)
+@click.option("--list", "list_tutorials", is_flag=True, help="List available tutorials")
 def tutorial(tutorial_id: str | None, list_tutorials: bool) -> None:
     """Run an interactive tutorial.
 

@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 # Try to import RigolWFM for full Rigol support
 try:
-    import RigolWFM.wfm as rigol_wfm  # type: ignore[import-not-found, import-untyped]
+    import RigolWFM.wfm as rigol_wfm
 
     RIGOL_WFM_AVAILABLE = True
 except ImportError:

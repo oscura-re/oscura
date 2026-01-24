@@ -11,13 +11,7 @@
   },
   "includeCoAuthoredBy": false,
   "permissions": {
-    "allow": [
-      "*",
-      "Bash(uv:*)",
-      "Bash(pytest:*)",
-      "Bash(ruff:*)",
-      "Bash(mypy:*)"
-    ],
+    "allow": ["*", "Bash(uv:*)", "Bash(pytest:*)", "Bash(ruff:*)", "Bash(mypy:*)"],
     "deny": [
       "Read(./.claude/agent-outputs/archive/**)",
       "Read(./.claude/archive/**)",

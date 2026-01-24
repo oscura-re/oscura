@@ -116,6 +116,7 @@ class DSLSyntaxDemo(BaseDemo):
 
     def generate_test_data(self) -> dict:
         """Generate test signals."""
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         # Noisy signal with DC offset
         noisy = generate_sine_wave(
             frequency=1000.0,

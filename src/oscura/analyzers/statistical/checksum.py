@@ -282,7 +282,7 @@ def identify_checksum_algorithm(
 
                             # Try both big and little endian for field extraction
                             endian_val: Literal["big", "little"]
-                            for endian_val in ("big", "little"):  # type: ignore[assignment]
+                            for endian_val in ("big", "little"):
                                 expected = int.from_bytes(
                                     msg[field_offset : field_offset + size], byteorder=endian_val
                                 )
@@ -397,7 +397,7 @@ def verify_checksums(
         # Try both endiannesses
         matched = False
         endian_val2: Literal["big", "little"]
-        for endian_val2 in ("big", "little"):  # type: ignore[assignment]
+        for endian_val2 in ("big", "little"):
             expected = int.from_bytes(
                 msg[field_offset : field_offset + field_size], byteorder=endian_val2
             )

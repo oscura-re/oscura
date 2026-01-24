@@ -111,7 +111,7 @@ def get_multi_line_styles(n_lines: int) -> list[tuple[tuple[float, float, float,
     for i in range(n_lines):
         linestyle = LINE_STYLES[i % len(LINE_STYLES)]
         # Colors from colormap are RGBA tuples
-        rgba_color = tuple(colors[i])  # type: ignore[arg-type]
+        rgba_color = tuple(colors[i])
         styles.append((rgba_color, linestyle))  # type: ignore[arg-type]
 
     return styles

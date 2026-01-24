@@ -60,6 +60,7 @@ class GoldenReferenceDemo(BaseDemo):
         Returns:
             Dictionary containing golden and test signals
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         sample_rate = 1e6
         duration = 0.001
 

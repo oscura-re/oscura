@@ -307,7 +307,7 @@ def format_status(
     }
 
     # Get color with default, cast needed because dict.get default is str
-    status_color: ColorName = colors.get(status, "white")  # type: ignore[assignment]
+    status_color: ColorName = colors.get(status, "white")
 
     if use_symbols:
         symbol = symbols.get(status, "•")

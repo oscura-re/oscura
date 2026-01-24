@@ -86,6 +86,7 @@ run_check "yamllint.sh"
 run_check "jsonc.sh" "--check"
 run_check "markdownlint.sh" "--check"
 run_check "prettier.sh" "--check"
+run_check "taplo.sh" "--check"
 run_check "xmllint.sh" "--check"
 
 # Diagrams (optional - only run if script exists)

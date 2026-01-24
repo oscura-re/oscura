@@ -26,7 +26,7 @@ try:
     JSONSCHEMA_AVAILABLE = True
 except ImportError:
     JSONSCHEMA_AVAILABLE = False
-    JsonSchemaError = Exception  # type: ignore[ignore-without-code]
+    JsonSchemaError = Exception
 
 from oscura.core.exceptions import ConfigurationError
 from oscura.core.exceptions import ValidationError as OscuraValidationError

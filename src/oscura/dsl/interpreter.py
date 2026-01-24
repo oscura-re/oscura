@@ -388,7 +388,7 @@ class Interpreter:
 
         # All Statement types covered above (Assignment, ForLoop, Pipeline, FunctionCall)
         # This line is unreachable if type system is correct, but kept for runtime safety
-        raise InterpreterError(f"Unknown statement type: {type(stmt).__name__}")  # type: ignore[unreachable]
+        raise InterpreterError(f"Unknown statement type: {type(stmt).__name__}")
 
     def eval_for_loop(self, loop: ForLoop) -> None:
         """Execute for loop.

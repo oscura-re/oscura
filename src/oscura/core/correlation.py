@@ -182,7 +182,7 @@ def with_correlation_id(
                     # func returns a Coroutine, we need to await it
                     coro = func(*args, **kwargs)
                     # Type assertion for mypy - we know this is a coroutine
-                    return await coro  # type: ignore[misc, no-any-return]
+                    return await coro
 
             return async_wrapper  # type: ignore[return-value]
         else:
@@ -192,7 +192,7 @@ def with_correlation_id(
                 with CorrelationContext(corr_id):
                     return func(*args, **kwargs)
 
-            return sync_wrapper  # type: ignore[return-value]
+            return sync_wrapper
 
     return decorator
 

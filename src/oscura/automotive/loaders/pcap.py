@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 from oscura.automotive.can.models import CANMessage, CANMessageList
 
 if TYPE_CHECKING:
-    from scapy.packet import Packet  # type: ignore[import-not-found]
+    from scapy.packet import Packet
 
 __all__ = ["load_pcap"]
 
@@ -59,8 +59,8 @@ def load_pcap(file_path: Path | str) -> CANMessageList:
         raise FileNotFoundError(f"PCAP file not found: {path}")
 
     try:
-        from scapy.all import rdpcap  # type: ignore[import-not-found]
-        from scapy.layers.can import CAN  # type: ignore[import-not-found]
+        from scapy.all import rdpcap
+        from scapy.layers.can import CAN
     except ImportError as e:
         msg = "scapy library is required for PCAP loading. Install with: uv pip install scapy"
         raise ImportError(msg) from e

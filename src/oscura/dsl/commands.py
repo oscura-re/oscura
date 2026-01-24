@@ -32,20 +32,20 @@ def cmd_load(filename: str) -> Any:
 
     try:
         if ext == ".csv":
-            from oscura.loaders.csv import (  # type: ignore[import-not-found]
-                load_csv,  # type: ignore[import-not-found]
+            from oscura.loaders.csv import (
+                load_csv,
             )
 
             return load_csv(str(path))
         elif ext == ".bin":
-            from oscura.loaders.binary import (  # type: ignore[import-not-found]
-                load_binary,  # type: ignore[import-not-found]
+            from oscura.loaders.binary import (
+                load_binary,
             )
 
             return load_binary(str(path))
         elif ext in (".h5", ".hdf5"):
-            from oscura.loaders.hdf5 import (  # type: ignore[import-not-found]
-                load_hdf5,  # type: ignore[import-not-found]
+            from oscura.loaders.hdf5 import (
+                load_hdf5,
             )
 
             return load_hdf5(str(path))
@@ -72,7 +72,7 @@ def cmd_filter(trace: Any, filter_type: str, *args: Any, **kwargs: Any) -> Any:
         OscuraError: If filter cannot be applied
     """
     try:
-        from oscura.filtering import filters  # type: ignore[attr-defined]
+        from oscura.filtering import filters
 
         if filter_type.lower() == "lowpass":
             if len(args) < 1:
@@ -115,8 +115,8 @@ def cmd_measure(trace: Any, *measurements: str) -> Any:
         OscuraError: If measurement cannot be performed
     """
     try:
-        from oscura.analyzers import (  # type: ignore[attr-defined]
-            measurements as meas,  # type: ignore[attr-defined]
+        from oscura.analyzers import (
+            measurements as meas,
         )
 
         if len(measurements) == 0:
@@ -169,8 +169,8 @@ def cmd_plot(trace: Any, **options: Any) -> None:
         OscuraError: If plotting fails
     """
     try:
-        from oscura.visualization import (  # type: ignore[attr-defined]
-            plot as plot_module,  # type: ignore[attr-defined]
+        from oscura.visualization import (
+            plot as plot_module,
         )
 
         title = options.get("title", "Trace Plot")
@@ -199,7 +199,7 @@ def cmd_export(data: Any, format_type: str, filename: str | None = None) -> None
         OscuraError: If export fails
     """
     try:
-        from oscura.exporters import exporters  # type: ignore[attr-defined]
+        from oscura.exporters import exporters
 
         if filename is None:
             filename = f"export.{format_type}"

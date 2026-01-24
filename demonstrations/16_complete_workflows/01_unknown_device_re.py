@@ -74,6 +74,7 @@ class UnknownDeviceREDemo(BaseDemo):
         Returns:
             Dictionary with captured message traffic
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         self.section("Capturing Unknown Device Traffic")
 
         SYNC = 0xAA55  # 2-byte sync pattern

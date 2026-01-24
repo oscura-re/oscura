@@ -8,20 +8,7 @@ This section contains 5 demonstrations designed to teach you how to use Oscura's
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Python 3.12+** - Required for Oscura
-- **Completed Getting Started** - Understanding of core types and traces
-- **Basic analysis experience** - Familiarity with measurements and protocol decoding
-- **Understanding of multi-file workflows** - Complete `09_batch_processing/` helps but not required
-
-Check your readiness:
-
-```bash
-# Should complete without errors
-python demonstrations/00_getting_started/00_hello_world.py
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -280,46 +267,11 @@ Analysis:
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/10_sessions/01_analysis_session.py
-
-# Or from the demo directory
-cd demonstrations/10_sessions
-python 01_analysis_session.py
-```
-
-Expected output: Session creation, recording management, comparison results.
-
-### Option 2: Run All Session Demos
-
-Run all five demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/10_sessions/01_analysis_session.py && \
-python demonstrations/10_sessions/02_can_session.py && \
-python demonstrations/10_sessions/03_blackbox_session.py && \
-python demonstrations/10_sessions/04_session_persistence.py && \
-python demonstrations/10_sessions/05_interactive_analysis.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including sessions and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_analysis_session.py`) before exploring advanced examples.
 
 ---
 
@@ -489,140 +441,29 @@ with open("session_state.json", "r") as f:
 
 ## Session Design Patterns
 
-### Pattern 1: Before/After Testing
+**Before/After**: Load baseline + modified version, compare, document findings in metadata
 
-```python
-from oscura.sessions import GenericSession
+**Multi-Device**: Create session, add recordings from each device, analyze and store metrics
 
-# Create session
-session = GenericSession(name="firmware_validation")
+**Interactive RE**: Start with baseline, add observations, test hypotheses, document iteratively with timestamps
 
-# Add baseline
-session.add_recording("v1.0_baseline", source=load_trace("baseline.vcd"))
+## Session Best Practices
 
-# Add modified version
-session.add_recording("v1.1_test", source=load_trace("test.vcd"))
+**Creation DO**: Descriptive names, comprehensive metadata, document purpose, timestamp creation
 
-# Compare
-baseline = session.get_recording("v1.0_baseline").read()
-test = session.get_recording("v1.1_test").read()
+**Creation DON'T**: Generic names, skip metadata, use for single recordings
 
-differences = compare_signals(baseline, test)
-session.metadata["findings"] = differences
-```
+**Recording Management DO**: Descriptive names, include capture metadata, keep related recordings, remove unused
 
-### Pattern 2: Multi-Device Comparison
+**Recording Management DON'T**: Unrelated recordings, numeric-only names, forget to close
 
-```python
-# Create session for device comparison
-session = GenericSession(name="device_comparison")
+**Metadata/Annotations DO**: Timestamp all, document hypotheses, include analyst info, record steps
 
-# Add recordings from each device
-for device_id in ["dev001", "dev002", "dev003"]:
-    trace = load_device_trace(device_id)
-    session.add_recording(f"device_{device_id}", source=trace)
+**Metadata/Annotations DON'T**: Skip documentation, use ambiguous terms, forget timestamps
 
-# Analyze all devices
-for recording in session.list_recordings():
-    trace = recording.read()
-    metrics = calculate_metrics(trace)
-    session.metadata[recording.name] = metrics
-```
+**Collaboration DO**: Shared format, document assumptions, provide context, version state
 
-### Pattern 3: Interactive RE Workflow
-
-```python
-# Start session
-session = BlackBoxSession(name="unknown_protocol")
-
-# Add initial capture
-session.add_recording("baseline", source=load_trace("baseline.bin"))
-
-# Annotate observation
-session.metadata["observations"] = []
-session.metadata["observations"].append({
-    "time": datetime.now().isoformat(),
-    "note": "Packet starts with 0x55 0xAA sync bytes"
-})
-
-# Add test recording
-session.add_recording("test_cmd_01", source=load_trace("test_01.bin"))
-
-# Differential analysis
-diff = session.compare_recordings("baseline", "test_cmd_01")
-
-# Document hypothesis
-session.metadata["hypotheses"] = []
-session.metadata["hypotheses"].append({
-    "time": datetime.now().isoformat(),
-    "hypothesis": "Byte 4 is command ID",
-    "evidence": str(diff)
-})
-```
-
----
-
-## Best Practices
-
-### Session Creation
-
-**DO**:
-
-- Provide descriptive session names
-- Add comprehensive metadata at creation
-- Document session purpose in description
-- Set created_at timestamp
-
-**DON'T**:
-
-- Use generic names ("session1", "test")
-- Skip metadata (loses context)
-- Create sessions for single recordings (use direct loading instead)
-
-### Recording Management
-
-**DO**:
-
-- Use descriptive recording names
-- Include metadata (capture conditions, device info)
-- Keep related recordings in same session
-- Remove recordings no longer needed
-
-**DON'T**:
-
-- Add unrelated recordings (creates confusion)
-- Use numeric-only names ("1", "2", "3")
-- Forget to close recordings when done
-
-### Metadata and Annotations
-
-**DO**:
-
-- Timestamp all annotations
-- Document hypotheses and findings
-- Include analyst information
-- Record analysis steps
-
-**DON'T**:
-
-- Skip documentation (loses context)
-- Use ambiguous terminology
-- Forget to update timestamps
-
-### Collaboration
-
-**DO**:
-
-- Use shared metadata format
-- Document all assumptions
-- Provide context for findings
-- Version session states
-
-**DON'T**:
-
-- Assume others know your thought process
-- Skip explaining non-obvious steps
-- Overwrite others' annotations
+**Collaboration DON'T**: Assume prior knowledge, skip explanations, overwrite annotations
 
 ---
 

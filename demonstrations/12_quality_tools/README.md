@@ -8,20 +8,7 @@ This section contains 4 demonstrations designed to teach you how to assess signa
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Python 3.12+** - Required for Oscura
-- **Completed Basic Analysis** - Understanding of measurements and statistics
-- **NumPy experience** - Familiarity with array operations and statistics
-- **Understanding of signal quality** - SNR, noise, distortion concepts help
-
-Check your readiness:
-
-```bash
-# Should complete without errors
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-python demonstrations/02_basic_analysis/02_statistics.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -301,45 +288,11 @@ Diagnostic Steps:
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/12_quality_tools/01_ensemble_methods.py
-
-# Or from the demo directory
-cd demonstrations/12_quality_tools
-python 01_ensemble_methods.py
-```
-
-Expected output: Quality scores, warnings, recommendations with detailed explanations.
-
-### Option 2: Run All Quality Tools Demos
-
-Run all four demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/12_quality_tools/01_ensemble_methods.py && \
-python demonstrations/12_quality_tools/02_quality_scoring.py && \
-python demonstrations/12_quality_tools/03_warning_system.py && \
-python demonstrations/12_quality_tools/04_recommendations.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including quality tools and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_ensemble_methods.py`) before exploring advanced examples.
 
 ---
 
@@ -496,174 +449,31 @@ recs = get_recommendations(
 
 ---
 
-## Best Practices
+## Quality Tools Best Practices
 
-### Ensemble Methods
+**Ensemble Methods DO**: 3+ methods, weight by accuracy, document choices, validate
 
-**DO**:
+**Ensemble Methods DON'T**: Correlated methods, average without rejection, ignore confidence
 
-- Use 3+ independent methods for reliability
-- Weight methods by known accuracy
-- Document why methods were chosen
-- Validate ensemble on known-good data
+**Quality Scoring DO**: Calibrate for application, multiple factors, document criteria, validate
 
-**DON'T**:
+**Quality Scoring DON'T**: Generic thresholds, single metric, skip noise floor
 
-- Use highly correlated methods (redundant)
-- Average without outlier rejection
-- Ignore method confidence
-- Skip validation
+**Warning Systems DO**: Classify by severity, provide actionable advice, allow config, enable suppression
 
-### Quality Scoring
+**Warning Systems DON'T**: Overwhelm users, vague messages, uniform severity
 
-**DO**:
+**Recommendations DO**: Specific advice, explain reasoning, prioritize impact, include examples
 
-- Calibrate thresholds for your application
-- Use multiple quality factors
-- Document quality criteria
-- Validate scoring algorithm
-
-**DON'T**:
-
-- Use generic thresholds blindly
-- Rely on single quality metric
-- Skip noise floor measurement
-- Ignore application context
-
-### Warning Systems
-
-**DO**:
-
-- Classify warnings by severity
-- Provide actionable recommendations
-- Allow threshold configuration
-- Enable warning suppression
-
-**DON'T**:
-
-- Overwhelm with warnings
-- Use vague warning messages
-- Make all warnings same severity
-- Hide warnings without option to show
-
-### Recommendations
-
-**DO**:
-
-- Provide specific, actionable advice
-- Explain reasoning behind recommendations
-- Prioritize recommendations by impact
-- Include example implementations
-
-**DON'T**:
-
-- Give generic advice ("improve quality")
-- Skip explanations
-- Recommend impossible actions
-- Ignore user constraints
-
----
+**Recommendations DON'T**: Generic advice, skip explanations, impossible actions, ignore constraints
 
 ## Quality Metrics Reference
 
-### SNR Estimation Methods
+**SNR Methods**: Frequency domain (tonal), time domain (broadband), autocorrelation (periodic), peak-to-RMS (simple)
 
-| Method           | Best For          | Limitations                             |
-| ---------------- | ----------------- | --------------------------------------- |
-| Frequency domain | Tonal signals     | Requires FFT, assumes specific spectrum |
-| Time domain      | Broadband signals | Needs signal/noise separation           |
-| Autocorrelation  | Periodic signals  | Computation intensive                   |
-| Peak-to-RMS      | Simple signals    | Less accurate for complex signals       |
+**Distortion Metrics**: THD = harmonics/fundamental, THD+N = (noise² + distortion²)/signal, SINAD = signal/(noise+distortion), SFDR = fundamental/largest_spur
 
-### Distortion Metrics
-
-| Metric | Formula                          | Meaning                     |
-| ------ | -------------------------------- | --------------------------- |
-| THD    | √(H₂² + H₃² + ...) / H₁          | Total harmonic distortion   |
-| THD+N  | √(noise² + distortion²) / signal | THD plus noise              |
-| SINAD  | signal / (noise + distortion)    | Signal to noise+distortion  |
-| SFDR   | fundamental / largest_spur       | Spurious-free dynamic range |
-
-### Quality Thresholds by Application
-
-| Application | Min SNR | Max THD | Min Bits |
-| ----------- | ------- | ------- | -------- |
-| Laboratory  | 80 dB   | 0.1%    | 16 bits  |
-| Industrial  | 50 dB   | 2%      | 12 bits  |
-| Automotive  | 40 dB   | 5%      | 10 bits  |
-| Embedded    | 35 dB   | 10%     | 8 bits   |
-
----
-
-## Real-World Use Cases
-
-### Production Testing
-
-Automated pass/fail with quality gates:
-
-```python
-def validate_production_unit(trace):
-    # Calculate quality score
-    quality = calculate_quality_score(trace)
-
-    # Apply quality gates
-    if quality < 70:
-        return "FAIL", "Quality below minimum threshold"
-    if quality < 85:
-        return "MARGINAL", "Quality acceptable but low"
-
-    # Check for specific issues
-    warnings = detect_anomalies(trace)
-    critical = [w for w in warnings if w.severity == "CRITICAL"]
-    if critical:
-        return "FAIL", f"Critical issues: {len(critical)}"
-
-    return "PASS", f"Quality: {quality:.1f}%"
-```
-
-### Regression Testing
-
-Compare quality across software versions:
-
-```python
-def regression_test(baseline_traces, current_traces):
-    # Calculate quality for both sets
-    baseline_quality = [calculate_quality_score(t) for t in baseline_traces]
-    current_quality = [calculate_quality_score(t) for t in current_traces]
-
-    # Statistical comparison
-    baseline_mean = np.mean(baseline_quality)
-    current_mean = np.mean(current_quality)
-
-    if current_mean < baseline_mean - 5:  # 5% degradation threshold
-        return "REGRESSION", "Quality degraded vs baseline"
-
-    return "PASS", "Quality maintained or improved"
-```
-
-### Automated Analysis
-
-Smart workflow based on signal characteristics:
-
-```python
-def auto_analyze(trace):
-    # Get recommendations
-    recs = get_recommendations(trace)
-
-    # Apply recommended measurements
-    results = {}
-    for rec in recs.measurements:
-        measurement_func = get_measurement(rec.name)
-        results[rec.name] = measurement_func(trace, **rec.params)
-
-    # Check quality
-    quality = calculate_quality_score(trace)
-    if quality < 80:
-        warnings = detect_anomalies(trace)
-        results["quality_warnings"] = warnings
-
-    return results
-```
+**Thresholds**: Lab (80 dB SNR, 0.1% THD), Industrial (50 dB, 2%), Automotive (40 dB, 5%), Embedded (35 dB, 10%)
 
 ---
 

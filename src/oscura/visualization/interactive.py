@@ -701,7 +701,7 @@ def plot_waterfall(
     # Type checking: ax must be a 3D axes at this point
     if not hasattr(ax, "plot_surface"):
         raise TypeError("Axes must be a 3D axes for waterfall plot")
-    surf = ax.plot_surface(  # type: ignore[attr-defined,union-attr]
+    surf = ax.plot_surface(
         T,
         F,
         Sxx_db,
@@ -714,7 +714,7 @@ def plot_waterfall(
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Frequency (Hz)")
     if hasattr(ax, "set_zlabel"):
-        ax.set_zlabel("Power (dB)")  # type: ignore[attr-defined]
+        ax.set_zlabel("Power (dB)")
     ax.set_title("Waterfall Plot (Spectrogram)")
 
     fig.colorbar(surf, ax=ax, label="Power (dB)", shrink=0.5)

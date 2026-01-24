@@ -206,10 +206,10 @@ class ThresholdRegistry:
                 # Double-check locking pattern
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
-                    cls._instance._families = {}  # type: ignore[attr-defined]
-                    cls._instance._profiles = {}  # type: ignore[attr-defined]
-                    cls._instance._session_overrides = {}  # type: ignore[attr-defined]
-                    cls._instance._state_lock = threading.Lock()  # type: ignore[attr-defined]
+                    cls._instance._families = {}
+                    cls._instance._profiles = {}
+                    cls._instance._session_overrides = {}
+                    cls._instance._state_lock = threading.Lock()
                     cls._instance._register_builtins()
         return cls._instance
 
@@ -303,7 +303,7 @@ class ThresholdRegistry:
         ]
 
         for family in builtins:
-            self._families[family.name] = family  # type: ignore[attr-defined]
+            self._families[family.name] = family
 
         # Built-in profiles
         builtin_profiles = [
@@ -328,7 +328,7 @@ class ThresholdRegistry:
         ]
 
         for profile in builtin_profiles:
-            self._profiles[profile.name] = profile  # type: ignore[attr-defined]
+            self._profiles[profile.name] = profile
 
     def get_family(self, name: str) -> LogicFamily:
         """Get logic family by name.
@@ -342,32 +342,32 @@ class ThresholdRegistry:
         Raises:
             KeyError: If family not found
         """
-        with self._state_lock:  # type: ignore[attr-defined]
+        with self._state_lock:
             # Try exact match first
-            if name in self._families:  # type: ignore[attr-defined]
-                family = self._families[name]  # type: ignore[attr-defined]
+            if name in self._families:
+                family = self._families[name]
             # Try case-insensitive match
-            elif name.upper() in self._families:  # type: ignore[attr-defined]
-                family = self._families[name.upper()]  # type: ignore[attr-defined]
+            elif name.upper() in self._families:
+                family = self._families[name.upper()]
             else:
-                available = list(self._families.keys())  # type: ignore[attr-defined]
+                available = list(self._families.keys())
                 raise KeyError(f"Logic family '{name}' not found. Available: {available}")
 
             # Apply session overrides
-            if self._session_overrides:  # type: ignore[attr-defined]
+            if self._session_overrides:
                 return LogicFamily(
                     name=family.name,
-                    VIH=self._session_overrides.get("VIH", family.VIH),  # type: ignore[attr-defined]
-                    VIL=self._session_overrides.get("VIL", family.VIL),  # type: ignore[attr-defined]
-                    VOH=self._session_overrides.get("VOH", family.VOH),  # type: ignore[attr-defined]
-                    VOL=self._session_overrides.get("VOL", family.VOL),  # type: ignore[attr-defined]
-                    VCC=self._session_overrides.get("VCC", family.VCC),  # type: ignore[attr-defined]
+                    VIH=self._session_overrides.get("VIH", family.VIH),
+                    VIL=self._session_overrides.get("VIL", family.VIL),
+                    VOH=self._session_overrides.get("VOH", family.VOH),
+                    VOL=self._session_overrides.get("VOL", family.VOL),
+                    VCC=self._session_overrides.get("VCC", family.VCC),
                     description=family.description,
                     temperature_range=family.temperature_range,
                     source="override",
                 )
 
-            return family  # type: ignore[no-any-return]
+            return family
 
     def list_families(self) -> list[str]:
         """List all available logic families.
@@ -375,8 +375,8 @@ class ThresholdRegistry:
         Returns:
             List of family names
         """
-        with self._state_lock:  # type: ignore[attr-defined]
-            return sorted(self._families.keys())  # type: ignore[attr-defined]
+        with self._state_lock:
+            return sorted(self._families.keys())
 
     def register_family(self, family: LogicFamily, *, namespace: str = "user") -> None:
         """Register custom logic family.
@@ -390,7 +390,7 @@ class ThresholdRegistry:
             >>> registry.register_family(custom)
             >>> # Available as "user.my_custom"
         """
-        with self._state_lock:  # type: ignore[attr-defined]
+        with self._state_lock:
             # Namespace custom families
             if namespace and not family.name.startswith(f"{namespace}."):
                 name = f"{namespace}.{family.name}"
@@ -410,7 +410,7 @@ class ThresholdRegistry:
                 source=family.source,
             )
 
-            self._families[name] = family  # type: ignore[attr-defined]
+            self._families[name] = family
             logger.info(f"Registered custom logic family: {name}")
 
     def set_threshold_override(self, **kwargs: float) -> None:
@@ -428,20 +428,20 @@ class ThresholdRegistry:
             >>> registry.set_threshold_override(VIH=2.5, VIL=0.7)
         """
         valid_keys = {"VIH", "VIL", "VOH", "VOL", "VCC"}
-        with self._state_lock:  # type: ignore[attr-defined]
+        with self._state_lock:
             for key, value in kwargs.items():
                 if key not in valid_keys:
                     raise ValueError(f"Invalid threshold key: {key}. Valid: {valid_keys}")
                 if not 0.0 <= value <= 10.0:
                     raise ValueError(f"Threshold {key}={value}V out of range (0-10V)")
-                self._session_overrides[key] = value  # type: ignore[attr-defined]
+                self._session_overrides[key] = value
 
             logger.info(f"Set threshold overrides: {kwargs}")
 
     def reset_overrides(self) -> None:
         """Reset session threshold overrides."""
-        with self._state_lock:  # type: ignore[attr-defined]
-            self._session_overrides.clear()  # type: ignore[attr-defined]
+        with self._state_lock:
+            self._session_overrides.clear()
             logger.info("Reset threshold overrides")
 
     def get_profile(self, name: str) -> ThresholdProfile:
@@ -456,12 +456,12 @@ class ThresholdRegistry:
         Raises:
             KeyError: If profile not found.
         """
-        with self._state_lock:  # type: ignore[attr-defined]
-            if name not in self._profiles:  # type: ignore[attr-defined]
+        with self._state_lock:
+            if name not in self._profiles:
                 raise KeyError(
                     f"Profile '{name}' not found. Available: {list(self._profiles.keys())}"
-                )  # type: ignore[attr-defined]
-            return self._profiles[name]  # type: ignore[no-any-return, attr-defined]
+                )
+            return self._profiles[name]
 
     def apply_profile(self, name: str) -> LogicFamily:
         """Apply a threshold profile.
@@ -490,14 +490,14 @@ class ThresholdRegistry:
             >>> registry.set_threshold_override(VIH=2.5)
             >>> registry.save_profile("my_profile")
         """
-        with self._state_lock:  # type: ignore[attr-defined]
+        with self._state_lock:
             profile = ThresholdProfile(
                 name=name,
                 base_family=base_family or "TTL",
-                overrides=dict(self._session_overrides),  # type: ignore[attr-defined]
+                overrides=dict(self._session_overrides),
                 description=f"User profile {name}",
             )
-            self._profiles[name] = profile  # type: ignore[attr-defined]
+            self._profiles[name] = profile
 
             if path:
                 path = Path(path)

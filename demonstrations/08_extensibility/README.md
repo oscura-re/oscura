@@ -8,20 +8,7 @@ This section contains 6 demonstrations designed to teach you how to extend Oscur
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Understanding of core types and basic measurements
-- **Python 3.12+** - Required for Oscura
-- **Basic Python development experience** - Understanding of classes, decorators, and type hints
-- **Familiarity with Oscura measurements** - Complete `02_basic_analysis/01_waveform_measurements.py` first
-
-Check your understanding:
-
-```bash
-# Should complete without errors
-python demonstrations/00_getting_started/00_hello_world.py
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -249,47 +236,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/08_extensibility/01_plugin_basics.py
-
-# Or from the demo directory
-cd demonstrations/08_extensibility
-python 01_plugin_basics.py
-```
-
-Expected output: Plugin discovery results, metadata display, loading confirmation.
-
-### Option 2: Run All Extensibility Demos
-
-Run all six demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/08_extensibility/01_plugin_basics.py && \
-python demonstrations/08_extensibility/02_custom_measurement.py && \
-python demonstrations/08_extensibility/03_custom_algorithm.py && \
-python demonstrations/08_extensibility/04_plugin_development.py && \
-python demonstrations/08_extensibility/05_measurement_registry.py && \
-python demonstrations/08_extensibility/06_plugin_templates.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including extensibility and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_plugin_basics.py`) before exploring advanced examples.
 
 ---
 
@@ -454,96 +405,25 @@ fft_func = osc.get_algorithm("my_fft", category="fft")
 
 ---
 
-## Understanding Plugin Architecture
+## Plugin Architecture & Best Practices
 
-### Plugin Discovery
+**Discovery**: Entry points (pip), plugin directories, dynamic registration
 
-Oscura discovers plugins through:
+**Lifecycle**: Discovery → Validation → Loading → Initialization → Use → Cleanup
 
-1. **Entry points** - Python package entry points (pip install)
-2. **Plugin directories** - Configurable plugin paths
-3. **Dynamic registration** - Runtime `register_plugin()` calls
+**Registries**: Built-in measurements, custom measurements, plugin measurements, algorithms (fft, filter, analysis, detection)
 
-### Plugin Lifecycle
+**Plugin Development DO**: Document publicly, test thoroughly (>80%), specify dependencies, use semver versioning, validate inputs
 
-```
-Discovery → Validation → Loading → Initialization → Use → Cleanup
-    ↓           ↓           ↓            ↓          ↓       ↓
- Scan paths  Metadata   Import code   Configure  Execute  Unload
-```
+**Plugin Development DON'T**: Modify global state, assume Oscura version, skip metadata, use bare except:
 
-### Measurement Registry
+**Custom Measurements DO**: Return with units, handle edge cases, document types, provide examples
 
-Central catalog of all measurements:
+**Custom Measurements DON'T**: Modify inputs, skip type hints, use ambiguous names
 
-- **Built-in measurements** - Amplitude, frequency, RMS, power, etc.
-- **Custom measurements** - User-defined domain-specific metrics
-- **Plugin measurements** - Measurements from loaded plugins
-- **Dynamic measurements** - Generated at runtime
+**Algorithm Registration DO**: Specify category, document performance, validate inputs, provide fallbacks
 
-### Algorithm Categories
-
-Algorithms organized by purpose:
-
-| Category  | Purpose            | Examples                            |
-| --------- | ------------------ | ----------------------------------- |
-| fft       | Frequency analysis | Welch, periodogram, custom FFT      |
-| filter    | Signal filtering   | Butterworth, Chebyshev, FIR, IIR    |
-| analysis  | Signal processing  | Envelope, demodulation, correlation |
-| detection | Event detection    | Edge, peak, threshold detection     |
-
----
-
-## Best Practices
-
-### Plugin Development
-
-**DO**:
-
-- Document all public methods with examples
-- Include comprehensive tests (>80% coverage)
-- Specify all dependencies explicitly
-- Version your plugins semantically (semver)
-- Validate inputs thoroughly
-
-**DON'T**:
-
-- Modify global state without cleanup
-- Assume specific Oscura version without checking
-- Skip metadata (breaks discovery)
-- Use bare `except:` clauses (hides errors)
-
-### Custom Measurements
-
-**DO**:
-
-- Return measurements with units
-- Handle edge cases (empty data, NaN values)
-- Document expected input types
-- Provide usage examples in docstrings
-
-**DON'T**:
-
-- Modify input data (side effects)
-- Return None without documentation
-- Skip type hints (breaks introspection)
-- Use ambiguous names
-
-### Algorithm Registration
-
-**DO**:
-
-- Specify category explicitly
-- Document performance characteristics
-- Validate algorithm inputs
-- Provide fallback for edge cases
-
-**DON'T**:
-
-- Assume specific NumPy version
-- Skip error handling
-- Ignore performance implications
-- Create circular dependencies
+**Algorithm Registration DON'T**: Assume NumPy version, skip error handling, ignore performance, create circular dependencies
 
 ---
 

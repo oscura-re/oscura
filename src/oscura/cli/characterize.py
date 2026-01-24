@@ -26,16 +26,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger("oscura.cli.characterize")
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("file", type=click.Path(exists=True))  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+@click.command()
+@click.argument("file", type=click.Path(exists=True))
+@click.option(
     "--type",
     "analysis_type",
     type=click.Choice(["buffer", "signal", "power"], case_sensitive=False),
     default="buffer",
     help="Type of characterization to perform.",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--logic-family",
     type=click.Choice(
         ["TTL", "CMOS", "CMOS_3V3", "CMOS_5V", "LVTTL", "LVCMOS", "auto"],
@@ -44,25 +44,25 @@ logger = logging.getLogger("oscura.cli.characterize")
     default="auto",
     help="Logic family for buffer characterization (default: auto-detect).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--compare",
     type=click.Path(exists=True),
     default=None,
     help="Reference file for comparison analysis.",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--output",
     type=click.Choice(["json", "csv", "html", "table"], case_sensitive=False),
     default="table",
     help="Output format (default: table).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--save-report",
     type=click.Path(),
     default=None,
     help="Save HTML report to file.",
 )
-@click.pass_context  # type: ignore[misc]
+@click.pass_context
 def characterize(
     ctx: click.Context,
     file: str,

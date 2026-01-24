@@ -74,6 +74,7 @@ class FieldInferenceDemo(BaseDemo):
         Returns:
             Dictionary with message samples for field inference
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         self.section("Generating Structured Messages")
 
         MAGIC = 0xABCD

@@ -162,6 +162,10 @@ work-obj*.cf
 .claude/hooks/orchestration-metrics.json
 .claude/hooks/__pycache__/
 
+# Prevent spurious .claude directories in subdirectories
+# (caused by Path.cwd() misuse - see logging_utils.py fix)
+**/.claude/
+
 # Orchestration activity log (debugging)
 .claude/orchestration.log
 .claude/orchestration.log.*
@@ -212,6 +216,21 @@ tests/performance/test_data/*.npz
 # Include synthetic test data (small, legally safe, reproducible)
 !test_data/synthetic/
 !test_data/README.md
+
+# -----------------------------------------------------------------------------
+# Scripts Directory Protection
+# -----------------------------------------------------------------------------
+# Prevent accidental data generation in scripts/ (should only contain code)
+scripts/**/*.npz
+scripts/**/*.pcap
+scripts/**/*.bin
+scripts/**/*.wfm
+scripts/**/*.wav
+scripts/**/*.vcd
+# But keep Python scripts, shell scripts, and documentation
+!scripts/**/*.py
+!scripts/**/*.sh
+!scripts/**/README.md
 
 # -----------------------------------------------------------------------------
 # Generated Binary Files (root directory only)

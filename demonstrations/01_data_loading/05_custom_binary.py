@@ -309,13 +309,15 @@ class CustomBinaryDemo(BaseDemo):
         for ch in range(header_info["channels"]):
             # Load channel from interleaved data
             endian_char = "<" if little_endian else ">"
+            dtype_str = f"{endian_char}f8"
+            dtype_size = np.dtype(dtype_str).itemsize
             trace = load_binary(
                 filepath,
-                dtype=f"{endian_char}f8",
+                dtype=dtype_str,
                 sample_rate=header_info["sample_rate"],
                 channels=header_info["channels"],
                 channel=ch,
-                offset=file_info["header_size"] // 8,  # Skip header (in float64 units)
+                offset=file_info["header_size"] // dtype_size,  # Skip header (in dtype units)
             )
             channels.append(trace)
 

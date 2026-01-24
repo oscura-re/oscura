@@ -1341,7 +1341,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_basic_histogram(self, sample_waveform):
         """Test basic histogram plot."""
-        fig, ax, stats = plot_histogram(sample_waveform)
+        fig, ax, stats = plot_histogram(sample_waveform, show=False)
 
         assert fig is not None
         assert ax is not None
@@ -1357,7 +1357,7 @@ class TestPlotHistogram:
     def test_histogram_with_array(self):
         """Test histogram with numpy array."""
         data = np.random.randn(1000)
-        fig, ax, stats = plot_histogram(data)
+        fig, ax, stats = plot_histogram(data, show=False)
 
         assert fig is not None
         assert stats["count"] == 1000
@@ -1366,7 +1366,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_histogram_custom_bins(self, sample_waveform):
         """Test histogram with custom bin count."""
-        fig, ax, stats = plot_histogram(sample_waveform, bins=50)
+        fig, ax, stats = plot_histogram(sample_waveform, bins=50, show=False)
 
         assert fig is not None
         assert stats["bins"] == 50
@@ -1375,7 +1375,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_histogram_auto_bins(self, sample_waveform):
         """Test histogram with auto bin selection."""
-        fig, ax, stats = plot_histogram(sample_waveform, bins="auto")
+        fig, ax, stats = plot_histogram(sample_waveform, bins="auto", show=False)
 
         assert fig is not None
         assert "bins" in stats
@@ -1386,7 +1386,7 @@ class TestPlotHistogram:
         """Test histogram with explicit bin edges."""
         data = np.random.randn(1000)
         bin_edges = np.linspace(-3, 3, 21)
-        fig, ax, stats = plot_histogram(data, bins=bin_edges)
+        fig, ax, stats = plot_histogram(data, bins=bin_edges, show=False)
 
         assert fig is not None
 
@@ -1394,7 +1394,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_histogram_density_true(self, sample_waveform):
         """Test histogram with density normalization."""
-        fig, ax, stats = plot_histogram(sample_waveform, density=True)
+        fig, ax, stats = plot_histogram(sample_waveform, density=True, show=False)
 
         assert fig is not None
 
@@ -1402,7 +1402,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_histogram_density_false(self, sample_waveform):
         """Test histogram with count mode."""
-        fig, ax, stats = plot_histogram(sample_waveform, density=False)
+        fig, ax, stats = plot_histogram(sample_waveform, density=False, show=False)
 
         assert fig is not None
 
@@ -1410,7 +1410,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_histogram_with_stats(self, sample_waveform):
         """Test histogram with statistics overlay."""
-        fig, ax, stats = plot_histogram(sample_waveform, show_stats=True)
+        fig, ax, stats = plot_histogram(sample_waveform, show_stats=True, show=False)
 
         assert fig is not None
         assert "mean" in stats
@@ -1419,7 +1419,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_histogram_without_stats(self, sample_waveform):
         """Test histogram without statistics overlay."""
-        fig, ax, stats = plot_histogram(sample_waveform, show_stats=False)
+        fig, ax, stats = plot_histogram(sample_waveform, show_stats=False, show=False)
 
         assert fig is not None
 
@@ -1427,7 +1427,7 @@ class TestPlotHistogram:
     @pytest.mark.visualization
     def test_histogram_with_kde(self, sample_waveform):
         """Test histogram with KDE overlay."""
-        fig, ax, stats = plot_histogram(sample_waveform, show_kde=True, density=True)
+        fig, ax, stats = plot_histogram(sample_waveform, show_kde=True, density=True, show=False)
 
         assert fig is not None
 
@@ -1436,7 +1436,7 @@ class TestPlotHistogram:
     def test_histogram_kde_count_mode(self):
         """Test histogram with KDE in count mode."""
         data = np.random.randn(1000)
-        fig, ax, stats = plot_histogram(data, show_kde=True, density=False, bins=30)
+        fig, ax, stats = plot_histogram(data, show_kde=True, density=False, bins=30, show=False)
 
         assert fig is not None
 
@@ -1447,7 +1447,7 @@ class TestPlotHistogram:
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
-        result_fig, result_ax, stats = plot_histogram(sample_waveform, ax=ax)
+        result_fig, result_ax, stats = plot_histogram(sample_waveform, ax=ax, show=False)
 
         assert result_fig == fig
         assert result_ax == ax
@@ -1470,6 +1470,7 @@ class TestPlotHistogram:
             sample_waveform,
             color="blue",
             alpha=0.5,
+            show=False,
         )
 
         assert fig is not None
@@ -1480,7 +1481,7 @@ class TestPlotHistogram:
         """Test histogram statistics calculations."""
         # Create data with known statistics
         data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-        fig, ax, stats = plot_histogram(data, bins=5)
+        fig, ax, stats = plot_histogram(data, bins=5, show=False)
 
         assert stats["mean"] == pytest.approx(3.0)
         assert stats["median"] == pytest.approx(3.0)

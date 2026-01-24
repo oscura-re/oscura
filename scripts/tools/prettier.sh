@@ -29,7 +29,8 @@ INSTALL_HINT="npm install -g prettier"
 MODE="check"
 VERBOSE=false
 PATHS=()
-FILE_TYPES="json,yaml,yml,md" # Default file types
+USE_NATIVE_DISCOVERY=true # Use Prettier's native file discovery (recommended)
+FILE_TYPES="json,yaml,yml,html,css" # Fallback: Default file types for manual mode
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -110,20 +111,29 @@ else
   exit 0
 fi
 
-# Build glob patterns
-globs=()
-IFS=',' read -ra types <<< "${FILE_TYPES}"
-for path in "${PATHS[@]}"; do
-  for type in "${types[@]}"; do
-    if [[ -f "${path}" ]]; then
-      globs+=("${path}")
-    elif [[ -d "${path}" ]]; then
-      globs+=("${path}/**/*.${type}")
-    fi
+# Build file arguments
+file_args=()
+if ${USE_NATIVE_DISCOVERY}; then
+  # Use Prettier's native file discovery with .prettierignore
+  # This automatically detects all supported file types
+  for path in "${PATHS[@]}"; do
+    file_args+=("${path}")
   done
-done
+else
+  # Manual glob mode (fallback for specific file type targeting)
+  IFS=',' read -ra types <<< "${FILE_TYPES}"
+  for path in "${PATHS[@]}"; do
+    for type in "${types[@]}"; do
+      if [[ -f "${path}" ]]; then
+        file_args+=("${path}")
+      elif [[ -d "${path}" ]]; then
+        file_args+=("${path}/**/*.${type}")
+      fi
+    done
+  done
+fi
 
-if [[ ${#globs[@]} -eq 0 ]]; then
+if [[ ${#file_args[@]} -eq 0 ]]; then
   print_skip "No files to format"
   json_result "${TOOL_CMD}" "skip" "No files"
   exit 0
@@ -141,7 +151,7 @@ case ${MODE} in
     # Capture stderr to check for "no files found" case
     STDERR_FILE=$(mktemp)
     if ${VERBOSE}; then
-      if ${PRETTIER_CMD} --check "${ignore_args[@]}" "${globs[@]}" 2> "${STDERR_FILE}"; then
+      if ${PRETTIER_CMD} --check "${ignore_args[@]}" "${file_args[@]}" 2> "${STDERR_FILE}"; then
         print_pass "All files formatted"
         json_result "${TOOL_CMD}" "pass" ""
         exit 0
@@ -158,7 +168,7 @@ case ${MODE} in
         fi
       fi
     else
-      if ${PRETTIER_CMD} --check "${ignore_args[@]}" "${globs[@]}" 2> "${STDERR_FILE}" > /dev/null; then
+      if ${PRETTIER_CMD} --check "${ignore_args[@]}" "${file_args[@]}" 2> "${STDERR_FILE}" > /dev/null; then
         print_pass "All files formatted"
         json_result "${TOOL_CMD}" "pass" ""
         exit 0
@@ -181,7 +191,7 @@ case ${MODE} in
     # Capture stderr to check for "no files found" case
     STDERR_FILE=$(mktemp)
     if ${VERBOSE}; then
-      if ${PRETTIER_CMD} --write "${ignore_args[@]}" "${globs[@]}" 2> "${STDERR_FILE}"; then
+      if ${PRETTIER_CMD} --write "${ignore_args[@]}" "${file_args[@]}" 2> "${STDERR_FILE}"; then
         print_pass "Formatted files"
         json_result "${TOOL_CMD}" "pass" "Formatted"
         exit 0
@@ -198,7 +208,7 @@ case ${MODE} in
         fi
       fi
     else
-      if ${PRETTIER_CMD} --write "${ignore_args[@]}" "${globs[@]}" 2> "${STDERR_FILE}" > /dev/null; then
+      if ${PRETTIER_CMD} --write "${ignore_args[@]}" "${file_args[@]}" 2> "${STDERR_FILE}" > /dev/null; then
         print_pass "Formatted files"
         json_result "${TOOL_CMD}" "pass" "Formatted"
         exit 0

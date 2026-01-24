@@ -8,22 +8,7 @@ This section contains 4 demonstrations designed to teach you how to process larg
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Python 3.12+** - Required for Oscura
-- **Understanding of basic measurements** - Complete `02_basic_analysis/01_waveform_measurements.py`
-- **Multiple CPU cores** - For observing parallel speedup (optional)
-- **Familiarity with Python concurrency** - Understanding of threads vs processes helps
-
-Check your environment:
-
-```bash
-# Check CPU cores (for parallelism)
-python -c "import os; print(f'CPU cores: {os.cpu_count()}')"
-
-# Verify Oscura works
-python demonstrations/00_getting_started/00_hello_world.py
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -244,44 +229,11 @@ Advanced Batch        0.23     2.55x     219.6
 
 ---
 
-## How to Run the Demos
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to learn a specific concept:
-
-```bash
-# From the project root
-python demonstrations/09_batch_processing/01_parallel_batch.py
-
-# Or from the demo directory
-cd demonstrations/09_batch_processing
-python 01_parallel_batch.py
-```
-
-Expected output: Timing comparisons, progress indicators, aggregated results.
-
-### Option 2: Run All Batch Processing Demos
-
-Run all three demos in sequence:
-
-```bash
-# From the project root
-python demonstrations/09_batch_processing/01_parallel_batch.py && \
-python demonstrations/09_batch_processing/02_result_aggregation.py && \
-python demonstrations/09_batch_processing/03_progress_tracking.py
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations including batch processing and reports coverage.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_parallel_batch.py`) before exploring advanced examples.
 
 ---
 
@@ -459,152 +411,32 @@ class ProgressTracker:
 
 ## Performance Guidelines
 
-### Choosing Thread vs Process Pool
+**ThreadPoolExecutor (I/O-bound)**: File loading, network ops, lightweight computation, shared memory needed
+**ProcessPoolExecutor (CPU-bound)**: FFT, filtering, NumPy ops, true parallelism needed
 
-**Use ThreadPoolExecutor when**:
+**Worker count**: CPU-bound = `os.cpu_count()`, I/O-bound = `os.cpu_count() * 2`
 
-- File I/O is the bottleneck (loading files)
-- Network operations dominate
-- Lightweight computations
-- Shared memory needed
+**Batch sizes**: Small (10-100) = low memory/high overhead, Medium (100-1000) = balanced, Large (1000+) = low overhead/high memory
 
-**Use ProcessPoolExecutor when**:
+## Real-World Use Cases & Best Practices
 
-- Heavy CPU computation (FFT, filtering)
-- NumPy operations dominate
-- Need true parallelism
-- Memory isolation required
+**Regression Testing**: Process captures, compare to baseline, alert on changes
 
-### Worker Count Optimization
+**Production Validation**: Process units, aggregate quality metrics, generate pass/fail reports
 
-```python
-import os
+**Dataset Analysis**: Process 10K+ files with progress tracking and statistical analysis
 
-# Rule of thumb for worker count
-cpu_bound_workers = os.cpu_count()  # One per core
-io_bound_workers = os.cpu_count() * 2  # More workers OK
+**Error Handling DO**: Catch in workers, log context, continue, report failed items
 
-# Example
-if computation_heavy:
-    max_workers = os.cpu_count()
-else:
-    max_workers = os.cpu_count() * 2
-```
+**Error Handling DON'T**: Stop on error, ignore silently, skip logging
 
-### Batch Size Considerations
+**Progress Tracking DO**: Update per item, ETA from recent samples, show % and throughput
 
-| Batch Size        | Pros                                  | Cons                       |
-| ----------------- | ------------------------------------- | -------------------------- |
-| Small (10-100)    | Low memory, frequent progress updates | Higher overhead            |
-| Medium (100-1000) | Balanced performance                  | Moderate memory            |
-| Large (1000+)     | Lower overhead                        | High memory, slow progress |
+**Progress Tracking DON'T**: Update too frequently, use first sample only, block on updates
 
----
+**Result Aggregation DO**: Store raw results, multiple statistics, include metadata, generate reports
 
-## Real-World Use Cases
-
-### Regression Testing
-
-Process nightly signal captures to detect changes:
-
-```python
-# Process today's captures
-results_today = process_batch(todays_files)
-
-# Compare to baseline
-results_baseline = load_baseline()
-
-# Detect regressions
-regressions = compare_batches(results_today, results_baseline)
-if regressions:
-    alert_team(regressions)
-```
-
-### Production Validation
-
-Validate manufactured units at scale:
-
-```python
-# Process 1000 unit test captures
-results = process_batch_parallel(unit_test_files, max_workers=8)
-
-# Aggregate quality metrics
-summary = aggregate_results(results)
-
-# Pass/fail decisions
-passed = [r for r in results if r.quality_score > 95]
-failed = [r for r in results if r.quality_score <= 95]
-
-# Generate report
-generate_production_report(summary, passed, failed)
-```
-
-### Dataset Analysis
-
-Analyze large signal datasets:
-
-```python
-# Process 10,000 signal captures
-with progress_tracker(total=10000) as tracker:
-    results = []
-    for chunk in chunked(files, chunk_size=100):
-        chunk_results = process_batch(chunk, max_workers=4)
-        results.extend(chunk_results)
-        tracker.update(len(chunk))
-
-# Statistical analysis
-stats = calculate_statistics(results)
-outliers = detect_outliers(results)
-```
-
----
-
-## Best Practices
-
-### Error Handling
-
-**DO**:
-
-- Catch exceptions in worker functions
-- Log errors with context (filename, timestamp)
-- Continue processing after errors
-- Report failed items at end
-
-**DON'T**:
-
-- Let one error stop entire batch
-- Silently ignore failures
-- Skip error logging
-
-### Progress Tracking
-
-**DO**:
-
-- Update progress after each item
-- Calculate ETA from recent samples
-- Display both percentage and ETA
-- Show throughput metrics
-
-**DON'T**:
-
-- Update too frequently (performance impact)
-- Calculate ETA from first sample only
-- Block on progress updates
-
-### Result Aggregation
-
-**DO**:
-
-- Store raw results for later analysis
-- Calculate multiple statistical measures
-- Include metadata (timestamps, versions)
-- Generate human-readable reports
-
-**DON'T**:
-
-- Aggregate prematurely (lose details)
-- Skip outlier detection
-- Ignore data quality metrics
+**Result Aggregation DON'T**: Aggregate early, skip outliers, ignore quality metrics
 
 ---
 

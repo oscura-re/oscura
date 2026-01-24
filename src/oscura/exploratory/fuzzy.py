@@ -437,7 +437,7 @@ def fuzzy_protocol_detect(
                 errors = sum(
                     1  # type: ignore[misc]
                     for a, b in zip(bits[: len(expected)], expected, strict=False)  # type: ignore[call-overload, arg-type]
-                    if a != b  # type: ignore[misc, call-overload, arg-type]
+                    if a != b
                 )
                 if errors <= pattern_tolerance:
                     pattern_score = 1 - errors * 0.3

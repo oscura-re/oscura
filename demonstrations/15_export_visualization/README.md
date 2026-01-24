@@ -8,19 +8,7 @@ This section contains 5 demonstrations showing how to export data in various for
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Basic Analysis** - Run `demonstrations/02_basic_analysis/` first
-- **Understanding of Data Formats** - CSV, JSON, HDF5 concepts
-- **Familiarity with Visualization** - Basic plotting concepts
-- **Protocol Knowledge** - Understanding of packet structures (for dissectors)
-
-Check your setup:
-
-```bash
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-# Should show successful measurements
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -69,36 +57,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/15_export_visualization/01_export_formats.py
-
-# Or from the demo directory
-cd demonstrations/15_export_visualization
-python 01_export_formats.py
-```
-
-### Option 2: Run All Export/Visualization Demos
-
-```bash
-# From the project root
-python demonstrations/15_export_visualization/01_export_formats.py && \
-python demonstrations/15_export_visualization/02_wavedrom_timing.py && \
-python demonstrations/15_export_visualization/03_wireshark_dissectors.py && \
-python demonstrations/15_export_visualization/04_report_generation.py && \
-python demonstrations/15_export_visualization/05_visualization_gallery.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_export_formats.py`) before exploring advanced examples.
 
 ---
 
@@ -419,66 +382,11 @@ Comprehensive reports include:
 
 ## Advanced Techniques
 
-### Automated Report Pipelines
+**Automated Report Pipelines**: Template-based reports with programmatic sections, plots, tables; export PDF/HTML/Markdown
 
-Create repeatable report generation workflows:
+**Custom Wireshark Dissectors**: Custom field formatting with hex display, conditional field parsing
 
-```python
-# Define report template
-report = AnalysisReport(
-    title="Protocol Analysis",
-    template="protocol_template.md"
-)
-
-# Add sections programmatically
-report.add_section("Overview", overview_text)
-report.add_plot("Waveform", waveform_plot)
-report.add_table("Measurements", measurements_df)
-
-# Generate multiple formats
-report.export_pdf("report.pdf")
-report.export_html("report.html")
-report.export_markdown("report.md")
-```
-
-### Custom Wireshark Dissectors
-
-Advanced dissector features:
-
-```python
-# Custom field formatting
-dissector.add_field(
-    name="timestamp",
-    type="uint32",
-    format="hex",  # Display as hexadecimal
-    description="Packet timestamp"
-)
-
-# Conditional field parsing
-dissector.add_conditional_field(
-    name="payload",
-    condition=lambda pkt: pkt.type == 0x01,
-    parser=custom_payload_parser
-)
-```
-
-### Interactive Visualizations
-
-Create interactive HTML plots:
-
-```python
-# Enable interactive features
-plot = create_plot(
-    trace,
-    interactive=True,
-    zoom=True,
-    pan=True,
-    hover_info=True
-)
-
-# Export as standalone HTML
-plot.export_html("interactive_plot.html")
-```
+**Interactive Visualizations**: Zoom, pan, hover info enabled; export as standalone HTML
 
 ---
 

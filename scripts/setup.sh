@@ -28,8 +28,8 @@ echo ""
 
 # Step 1: Dependencies
 echo -e "${CYAN}[1/3]${NC} Installing dependencies..."
-if uv sync --all-extras > /dev/null 2>&1; then
-  echo -e "  ${GREEN}✓${NC} Dependencies installed"
+if uv sync --all-extras --all-groups > /dev/null 2>&1; then
+  echo -e "  ${GREEN}✓${NC} Dependencies installed (all extras + all groups)"
 else
   echo -e "  ${YELLOW}⚠${NC} uv sync had warnings (may be okay)"
 fi

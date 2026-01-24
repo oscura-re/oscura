@@ -24,38 +24,38 @@ from oscura.cli.main import format_output
 logger = logging.getLogger("oscura.cli.batch")
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("pattern")  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+@click.command()
+@click.argument("pattern")
+@click.option(
     "--analysis",
     type=click.Choice(["characterize", "decode", "spectrum"], case_sensitive=False),
     required=True,
     help="Type of analysis to perform on each file.",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--parallel",
     type=int,
     default=1,
     help="Number of files to process concurrently (default: 1).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--output",
     type=click.Choice(["json", "csv", "html", "table"], case_sensitive=False),
     default="table",
     help="Output format (default: table).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--save-summary",
     type=click.Path(),
     default=None,
     help="Save aggregated results to file (CSV format).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--continue-on-error",
     is_flag=True,
     help="Continue processing even if individual files fail.",
 )
-@click.pass_context  # type: ignore[misc]
+@click.pass_context
 def batch(
     ctx: click.Context,
     pattern: str,

@@ -167,7 +167,7 @@ def detect_logic_family(
         )
 
     # Sort by confidence
-    candidates.sort(key=lambda x: x["confidence"], reverse=True)  # type: ignore[arg-type, return-value, syntax]
+    candidates.sort(key=lambda x: x["confidence"], reverse=True)
 
     # Primary detection
     primary = candidates[0]

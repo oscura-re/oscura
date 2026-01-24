@@ -67,6 +67,7 @@ class QualityAssessmentDemo(BaseDemo):
         3. Distorted signal: Harmonic distortion
         4. Poor quality signal: Combined noise and distortion
         """
+        np.random.seed(42)  # Deterministic randomness for reproducible tests
         sample_rate = 10e6  # 10 MHz sampling
         duration = 0.001  # 1 ms
         signal_freq = 100e3  # 100 kHz test tone

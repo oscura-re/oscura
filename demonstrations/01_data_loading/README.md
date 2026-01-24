@@ -8,21 +8,7 @@ This section contains 7 demonstrations covering oscilloscope, logic analyzer, au
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Getting Started** - Finish `00_getting_started/` first
-- **Python 3.12+** - Oscura requires Python 3.12 or higher
-- **Oscura installed** - Install with `pip install oscura` or `uv add oscura`
-- **Basic file format knowledge** - Understanding CSV, binary formats helps but isn't required
-- **Optional dependencies** - Some demos require h5py, scipy.io for specific formats
-
-Check optional dependencies:
-
-```bash
-pip install oscura[all]  # Includes all optional format loaders
-# OR
-uv add oscura --all-extras
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -126,44 +112,11 @@ These demonstrations are designed to be completed **in order**. Each builds on c
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-Run a single demo to focus on a specific format:
-
-```bash
-# From the project root
-python demonstrations/01_data_loading/01_oscilloscopes.py
-
-# Or from the demo directory
-cd demonstrations/01_data_loading
-python 01_oscilloscopes.py
-```
-
-Expected output: Format-specific metadata and successful validation.
-
-### Option 2: Run All Data Loading Demos
-
-Run all seven demos in sequence:
-
-```bash
-# From the project root
-for demo in demonstrations/01_data_loading/*.py; do
-    python "$demo"
-done
-```
-
-### Option 3: Validate All Demonstrations
-
-Validate all demonstrations in the project:
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
-
-This runs all demonstrations and reports coverage, validation status, and failures.
+**Category-specific tip:** Start with the first demonstration (e.g., `01_oscilloscopes.py`) before exploring advanced examples.
 
 ---
 
@@ -307,124 +260,21 @@ pip install h5py scipy
 
 ## Tips for Learning
 
-### Start Simple
+- **Start simple**: Oscilloscope/logic analyzer before automotive/custom formats
+- **Examine metadata**: Sample rate, vertical scale, channel info guide analysis
+- **Try different formats**: Compare to understand format-specific features
+- **Handle errors**: Use try/except for unsupported/corrupted formats
 
-Begin with oscilloscope and logic analyzer formats before tackling automotive or custom binary formats. The concepts build progressively.
-
-### Generate Test Data
-
-Most demos generate synthetic data, but you can also:
-
-```python
-# Generate test data for experimentation
-python demonstrations/generate_all_data.py
-
-# Then load your own files
-from oscura import load
-trace = load("path/to/your/file.wfm")
-```
-
-### Examine Metadata
-
-Every loaded trace carries rich metadata:
+## Core Loading API
 
 ```python
-trace = load("capture.wfm")
-print(f"Sample rate: {trace.metadata.sample_rate} Hz")
-print(f"Duration: {len(trace.data) / trace.metadata.sample_rate} s")
-print(f"Source: {trace.metadata.source_file}")
-```
+from oscura import load, load_all_channels, load_chunked, get_supported_formats
 
-Understanding metadata is key to correct analysis.
-
-### Try Different Formats
-
-Load the same signal in different formats to understand format-specific features:
-
-```python
-# Load oscilloscope capture
-osc_trace = load("signal.wfm")
-
-# Export and reload as CSV
-export_csv(osc_trace, "signal.csv")
-csv_trace = load("signal.csv")
-
-# Compare metadata
-compare_metadata(osc_trace, csv_trace)
-```
-
-### Handle Errors Gracefully
-
-Real-world files are messy. Learn error handling:
-
-```python
-try:
-    trace = load("capture.bin")
-except UnsupportedFormatError:
-    print("Format not recognized - use binary loader API")
-    trace = load_binary("capture.bin", custom_parser)
-```
-
----
-
-## Understanding the Framework
-
-### Core Loading API
-
-**Simple Loading**:
-
-```python
-from oscura import load
-
-# Auto-detect format and load
-trace = load("capture.wfm")
-```
-
-**Multi-Channel Loading**:
-
-```python
-from oscura import load_all_channels
-
-# Load all channels simultaneously
-traces = load_all_channels("multi_channel.wfm")
-ch1 = traces["CH1"]
-ch2 = traces["CH2"]
-```
-
-**Streaming Loading**:
-
-```python
-from oscura.loaders import load_chunked
-
-# Load in chunks to avoid memory exhaustion
-for chunk in load_chunked("large_file.bin", chunk_size=10000):
-    process(chunk)
-```
-
-### Format Registry
-
-Oscura maintains a registry of supported formats:
-
-```python
-from oscura.loaders import get_supported_formats
-
-formats = get_supported_formats()
-for fmt in formats:
-    print(f"{fmt.extension}: {fmt.description}")
-```
-
-### Custom Format Support
-
-For proprietary formats:
-
-```python
-from oscura.loaders.binary import load_binary
-
-def parse_header(data):
-    # Custom header parsing
-    return metadata
-
-trace = load_binary("proprietary.bin", header_parser=parse_header)
+load("capture.wfm")                    # Auto-detect and load
+load_all_channels("multi_channel.wfm") # Load all channels
+load_chunked("large.bin", 10000)       # Stream large files
+get_supported_formats()                # Query available formats
+load_binary("custom.bin", custom_parser) # Custom format support
 ```
 
 ---

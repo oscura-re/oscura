@@ -25,44 +25,44 @@ from oscura.core.types import DigitalTrace, ProtocolPacket, WaveformTrace
 logger = logging.getLogger("oscura.cli.decode")
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("file", type=click.Path(exists=True))  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+@click.command()
+@click.argument("file", type=click.Path(exists=True))
+@click.option(
     "--protocol",
     type=click.Choice(["uart", "spi", "i2c", "can", "auto"], case_sensitive=False),
     default="auto",
     help="Protocol type (default: auto-detect).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--baud-rate",
     type=int,
     default=None,
     help="Baud rate for UART (auto-detect if not specified).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--parity",
     type=click.Choice(["none", "even", "odd"], case_sensitive=False),
     default="none",
     help="Parity for UART (default: none).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--stop-bits",
     type=click.Choice(["1", "2"]),
     default="1",
     help="Stop bits for UART (default: 1).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--show-errors",
     is_flag=True,
     help="Show only errors with context.",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--output",
     type=click.Choice(["json", "csv", "html", "table"], case_sensitive=False),
     default="table",
     help="Output format (default: table).",
 )
-@click.pass_context  # type: ignore[misc]
+@click.pass_context
 def decode(
     ctx: click.Context,
     file: str,

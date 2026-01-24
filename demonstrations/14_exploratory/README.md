@@ -8,19 +8,7 @@ This section contains 4 demonstrations showing how to characterize unknown signa
 
 ## Prerequisites
 
-Before running these demonstrations, ensure you have:
-
-- **Completed Basic Analysis** - Run `demonstrations/02_basic_analysis/` first
-- **Understanding of FFT** - Familiarity with frequency domain analysis
-- **Pattern Recognition Concepts** - Basic understanding of pattern matching
-- **Statistical Knowledge** - Mean, standard deviation, correlation
-
-Check your setup:
-
-```bash
-python demonstrations/02_basic_analysis/01_waveform_measurements.py
-# Should show successful measurements
-```
+See [main demonstrations README](../README.md#installation) for installation instructions.
 
 ---
 
@@ -63,35 +51,11 @@ This section teaches:
 
 ---
 
-## Running Demonstrations
+## Running the Demonstrations
 
-### Option 1: Run Individual Demo
+See [main demonstrations README](../README.md#running-demonstrations) for all execution options.
 
-```bash
-# From the project root
-python demonstrations/14_exploratory/01_unknown_signals.py
-
-# Or from the demo directory
-cd demonstrations/14_exploratory
-python 01_unknown_signals.py
-```
-
-### Option 2: Run All Exploratory Demos
-
-```bash
-# From the project root
-python demonstrations/14_exploratory/01_unknown_signals.py && \
-python demonstrations/14_exploratory/02_fuzzy_matching.py && \
-python demonstrations/14_exploratory/03_signal_recovery.py && \
-python demonstrations/14_exploratory/04_exploratory_analysis.py
-```
-
-### Option 3: Validate All Demonstrations
-
-```bash
-# From the project root
-python demonstrations/validate_all.py
-```
+**Category-specific tip:** Start with the first demonstration (e.g., `01_unknown_signals.py`) before exploring advanced examples.
 
 ---
 
@@ -359,61 +323,11 @@ Recovery techniques include:
 
 ## Advanced Techniques
 
-### Multi-Method Validation
+**Multi-Method Validation**: Use FFT, time domain, and statistical analysis to validate findings across methods
 
-Use multiple analysis methods to validate findings:
+**Hypothesis-Driven**: Form hypothesis → test → validate/refine (iterative approach)
 
-```python
-# Frequency domain analysis
-fft_result = fft_analysis(trace)
-
-# Time domain analysis
-time_result = waveform_analysis(trace)
-
-# Statistical analysis
-stats_result = statistical_analysis(trace)
-
-# Validate consistency across methods
-assert all_methods_agree(fft_result, time_result, stats_result)
-```
-
-### Hypothesis-Driven Investigation
-
-Systematic approach to unknown signals:
-
-```python
-# 1. Form hypothesis based on initial characterization
-hypothesis = "Signal contains 9600 baud UART data"
-
-# 2. Test hypothesis with specific analysis
-uart_test = uart_decode(trace, baud_rate=9600)
-
-# 3. Validate or refine hypothesis
-if uart_test.success:
-    # Hypothesis confirmed
-    analyze_uart_data(uart_test.packets)
-else:
-    # Refine hypothesis
-    hypothesis = "Signal may be different baud rate"
-    test_multiple_baud_rates(trace)
-```
-
-### Iterative Refinement
-
-Build understanding incrementally:
-
-```python
-# Iteration 1: Basic characterization
-info_v1 = characterize_signal(trace)
-
-# Iteration 2: Refine based on initial findings
-if info_v1.type == "digital":
-    info_v2 = characterize_digital_protocol(trace)
-
-# Iteration 3: Decode specific protocol
-if info_v2.likely_protocol == "UART":
-    decoded = decode_uart(trace, info_v2.parameters)
-```
+**Iterative Refinement**: Characterization → Narrow down → Decode specific protocol
 
 ---
 

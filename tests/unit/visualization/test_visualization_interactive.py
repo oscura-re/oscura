@@ -176,7 +176,7 @@ class TestPlotHistogram:
         """Test basic histogram plot."""
         from oscura.visualization.interactive import plot_histogram
 
-        fig, ax, stats = plot_histogram(sample_trace)
+        fig, ax, stats = plot_histogram(sample_trace, show=False)
 
         assert fig is not None
         assert ax is not None
@@ -190,7 +190,7 @@ class TestPlotHistogram:
         """Test histogram with KDE overlay."""
         from oscura.visualization.interactive import plot_histogram
 
-        fig, ax, _stats = plot_histogram(sample_trace, show_kde=True)
+        fig, ax, _stats = plot_histogram(sample_trace, show_kde=True, show=False)
 
         assert fig is not None
         # Check that KDE line was added (should have at least 2 lines - hist edges and KDE)
@@ -202,7 +202,7 @@ class TestPlotHistogram:
         """Test histogram on bimodal data."""
         from oscura.visualization.interactive import plot_histogram
 
-        fig, _ax, stats = plot_histogram(bimodal_trace, bins=30, show_kde=True)
+        fig, _ax, stats = plot_histogram(bimodal_trace, bins=30, show_kde=True, show=False)
 
         assert fig is not None
         # Mean should be near 0 for symmetric bimodal
@@ -214,7 +214,7 @@ class TestPlotHistogram:
         """Test histogram without statistics overlay."""
         from oscura.visualization.interactive import plot_histogram
 
-        fig, _ax, stats = plot_histogram(sample_trace, show_stats=False)
+        fig, _ax, stats = plot_histogram(sample_trace, show_stats=False, show=False)
 
         assert fig is not None
         assert stats is not None
@@ -225,7 +225,7 @@ class TestPlotHistogram:
         """Test histogram with density normalization."""
         from oscura.visualization.interactive import plot_histogram
 
-        fig, ax, _stats = plot_histogram(sample_trace, density=True)
+        fig, ax, _stats = plot_histogram(sample_trace, density=True, show=False)
 
         assert fig is not None
         assert "Density" in ax.get_ylabel()

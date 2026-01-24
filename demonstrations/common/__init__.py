@@ -1,6 +1,16 @@
 """Common utilities for Oscura demonstrations."""
 
 from demonstrations.common.base_demo import BaseDemo
+from demonstrations.common.constants import (
+    FLOAT_EPSILON,
+    FLOAT_TOLERANCE,
+    RANDOM_SEED,
+    SINE_RMS_FACTOR,
+    SQRT2,
+    TOLERANCE_NORMAL,
+    TOLERANCE_RELAXED,
+    TOLERANCE_STRICT,
+)
 from demonstrations.common.data_generation import (
     add_noise,
     generate_complex_signal,
@@ -31,6 +41,14 @@ from demonstrations.common.validation import (
 )
 
 __all__ = [
+    "FLOAT_EPSILON",
+    "FLOAT_TOLERANCE",
+    "RANDOM_SEED",
+    "SINE_RMS_FACTOR",
+    "SQRT2",
+    "TOLERANCE_NORMAL",
+    "TOLERANCE_RELAXED",
+    "TOLERANCE_STRICT",
     "BaseDemo",
     "add_noise",
     "format_duration",

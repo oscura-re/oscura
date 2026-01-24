@@ -757,7 +757,7 @@ def validate_attack_result(key_guess, correlations):
 
 - [Black-Box Analysis Guide](blackbox-analysis.md) - Protocol reverse engineering
 - [Power Analysis API](../api/power-analysis.md) - Power measurement functions
-- [Signal Integrity Guide](../../demos/15_signal_integrity/) - Signal quality analysis
+- [Signal Integrity Guide](../../demonstrations/15_signal_integrity/) - Signal quality analysis
 - [Spectral Analysis](../api/analysis.md) - Frequency domain analysis
 
 ---

@@ -149,20 +149,14 @@
           "type": "array",
           "description": "Device IDs to include (whitelist)",
           "items": {
-            "oneOf": [
-              { "type": "integer" },
-              { "type": "string", "pattern": "^0[xX][0-9A-Fa-f]+$" }
-            ]
+            "oneOf": [{ "type": "integer" }, { "type": "string", "pattern": "^0[xX][0-9A-Fa-f]+$" }]
           }
         },
         "exclude_devices": {
           "type": "array",
           "description": "Device IDs to exclude (blacklist)",
           "items": {
-            "oneOf": [
-              { "type": "integer" },
-              { "type": "string", "pattern": "^0[xX][0-9A-Fa-f]+$" }
-            ]
+            "oneOf": [{ "type": "integer" }, { "type": "string", "pattern": "^0[xX][0-9A-Fa-f]+$" }]
           }
         },
         "include_categories": {

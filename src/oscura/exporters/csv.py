@@ -224,7 +224,7 @@ def _export_array(
                 if isinstance(val, float | np.floating):
                     formatted.append(f"{val:.{precision}g}")
                 else:
-                    formatted.append(str(val))  # type: ignore[unreachable]
+                    formatted.append(str(val))
             writer.writerow(formatted)
 
 

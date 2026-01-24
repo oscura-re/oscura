@@ -168,9 +168,14 @@ python3 .claude/hooks/validate_all.py  # MUST run before every commit
 ### Setup
 
 ```bash
-./scripts/setup.sh                   # Complete setup (dependencies + hooks)
-uv sync --all-extras                 # Install all dependencies
+./scripts/setup.sh                       # Complete setup (dependencies + hooks)
+uv sync --all-extras --all-groups        # Install ALL dependencies (extras + groups)
 ```
+
+**IMPORTANT**: Always use `--all-extras --all-groups` to install:
+
+- `--all-extras`: ALL optional dependencies (automotive, oscilloscopes, analysis, etc.)
+- `--all-groups`: ALL dependency groups (dev, test utilities, documentation tools)
 
 ---
 

@@ -188,7 +188,7 @@ class LazyWaveformTrace:
 
                 metadata = TraceMetadata(
                     sample_rate=self._sample_rate,
-                    **self._metadata,  # type: ignore[arg-type]
+                    **self._metadata,
                 )
                 return WaveformTrace(data=sliced_data, metadata=metadata)  # type: ignore[return-value]
 
@@ -221,7 +221,7 @@ class LazyWaveformTrace:
 
         metadata = TraceMetadata(
             sample_rate=self._sample_rate,
-            **self._metadata,  # type: ignore[arg-type]
+            **self._metadata,
         )
         return WaveformTrace(data=self.data, metadata=metadata)
 

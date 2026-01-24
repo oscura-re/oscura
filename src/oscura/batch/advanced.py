@@ -269,7 +269,7 @@ def _run_with_timeout(
     if result_container["error"] is not None:
         raise result_container["error"]
 
-    return result_container["result"], False  # type: ignore[return-value]
+    return result_container["result"], False
 
 
 class AdvancedBatchProcessor:
