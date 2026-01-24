@@ -36,8 +36,6 @@ Example:
     UDSService(0x10 DiagnosticSessionControl [Request], sub=0x01)
 """
 
-from __future__ import annotations
-
 __all__ = [
     "UDSDecoder",
     "UDSNegativeResponse",

@@ -20,14 +20,14 @@ import numpy as np
 
 from oscura.core.types import WaveformTrace
 
+T = TypeVar("T")
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from numpy.typing import NDArray
-
-T = TypeVar("T")
 
 
 @dataclass
@@ -547,7 +547,7 @@ class RetryResult:
     adjustments_made: list[str]
 
 
-def retry_with_adjustment[T](
+def retry_with_adjustment(
     func: Callable[..., T],
     trace: WaveformTrace,
     initial_params: dict[str, Any],

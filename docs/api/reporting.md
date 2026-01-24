@@ -1,7 +1,7 @@
 # Reporting API Reference
 
-> **Version**: 0.1.0
-> **Last Updated**: 2026-01-08
+> **Version**: 0.5.1
+> **Last Updated**: 2026-01-19
 
 ## Overview
 

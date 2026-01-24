@@ -11,9 +11,9 @@
 
 ### How to Report
 
-**Preferred**: [Private security advisory](https://github.com/lair-click-bats/oscura/security/advisories/new) on GitHub
+**Preferred**: [Private security advisory](https://github.com/oscura-re/oscura/security/advisories/new) on GitHub
 
-**Alternative**: Email security@lair-click-bats.dev
+**Alternative**: Email security@oscura-re.dev
 
 **Do not** report vulnerabilities through public issues unless already disclosed.
 
@@ -62,6 +62,45 @@ Oscura implements the following security practices:
 - Memory limits enforced for large file processing
 - No network operations in core library
 
+### Session File Security
+
+**Session files (.tks) use HMAC-SHA256 signatures** for integrity verification:
+
+- **New format (v0.2.0+)**: All session files include cryptographic signatures
+- **Integrity check**: HMAC signature verified on load (detects tampering)
+- **Backward compatible**: Legacy files load with warning
+- **Security note**: Session files still use pickle serialization - only load from trusted sources
+
+**Best practices**:
+
+````python
+from oscura.session import Session, load_session
+
+# Save with signature (default)
+session.save('analysis.tks')  # Includes HMAC signature
+
+# Load with verification (default)
+session = load_session('analysis.tks')  # Verifies signature
+
+# Legacy files trigger warning
+session = load_session('old_file.tks')  # UserWarning: no signature
+```python
+
+**Security warnings**:
+
+- ⚠️ **Only load .tks files from trusted sources** (pickle deserialization)
+- ✅ Signature verification prevents tampering but not malicious content
+- 🔄 Re-save legacy files to add signatures: `session.save('updated.tks')`
+- 🚫 Never load .tks files from untrusted or unknown sources
+
+For **secure data exchange**, use alternative formats:
+
+```python
+# Instead of pickle-based .tks files
+session.export_to_json('safe_export.json')  # Human-readable, safe
+session.export_to_hdf5('safe_export.h5')    # Efficient, safe
+```markdown
+
 ---
 
 ## Threat Model
@@ -79,8 +118,11 @@ Oscura treats the following as untrusted:
 
 1. **Malformed files**: Buffer overflows, memory exhaustion
 2. **Path traversal**: Unsanitized file paths
-3. **DoS**: Large files, complex patterns, memory exhaustion
-4. **Dependency vulnerabilities**: Third-party package issues
+3. **Session file deserialization**: Malicious .tks files (pickle-based)
+   - **Mitigation**: HMAC signatures detect tampering
+   - **Limitation**: Only load from trusted sources
+4. **DoS**: Large files, complex patterns, memory exhaustion
+5. **Dependency vulnerabilities**: Third-party package issues
 
 ---
 
@@ -99,7 +141,7 @@ if not Path(user_path).resolve().is_relative_to(safe_dir):
 
 # Bad: Trust user input
 loader.load(user_input_path)  # Don't do this without validation
-```
+```python
 
 **2. Set memory limits for large files:**
 
@@ -112,7 +154,7 @@ trace = load_with_limits(
     max_file_size_mb=100,
     max_samples=10_000_000
 )
-```
+```bash
 
 **3. Run vulnerability scans:**
 
@@ -120,7 +162,7 @@ trace = load_with_limits(
 uv pip install safety pip-audit
 safety check
 pip-audit
-```
+```bash
 
 ### For Deployment
 
@@ -141,7 +183,7 @@ RUN uv pip install oscura
 USER nonroot  # Don't run as root
 COPY --chown=nonroot:nonroot . /app
 WORKDIR /app
-```
+```markdown
 
 ---
 
@@ -162,7 +204,7 @@ Check your installation:
 uv pip install safety pip-audit
 safety check
 pip-audit
-```
+```markdown
 
 ---
 
@@ -211,7 +253,7 @@ pip-audit
 **Tracking**:
 
 - GitHub Advisory: [GHSA-xm59-rqc7-hhvf](https://github.com/advisories/GHSA-xm59-rqc7-hhvf)
-- Oscura Issue: https://github.com/lair-click-bats/oscura/security/dependabot/1
+- Oscura Issue: https://github.com/oscura-re/oscura/security/dependabot/1
 
 **Resolution**: Will update to patched version when available.
 
@@ -249,8 +291,8 @@ Incorrect measurements from malformed input data is a **data quality issue**, no
 
 ## Security Contact
 
-- **GitHub Security Advisories**: [Create advisory](https://github.com/lair-click-bats/oscura/security/advisories/new)
-- **Email**: security@lair-click-bats.dev
+- **GitHub Security Advisories**: [Create advisory](https://github.com/oscura-re/oscura/security/advisories/new)
+- **Email**: security@oscura-re.dev
 - **Issues**: Use "security" label for non-sensitive issues
 
 ---
@@ -263,3 +305,4 @@ Security updates are released as patch versions and announced in:
 - CHANGELOG.md
 
 Subscribe to repository notifications for security alerts.
+````

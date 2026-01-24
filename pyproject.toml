@@ -6,7 +6,7 @@
 
 [project]
 name = "oscura"
-version = "0.1.2"
+version = "0.5.1"
 description = "Unified hardware reverse engineering framework. Extract all information from any system through signals and data. Unknown protocol discovery, state machine extraction, CRC recovery, security analysis. 16+ protocols, IEEE-compliant measurements."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -88,6 +88,7 @@ dev = [
     "pytest>=8.0,<10.0.0",              # Testing framework
     "pytest-cov>=6.0,<8.0.0",           # Coverage reporting
     "pytest-timeout>=2.3.0,<3.0.0",     # Test timeout enforcement
+    "pytest-benchmark>=4.0.0,<6.0.0",   # Performance benchmarking
     "hypothesis>=6.0.0,<7.0.0",         # Property-based testing
     "types-PyYAML>=6.0,<7.0.0",         # Type stubs for mypy
     "yamllint>=1.35,<2.0.0",            # YAML linting
@@ -106,6 +107,11 @@ hdf5 = [
     "h5py>=3.0.0,<4.0.0",                # HDF5 file reading/writing
 ]
 
+# Claude orchestration system routing enhancements
+routing = [
+    "rapidfuzz>=3.0.0,<4.0.0",          # Fuzzy string matching for agent routing
+]
+
 # Jupyter notebook integration
 # NOTE: nbconvert CVE-2025-53000 affects <=7.16.6 (Windows-only code execution
 # via uncontrolled search path during PDF conversion with SVG). Constraint added
@@ -113,13 +119,13 @@ hdf5 = [
 jupyter = [
     "ipython>=8.0.0,<9.0.0",             # Enhanced Python shell
     "jupyter>=1.0.0,<2.0.0",             # Jupyter notebook support
-    "nbconvert>=7.0.0,<8.0.0",           # Explicit constraint for CVE mitigation
+    "nbconvert>=7.0.0,<8.0.0",           # CVE-2025-53000 (<=7.16.6) tracked, fix pending release
 ]
 
 # Automotive protocol analysis (CAN, J1939, OBD-II, UDS)
 automotive = [
     "cantools>=39.4.0,<40.0.0",          # DBC parsing and CAN message encoding/decoding
-    "asammdf>=7.4.0,<8.0.0",             # MDF4/MF4 automotive data logging files
+    "asammdf>=8.0.0,<9.0.0",             # MDF4/MF4 automotive data logging files (8.x required for Python 3.12+)
     "python-can>=4.4.0,<5.0.0",          # CAN interface and file formats (BLF, ASC)
     "scapy>=2.5.0,<3.0.0",               # PCAP parsing for SocketCAN frames
 ]
@@ -137,9 +143,20 @@ analysis = [
     "pywavelets>=1.0.0,<2.0.0",          # Wavelet analysis
 ]
 
+# Hardware acquisition sources
+hardware = [
+    "pyvisa>=1.13.0,<2.0.0",             # VISA instrument control (oscilloscopes, etc.)
+    "pyvisa-py>=0.7.0,<1.0.0",           # Pure Python VISA backend
+]
+
+# Fuzzy routing enhancements
+fuzzy = [
+    "rapidfuzz>=3.0.0,<4.0.0",           # Fuzzy keyword matching for routing
+]
+
 # Install all optional dependencies
 all = [
-    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis]",
+    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis,hardware,fuzzy]",
 ]
 
 [project.scripts]
@@ -203,8 +220,16 @@ addopts = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
-    "ignore::pytest_benchmark.logger.PytestBenchmarkWarning",
-    "ignore::matplotlib._api.MatplotlibDeprecationWarning",
+    # NOTE: pytest-benchmark warning filter removed - causes ModuleNotFoundError
+    # when pytest-benchmark is not installed (e.g., in release smoke tests)
+    # "ignore::pytest_benchmark.logger.PytestBenchmarkWarning",
+    #
+    # NOTE: All parallelized tests use -p no:benchmark to completely disable
+    # the pytest-benchmark plugin when running with xdist (see test.sh, pre-push.sh,
+    # and CI workflows). This prevents PytestBenchmarkWarning from being raised.
+    #
+    # NOTE: matplotlib warning - only needed if matplotlib is in system Python
+    # "ignore::matplotlib._api.MatplotlibDeprecationWarning",
     "ignore:More than.*figures.*have been opened:RuntimeWarning",
     "ignore::ResourceWarning",     # RigolWFM library - known kaitaistruct limitation
     "ignore::pytest.PytestUnraisableExceptionWarning",
@@ -267,9 +292,11 @@ markers = [
     # Requirements Traceability
     "requirement: Links test to specific requirement ID",
 ]
-timeout = 60
-timeout_method = "thread"
-timeout_func_only = false
+# NOTE: timeout settings commented out - requires pytest-timeout plugin
+# Uncomment if pytest-timeout is installed:
+# timeout = 60
+# timeout_method = "thread"
+# timeout_func_only = false
 console_output_style = "progress"
 
 python_files = ["test_*.py"]
@@ -291,6 +318,9 @@ norecursedirs = [".*", "build", "dist", "*.egg", "node_modules", "__pycache__", 
 [tool.coverage.run]
 source = ["src/oscura"]
 branch = true
+parallel = true
+data_file = ".coverage"
+relative_files = true
 omit = [
     "*/tests/*",
     "*/test_*.py",
@@ -298,7 +328,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 80  # Minimum coverage threshold enforced in CI and locally
 precision = 1
 show_missing = true
 skip_empty = true
@@ -379,6 +409,9 @@ ignore = [
     "ARG001",  # unused-function-argument: API compatibility requires extra args
     "ARG002",  # unused-method-argument: API compatibility requires extra args
     "TC002",   # typing-only-third-party-import: Low priority
+    "UP040",   # non-pep695-type-alias: Using TypeAlias for mypy compatibility
+    "UP046",   # generic-class-type-param: Using Generic[T] for mypy compatibility
+    "UP047",   # generic-function-type-param: Using TypeVar for mypy compatibility
     "TC003",   # typing-only-standard-library-import: Low priority
     "TC004",   # runtime-import-in-type-checking-block: Can be tricky to refactor
     "TC010",   # runtime-string-union: Low priority typing improvement
@@ -389,6 +422,9 @@ ignore = [
     "RUF043",  # implicit-optional: Regex patterns with metacharacters
     "RUF046",  # unnecessary-cast-to-int: Often needed for mypy
     "RUF059",  # unpacked-variable-never-used: Common in tests
+    "UP040",   # type-alias: Using TypeAlias for mypy compatibility
+    "UP046",   # generic-class: Using Generic[T] for mypy compatibility
+    "UP047",   # generic-function: Using TypeVar for mypy compatibility
     "UP007",   # non-pep604-annotation-union: May need Union for compatibility
     # Security rules - reviewed and documented
     "S101",    # assert - acceptable for library invariants
@@ -554,6 +590,25 @@ module = [
     "oscura.automotive.visualization",
 ]
 disable_error_code = ["attr-defined"]
+
+# CLI modules - click decorators don't have complete type stubs
+[[tool.mypy.overrides]]
+module = ["oscura.cli.*"]
+disable_error_code = ["untyped-decorator"]
+
+# Modules with optional dependencies
+[[tool.mypy.overrides]]
+module = ["numba", "numba.*", "dpkt", "dpkt.*", "pyvisa", "pyvisa.*", "saleae", "saleae.*"]
+ignore_missing_imports = true
+
+# Hardware acquisition modules - optional dependencies
+[[tool.mypy.overrides]]
+module = [
+    "oscura.acquisition.socketcan",
+    "oscura.acquisition.saleae",
+    "oscura.acquisition.visa",
+]
+disable_error_code = ["attr-defined", "unreachable"]
 
 # =============================================================================
 # Bandit - Security Linting

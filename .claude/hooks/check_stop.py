@@ -3,6 +3,9 @@
 Stop Hook Verification
 Verifies task completion before allowing agent to stop.
 Returns JSON response for Claude Code hook system.
+
+Version: 3.0.0
+Updated: 2026-01-19 - Migrated to shared utilities
 """
 
 import contextlib
@@ -13,29 +16,34 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+# Add shared module to path
+sys.path.insert(0, str(Path(__file__).parent))
+from shared import get_hook_logger, load_config
 
-def log_error(message: str) -> None:
-    """Log error to errors.log file."""
-    log_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")) / ".claude" / "hooks"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "errors.log"
-    timestamp = datetime.now().isoformat()
-    with log_file.open("a") as f:
-        f.write(f"[{timestamp}] check_stop: {message}\n")
+# Load configuration
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+config = load_config(PROJECT_DIR)
+hook_config = config.get("hooks", {}).get("check_stop", {})
+MAX_STALE_HOURS = hook_config.get("max_stale_hours", 2)
+
+# Logger
+logger = get_hook_logger(__name__)
 
 
-def is_stale(work: dict[str, Any], file_path: Path, max_age_hours: int = 2) -> bool:
+def is_stale(work: dict[str, Any], file_path: Path, max_age_hours: int | None = None) -> bool:
     """
     Check if active work is stale (no update in max_age_hours).
 
     Args:
         work: Active work dictionary from active_work.json
         file_path: Path to the active_work.json file (for checking mtime)
-        max_age_hours: Maximum age in hours before considering stale (default: 2)
+        max_age_hours: Maximum age in hours before considering stale (default: from config.yaml)
 
     Returns:
         True if work is stale, False otherwise
     """
+    if max_age_hours is None:
+        max_age_hours = MAX_STALE_HOURS
     last_update = work.get("last_update")
 
     # If no last_update field, check file modification time
@@ -82,7 +90,7 @@ def check_completion() -> dict[str, bool | str]:
                 # Check if work is stale (no update in 2+ hours)
                 if is_stale(work, active_work):
                     task_id = work.get("task_id") or work.get("current_task", "unknown")
-                    log_error(
+                    logger.error(
                         f"Stale active work detected for task '{task_id}'. "
                         "No update in 2+ hours. Allowing stop."
                     )
@@ -95,7 +103,7 @@ def check_completion() -> dict[str, bool | str]:
                         "reason": f"Active task '{task_id}' still in progress. Complete or hand off before stopping.",
                     }
         except (OSError, json.JSONDecodeError) as e:
-            log_error(f"Failed to read active_work.json: {e}")
+            logger.error(f"Failed to read active_work.json: {e}")
 
     # All checks passed
     return {"ok": True}
@@ -119,7 +127,7 @@ def main() -> None:
         print(json.dumps(result))
         sys.exit(0 if result["ok"] else 2)
     except Exception as e:
-        log_error(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         # Fail safe - allow stop on error
         print(json.dumps({"ok": True}))
         sys.exit(0)

@@ -67,7 +67,7 @@ run_batch() {
   echo "Memory usage before: $(free -h | grep Mem | awk '{print $3"/"$2}')"
 
   # Run with explicit memory limits to fail fast instead of OOM
-  uv run pytest "${test_paths}" "${ignore_flags}" \
+  uv run python -m pytest "${test_paths}" "${ignore_flags}" \
     --cov=oscura \
     --cov-append \
     --cov-report= \

@@ -114,13 +114,14 @@ class TestGlobalAlignmentProperties:
 
         assert 0.0 <= result.similarity <= 1.0
 
-    @pytest.mark.xfail(
-        reason="Alignment algorithm not fully commutative - gaps differ depending on order"
-    )
     @given(seq_data=checksum_data(min_size=10, max_size=100))
     @settings(max_examples=30, deadline=None)
     def test_alignment_commutative(self, seq_data: bytes) -> None:
-        """Property: align(A,B) and align(B,A) produce similar results."""
+        """Property: align(A,B) and align(B,A) produce similar results.
+
+        Note: Previously marked as xfail due to non-commutative gaps,
+        but the alignment algorithm was fixed and now passes.
+        """
         # Split into two sequences
         mid = len(seq_data) // 2
         seq_a = seq_data[:mid]

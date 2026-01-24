@@ -622,8 +622,6 @@ def _generate_analyzer_stub(template: PluginTemplate, class_name: str) -> str:
         References:
             PLUG-008: Plugin Template Generator
         """
-        from __future__ import annotations
-
         import numpy as np
         from numpy.typing import NDArray
 
@@ -697,8 +695,6 @@ def _generate_loader_stub(template: PluginTemplate, class_name: str) -> str:
         References:
             PLUG-008: Plugin Template Generator
         """
-        from __future__ import annotations
-
         import numpy as np
         from numpy.typing import NDArray
         from pathlib import Path
@@ -782,8 +778,6 @@ def _generate_exporter_stub(template: PluginTemplate, class_name: str) -> str:
         References:
             PLUG-008: Plugin Template Generator
         """
-        from __future__ import annotations
-
         import numpy as np
         from numpy.typing import NDArray
         from pathlib import Path
@@ -871,8 +865,6 @@ def _generate_generic_stub(template: PluginTemplate, class_name: str) -> str:
         References:
             PLUG-008: Plugin Template Generator
         """
-        from __future__ import annotations
-
 
         class {class_name}:
             """Generic plugin implementation.

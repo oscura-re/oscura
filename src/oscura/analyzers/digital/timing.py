@@ -642,20 +642,33 @@ def recover_clock_fft(
     Detects the dominant frequency component in the signal using
     FFT analysis, suitable for periodic digital signals.
 
+    **Best for**: Long signals (>64 samples) with clear periodicity.
+    **Not recommended for**: Short random data, aperiodic signals.
+    For short signals, use recover_clock_edge() instead.
+
     Args:
-        trace: Input trace (analog or digital).
+        trace: Input trace (analog or digital). Should have at least
+            4-5 cycles of the clock signal for reliable detection.
         min_freq: Minimum frequency to consider (Hz). Default: sample_rate/1000.
         max_freq: Maximum frequency to consider (Hz). Default: sample_rate/2.
 
     Returns:
         ClockRecoveryResult with recovered frequency and confidence.
+        Confidence < 0.5 indicates unreliable detection (warning issued).
 
     Raises:
-        InsufficientDataError: If trace has fewer than 16 samples.
+        InsufficientDataError: If trace has fewer than 64 samples.
+        ValueError: If no frequency components found in specified range.
+
+    Warnings:
+        UserWarning: Issued when confidence < 0.5 (unreliable result).
 
     Example:
         >>> result = recover_clock_fft(trace)
-        >>> print(f"Clock: {result.frequency / 1e6:.3f} MHz")
+        >>> if result.confidence > 0.7:
+        ...     print(f"Clock: {result.frequency / 1e6:.3f} MHz")
+        >>> else:
+        ...     print("Low confidence - try edge-based recovery")
 
     References:
         IEEE 1241-2010 Section 4.1
@@ -665,12 +678,17 @@ def recover_clock_fft(
     n = len(data)
     sample_rate = trace.metadata.sample_rate
 
-    if n < 16:
+    # FFT requires sufficient samples for reliable frequency resolution
+    # Rule of thumb: At least 4-5 cycles of the signal for accurate peak detection
+    # With typical bit rates, this means ~100-200 samples minimum
+    min_samples = 64  # Increased from 16 for better frequency resolution
+    if n < min_samples:
         raise InsufficientDataError(
-            "FFT clock recovery requires at least 16 samples",
-            required=16,
+            f"FFT clock recovery requires at least {min_samples} samples for reliable frequency detection",
+            required=min_samples,
             available=n,
             analysis_type="clock_recovery_fft",
+            fix_hint="Use edge-based clock recovery for short signals or acquire more data",
         )
 
     # Set frequency range defaults
@@ -691,11 +709,11 @@ def recover_clock_fft(
     valid_indices = np.where(mask)[0]
 
     if len(valid_indices) == 0:
-        return ClockRecoveryResult(
-            frequency=np.nan,
-            period=np.nan,
-            method="fft",
-            confidence=0.0,
+        # No valid frequencies in range - signal may be DC or out of range
+        raise ValueError(
+            f"No frequency components found in range [{min_freq:.0f} Hz, {max_freq:.0f} Hz]. "
+            f"Signal may be constant (DC) or frequency is outside specified range. "
+            f"Adjust min_freq/max_freq or check signal integrity."
         )
 
     # Find peak in valid range
@@ -720,6 +738,18 @@ def recover_clock_fft(
             peak_freq = peak_freq + delta * freq_resolution
 
     period = 1.0 / peak_freq if peak_freq > 0 else np.nan
+
+    # Warn on low confidence results (may be unreliable)
+    if confidence < 0.5:
+        import warnings
+
+        warnings.warn(
+            f"FFT clock recovery has low confidence ({confidence:.2f}). "
+            f"Detected frequency: {peak_freq / 1e6:.3f} MHz. "
+            f"Consider using longer signal, edge-based recovery, or verifying signal periodicity.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     return ClockRecoveryResult(
         frequency=float(peak_freq),

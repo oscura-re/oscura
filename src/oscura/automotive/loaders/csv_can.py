@@ -9,8 +9,6 @@ Common CSV format:
     0.010000,0x280,0A0B0C0D0E0F1011
 """
 
-from __future__ import annotations
-
 import csv
 from pathlib import Path
 

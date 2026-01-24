@@ -4,8 +4,6 @@ This module provides command-line interface for plugin management including
 list, info, enable/disable, install, and validate operations.
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import shutil

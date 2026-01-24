@@ -2,22 +2,22 @@
 
 ## Report Metadata
 
-|Field|Value|
-|---|---|
-|**Input File**|{{input_name}}|
-|**File Size**|{{input_size}}|
-|**Input Type**|{{input_type}}|
-|**Generated**|{{timestamp}}|
-|**Analysis Duration**|{{duration}}|
+| Field                 | Value          |
+| --------------------- | -------------- |
+| **Input File**        | {{input_name}} |
+| **File Size**         | {{input_size}} |
+| **Input Type**        | {{input_type}} |
+| **Generated**         | {{timestamp}}  |
+| **Analysis Duration** | {{duration}}   |
 
 ## Analysis Summary
 
-|Metric|Count|
-|---|---|
-|Total Analyses|{{total_analyses}}|
-|Successful|{{successful}}|
-|Failed|{{failed}}|
-|Analysis Domains|{{domains_count}}|
+| Metric           | Count              |
+| ---------------- | ------------------ |
+| Total Analyses   | {{total_analyses}} |
+| Successful       | {{successful}}     |
+| Failed           | {{failed}}         |
+| Analysis Domains | {{domains_count}}  |
 
 {{#if has_errors}}
 

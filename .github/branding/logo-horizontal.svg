@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Oscura Official Logo - Horizontal Layout
+  Size: 1200x400
+  Design: Icon left, OSCURA wordmark right (best for headers)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+  <title id="title">Oscura Logo - Horizontal</title>
+  <desc id="desc">Oscura hardware reverse engineering framework logo in horizontal layout</desc>
+
+  <defs>
+    <!-- Front layer glow -->
+    <filter id="frontGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Gradients for layers - BRIGHTER -->
+    <linearGradient id="backGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0891B2" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#22D3EE" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#0891B2" stop-opacity="0.6"/>
+    </linearGradient>
+
+    <linearGradient id="midGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#67E8F9" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <linearGradient id="frontGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0891B2"/>
+      <stop offset="50%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#0891B2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="400" fill="#0C1415"/>
+
+  <!-- Icon area: centered at (215, 200), scaled to fit 350px -->
+  <g transform="translate(215, 200) scale(0.38) translate(-512, -512)">
+    <!-- Grid reference lines -->
+    <g stroke="#0891B2" stroke-width="1" opacity="0.35">
+      <line x1="112" y1="512" x2="912" y2="512"/>
+      <line x1="512" y1="262" x2="512" y2="762"/>
+    </g>
+
+    <!-- Back layer waveform -->
+    <path d="M112,412
+             Q212,312 312,412
+             Q412,512 512,412
+             Q612,312 712,412
+             Q812,512 912,412"
+          fill="none"
+          stroke="url(#backGradient)"
+          stroke-width="8"
+          stroke-linecap="round"
+          opacity="0.6"/>
+
+    <!-- Middle layer waveform -->
+    <path d="M112,512
+             Q212,362 312,512
+             Q412,662 512,512
+             L512,312
+             L512,512
+             Q612,362 712,512
+             Q812,662 912,512"
+          fill="none"
+          stroke="url(#midGradient)"
+          stroke-width="10"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.8"/>
+
+    <!-- Front layer waveform -->
+    <g filter="url(#frontGlow)">
+      <path d="M112,612
+               Q212,512 312,612
+               Q412,712 512,612
+               L512,362
+               L512,612
+               Q612,512 712,612
+               Q812,712 912,612"
+            fill="none"
+            stroke="url(#frontGradient)"
+            stroke-width="12"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+    </g>
+
+    <!-- Peak markers -->
+    <g fill="#67E8F9" filter="url(#frontGlow)">
+      <circle cx="512" cy="312" r="9" opacity="0.7"/>
+      <circle cx="512" cy="362" r="11"/>
+    </g>
+
+    <!-- Start/end points -->
+    <g fill="#22D3EE">
+      <circle cx="112" cy="412" r="7" opacity="0.6"/>
+      <circle cx="112" cy="512" r="9" opacity="0.8"/>
+      <circle cx="112" cy="612" r="11"/>
+      <circle cx="912" cy="412" r="7" opacity="0.6"/>
+      <circle cx="912" cy="512" r="9" opacity="0.8"/>
+      <circle cx="912" cy="612" r="11"/>
+    </g>
+  </g>
+
+  <!-- OSCURA wordmark -->
+  <text x="780" y="220"
+        font-family="'IBM Plex Sans', Inter, -apple-system, sans-serif"
+        font-size="80"
+        font-weight="600"
+        letter-spacing="0.16em"
+        fill="#F8FAFC"
+        text-anchor="middle">OSCURA</text>
+</svg>

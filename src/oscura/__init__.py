@@ -46,7 +46,7 @@ Example:
 For more information, see https://github.com/oscura-re/oscura
 """
 
-__version__ = "0.1.2"
+__version__ = "0.5.1"
 __author__ = "Oscura Contributors"
 
 # Core types
@@ -157,9 +157,7 @@ from oscura.analyzers.waveform.spectral import (
 
 # Signal builders (top-level convenience access)
 from oscura.builders import (
-    GeneratedSignal,
     SignalBuilder,
-    SignalMetadata,
 )
 
 # Comparison and limit testing
@@ -518,8 +516,6 @@ __all__ = [
     "FieldSpec",
     "FilterResult",
     "FormatError",
-    # Signal builders
-    "GeneratedSignal",
     # Signal quality (QUAL-005)
     "Glitch",
     "GoldenReference",
@@ -571,8 +567,6 @@ __all__ = [
     "SignalBuilder",
     # Discovery
     "SignalCharacterization",
-    # Signal builders
-    "SignalMetadata",
     "SmartDefaults",
     # Convenience functions
     "SpectralMetrics",

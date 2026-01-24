@@ -198,13 +198,13 @@ class TestEdgeDetection:
 
             # Rising edges at indices [1, 4]
             assert len(rising) == 2
-            assert 1 in rising
-            assert 4 in rising
+            assert 1 in rising.tolist()
+            assert 4 in rising.tolist()
 
             # Falling edges at indices [3, 5]
             assert len(falling) == 2
-            assert 3 in falling
-            assert 5 in falling
+            assert 3 in falling.tolist()
+            assert 5 in falling.tolist()
         except Exception as e:
             pytest.skip(f"Simple pattern edge detection skipped: {e}")
 
@@ -462,7 +462,7 @@ class TestSignalQuality:
                 ]
             )
 
-            analyzer = SignalQualityAnalyzer()
+            analyzer = SignalQualityAnalyzer(vdd=3.3)  # Simple mode for flat metrics
             metrics = analyzer.analyze(signal)
 
             # Rise time should be ~10 samples (very relaxed range)
@@ -499,7 +499,7 @@ class TestSignalQuality:
             # Create signal with 60% duty cycle
             signal = np.array([1] * 60 + [0] * 40, dtype=bool)
 
-            analyzer = SignalQualityAnalyzer()
+            analyzer = SignalQualityAnalyzer(vdd=1.0)  # Simple mode for flat metrics
             metrics = analyzer.analyze(signal)
 
             assert metrics.duty_cycle == pytest.approx(0.6, abs=0.15)

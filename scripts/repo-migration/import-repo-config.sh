@@ -27,7 +27,7 @@ echo "Source config: $CONFIG_DIR"
 echo ""
 
 # Verify repository exists
-if ! gh repo view "$NEW_REPO" >/dev/null 2>&1; then
+if ! gh repo view "$NEW_REPO" > /dev/null 2>&1; then
   echo "Error: Repository $NEW_REPO does not exist"
   echo "Create it first with: gh repo create $NEW_REPO --public"
   exit 1
@@ -112,7 +112,7 @@ fi
 # 5. BRANCH PROTECTION
 echo "[5/10] Applying branch protection..."
 if [ -f "$CONFIG_DIR/branch-protection.json" ]; then
-  if jq -e '.error' "$CONFIG_DIR/branch-protection.json" >/dev/null 2>&1; then
+  if jq -e '.error' "$CONFIG_DIR/branch-protection.json" > /dev/null 2>&1; then
     echo "  ⚠️  No branch protection to apply"
   else
     DEFAULT_BRANCH=$(gh api repos/$NEW_REPO --jq '.default_branch')
@@ -121,8 +121,8 @@ if [ -f "$CONFIG_DIR/branch-protection.json" ]; then
     gh api repos/$NEW_REPO/branches/$DEFAULT_BRANCH/protection \
       -X PUT \
       --input "$CONFIG_DIR/branch-protection.json" \
-      2>/dev/null && echo "  ✅ Branch protection applied" ||
-      echo "  ⚠️  Branch protection failed (may need manual configuration)"
+      2> /dev/null && echo "  ✅ Branch protection applied" \
+      || echo "  ⚠️  Branch protection failed (may need manual configuration)"
   fi
 else
   echo "  ⚠️  branch-protection.json not found, skipping"
@@ -146,7 +146,7 @@ fi
 # 7. COLLABORATORS
 echo "[7/10] Applying collaborators..."
 if [ -f "$CONFIG_DIR/collaborators.json" ]; then
-  if jq -e '.error' "$CONFIG_DIR/collaborators.json" >/dev/null 2>&1; then
+  if jq -e '.error' "$CONFIG_DIR/collaborators.json" > /dev/null 2>&1; then
     echo "  ⚠️  No collaborator data available"
   else
     COLLAB_COUNT=$(jq '. | length' "$CONFIG_DIR/collaborators.json")
@@ -160,7 +160,7 @@ fi
 # 8. WEBHOOKS
 echo "[8/10] Applying webhooks..."
 if [ -f "$CONFIG_DIR/webhooks.json" ]; then
-  if jq -e '.error' "$CONFIG_DIR/webhooks.json" >/dev/null 2>&1; then
+  if jq -e '.error' "$CONFIG_DIR/webhooks.json" > /dev/null 2>&1; then
     echo "  ⚠️  No webhook data available"
   else
     WEBHOOK_COUNT=$(jq '. | length' "$CONFIG_DIR/webhooks.json")
@@ -187,7 +187,7 @@ if [ -f "$CONFIG_DIR/secret-names.txt" ]; then
       if [ -n "$SECRET_NAME" ] && [ "${SECRET_NAME:0:1}" != "#" ]; then
         echo "      gh secret set $SECRET_NAME -R $NEW_REPO"
       fi
-    done <"$CONFIG_DIR/secret-names.txt"
+    done < "$CONFIG_DIR/secret-names.txt"
     echo ""
     echo "  ℹ️  Run these commands manually to set secret values"
   else

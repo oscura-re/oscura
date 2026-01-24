@@ -12,6 +12,8 @@ Key capabilities:
 - Export to NetworkX graph for analysis
 """
 
+from __future__ import annotations
+
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any

@@ -3,6 +3,8 @@
 Implements simple domain-specific language for trace analysis workflows.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Union
@@ -352,14 +354,14 @@ class Assignment(ASTNode):
     """Variable assignment: $var = expr."""
 
     variable: str
-    expression: "Expression"
+    expression: Expression
 
 
 @dataclass
 class Pipeline(ASTNode):
     """Pipeline expression: expr | command | command."""
 
-    stages: list["Expression"]
+    stages: list[Expression]
 
 
 @dataclass
@@ -367,7 +369,7 @@ class Command(ASTNode):
     """Command invocation: command arg1 arg2."""
 
     name: str
-    args: list["Expression"]
+    args: list[Expression]
 
 
 @dataclass
@@ -375,7 +377,7 @@ class FunctionCall(ASTNode):
     """Function call: func(arg1, arg2)."""
 
     name: str
-    args: list["Expression"]
+    args: list[Expression]
 
 
 @dataclass
@@ -397,8 +399,8 @@ class ForLoop(ASTNode):
     """For loop: for $var in expr: body."""
 
     variable: str
-    iterable: "Expression"
-    body: list["Statement"]
+    iterable: Expression
+    body: list[Statement]
 
 
 # Type aliases

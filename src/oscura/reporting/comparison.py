@@ -9,8 +9,6 @@ Example:
     >>> report = generate_comparison_report(baseline, current, "comparison.pdf")
 """
 
-from __future__ import annotations
-
 from typing import Any, Literal
 
 from oscura.reporting.core import Report, ReportConfig, Section

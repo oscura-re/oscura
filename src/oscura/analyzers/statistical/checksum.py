@@ -5,6 +5,8 @@ This module provides tools for detecting checksum and CRC fields in binary
 messages by analyzing field correlations and testing common algorithms.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, Union
 

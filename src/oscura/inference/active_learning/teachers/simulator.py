@@ -7,10 +7,8 @@ requiring a live system.
 The simulator teacher treats traces as examples of valid protocol sequences.
 """
 
-from __future__ import annotations
-
 from oscura.inference.active_learning.oracle import Oracle
-from oscura.inference.state_machine import FiniteAutomaton  # noqa: TC001
+from oscura.inference.state_machine import FiniteAutomaton
 
 
 class SimulatorTeacher(Oracle):

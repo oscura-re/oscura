@@ -35,8 +35,6 @@ Example:
     >>> result = sum_of_squares(data)  # Fast on second call
 """
 
-from __future__ import annotations
-
 import functools
 from collections.abc import Callable
 from typing import Any, TypeVar
@@ -45,11 +43,11 @@ import numpy as np
 
 # Try to import Numba
 try:
-    from numba import guvectorize as _numba_guvectorize  # type: ignore[import-untyped]
-    from numba import jit as _numba_jit  # type: ignore[import-untyped]
-    from numba import njit as _numba_njit  # type: ignore[import-untyped]
-    from numba import prange as _numba_prange  # type: ignore[import-untyped]
-    from numba import vectorize as _numba_vectorize  # type: ignore[import-untyped]
+    from numba import guvectorize as _numba_guvectorize  # type: ignore[import-not-found]
+    from numba import jit as _numba_jit  # type: ignore[import-not-found]
+    from numba import njit as _numba_njit  # type: ignore[import-not-found]
+    from numba import prange as _numba_prange  # type: ignore[import-not-found]
+    from numba import vectorize as _numba_vectorize  # type: ignore[import-not-found]
 
     HAS_NUMBA = True
 except ImportError:

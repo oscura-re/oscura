@@ -218,14 +218,14 @@ Demos validate comprehensive workflows and serve as living integration tests.
 
 **When to write demo vs integration test**:
 
-|Scenario|Write Demo|Write Integration Test|
-|---|---|---|
-|Basic workflow|✅|❌|
-|Common use case|✅|❌|
-|Edge case (malformed files)|❌|✅|
-|Edge case (memory limits)|❌|✅|
-|Error handling|❌|✅|
-|Vendor file quirks|❌|✅|
+| Scenario                    | Write Demo | Write Integration Test |
+| --------------------------- | ---------- | ---------------------- |
+| Basic workflow              | ✅         | ❌                     |
+| Common use case             | ✅         | ❌                     |
+| Edge case (malformed files) | ❌         | ✅                     |
+| Edge case (memory limits)   | ❌         | ✅                     |
+| Error handling              | ❌         | ✅                     |
+| Vendor file quirks          | ❌         | ✅                     |
 
 ### Demo Coverage
 

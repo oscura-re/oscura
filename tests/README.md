@@ -317,13 +317,13 @@ def test_example():
 
 ### Current Status
 
-| Metric | Target | Status |
-|--------|--------|--------|
-| Unit test coverage | >80% | ✅ 85% |
-| Integration test count | <50 | ✅ 42 tests |
-| Compliance tests | All standards | ✅ IEEE 181, 1241, 1459, 2414 |
-| Performance baselines | All critical paths | ✅ 47 benchmarks |
-| Test execution time | <10 min | ✅ 8-10 min (parallel) |
+| Metric                 | Target             | Status                        |
+| ---------------------- | ------------------ | ----------------------------- |
+| Unit test coverage     | >80%               | ✅ 85%                        |
+| Integration test count | <50                | ✅ 42 tests                   |
+| Compliance tests       | All standards      | ✅ IEEE 181, 1241, 1459, 2414 |
+| Performance baselines  | All critical paths | ✅ 47 benchmarks              |
+| Test execution time    | <10 min            | ✅ 8-10 min (parallel)        |
 
 ### CI/CD Integration
 

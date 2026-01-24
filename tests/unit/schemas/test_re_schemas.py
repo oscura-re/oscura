@@ -86,8 +86,6 @@ class TestPacketFormatSchema:
         with open(config_file) as f:
             return yaml.safe_load(f)
 
-    @pytest.mark.xfail(reason="Example config files not yet created", strict=False)
-    @pytest.mark.xfail(reason="Example config files not yet created", strict=False)
     def test_validate_example_config(self, example_config: dict) -> None:
         """Test that example config passes validation.
 
@@ -239,7 +237,6 @@ class TestDeviceMappingSchema:
         with open(config_file) as f:
             return yaml.safe_load(f)
 
-    @pytest.mark.xfail(reason="Example config files not yet created", strict=False)
     def test_validate_example_config(self, example_config: dict) -> None:
         """Test that example config passes validation.
 
@@ -360,11 +357,10 @@ class TestBusConfigurationSchema:
     @pytest.fixture
     def example_config(self) -> dict:
         """Load example bus config."""
-        config_file = EXAMPLES_DIR / "bus_config_example.yaml"
+        config_file = EXAMPLES_DIR / "bus_configuration_example.yaml"
         with open(config_file) as f:
             return yaml.safe_load(f)
 
-    @pytest.mark.xfail(reason="Example config files not yet created", strict=False)
     def test_validate_example_config(self, example_config: dict) -> None:
         """Test that example config passes validation.
 
@@ -538,7 +534,6 @@ class TestProtocolDefinitionSchema:
         with open(config_file) as f:
             return yaml.safe_load(f)
 
-    @pytest.mark.xfail(reason="Example config files not yet created", strict=False)
     def test_validate_example_config(self, example_config: dict) -> None:
         """Test that example config passes validation.
 

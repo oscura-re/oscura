@@ -10,10 +10,10 @@ Execute tasks requiring multiple independent agents working simultaneously.
 
 ## When to Use
 
-|Command|Pattern|Use When|
-|---|---|---|
-|`/ai`|Serial|Tasks with dependencies, step-by-step workflows|
-|`/swarm`|Parallel|Independent subtasks, multiple perspectives|
+| Command          | Pattern  | Use When                                        |
+| ---------------- | -------- | ----------------------------------------------- |
+| Natural language | Serial   | Tasks with dependencies, step-by-step workflows |
+| `/swarm`         | Parallel | Independent subtasks, multiple perspectives     |
 
 ## Parallel Detection Keywords
 
@@ -31,13 +31,13 @@ Execute tasks requiring multiple independent agents working simultaneously.
    a. Spawn agents in parallel (max set by `config.yaml:orchestration.agents.max_concurrent`, enforced by hooks)
    b. **Retrieve outputs IMMEDIATELY** upon each completion
    c. Summarize each output to `.claude/summaries/{agent-id}.md`
-   d. Update `.claude/agent-registry.json` with completion
+   d. Update `.claude/agent-outputs/*.json` with completion
    e. Checkpoint batch progress to `.coordination/checkpoints/`
 4. Synthesize all results into unified response
 
 ## Examples
 
-```bash
+````bash
 # Comprehensive research
 /swarm comprehensive research on Docker networking from academic, industry, and community sources
 
@@ -46,7 +46,7 @@ Execute tasks requiring multiple independent agents working simultaneously.
 
 # Full documentation suite
 /swarm complete documentation: API reference, tutorial, and architecture diagram
-```
+```markdown
 
 ## Synthesis Process
 
@@ -70,7 +70,7 @@ After all agents complete:
 
 **Other Anti-patterns**:
 
-- Using /swarm for tasks with dependencies (use /ai for serial)
+- Using /swarm for tasks with dependencies (use natural language for serial)
 - Not synthesizing results
 - Parallel agents that need each other's output
 
@@ -80,7 +80,7 @@ After all agents complete:
 
 **Mitigation Strategy** (See `.claude/config.yaml`):
 
-1. **Agent Registry**: Persist agent IDs to `.claude/agent-registry.json` on launch
+1. **Agent Registry**: Persist agent IDs to `.claude/agent-outputs/*.json` on launch
 2. **Immediate Retrieval**: Call `TaskOutput(agent_id, block=False)` in polling loop
 3. **Batch Execution**: Launch max 2 agents, wait for completion, then next batch (enforced)
 4. **Checkpoint Progress**: Save state to `.coordination/checkpoints/` after each batch
@@ -88,12 +88,12 @@ After all agents complete:
 
 **Recovery Path** (if context compaction occurs):
 
-1. Read `.claude/agent-registry.json` for agent IDs and status
+1. Read `.claude/agent-outputs/*.json` for agent IDs and status
 2. Load latest checkpoint from `.coordination/checkpoints/`
 3. Check filesystem for deliverables (agents write files successfully)
 4. Resume from last completed batch
 
-**Optimal Configuration** (see `.claude/config.yaml:orchestration.agents.*`):
+**Optimal Configuration** (see `.claude/config.yaml:orchestration.agents`):
 
 - **Batch size**: See `max_batch_size` (default: 2)
 - **Poll interval**: See `polling_interval_seconds` (default: 10)
@@ -104,4 +104,9 @@ After all agents complete:
 
 - `.claude/config.yaml` - Complete orchestration configuration
 - `.claude/agents/orchestrator.md` - Handles parallel dispatch with registry
-- `/ai` - For serial workflows
+- Natural language task descriptions - For serial workflows
+
+## Version History
+
+- v1.0.0 (2026-01-16): Initial creation with parallel agent coordination
+````

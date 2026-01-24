@@ -6,6 +6,8 @@ in noisy or corrupted logic analyzer captures, with configurable bit error
 tolerance using Hamming distance.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Literal

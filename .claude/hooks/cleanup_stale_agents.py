@@ -14,13 +14,15 @@ Created: 2025-12-25
 
 import argparse
 import json
-import logging
 import os
-import shutil
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+# Add shared module to path
+sys.path.insert(0, str(Path(__file__).parent))
+from shared import get_hook_logger, load_config, load_registry, save_registry
 
 # =============================================================================
 # Configuration
@@ -30,118 +32,29 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 REPO_ROOT = SCRIPT_DIR.parent.parent
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR", str(REPO_ROOT)))
 
-REGISTRY_FILE = PROJECT_DIR / ".claude" / "agent-registry.json"
-BACKUP_FILE = PROJECT_DIR / ".claude" / "agent-registry.backup.json"
-CORRUPTED_FILE = PROJECT_DIR / ".claude" / "agent-registry.corrupted.json"
 AGENT_OUTPUTS_DIR = PROJECT_DIR / ".claude" / "agent-outputs"
 SUMMARIES_DIR = PROJECT_DIR / ".claude" / "summaries"
-LOG_FILE = PROJECT_DIR / ".claude" / "hooks" / "hook.log"
 
-# Thresholds
-STALE_THRESHOLD_HOURS = 24  # Consider stale after 24 hours
-ACTIVITY_CHECK_HOURS = 1  # Check for activity within last hour
-MAX_AGE_DAYS = 30  # Remove completed agents after 30 days
+# Load configuration from config.yaml
+config = load_config(PROJECT_DIR)
+hook_config = config.get("hooks", {}).get("cleanup_stale_agents", {})
+
+# Thresholds from config.yaml (with fallbacks)
+STALE_THRESHOLD_HOURS = hook_config.get("stale_threshold_hours", 24)
+ACTIVITY_CHECK_HOURS = hook_config.get("activity_check_hours", 1)
+MAX_AGE_DAYS = hook_config.get("max_age_days", 30)
 
 # =============================================================================
 # Logging Setup
 # =============================================================================
 
-LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE, mode="a"), logging.StreamHandler()],
-)
-logger = logging.getLogger("cleanup_stale_agents")
+logger = get_hook_logger(__name__)
 
 
 # =============================================================================
-# Registry Operations
+# Registry Operations (imported from shared utilities)
 # =============================================================================
-
-
-def load_registry() -> dict[str, Any]:
-    """Load agent registry with corruption recovery."""
-    if not REGISTRY_FILE.exists():
-        logger.info("Registry file does not exist, creating empty registry")
-        return create_empty_registry()
-
-    try:
-        with open(REGISTRY_FILE) as f:
-            registry: dict[str, Any] = json.load(f)
-
-        # Validate structure
-        if not isinstance(registry.get("agents"), dict):
-            raise ValueError("Invalid registry structure: missing 'agents' dict")
-
-        return registry
-
-    except (json.JSONDecodeError, ValueError) as e:
-        logger.error(f"Corrupted registry: {e}")
-
-        # Save corrupted file for diagnosis
-        if REGISTRY_FILE.exists():
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            corrupted_backup = CORRUPTED_FILE.with_suffix(f".{timestamp}.json")
-            shutil.copy2(REGISTRY_FILE, corrupted_backup)
-            logger.info(f"Saved corrupted registry to {corrupted_backup}")
-
-        # Try to recover from backup
-        if BACKUP_FILE.exists():
-            logger.info("Attempting recovery from backup")
-            try:
-                with open(BACKUP_FILE) as f:
-                    registry_backup: dict[str, Any] = json.load(f)
-                if isinstance(registry_backup.get("agents"), dict):
-                    logger.info("Successfully recovered from backup")
-                    # Save the recovered registry
-                    save_registry(registry_backup)
-                    return registry_backup
-            except (json.JSONDecodeError, ValueError):
-                logger.error("Backup is also corrupted")
-
-        # Create fresh registry
-        logger.warning("Creating fresh registry")
-        return create_empty_registry()
-
-
-def create_empty_registry() -> dict[str, Any]:
-    """Create a new empty registry structure."""
-    now = datetime.now(UTC).isoformat()
-    return {
-        "version": "2.0.0",
-        "created_at": now,
-        "last_updated": now,
-        "agents": {},
-        "metadata": {
-            "total_agents_launched": 0,
-            "agents_running": 0,
-            "agents_completed": 0,
-            "agents_failed": 0,
-            "last_cleanup": now,
-        },
-    }
-
-
-def save_registry(registry: dict[str, Any]) -> None:
-    """Save registry with backup."""
-    # Backup current registry
-    if REGISTRY_FILE.exists():
-        shutil.copy2(REGISTRY_FILE, BACKUP_FILE)
-
-    # Update timestamp
-    registry["last_updated"] = datetime.now(UTC).isoformat()
-
-    # Write atomically
-    temp_file = REGISTRY_FILE.with_suffix(".tmp")
-    try:
-        with open(temp_file, "w") as f:
-            json.dump(registry, f, indent=2)
-        temp_file.replace(REGISTRY_FILE)
-    except OSError:
-        temp_file.unlink(missing_ok=True)
-        raise
+# load_registry(), save_registry() are now imported from shared.registry
 
 
 # =============================================================================
@@ -261,7 +174,7 @@ def cleanup_stale_agents(dry_run: bool = False) -> dict[str, Any]:
     Returns:
         Summary of cleanup actions
     """
-    registry = load_registry()
+    registry = load_registry(PROJECT_DIR)
     now = datetime.now(UTC)
 
     stale_agents: list[str] = []
@@ -320,7 +233,7 @@ def cleanup_stale_agents(dry_run: bool = False) -> dict[str, Any]:
 
         # Save
         if stale_agents or old_completed:
-            save_registry(registry)
+            save_registry(registry, PROJECT_DIR)
 
     result = {
         "ok": True,

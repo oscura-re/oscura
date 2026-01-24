@@ -2,7 +2,7 @@
 
 > Load and export data in CSV, HDF5, NumPy, MATLAB, and custom binary formats
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
@@ -23,13 +23,13 @@ This demo category covers all file format input/output operations. Oscura suppor
 
 ### Supported Formats
 
-|Category|Formats|
-|---|---|
-|Oscilloscope|Tektronix WFM, Rigol WFM, LeCroy TRC|
-|Logic Analyzer|Sigrok, VCD|
-|Generic|CSV, NumPy, HDF5, MATLAB, WAV, JSON|
-|Automotive|BLF, MF4 (ASAM)|
-|Network|PCAP, PCAPNG|
+| Category       | Formats                              |
+| -------------- | ------------------------------------ |
+| Oscilloscope   | Tektronix WFM, Rigol WFM, LeCroy TRC |
+| Logic Analyzer | Sigrok, VCD                          |
+| Generic        | CSV, NumPy, HDF5, MATLAB, WAV, JSON  |
+| Automotive     | BLF, MF4 (ASAM)                      |
+| Network        | PCAP, PCAPNG                         |
 
 ## Quick Start
 
@@ -56,13 +56,13 @@ export_hdf5(trace, "output.h5", compression="gzip")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`csv_workflows.py`|CSV import/export|Basic|
-|`hdf5_large_files.py`|HDF5 for large datasets|Intermediate|
-|`custom_binary_loader.py`|YAML-driven custom formats|Intermediate|
-|`streaming_loader.py`|Memory-efficient streaming|Advanced|
-|`format_converter.py`|Format conversion utility|Basic|
+| Script                    | Purpose                    | Complexity   |
+| ------------------------- | -------------------------- | ------------ |
+| `csv_workflows.py`        | CSV import/export          | Basic        |
+| `hdf5_large_files.py`     | HDF5 for large datasets    | Intermediate |
+| `custom_binary_loader.py` | YAML-driven custom formats | Intermediate |
+| `streaming_loader.py`     | Memory-efficient streaming | Advanced     |
+| `format_converter.py`     | Format conversion utility  | Basic        |
 
 ## Related Demos
 

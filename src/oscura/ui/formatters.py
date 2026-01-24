@@ -19,10 +19,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Literal
+from typing import Any, Literal, TypeAlias
 
 # Type alias for color names accepted by colorize()
-type ColorName = Literal["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
+ColorName: TypeAlias = Literal[
+    "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"
+]
 
 
 class Color(Enum):

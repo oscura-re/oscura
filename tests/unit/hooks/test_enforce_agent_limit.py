@@ -10,7 +10,7 @@ Test categories:
 2. Block decisions - when at or above max agents
 3. Registry interaction - reading/writing agent registry
 4. Error handling - corrupted registry, missing files
-5. Configuration - reading orchestration-config.yaml
+5. Configuration - reading config.yaml
 """
 
 import json
@@ -32,7 +32,7 @@ class TestEnforceAgentLimitAllow:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 0
         output = json.loads(result["stdout"])
@@ -55,7 +55,7 @@ class TestEnforceAgentLimitAllow:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 0
         output = json.loads(result["stdout"])
@@ -68,7 +68,7 @@ class TestEnforceAgentLimitAllow:
         (tmp_path / ".claude").mkdir(parents=True)
         # No registry file created
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 0
         output = json.loads(result["stdout"])
@@ -88,7 +88,7 @@ class TestEnforceAgentLimitAllow:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 0
         output = json.loads(result["stdout"])
@@ -112,7 +112,7 @@ class TestEnforceAgentLimitBlock:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 1  # Blocked
         output = json.loads(result["stdout"])
@@ -136,7 +136,7 @@ class TestEnforceAgentLimitBlock:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 1
         output = json.loads(result["stdout"])
@@ -163,7 +163,7 @@ class TestEnforceAgentLimitRegistry:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 1  # 2 running = blocked
         output = json.loads(result["stdout"])
@@ -183,7 +183,7 @@ class TestEnforceAgentLimitRegistry:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         output = json.loads(result["stdout"])
         # Should block based on actual count, not stale metadata
@@ -199,7 +199,7 @@ class TestEnforceAgentLimitErrorHandling:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text("{ invalid json }")
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         # Should fail open (allow) on corruption
         assert result["returncode"] == 0
@@ -212,7 +212,7 @@ class TestEnforceAgentLimitErrorHandling:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text("")
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 0
         output = json.loads(result["stdout"])
@@ -225,7 +225,7 @@ class TestEnforceAgentLimitErrorHandling:
         registry_file.parent.mkdir(parents=True)
         registry_file.write_text(json.dumps(registry))
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 0
         output = json.loads(result["stdout"])
@@ -239,7 +239,7 @@ class TestEnforceAgentLimitErrorHandling:
         registry_file.chmod(0o000)
 
         try:
-            result = run_hook(tmp_path, {})
+            result = run_hook(tmp_path, {"tool_name": "Task"})
             # Should fail open
             assert result["returncode"] == 0
         finally:
@@ -263,7 +263,7 @@ class TestEnforceAgentLimitLogging:
         hooks_dir = tmp_path / ".claude" / "hooks"
         hooks_dir.mkdir(parents=True)
 
-        result = run_hook(tmp_path, {})
+        result = run_hook(tmp_path, {"tool_name": "Task"})
 
         assert result["returncode"] == 1
         # Check log file was created

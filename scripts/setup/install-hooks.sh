@@ -32,9 +32,9 @@ echo ""
 # Install Pre-Commit Hooks (via pre-commit framework)
 # =============================================================================
 
-if command -v pre-commit >/dev/null 2>&1; then
+if command -v pre-commit > /dev/null 2>&1; then
   echo -e "  ${CYAN}[1/2]${NC} Installing pre-commit hooks..."
-  if pre-commit install >/dev/null 2>&1; then
+  if pre-commit install > /dev/null 2>&1; then
     echo -e "  ${GREEN}✓${NC} Pre-commit hooks installed"
   else
     echo -e "  ${YELLOW}⚠${NC} Pre-commit hooks already installed"
@@ -52,7 +52,7 @@ echo ""
 
 echo -e "  ${CYAN}[2/2]${NC} Installing pre-push verification hook..."
 
-if "${SCRIPT_DIR}/setup-git-hooks.sh" >/dev/null 2>&1; then
+if "${SCRIPT_DIR}/setup-git-hooks.sh" > /dev/null 2>&1; then
   echo -e "  ${GREEN}✓${NC} Pre-push hook installed"
 else
   echo -e "  ${YELLOW}⚠${NC} Pre-push hook installation had issues"

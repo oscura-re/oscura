@@ -11,8 +11,10 @@ References:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from oscura.inference.state_machine import FiniteAutomaton  # noqa: TC001
+if TYPE_CHECKING:
+    from oscura.inference.state_machine import FiniteAutomaton
 
 
 class Oracle(ABC):

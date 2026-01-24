@@ -10,7 +10,7 @@ if [[ -f ~/.pypirc ]]; then
   echo "✅ Found ~/.pypirc"
 
   # Check permissions
-  PERMS=$(stat -c %a ~/.pypirc 2>/dev/null || stat -f %A ~/.pypirc 2>/dev/null)
+  PERMS=$(stat -c %a ~/.pypirc 2> /dev/null || stat -f %A ~/.pypirc 2> /dev/null)
   if [[ "${PERMS}" == "600" ]]; then
     echo "✅ Permissions correct (600)"
   else
@@ -51,7 +51,7 @@ if [[ -f dist/oscura-0.1.0.tar.gz ]] && [[ -f dist/oscura-0.1.0-py3-none-any.whl
   echo "✅ Distribution files found"
 
   # Check with twine
-  if uv run twine check dist/oscura-0.1.0* >/dev/null 2>&1; then
+  if uv run twine check dist/oscura-0.1.0* > /dev/null 2>&1; then
     echo "✅ Package validation passed"
   else
     echo "⚠️  Package validation warnings"

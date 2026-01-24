@@ -33,7 +33,7 @@ NC='\033[0m'
 # =============================================================================
 
 show_help() {
-  cat <<'EOF'
+  cat << 'EOF'
 Install Git Hooks for Oscura
 
 This script installs custom git hooks that enforce CI verification before push.
@@ -73,7 +73,7 @@ show_status() {
 
   # Check pre-push hook
   if [[ -f "${HOOKS_TARGET}/pre-push" ]]; then
-    if grep -q "pre-push.sh" "${HOOKS_TARGET}/pre-push" 2>/dev/null; then
+    if grep -q "pre-push.sh" "${HOOKS_TARGET}/pre-push" 2> /dev/null; then
       echo -e "  ${GREEN}[INSTALLED]${NC} pre-push (Oscura verification)"
     else
       echo -e "  ${YELLOW}[CUSTOM]${NC} pre-push (not Oscura hook)"
@@ -84,7 +84,7 @@ show_status() {
 
   # Check pre-commit hook (managed by pre-commit)
   if [[ -f "${HOOKS_TARGET}/pre-commit" ]]; then
-    if grep -q "pre-commit" "${HOOKS_TARGET}/pre-commit" 2>/dev/null; then
+    if grep -q "pre-commit" "${HOOKS_TARGET}/pre-commit" 2> /dev/null; then
       echo -e "  ${GREEN}[INSTALLED]${NC} pre-commit (pre-commit framework)"
     else
       echo -e "  ${YELLOW}[CUSTOM]${NC} pre-commit (not pre-commit framework)"
@@ -117,7 +117,7 @@ install_hooks() {
 
   if [[ -f "${target_hook}" ]]; then
     # Check if it's our hook
-    if grep -q "pre-push.sh" "${target_hook}" 2>/dev/null; then
+    if grep -q "pre-push.sh" "${target_hook}" 2> /dev/null; then
       echo -e "  ${YELLOW}[UPDATING]${NC} ${hook_name} (already installed, updating)"
     else
       # Backup existing hook
@@ -153,7 +153,7 @@ uninstall_hooks() {
   local target_hook="${HOOKS_TARGET}/${hook_name}"
 
   if [[ -f "${target_hook}" ]]; then
-    if grep -q "pre-push.sh" "${target_hook}" 2>/dev/null; then
+    if grep -q "pre-push.sh" "${target_hook}" 2> /dev/null; then
       rm "${target_hook}"
       echo -e "  ${GREEN}[REMOVED]${NC} ${hook_name}"
     else
@@ -176,21 +176,21 @@ cd "${REPO_ROOT}"
 
 # Parse arguments
 case "${1:-}" in
---status)
-  show_status
-  ;;
---uninstall)
-  uninstall_hooks
-  ;;
--h | --help)
-  show_help
-  ;;
-"")
-  install_hooks
-  ;;
-*)
-  echo "Unknown option: $1" >&2
-  echo "Use --help for usage information" >&2
-  exit 2
-  ;;
+  --status)
+    show_status
+    ;;
+  --uninstall)
+    uninstall_hooks
+    ;;
+  -h | --help)
+    show_help
+    ;;
+  "")
+    install_hooks
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    echo "Use --help for usage information" >&2
+    exit 2
+    ;;
 esac

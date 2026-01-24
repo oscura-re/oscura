@@ -126,13 +126,13 @@ Add new channel? Just edit YAML, no code changes!
 
 ### Memory Efficiency
 
-|File Size|Samples|Memory Used|Status|
-|---|---|---|---|
-|100 MB|12.5M|305 MB|Works|
-|1 GB|125M|305 MB|Works|
-|2.9 GB|382M|305 MB|**Validated**|
-|10 GB|1.25B|305 MB|Works|
-|**ANY SIZE**|**ANY**|**305 MB**|**Always works**|
+| File Size    | Samples | Memory Used | Status           |
+| ------------ | ------- | ----------- | ---------------- |
+| 100 MB       | 12.5M   | 305 MB      | Works            |
+| 1 GB         | 125M    | 305 MB      | Works            |
+| 2.9 GB       | 382M    | 305 MB      | **Validated**    |
+| 10 GB        | 1.25B   | 305 MB      | Works            |
+| **ANY SIZE** | **ANY** | **305 MB**  | **Always works** |
 
 ### Performance
 
@@ -240,13 +240,13 @@ uv run python demos/03_custom_daq/optimal_streaming_loader.py \
 
 ### Chunk Size Selection
 
-|Available RAM|Recommended Chunk Size|Memory Usage|Speed|
-|---|---|---|---|
-|<2 GB|2,000,000|61 MB|Slower|
-|2-4 GB|5,000,000|153 MB|Medium|
-|4-8 GB|10,000,000 (default)|305 MB|**Optimal**|
-|8-16 GB|20,000,000|610 MB|Faster|
-|>16 GB|50,000,000|1.5 GB|Fastest|
+| Available RAM | Recommended Chunk Size | Memory Usage | Speed       |
+| ------------- | ---------------------- | ------------ | ----------- |
+| <2 GB         | 2,000,000              | 61 MB        | Slower      |
+| 2-4 GB        | 5,000,000              | 153 MB       | Medium      |
+| 4-8 GB        | 10,000,000 (default)   | 305 MB       | **Optimal** |
+| 8-16 GB       | 20,000,000             | 610 MB       | Faster      |
+| >16 GB        | 50,000,000             | 1.5 GB       | Fastest     |
 
 **Formula**: Memory (MB) = chunk_size x 32 / 1024^2
 

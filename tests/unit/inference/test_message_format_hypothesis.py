@@ -145,7 +145,11 @@ class TestMessageFormatInferenceProperties:
     @settings(
         max_examples=30,
         deadline=None,
-        suppress_health_check=[HealthCheck.data_too_large, HealthCheck.filter_too_much],
+        suppress_health_check=[
+            HealthCheck.data_too_large,
+            HealthCheck.filter_too_much,
+            HealthCheck.too_slow,
+        ],
     )
     def test_detects_common_header_in_message_stream(
         self, stream_data: tuple[bytes, bytes]

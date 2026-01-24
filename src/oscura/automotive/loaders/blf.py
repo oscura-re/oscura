@@ -5,8 +5,6 @@ BLF is a proprietary binary format used by Vector tools (CANoe, CANalyzer, etc.)
 for logging CAN bus data.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from oscura.automotive.can.models import CANMessage, CANMessageList

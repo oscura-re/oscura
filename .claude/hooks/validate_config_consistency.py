@@ -5,16 +5,20 @@ Pre-commit hook that ensures:
 - Version is consistent across pyproject.toml, README.md, and src/__init__.py
 - GitHub URLs are consistent across project files
 - settings.json is in sync with coding-standards.yaml
+- .claude orchestration files are consistent (agents, commands, hooks)
+- SSOT files exist and are valid
 
 Exits with non-zero status if inconsistencies are found.
 
-Version: 1.0.0
+Version: 2.0.0
 Created: 2026-01-17
+Updated: 2026-01-21 (Added orchestration validation)
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -27,14 +31,21 @@ try:
 except ImportError:
     HAS_YAML = False
 
-# Resolve paths
-REPO_ROOT = Path(__file__).parent.parent.parent.resolve()
+# Resolve paths - support both real and test environments
+REPO_ROOT = Path(
+    os.environ.get("CLAUDE_PROJECT_DIR", Path(__file__).parent.parent.parent)
+).resolve()
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 README_MD = REPO_ROOT / "README.md"
 INIT_PY = REPO_ROOT / "src" / "oscura" / "__init__.py"
 PROJECT_METADATA = REPO_ROOT / ".claude" / "project-metadata.yaml"
 SETTINGS_JSON = REPO_ROOT / ".claude" / "settings.json"
 CODING_STANDARDS = REPO_ROOT / ".claude" / "coding-standards.yaml"
+ORCHESTRATION_CONFIG = REPO_ROOT / ".claude" / "config.yaml"
+AGENTS_DIR = REPO_ROOT / ".claude" / "agents"
+COMMANDS_DIR = REPO_ROOT / ".claude" / "commands"
+HOOKS_DIR = REPO_ROOT / ".claude" / "hooks"
+COORDINATION_DIR = REPO_ROOT / ".coordination"
 
 
 def load_yaml_simple(file_path: Path) -> dict[str, Any]:
@@ -214,7 +225,7 @@ def check_settings_sync() -> tuple[bool, list[str]]:
             validation_errors.append("hooks: missing required field")
 
         if validation_errors:
-            errors.append(f"❌ settings.json out of sync with coding-standards.yaml:")
+            errors.append("❌ settings.json out of sync with coding-standards.yaml:")
             for ve in validation_errors:
                 errors.append(f"     - {ve}")
             errors.append("     Run: python .claude/hooks/generate_settings.py")
@@ -232,6 +243,240 @@ def check_settings_sync() -> tuple[bool, list[str]]:
         return False, errors
 
 
+def check_ssot_files() -> tuple[bool, list[str]]:
+    """Check if SSOT (Single Source of Truth) files exist.
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+    required_files = [
+        PYPROJECT_TOML,
+        CODING_STANDARDS,
+        ORCHESTRATION_CONFIG,
+    ]
+
+    # Optional but expected files
+    optional_files = [
+        PROJECT_METADATA,
+        COORDINATION_DIR / "spec" / "incomplete-features.yaml",
+    ]
+
+    for file_path in required_files:
+        if not file_path.exists():
+            errors.append(f"❌ Missing required SSOT file: {file_path.relative_to(REPO_ROOT)}")
+
+    # Check optional files exist (not errors, just info)
+    for file_path in optional_files:
+        if file_path.exists():
+            print(f"✅ SSOT file exists: {file_path.relative_to(REPO_ROOT)}")
+
+    if errors:
+        return False, errors
+
+    print("✅ All required SSOT files present")
+    return True, []
+
+
+def check_agent_command_refs() -> tuple[bool, list[str]]:
+    """Check that commands reference existing agents.
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+
+    if not COMMANDS_DIR.exists() or not AGENTS_DIR.exists():
+        # Directories might not exist in minimal setups
+        return True, []
+
+    # Get all agent names
+    agent_files = list(AGENTS_DIR.glob("*.md"))
+    agent_names = {f.stem for f in agent_files}
+
+    # Check each command for agent references
+    for command_file in COMMANDS_DIR.glob("*.md"):
+        try:
+            content = command_file.read_text()
+
+            # Look for agent references (e.g., "Routes to `.claude/agents/orchestrator.md`")
+            agent_refs = re.findall(r"\.claude/agents/(\w+)\.md", content)
+
+            for agent_ref in agent_refs:
+                if agent_ref not in agent_names:
+                    errors.append(
+                        f"❌ Command '{command_file.stem}' references "
+                        f"non-existent agent '{agent_ref}'"
+                    )
+        except Exception as e:
+            errors.append(f"❌ Error reading command {command_file.name}: {e}")
+
+    if errors:
+        return False, errors
+
+    if agent_files:
+        print(f"✅ Agent-command references valid ({len(agent_files)} agents)")
+    return True, []
+
+
+def check_hook_refs() -> tuple[bool, list[str]]:
+    """Check that settings.json hook references exist.
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+
+    if not SETTINGS_JSON.exists():
+        return True, []  # No settings.json yet
+
+    try:
+        with open(SETTINGS_JSON) as f:
+            settings = json.load(f)
+
+        hooks_config = settings.get("hooks", {})
+
+        if not isinstance(hooks_config, dict):
+            return True, []  # Hooks not configured yet
+
+        # Check each hook reference
+        for hook_name, hook_config in hooks_config.items():
+            if isinstance(hook_config, str):
+                # Simple string reference to hook file
+                hook_file = HOOKS_DIR / hook_config
+                if not hook_file.exists():
+                    errors.append(
+                        f"❌ Hook '{hook_name}' references non-existent file: {hook_config}"
+                    )
+            elif isinstance(hook_config, dict) and "script" in hook_config:
+                # Dict with script field
+                hook_file = HOOKS_DIR / hook_config["script"]
+                if not hook_file.exists():
+                    errors.append(
+                        f"❌ Hook '{hook_name}' references non-existent script: "
+                        f"{hook_config['script']}"
+                    )
+
+        if errors:
+            return False, errors
+
+        print("✅ Hook references valid")
+        return True, []
+
+    except json.JSONDecodeError as e:
+        return False, [f"❌ Invalid JSON in settings.json: {e}"]
+    except Exception as e:
+        return False, [f"❌ Error checking hook references: {e}"]
+
+
+def check_frontmatter() -> tuple[bool, list[str]]:
+    """Check that agent/command markdown files have valid frontmatter.
+
+    Frontmatter is REQUIRED for all agents and commands for consistency and automation.
+
+    Required fields:
+    - Agents: name, description, tools, model, routing_keywords
+    - Commands: name, description, arguments
+
+    Returns:
+        Tuple of (success: bool, errors: list[str])
+    """
+    errors = []
+    checked_count = 0
+
+    if not AGENTS_DIR.exists() and not COMMANDS_DIR.exists():
+        return True, []  # No agents/commands yet
+
+    # Check agent frontmatter (REQUIRED)
+    if AGENTS_DIR.exists():
+        for agent_file in AGENTS_DIR.glob("*.md"):
+            checked_count += 1
+            try:
+                content = agent_file.read_text()
+
+                if not content.startswith("---"):
+                    errors.append(f"❌ Agent '{agent_file.name}' missing required frontmatter")
+                    continue
+
+                # Parse frontmatter
+                parts = content.split("---\n", 2)
+                if len(parts) < 3:
+                    errors.append(f"❌ Agent '{agent_file.name}' has invalid frontmatter format")
+                    continue
+
+                if HAS_YAML:
+                    try:
+                        frontmatter = yaml.safe_load(parts[1])
+                        if not isinstance(frontmatter, dict):
+                            errors.append(f"❌ Agent '{agent_file.name}' frontmatter is not a dict")
+                            continue
+
+                        # Validate required fields for agents
+                        required_fields = [
+                            "name",
+                            "description",
+                            "tools",
+                            "model",
+                            "routing_keywords",
+                        ]
+                        for field in required_fields:
+                            if field not in frontmatter:
+                                errors.append(
+                                    f"❌ Agent '{agent_file.name}' missing required field: {field}"
+                                )
+
+                    except yaml.YAMLError as e:
+                        errors.append(f"❌ Agent '{agent_file.name}' has invalid YAML: {e}")
+            except Exception as e:
+                errors.append(f"❌ Error reading agent {agent_file.name}: {e}")
+
+    # Check command frontmatter (REQUIRED)
+    if COMMANDS_DIR.exists():
+        for command_file in COMMANDS_DIR.glob("*.md"):
+            checked_count += 1
+            try:
+                content = command_file.read_text()
+
+                if not content.startswith("---"):
+                    errors.append(f"❌ Command '{command_file.name}' missing required frontmatter")
+                    continue
+
+                parts = content.split("---\n", 2)
+                if len(parts) < 3:
+                    errors.append(
+                        f"❌ Command '{command_file.name}' has invalid frontmatter format"
+                    )
+                    continue
+
+                if HAS_YAML:
+                    try:
+                        frontmatter = yaml.safe_load(parts[1])
+                        if not isinstance(frontmatter, dict):
+                            errors.append(
+                                f"❌ Command '{command_file.name}' frontmatter is not a dict"
+                            )
+                            continue
+
+                        # Validate required fields for commands
+                        required_fields = ["name", "description", "arguments"]
+                        for field in required_fields:
+                            if field not in frontmatter:
+                                errors.append(
+                                    f"❌ Command '{command_file.name}' missing required field: {field}"
+                                )
+
+                    except yaml.YAMLError as e:
+                        errors.append(f"❌ Command '{command_file.name}' has invalid YAML: {e}")
+            except Exception as e:
+                errors.append(f"❌ Error reading command {command_file.name}: {e}")
+
+    if errors:
+        return False, errors
+
+    print(f"✅ Frontmatter validation passed ({checked_count} files)")
+    return True, []
+
+
 def main() -> int:
     """Main entry point.
 
@@ -244,25 +489,58 @@ def main() -> int:
 
     all_passed = True
     all_errors: list[str] = []
+    error_count = 0
 
     # Check version consistency
     version_ok, version_errors = check_version_consistency()
     if not version_ok:
         all_passed = False
+        error_count += len(version_errors)
         all_errors.extend(version_errors)
 
     # Check settings.json sync
     settings_ok, settings_errors = check_settings_sync()
     if not settings_ok:
         all_passed = False
+        error_count += len(settings_errors)
         all_errors.extend(settings_errors)
+
+    # Check SSOT files
+    ssot_ok, ssot_errors = check_ssot_files()
+    if not ssot_ok:
+        all_passed = False
+        error_count += len(ssot_errors)
+        all_errors.extend(ssot_errors)
+
+    # Check agent-command references
+    agent_ok, agent_errors = check_agent_command_refs()
+    if not agent_ok:
+        all_passed = False
+        error_count += len(agent_errors)
+        all_errors.extend(agent_errors)
+
+    # Check hook references
+    hook_ok, hook_errors = check_hook_refs()
+    if not hook_ok:
+        all_passed = False
+        error_count += len(hook_errors)
+        all_errors.extend(hook_errors)
+
+    # Check frontmatter
+    frontmatter_ok, frontmatter_errors = check_frontmatter()
+    if not frontmatter_ok:
+        all_passed = False
+        error_count += len(frontmatter_errors)
+        all_errors.extend(frontmatter_errors)
 
     # Print summary
     print("\n" + "=" * 70)
     if all_passed:
-        print("  ✅ ALL CHECKS PASSED")
+        print("  ✅ Configuration is consistent")
+        print("  Errors: 0")
     else:
         print("  ❌ VALIDATION FAILED")
+        print(f"  Errors: {error_count}")
         print("=" * 70)
         print("\nErrors:")
         for error in all_errors:

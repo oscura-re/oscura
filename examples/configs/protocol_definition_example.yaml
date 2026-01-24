@@ -1,0 +1,61 @@
+# Example protocol definition
+# Defines message structure for automatic decoder generation
+
+name: example_protocol
+version: "1.0"
+description: "Simple example protocol with delimiter framing"
+
+settings:
+  endian: little
+  alignment: 1
+  strict: true
+
+framing:
+  type: delimiter
+  delimiter:
+    pattern: [0x0A] # Newline delimiter
+    escape: 0x5C # Backslash escape
+
+fields:
+  - name: message_type
+    type: uint8
+    description: "Message type identifier"
+    enum:
+      "0":
+        name: "STATUS"
+        description: "Status message"
+      "1":
+        name: "DATA"
+        description: "Data message"
+
+  - name: sequence
+    type: uint16
+    description: "Message sequence number"
+
+  - name: payload_length
+    type: uint8
+    description: "Payload size in bytes"
+
+  - name: payload
+    type: bytes
+    size: payload_length
+    description: "Variable-length payload data"
+
+  - name: checksum
+    type: uint16
+    description: "CRC-16 checksum"
+    validation:
+      algorithm: crc16_ccitt
+      scope: all_prior
+      on_mismatch: error
+
+decoding:
+  min_header_size: 4
+  max_message_size: 1024
+  resync_on_error: true
+  max_resync_distance: 256
+
+computed_fields:
+  - name: payload_crc
+    expression: "crc16(payload)"
+    description: "Computed CRC for validation"

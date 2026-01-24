@@ -6,8 +6,6 @@ import pytest
 
 pytestmark = [pytest.mark.unit, pytest.mark.automotive]
 
-import pytest
-
 from oscura.automotive.can.session import CANSession
 
 
@@ -15,15 +13,17 @@ class TestCANSession:
     """Tests for CANSession class."""
 
     def test_create_from_messages(self, sample_can_messages):
-        """Test creating session from message list."""
-        session = CANSession(messages=sample_can_messages)
+        """Test creating session and populating with message list."""
+        session = CANSession(name="Test Session")
+        session._messages = sample_can_messages  # Internal population for testing
 
         assert len(session) > 0
         assert len(session.unique_ids()) > 0
 
     def test_inventory(self, sample_can_messages):
         """Test message inventory generation."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         inventory = session.inventory()
 
         # Should have entries for each unique ID
@@ -37,21 +37,24 @@ class TestCANSession:
 
     def test_message_wrapper(self, sample_can_messages):
         """Test getting message wrapper."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         msg = session.message(0x280)
 
         assert msg.arbitration_id == 0x280
 
     def test_message_not_found(self, sample_can_messages):
         """Test getting non-existent message."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
 
         with pytest.raises(ValueError, match="No messages found"):
             session.message(0xFFF)
 
     def test_filter_by_ids(self, sample_can_messages):
         """Test filtering by arbitration IDs."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         filtered = session.filter(arbitration_ids=[0x280, 0x300])
 
         assert len(filtered.unique_ids()) == 2
@@ -60,7 +63,8 @@ class TestCANSession:
 
     def test_filter_by_time_range(self, sample_can_messages):
         """Test filtering by time range."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         filtered = session.filter(time_range=(0.5, 0.8))
 
         # Should only include messages in time range
@@ -70,7 +74,8 @@ class TestCANSession:
 
     def test_analyze_message_caching(self, sample_can_messages):
         """Test that message analysis is cached."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
 
         # First analysis
         analysis1 = session.analyze_message(0x280)
@@ -92,7 +97,8 @@ class TestMessageWrapper:
 
     def test_analyze(self, sample_can_messages):
         """Test analyzing a message."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         msg = session.message(0x280)
 
         analysis = msg.analyze()
@@ -103,7 +109,8 @@ class TestMessageWrapper:
 
     def test_test_hypothesis_valid(self, sample_can_messages):
         """Test hypothesis testing with valid hypothesis."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         msg = session.message(0x280)
 
         # Test hypothesis for RPM signal (bytes 2-3, scale 0.25)
@@ -127,7 +134,8 @@ class TestMessageWrapper:
 
     def test_test_hypothesis_invalid(self, sample_can_messages):
         """Test hypothesis testing with invalid hypothesis."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         msg = session.message(0x280)
 
         # Test with wrong byte position
@@ -144,7 +152,8 @@ class TestMessageWrapper:
 
     def test_document_signal(self, sample_can_messages):
         """Test documenting a signal."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         msg = session.message(0x280)
 
         msg.document_signal(
@@ -164,7 +173,8 @@ class TestMessageWrapper:
 
     def test_decode_signals(self, sample_can_messages):
         """Test decoding documented signals."""
-        session = CANSession(messages=sample_can_messages)
+        session = CANSession(name="Test")
+        session._messages = sample_can_messages
         msg = session.message(0x280)
 
         msg.document_signal(

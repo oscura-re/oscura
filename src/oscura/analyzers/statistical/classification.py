@@ -6,6 +6,8 @@ binary, compressed, encrypted, or padding using multiple statistical tests
 and heuristics.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Any, Literal, Union
 

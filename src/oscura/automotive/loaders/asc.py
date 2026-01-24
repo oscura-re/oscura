@@ -9,8 +9,6 @@ ASC format example:
     0.010000 1 280 Rx d 8 0A 0B 0C 0D 0E 0F 10 11
 """
 
-from __future__ import annotations
-
 import re
 from pathlib import Path
 

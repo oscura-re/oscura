@@ -1,6 +1,6 @@
 # Testing Guide
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-17
+> **Version**: 0.5.1 | **Last Updated**: 2026-01-17
 
 Comprehensive guide to running and writing tests for Oscura using our modern testing infrastructure.
 
@@ -904,8 +904,8 @@ pytest --randomly-dont-shuffle
 
 - [OOM Prevention Guide](./oom-prevention.md) - Getting started with testing
 - [OOM Prevention](./oom-prevention.md) - Preventing out-of-memory issues
-- [Hypothesis Testing Guide](https://github.com/lair-click-bats/oscura/blob/main/tests/HYPOTHESIS_TESTING_GUIDE.md) - Property-based testing
-- [Contributing Guide](https://github.com/lair-click-bats/oscura/blob/main/CONTRIBUTING.md) - Contribution guidelines
+- [Hypothesis Testing Guide](https://github.com/oscura-re/oscura/blob/main/tests/HYPOTHESIS_TESTING_GUIDE.md) - Property-based testing
+- [Contributing Guide](https://github.com/oscura-re/oscura/blob/main/CONTRIBUTING.md) - Contribution guidelines
 - [pytest Documentation](https://docs.pytest.org/)
 - [pytest-testmon Documentation](https://testmon.org/)
 - [pytest-randomly Documentation](https://github.com/pytest-dev/pytest-randomly)

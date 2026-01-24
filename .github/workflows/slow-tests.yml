@@ -1,0 +1,123 @@
+name: Slow Tests
+
+# Run slow/performance tests weekly or on-demand
+# These tests are excluded from regular CI due to duration (>1s each)
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: "0 0 * * 0"
+
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: "Python version to test"
+        required: false
+        default: "3.13"
+        type: choice
+        options:
+          - "3.12"
+          - "3.13"
+
+  pull_request:
+    types: [labeled]
+    # Run when PR is labeled with 'performance' or 'slow-tests'
+
+permissions:
+  contents: read
+
+jobs:
+  # Only run on schedule, manual trigger, or when labeled
+  check-trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check if should run
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" || \
+                "${{ github.event_name }}" == "workflow_dispatch" || \
+                "${{ contains(github.event.pull_request.labels.*.name, 'performance') }}" || \
+                "${{ contains(github.event.pull_request.labels.*.name, 'slow-tests') }}" ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+          else
+            echo "result=false" >> $GITHUB_OUTPUT
+          fi
+
+  slow-tests:
+    name: Slow Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should-run == 'true'
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "${{ github.event.inputs.python-version || '3.13' }}"
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pytest
+        uses: actions/cache@v5
+        with:
+          path: .pytest_cache
+          key: pytest-slow-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            pytest-slow-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Run slow tests
+        run: |
+          echo "Running slow/performance tests..."
+          echo "These tests are excluded from regular CI due to duration (>1s each)"
+          echo ""
+
+          # Run all tests marked as slow or performance
+          # Use fewer workers (2) since these tests are resource-intensive
+          uv run python -m pytest tests/ \
+            -v \
+            -m "slow or performance" \
+            -n 2 \
+            --maxprocesses=2 \
+            --dist loadscope \
+            --hypothesis-profile=ci \
+            -p no:benchmark \
+            --timeout=600 \
+            --maxfail=10 \
+            --tb=short \
+            --color=yes
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Slow Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "Slow and performance tests have completed." >> $GITHUB_STEP_SUMMARY
+          echo "These tests validate performance characteristics and stress scenarios." >> $GITHUB_STEP_SUMMARY
+
+  # Add performance test results summary
+  results:
+    name: Slow Tests Summary
+    runs-on: ubuntu-latest
+    needs: slow-tests
+    if: always()
+    steps:
+      - name: Report results
+        run: |
+          if [[ "${{ needs.slow-tests.result }}" == "success" ]]; then
+            echo "✅ All slow tests passed"
+          elif [[ "${{ needs.slow-tests.result }}" == "failure" ]]; then
+            echo "❌ Some slow tests failed"
+            exit 1
+          elif [[ "${{ needs.slow-tests.result }}" == "skipped" ]]; then
+            echo "⏭️  Slow tests were skipped"
+          else
+            echo "⚠️  Slow tests status: ${{ needs.slow-tests.result }}"
+          fi

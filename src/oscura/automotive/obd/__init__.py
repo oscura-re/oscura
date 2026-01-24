@@ -4,8 +4,6 @@ This module provides OBD-II (On-Board Diagnostics) protocol decoding
 for standard vehicle diagnostics.
 """
 
-from __future__ import annotations
-
 __all__ = ["PID", "OBD2Decoder", "OBD2Response"]
 
 try:

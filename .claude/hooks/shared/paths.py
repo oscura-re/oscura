@@ -19,7 +19,7 @@ from typing import Any
 try:
     import yaml
 except ImportError:
-    yaml = None
+    yaml = None  # type: ignore[assignment, unused-ignore]
 
 
 def load_paths() -> dict[str, Any]:
@@ -38,7 +38,7 @@ def load_paths() -> dict[str, Any]:
     if not paths_file.exists():
         return _get_fallback_paths()
 
-    # Load YAML
+    # Load YAML (runtime safety check for when yaml not installed)
     if yaml is None:
         return _get_fallback_paths()
 
@@ -51,35 +51,39 @@ def load_paths() -> dict[str, Any]:
 
 
 def _get_fallback_paths() -> dict[str, Any]:
-    """Fallback paths if paths.yaml cannot be loaded."""
+    """Fallback paths if paths.yaml cannot be loaded.
+
+    NOTE: Structure must match .claude/paths.yaml exactly.
+    """
     return {
         "claude": {
             "root": ".claude",
             "agents": ".claude/agents",
             "commands": ".claude/commands",
             "hooks": ".claude/hooks",
-            "settings": ".claude/settings.json",
-            "outputs": {
-                "root": ".claude/agent-outputs",
-                "archive": ".claude/agent-outputs/archive",
-            },
-            "coordination": {
-                "root": ".coordination",
-                "archive": ".coordination/archive",
-                "checkpoints": ".coordination/checkpoints",
-                "handoffs": ".coordination/handoffs",
-                "locks": ".coordination/locks",
-                "projects": ".coordination/projects",
-            },
-            "retention": {
-                "coordination_files": 30,
-                "agent_outputs": 7,
-                "checkpoints": 7,
-                "handoffs": 7,
-                "locks_stale_minutes": 60,
-                "archives_max_days": 180,
-            },
-        }
+            "docs": ".claude/docs",
+            "templates": ".claude/templates",
+            "schemas": ".claude/schemas",
+            "agent_registry": ".claude/agent-registry.json",
+            "agent_outputs": ".claude/agent-outputs",
+            "agent_outputs_archive": ".claude/agent-outputs/archive",
+            "reports": ".claude/reports",
+            "summaries": ".claude/summaries",
+        },
+        "coordination": {
+            "root": ".coordination",
+            "checkpoints": ".coordination/checkpoints",
+            "archive": ".coordination/archive",
+            "workflows": ".coordination/workflows",
+        },
+        "logs": {
+            "root": ".claude/hooks",
+            "enforcement": ".claude/hooks/enforcement.log",
+            "orchestration": ".claude/hooks/orchestration.log",
+            "context": ".claude/hooks/context.log",
+            "errors": ".claude/hooks/errors.log",
+            "metrics": ".claude/hooks/orchestration-metrics.json",
+        },
     }
 
 

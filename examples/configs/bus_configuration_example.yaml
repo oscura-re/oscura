@@ -1,0 +1,79 @@
+# Example bus configuration
+# Defines parallel bus structure for multi-bit protocols
+
+name: example_8bit_bus
+version: "1.0"
+description: "Example 8-bit parallel bus configuration"
+
+settings:
+  active_low: false
+  sample_on: rising
+  bit_numbering: lsb_0
+
+data_bus:
+  name: DATA
+  width: 8
+  description: "8-bit data bus"
+  bits:
+    - channel: 0
+      bit: 0
+      name: D0
+    - channel: 1
+      bit: 1
+      name: D1
+    - channel: 2
+      bit: 2
+      name: D2
+    - channel: 3
+      bit: 3
+      name: D3
+    - channel: 4
+      bit: 4
+      name: D4
+    - channel: 5
+      bit: 5
+      name: D5
+    - channel: 6
+      bit: 6
+      name: D6
+    - channel: 7
+      bit: 7
+      name: D7
+
+control_signals:
+  - name: CLK
+    channel: 8
+    description: "Clock signal"
+    active_low: false
+
+  - name: RD
+    channel: 9
+    description: "Read strobe"
+    active_low: true
+
+  - name: WR
+    channel: 10
+    description: "Write strobe"
+    active_low: true
+
+transactions:
+  types:
+    - name: READ
+      conditions:
+        RD: false
+        WR: true
+    - name: WRITE
+      conditions:
+        RD: true
+        WR: false
+
+instruction_decode:
+  enabled: true
+  opcode_bits: [7, 6] # Top 2 bits
+  opcodes:
+    "0b00":
+      name: NOP
+    "0b01":
+      name: LOAD
+    "0b10":
+      name: STORE

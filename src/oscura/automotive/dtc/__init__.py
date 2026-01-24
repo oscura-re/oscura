@@ -19,8 +19,6 @@ Example:
     >>> print(f"{len(powertrain)} powertrain codes")
 """
 
-from __future__ import annotations
-
 from oscura.automotive.dtc.database import DTCS, DTCDatabase, DTCInfo
 
 __all__ = [

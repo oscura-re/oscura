@@ -2,7 +2,7 @@
 
 > CAN, CAN-FD, LIN, FlexRay transport layer analysis
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
@@ -21,12 +21,12 @@ This demo category covers automotive protocol transport layer decoding for CAN, 
 
 ### Standards Compliance
 
-|Standard|Coverage|Notes|
-|---|---|---|
-|ISO 11898|Full|CAN/CAN-FD|
-|ISO 17987|Full|LIN|
-|ISO 17458|Full|FlexRay|
-|SAE J1939|Full|Heavy-duty vehicle CAN|
+| Standard  | Coverage | Notes                  |
+| --------- | -------- | ---------------------- |
+| ISO 11898 | Full     | CAN/CAN-FD             |
+| ISO 17987 | Full     | LIN                    |
+| ISO 17458 | Full     | FlexRay                |
+| SAE J1939 | Full     | Heavy-duty vehicle CAN |
 
 ## Quick Start
 
@@ -50,14 +50,14 @@ for frame in frames:
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`can_bus_basics.py`|CAN frame decoding|Basic|
-|`can_fd_demo.py`|CAN-FD extended frames|Intermediate|
-|`lin_single_wire.py`|LIN protocol analysis|Intermediate|
-|`flexray_intro.py`|FlexRay time-triggered|Advanced|
-|`dbc_integration.py`|DBC file for signal decoding|Intermediate|
-|`j1939_transport.py`|Heavy vehicle J1939|Advanced|
+| Script               | Purpose                      | Complexity   |
+| -------------------- | ---------------------------- | ------------ |
+| `can_bus_basics.py`  | CAN frame decoding           | Basic        |
+| `can_fd_demo.py`     | CAN-FD extended frames       | Intermediate |
+| `lin_single_wire.py` | LIN protocol analysis        | Intermediate |
+| `flexray_intro.py`   | FlexRay time-triggered       | Advanced     |
+| `dbc_integration.py` | DBC file for signal decoding | Intermediate |
+| `j1939_transport.py` | Heavy vehicle J1939          | Advanced     |
 
 ## Related Demos
 

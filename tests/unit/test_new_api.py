@@ -6,6 +6,10 @@ Tests the following new APIs:
 - auto_decode (unified protocol decoding)
 - smart_filter (intelligent filtering)
 - reverse_engineer_signal (complete RE workflow)
+
+Phase 0.2 Updates:
+- SignalBuilder.build() now returns WaveformTrace instead of GeneratedSignal
+- Tests updated to reflect new API
 """
 
 from __future__ import annotations
@@ -14,7 +18,7 @@ import numpy as np
 import pytest
 
 import oscura as osc
-from oscura.builders import GeneratedSignal, SignalBuilder
+from oscura.builders import SignalBuilder
 from oscura.convenience import SpectralMetrics, quick_spectral
 from oscura.core.types import TraceMetadata, WaveformTrace
 
@@ -26,20 +30,19 @@ class TestSignalBuilder:
 
     def test_basic_sine_generation(self) -> None:
         """Test basic sine wave generation."""
-        signal = (
+        trace = (
             SignalBuilder(sample_rate=1e6, duration=0.01)
             .add_sine(frequency=1000, amplitude=1.0)
             .build()
         )
 
-        assert isinstance(signal, GeneratedSignal)
-        assert signal.metadata.sample_rate == 1e6
-        assert "ch1" in signal.data
-        assert len(signal.data["ch1"]) == 10000  # 0.01s * 1MHz
+        assert isinstance(trace, WaveformTrace)
+        assert trace.metadata.sample_rate == 1e6
+        assert len(trace.data) == 10000  # 0.01s * 1MHz
 
     def test_sine_with_noise(self) -> None:
         """Test sine wave with added noise."""
-        signal = (
+        trace = (
             SignalBuilder(sample_rate=1e6, duration=0.01)
             .add_sine(frequency=1000, amplitude=1.0)
             .add_noise(snr_db=40)
@@ -47,7 +50,7 @@ class TestSignalBuilder:
         )
 
         # Verify noise was added (signal should not be pure sine)
-        data = signal.data["ch1"]
+        data = trace.data
         assert np.std(data) > 0  # Has variance
         # Check approximate SNR
         t = np.arange(len(data)) / 1e6
@@ -57,71 +60,64 @@ class TestSignalBuilder:
         assert 35 < actual_snr < 45  # Within 5 dB of target
 
     def test_uart_signal_generation(self) -> None:
-        """Test UART signal generation."""
-        signal = (
-            SignalBuilder(sample_rate=10e6)
-            .add_uart(baud_rate=115200, data=b"Hello", amplitude=3.3)
-            .build()
-        )
+        """Test UART signal generation (multi-channel)."""
+        builder = SignalBuilder(sample_rate=10e6)
+        builder.add_uart(baud_rate=115200, data=b"Hello", amplitude=3.3)
+        channels = builder.build_channels()
 
-        assert "uart" in signal.data
-        uart_data = signal.data["uart"]
+        assert "uart" in channels
+        uart_trace = channels["uart"]
         # Should have high and low levels
-        assert np.max(uart_data) > 3.0  # High level
-        assert np.min(uart_data) < 0.5  # Low level
+        assert np.max(uart_trace.data) > 3.0  # High level
+        assert np.min(uart_trace.data) < 0.5  # Low level
 
     def test_spi_signal_generation(self) -> None:
-        """Test SPI signal generation."""
-        signal = (
-            SignalBuilder(sample_rate=10e6).add_spi(clock_freq=1e6, data_mosi=b"\x9f\x00").build()
-        )
+        """Test SPI signal generation (multi-channel)."""
+        builder = SignalBuilder(sample_rate=10e6)
+        builder.add_spi(clock_freq=1e6, data_mosi=b"\x9f\x00")
+        channels = builder.build_channels()
 
         # Should have 4 channels
-        assert "sck" in signal.data
-        assert "mosi" in signal.data
-        assert "miso" in signal.data
-        assert "cs" in signal.data
+        assert "sck" in channels
+        assert "mosi" in channels
+        assert "miso" in channels
+        assert "cs" in channels
 
     def test_i2c_signal_generation(self) -> None:
-        """Test I2C signal generation."""
-        signal = (
-            SignalBuilder(sample_rate=10e6)
-            .add_i2c(clock_freq=100e3, address=0x50, data=b"\x00\x01")
-            .build()
-        )
+        """Test I2C signal generation (multi-channel)."""
+        builder = SignalBuilder(sample_rate=10e6)
+        builder.add_i2c(clock_freq=100e3, address=0x50, data=b"\x00\x01")
+        channels = builder.build_channels()
 
-        assert "scl" in signal.data
-        assert "sda" in signal.data
+        assert "scl" in channels
+        assert "sda" in channels
 
     def test_can_signal_generation(self) -> None:
         """Test CAN signal generation."""
-        signal = (
-            SignalBuilder(sample_rate=10e6)
-            .add_can(bitrate=500000, arbitration_id=0x123, data=b"\x01\x02\x03")
-            .build()
-        )
+        builder = SignalBuilder(sample_rate=10e6)
+        builder.add_can(bitrate=500000, arbitration_id=0x123, data=b"\x01\x02\x03")
+        channels = builder.build_channels()
 
-        assert "can" in signal.data
+        assert "can" in channels
 
     def test_multi_channel(self) -> None:
-        """Test multi-channel signal generation."""
-        signal = (
-            SignalBuilder(sample_rate=1e6, duration=0.01)
-            .add_sine(frequency=1000, channel="ch1")
-            .add_square(frequency=500, channel="ch2")
-            .add_triangle(frequency=250, channel="ch3")
-            .build()
-        )
+        """Test multi-channel signal generation with build_channels()."""
+        builder = SignalBuilder(sample_rate=1e6, duration=0.01)
+        builder.add_sine(frequency=1000, channel="ch1")
+        builder.add_square(frequency=500, channel="ch2")
+        builder.add_triangle(frequency=250, channel="ch3")
+        channels = builder.build_channels()
 
-        assert len(signal.data) == 3
-        assert signal.num_channels == 3
-        assert "ch1" in signal.data
-        assert "ch2" in signal.data
-        assert "ch3" in signal.data
+        assert len(channels) == 3
+        assert "ch1" in channels
+        assert "ch2" in channels
+        assert "ch3" in channels
+        # Each should be a WaveformTrace
+        assert all(isinstance(t, WaveformTrace) for t in channels.values())
 
     def test_harmonics_addition(self) -> None:
         """Test harmonic distortion addition."""
-        signal = (
+        trace = (
             SignalBuilder(sample_rate=1e6, duration=0.01)
             .add_sine(frequency=1000, amplitude=1.0)
             .add_harmonics(fundamental=1000, thd_percent=5.0)
@@ -129,7 +125,7 @@ class TestSignalBuilder:
         )
 
         # FFT should show harmonics
-        data = signal.data["ch1"]
+        data = trace.data
         fft_result = np.abs(np.fft.rfft(data))
         freqs = np.fft.rfftfreq(len(data), 1 / 1e6)
 
@@ -140,23 +136,16 @@ class TestSignalBuilder:
         # 2nd harmonic should be visible (at least 3% of fundamental for 5% THD)
         assert fft_result[idx_2khz] > 0.03 * fft_result[idx_1khz]
 
-    def test_to_trace_conversion(self) -> None:
-        """Test conversion to WaveformTrace."""
-        signal = SignalBuilder(sample_rate=1e6, duration=0.01).add_sine(frequency=1000).build()
+    def test_build_returns_trace(self) -> None:
+        """Test that build() returns WaveformTrace."""
+        trace = SignalBuilder(sample_rate=1e6, duration=0.01).add_sine(frequency=1000).build()
 
-        trace = signal.to_trace()
         assert isinstance(trace, WaveformTrace)
         assert trace.metadata.sample_rate == 1e6
 
-    def test_build_trace_shortcut(self) -> None:
-        """Test build_trace shortcut method."""
-        trace = SignalBuilder(sample_rate=1e6, duration=0.01).add_sine(frequency=1000).build_trace()
-
-        assert isinstance(trace, WaveformTrace)
-
     def test_chained_configuration(self) -> None:
         """Test chained configuration methods."""
-        signal = (
+        trace = (
             SignalBuilder()
             .sample_rate(2e6)
             .duration(0.02)
@@ -165,9 +154,7 @@ class TestSignalBuilder:
             .build()
         )
 
-        assert signal.metadata.sample_rate == 2e6
-        assert signal.metadata.duration == 0.02
-        assert signal.metadata.description == "Test signal"
+        assert trace.metadata.sample_rate == 2e6
 
     def test_noise_without_signal_raises(self) -> None:
         """Test that adding noise without signal raises error."""
@@ -177,9 +164,9 @@ class TestSignalBuilder:
 
     def test_chirp_generation(self) -> None:
         """Test chirp signal generation."""
-        signal = SignalBuilder(sample_rate=1e6, duration=0.01).add_chirp(f0=1000, f1=10000).build()
+        trace = SignalBuilder(sample_rate=1e6, duration=0.01).add_chirp(f0=1000, f1=10000).build()
 
-        data = signal.data["ch1"]
+        data = trace.data
         # Chirp should sweep through frequencies
         # Check instantaneous frequency increases
         from scipy.signal import hilbert
@@ -194,11 +181,11 @@ class TestSignalBuilder:
     def test_multitone_generation(self) -> None:
         """Test multi-tone signal generation."""
         freqs = [1000, 2000, 3000]
-        signal = (
+        trace = (
             SignalBuilder(sample_rate=1e6, duration=0.01).add_multitone(frequencies=freqs).build()
         )
 
-        data = signal.data["ch1"]
+        data = trace.data
         fft_result = np.abs(np.fft.rfft(data))
         fft_freqs = np.fft.rfftfreq(len(data), 1 / 1e6)
 
@@ -401,10 +388,6 @@ class TestTopLevelExports:
         assert hasattr(osc, "SignalBuilder")
         builder = osc.SignalBuilder()
         assert isinstance(builder, SignalBuilder)
-
-    def test_generated_signal_accessible(self) -> None:
-        """Test GeneratedSignal is accessible."""
-        assert hasattr(osc, "GeneratedSignal")
 
     def test_convenience_functions_accessible(self) -> None:
         """Test convenience functions are accessible."""

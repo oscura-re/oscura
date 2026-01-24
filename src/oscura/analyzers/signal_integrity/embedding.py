@@ -12,8 +12,6 @@ References:
     IEEE 370-2020: Standard for Electrical Characterization of PCBs
 """
 
-from __future__ import annotations
-
 import numpy as np
 
 from oscura.analyzers.signal_integrity.sparams import (

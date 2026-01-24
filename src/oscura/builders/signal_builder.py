@@ -5,7 +5,7 @@ composition of signals for test data generation, demos, and protocol testing.
 
 Example:
     >>> from oscura import SignalBuilder
-    >>> signal = (SignalBuilder()
+    >>> trace = (SignalBuilder()
     ...     .sample_rate(10e6)
     ...     .duration(0.01)
     ...     .add_sine(frequency=1000, amplitude=1.0)
@@ -16,12 +16,11 @@ The builder supports:
 - Analog waveforms (sine, square, triangle, chirp, multitone)
 - Protocol signals (UART, SPI, I2C, CAN)
 - Noise and impairments (gaussian, pink, jitter, quantization)
-- Multi-channel signals
+- Multi-channel signals (use build_channels() to get all channels)
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
@@ -29,167 +28,6 @@ import numpy as np
 from scipy import signal as scipy_signal
 
 from oscura.core.types import TraceMetadata, WaveformTrace
-
-
-@dataclass
-class SignalMetadata:
-    """Metadata for generated signals.
-
-    Attributes:
-        sample_rate: Sample rate in Hz.
-        duration: Signal duration in seconds.
-        channel_names: List of channel names.
-        description: Human-readable description.
-        generator: Name of generator that created this signal.
-        parameters: Dictionary of generation parameters.
-    """
-
-    sample_rate: float
-    duration: float
-    channel_names: list[str] = field(default_factory=lambda: ["ch1"])
-    description: str = ""
-    generator: str = "SignalBuilder"
-    parameters: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class GeneratedSignal:
-    """Container for generated signal data.
-
-    Attributes:
-        data: Dictionary mapping channel names to signal arrays.
-        metadata: Signal metadata.
-    """
-
-    data: dict[str, np.ndarray[Any, np.dtype[np.float64]]]
-    metadata: SignalMetadata
-    _time: np.ndarray[Any, np.dtype[np.float64]] | None = field(default=None, repr=False)
-
-    @property
-    def time(self) -> np.ndarray[Any, np.dtype[np.float64]]:
-        """Get time array, computing if necessary."""
-        if self._time is None:
-            n_samples = len(next(iter(self.data.values())))
-            self._time = np.arange(n_samples) / self.metadata.sample_rate
-        return self._time
-
-    @property
-    def num_channels(self) -> int:
-        """Number of channels in signal."""
-        return len(self.data)
-
-    @property
-    def num_samples(self) -> int:
-        """Number of samples per channel."""
-        return len(next(iter(self.data.values())))
-
-    def get_channel(self, name: str) -> np.ndarray[Any, np.dtype[np.float64]]:
-        """Get signal data for a specific channel.
-
-        Args:
-            name: Channel name.
-
-        Returns:
-            Signal array for the channel.
-
-        Raises:
-            KeyError: If channel name not found.
-        """
-        if name not in self.data:
-            available = list(self.data.keys())
-            raise KeyError(f"Channel '{name}' not found. Available: {available}")
-        return self.data[name]
-
-    def to_trace(self, channel: str | None = None) -> WaveformTrace:
-        """Convert to WaveformTrace for Oscura analysis.
-
-        Args:
-            channel: Channel name to convert. If None, uses first channel.
-
-        Returns:
-            WaveformTrace instance ready for analysis.
-        """
-        if channel is None:
-            channel = self.metadata.channel_names[0]
-
-        data = self.get_channel(channel)
-        trace_meta = TraceMetadata(
-            sample_rate=self.metadata.sample_rate,
-            channel_name=channel,
-        )
-        return WaveformTrace(data=data, metadata=trace_meta)
-
-    def save_npz(self, path: Path | str) -> None:
-        """Save signal to NPZ format.
-
-        Args:
-            path: Output file path.
-        """
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        save_dict: dict[str, Any] = {
-            "sample_rate": self.metadata.sample_rate,
-            "duration": self.metadata.duration,
-            "channel_names": np.array(self.metadata.channel_names),
-            "description": self.metadata.description,
-            "generator": self.metadata.generator,
-        }
-
-        # Add channel data
-        for name, data in self.data.items():
-            save_dict[name] = data
-
-        # Add parameters as JSON-serializable
-        for key, value in self.metadata.parameters.items():
-            if isinstance(value, (int, float, str, bool)):
-                save_dict[f"param_{key}"] = value
-
-        np.savez_compressed(path, **save_dict)
-
-    @classmethod
-    def load_npz(cls, path: Path | str) -> GeneratedSignal:
-        """Load signal from NPZ format.
-
-        Args:
-            path: Input file path.
-
-        Returns:
-            GeneratedSignal instance.
-        """
-        path = Path(path)
-        loaded = np.load(path, allow_pickle=True)
-
-        sample_rate = float(loaded["sample_rate"])
-        duration = float(loaded["duration"])
-        channel_names = list(loaded.get("channel_names", ["ch1"]))
-        description = str(loaded.get("description", ""))
-        generator = str(loaded.get("generator", "unknown"))
-
-        # Extract channel data
-        data = {}
-        for name in channel_names:
-            if name in loaded:
-                data[name] = loaded[name]
-
-        # Extract parameters
-        parameters: dict[str, Any] = {}
-        for key in loaded.files:
-            if key.startswith("param_"):
-                param_name = key[6:]  # Remove "param_" prefix
-                value = loaded[key]
-                parameters[param_name] = value.item() if value.ndim == 0 else value
-
-        metadata = SignalMetadata(
-            sample_rate=sample_rate,
-            duration=duration,
-            channel_names=channel_names,
-            description=description,
-            generator=generator,
-            parameters=parameters,
-        )
-
-        return cls(data=data, metadata=metadata)
 
 
 class SignalBuilder:
@@ -200,7 +38,7 @@ class SignalBuilder:
 
     Example:
         >>> # Simple sine wave with noise
-        >>> signal = (SignalBuilder()
+        >>> trace = (SignalBuilder()
         ...     .sample_rate(1e6)
         ...     .duration(0.01)
         ...     .add_sine(frequency=1000, amplitude=1.0)
@@ -208,7 +46,7 @@ class SignalBuilder:
         ...     .build())
         >>>
         >>> # UART signal with realistic characteristics
-        >>> uart_signal = (SignalBuilder()
+        >>> uart_trace = (SignalBuilder()
         ...     .sample_rate(10e6)
         ...     .add_uart(baud_rate=115200, data=b"Hello Oscura!", config="8N1")
         ...     .add_noise(snr_db=30)
@@ -1050,14 +888,34 @@ class SignalBuilder:
 
     # ========== Build Methods ==========
 
-    def build(self) -> GeneratedSignal:
-        """Build and return signal.
+    def build(self, channel: str | None = None) -> WaveformTrace:
+        """Build and return signal as WaveformTrace.
+
+        This is the primary build method that returns a WaveformTrace ready
+        for analysis with Oscura. For multi-channel signals, specify which
+        channel to return, or use build_channels() to get all channels.
+
+        Args:
+            channel: Channel name to build. If None, uses first channel.
+                For single-channel signals, this parameter is optional.
 
         Returns:
-            GeneratedSignal containing all channels and metadata.
+            WaveformTrace ready for Oscura analysis.
 
         Raises:
-            ValueError: If no signals have been added.
+            ValueError: If no signals have been added or channel doesn't exist.
+
+        Example:
+            >>> builder = SignalBuilder(sample_rate=1e6).add_sine(1000)
+            >>> trace = builder.build()
+            >>> print(f"Generated {len(trace.data)} samples")
+
+            >>> # Multi-channel
+            >>> builder = SignalBuilder(sample_rate=1e6)
+            >>> builder.add_sine(1000, channel="sig")
+            >>> builder.add_square(500, channel="clk")
+            >>> sig_trace = builder.build(channel="sig")
+            >>> clk_trace = builder.build(channel="clk")
         """
         if not self._channels:
             raise ValueError("No signals added. Call add_* methods before build().")
@@ -1068,44 +926,94 @@ class SignalBuilder:
             if len(signal) < max_len:
                 self._channels[name] = np.pad(signal, (0, max_len - len(signal)), mode="edge")
 
-        # Calculate actual duration from signal length
-        actual_duration = max_len / self._sample_rate
+        # Determine which channel to return
+        if channel is None:
+            # Use first channel
+            channel = next(iter(self._channels.keys()))
+        elif channel not in self._channels:
+            available = list(self._channels.keys())
+            raise ValueError(f"Channel '{channel}' not found. Available: {available}")
 
-        metadata = SignalMetadata(
+        # Get channel data
+        data = self._channels[channel]
+
+        # Build TraceMetadata
+        trace_metadata = TraceMetadata(
             sample_rate=self._sample_rate,
-            duration=actual_duration,
-            channel_names=list(self._channels.keys()),
-            description=self._description,
-            generator="SignalBuilder",
-            parameters=self._parameters,
+            channel_name=channel,
         )
 
-        return GeneratedSignal(data=self._channels.copy(), metadata=metadata)
+        return WaveformTrace(data=data, metadata=trace_metadata)
 
-    def build_trace(self, channel: str | None = None) -> WaveformTrace:
-        """Build and return as WaveformTrace for direct use with Oscura.
+    def build_channels(self) -> dict[str, WaveformTrace]:
+        """Build and return all channels as dictionary of WaveformTraces.
 
-        Args:
-            channel: Channel to return as trace. If None, uses first channel.
+        Use this method when you need all channels from a multi-channel
+        signal generation.
 
         Returns:
-            WaveformTrace ready for Oscura analysis.
-        """
-        signal = self.build()
-        return signal.to_trace(channel)
+            Dictionary mapping channel names to WaveformTrace objects.
 
-    def save_npz(self, path: Path | str) -> GeneratedSignal:
+        Raises:
+            ValueError: If no signals have been added.
+
+        Example:
+            >>> builder = SignalBuilder(sample_rate=1e6)
+            >>> builder.add_sine(1000, channel="sig")
+            >>> builder.add_square(500, channel="clk")
+            >>> channels = builder.build_channels()
+            >>> print(f"Generated {len(channels)} channels")
+            >>> sig_trace = channels["sig"]
+            >>> clk_trace = channels["clk"]
+        """
+        if not self._channels:
+            raise ValueError("No signals added. Call add_* methods before build().")
+
+        # Ensure all channels have same length (pad if necessary)
+        max_len = max(len(s) for s in self._channels.values())
+        for name, signal in self._channels.items():
+            if len(signal) < max_len:
+                self._channels[name] = np.pad(signal, (0, max_len - len(signal)), mode="edge")
+
+        # Build WaveformTrace for each channel
+        traces: dict[str, WaveformTrace] = {}
+        for channel_name, data in self._channels.items():
+            trace_metadata = TraceMetadata(
+                sample_rate=self._sample_rate,
+                channel_name=channel_name,
+            )
+            traces[channel_name] = WaveformTrace(data=data, metadata=trace_metadata)
+
+        return traces
+
+    def save_npz(self, path: Path | str, channel: str | None = None) -> WaveformTrace:
         """Build and save signal to NPZ format.
 
         Args:
             path: Output file path.
+            channel: Channel to save (for multi-channel signals).
 
         Returns:
-            GeneratedSignal that was saved.
+            WaveformTrace that was saved.
+
+        Example:
+            >>> builder = SignalBuilder().sample_rate(1e6).add_sine(1000)
+            >>> trace = builder.save_npz("signal.npz")
         """
-        signal = self.build()
-        signal.save_npz(path)
-        return signal
+        trace = self.build(channel=channel)
+
+        # Save as NPZ using numpy
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        np.savez_compressed(
+            path,
+            data=trace.data,
+            sample_rate=trace.metadata.sample_rate,
+            channel_name=trace.metadata.channel_name or "ch1",
+        )
+
+        return trace
 
     # ========== Internal Methods ==========
 

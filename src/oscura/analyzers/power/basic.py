@@ -11,8 +11,6 @@ Example:
     >>> print(f"Average: {stats['average']:.2f} W, Peak: {stats['peak']:.2f} W")
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 import numpy as np

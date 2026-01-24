@@ -8,6 +8,8 @@ transitions for field boundary identification, and classifying data types
 based on entropy characteristics.
 """
 
+from __future__ import annotations
+
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, Union
@@ -78,8 +80,8 @@ class ByteFrequencyResult:
         printable_ratio: Proportion of printable ASCII.
     """
 
-    counts: "NDArray[np.int64]"
-    frequencies: "NDArray[np.float64]"
+    counts: NDArray[np.int64]
+    frequencies: NDArray[np.float64]
     entropy: float
     unique_bytes: int
     most_common: list[tuple[int, int]]
@@ -103,8 +105,8 @@ class FrequencyAnomalyResult:
     """
 
     anomalous_bytes: list[int]
-    z_scores: "NDArray[np.float64]"
-    is_anomalous: "NDArray[np.bool_]"
+    z_scores: NDArray[np.float64]
+    is_anomalous: NDArray[np.bool_]
     expected_frequency: float
 
 
@@ -221,7 +223,7 @@ def bit_entropy(data: DataType) -> float:
 
 def sliding_entropy(
     data: DataType, window: int = 256, step: int = 64, window_size: int | None = None
-) -> "NDArray[np.float64]":
+) -> NDArray[np.float64]:
     """Calculate sliding window entropy profile.
 
     : Shannon Entropy Analysis
@@ -563,7 +565,7 @@ def classify_by_entropy(data: DataType) -> EntropyResult:
     )
 
 
-def entropy_profile(data: DataType, window: int = 256) -> "NDArray[np.float64]":
+def entropy_profile(data: DataType, window: int = 256) -> NDArray[np.float64]:
     """Generate entropy profile for visualization.
 
     : Shannon Entropy Analysis
@@ -588,7 +590,7 @@ def entropy_profile(data: DataType, window: int = 256) -> "NDArray[np.float64]":
     return sliding_entropy(data, window=window, step=step)
 
 
-def entropy_histogram(data: DataType) -> tuple["NDArray[np.intp]", "NDArray[np.float64]"]:
+def entropy_histogram(data: DataType) -> tuple[NDArray[np.intp], NDArray[np.float64]]:
     """Generate byte frequency histogram.
 
     : Shannon Entropy Analysis
@@ -799,7 +801,7 @@ def detect_frequency_anomalies(data: DataType, z_threshold: float = 3.0) -> Freq
 
 def compare_byte_distributions(
     data_a: DataType, data_b: DataType
-) -> tuple[float, float, "NDArray[np.float64]"]:
+) -> tuple[float, float, NDArray[np.float64]]:
     """Compare byte frequency distributions between two data samples.
 
     Implements RE-ENT-002: Byte Frequency Distribution.
@@ -849,7 +851,7 @@ def compare_byte_distributions(
 
 def sliding_byte_frequency(
     data: DataType, window: int = 256, step: int = 64, byte_value: int | None = None
-) -> "NDArray[np.float64]":
+) -> NDArray[np.float64]:
     """Compute sliding window byte frequency profile.
 
     Implements RE-ENT-002: Byte Frequency Distribution.

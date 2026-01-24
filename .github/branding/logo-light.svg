@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Oscura Official Logo - Light Background Variant
+  Size: 1024x1024
+  Design: For use on light backgrounds - darker colors
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Oscura Logo (Light Mode)</title>
+  <desc id="desc">Oscura signal stack icon optimized for light backgrounds</desc>
+
+  <defs>
+    <linearGradient id="backGradientLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0C1415" stop-opacity="0.5"/>
+      <stop offset="50%" stop-color="#164E63" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0C1415" stop-opacity="0.5"/>
+    </linearGradient>
+
+    <linearGradient id="midGradientLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#164E63" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#0891B2" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#164E63" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <linearGradient id="frontGradientLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0C1415"/>
+      <stop offset="50%" stop-color="#164E63"/>
+      <stop offset="100%" stop-color="#0C1415"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Grid reference -->
+  <g stroke="#164E63" stroke-width="1" opacity="0.35">
+    <line x1="112" y1="512" x2="912" y2="512"/>
+    <line x1="512" y1="262" x2="512" y2="762"/>
+  </g>
+
+  <!-- Back layer -->
+  <path d="M112,412
+           Q212,312 312,412
+           Q412,512 512,412
+           Q612,312 712,412
+           Q812,512 912,412"
+        fill="none"
+        stroke="url(#backGradientLight)"
+        stroke-width="8"
+        stroke-linecap="round"/>
+
+  <!-- Middle layer -->
+  <path d="M112,512
+           Q212,362 312,512
+           Q412,662 512,512
+           L512,312
+           L512,512
+           Q612,362 712,512
+           Q812,662 912,512"
+        fill="none"
+        stroke="url(#midGradientLight)"
+        stroke-width="10"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Front layer -->
+  <path d="M112,612
+           Q212,512 312,612
+           Q412,712 512,612
+           L512,362
+           L512,612
+           Q612,512 712,612
+           Q812,712 912,612"
+        fill="none"
+        stroke="url(#frontGradientLight)"
+        stroke-width="12"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Peak markers -->
+  <g fill="#0C1415">
+    <circle cx="512" cy="312" r="9" opacity="0.6"/>
+    <circle cx="512" cy="362" r="11"/>
+  </g>
+
+  <!-- Endpoints -->
+  <g fill="#164E63">
+    <circle cx="112" cy="412" r="7" opacity="0.5"/>
+    <circle cx="112" cy="512" r="9" opacity="0.7"/>
+    <circle cx="112" cy="612" r="11"/>
+    <circle cx="912" cy="412" r="7" opacity="0.5"/>
+    <circle cx="912" cy="512" r="9" opacity="0.7"/>
+    <circle cx="912" cy="612" r="11"/>
+  </g>
+</svg>

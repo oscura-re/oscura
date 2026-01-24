@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Oscura Official Logo - Wordmark Only
+  Size: 800x200
+  Design: OSCURA text treatment in professional technical style
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" role="img" aria-labelledby="title desc">
+  <title id="title">Oscura Wordmark</title>
+  <desc id="desc">OSCURA text wordmark in professional technical style</desc>
+
+  <defs>
+    <linearGradient id="stackGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0891B2" stop-opacity="0.5"/>
+      <stop offset="50%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#0891B2" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="200" fill="#0C1415"/>
+
+  <!-- Decorative layered lines on sides -->
+  <g opacity="0.4">
+    <!-- Left stack -->
+    <path d="M30,85 Q45,70 60,85" fill="none" stroke="#164E63" stroke-width="2"/>
+    <path d="M30,100 Q45,85 60,100" fill="none" stroke="#0891B2" stroke-width="2.5"/>
+    <path d="M30,115 Q45,100 60,115" fill="none" stroke="#22D3EE" stroke-width="3"/>
+
+    <!-- Right stack -->
+    <path d="M740,85 Q755,70 770,85" fill="none" stroke="#164E63" stroke-width="2"/>
+    <path d="M740,100 Q755,85 770,100" fill="none" stroke="#0891B2" stroke-width="2.5"/>
+    <path d="M740,115 Q755,100 770,115" fill="none" stroke="#22D3EE" stroke-width="3"/>
+  </g>
+
+  <!-- OSCURA wordmark -->
+  <text x="400" y="120"
+        font-family="'IBM Plex Sans', Inter, -apple-system, sans-serif"
+        font-size="72"
+        font-weight="600"
+        letter-spacing="0.16em"
+        fill="#F8FAFC"
+        text-anchor="middle">OSCURA</text>
+
+  <!-- Subtle underline with gradient -->
+  <line x1="120" y1="152" x2="680" y2="152"
+        stroke="url(#stackGradient)"
+        stroke-width="2"/>
+</svg>

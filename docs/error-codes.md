@@ -1,6 +1,6 @@
 # Error Code Reference
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08 | **Applies to**: Oscura 0.1.0
+> **Version**: 0.5.1 | **Last Updated**: 2026-01-19 | **Applies to**: Oscura 0.5.1
 
 This document provides a complete reference for all error codes used by Oscura.
 
@@ -14,18 +14,18 @@ All error codes follow the format: `TK-<CATEGORY>-<NUMBER>`
 
 ## Error Categories
 
-|Category|Code Range|Description|
-|---|---|---|
-|GEN|001-099|General/uncategorized errors|
-|FILE|100-199|File system and I/O errors|
-|FMT|200-299|File format errors|
-|LOAD|300-399|Waveform loading errors|
-|MEAS|400-499|Measurement errors|
-|DEC|500-599|Protocol decoding errors|
-|INF|600-699|Protocol inference errors|
-|FFT|700-799|Spectral analysis errors|
-|RPT|800-899|Report generation errors|
-|CFG|900-999|Configuration errors|
+| Category | Code Range | Description                  |
+| -------- | ---------- | ---------------------------- |
+| GEN      | 001-099    | General/uncategorized errors |
+| FILE     | 100-199    | File system and I/O errors   |
+| FMT      | 200-299    | File format errors           |
+| LOAD     | 300-399    | Waveform loading errors      |
+| MEAS     | 400-499    | Measurement errors           |
+| DEC      | 500-599    | Protocol decoding errors     |
+| INF      | 600-699    | Protocol inference errors    |
+| FFT      | 700-799    | Spectral analysis errors     |
+| RPT      | 800-899    | Report generation errors     |
+| CFG      | 900-999    | Configuration errors         |
 
 ---
 

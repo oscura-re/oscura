@@ -6,8 +6,6 @@ This module provides payload extraction from PCAP packets with metadata
 preservation, filtering, and multiple output formats.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -122,7 +120,7 @@ class PayloadExtractor:
         packets: Sequence[dict[str, Any] | bytes],
         protocol: str | None = None,
         port_filter: tuple[int | None, int | None] | None = None,
-    ) -> list[PayloadInfo]:
+    ) -> list["PayloadInfo"]:
         """Extract payloads from all packets with metadata.
 
         Implements RE-PAY-001: Batch payload extraction with metadata.
@@ -186,7 +184,7 @@ class PayloadExtractor:
     def iter_payloads(
         self,
         packets: Sequence[dict[str, Any] | bytes],
-    ) -> Iterator[PayloadInfo]:
+    ) -> Iterator["PayloadInfo"]:
         """Iterate over payloads for memory-efficient processing.
 
         Implements RE-PAY-001: Streaming payload iteration.

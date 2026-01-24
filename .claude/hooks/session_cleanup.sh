@@ -10,6 +10,9 @@ CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 LOG_FILE="$CLAUDE_PROJECT_DIR/.claude/hooks/sessions.log"
 COORD_DIR="$CLAUDE_PROJECT_DIR/.coordination"
 
+# Load configuration from config.yaml
+LOCKS_STALE_MINUTES=$(python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/get_config.py" retention.locks_stale_minutes 60)
+
 # Ensure log directory exists
 mkdir -p "$CLAUDE_PROJECT_DIR/.claude/hooks"
 
@@ -60,8 +63,8 @@ if [ -d "$COORD_DIR/locks" ]; then
         LOCK_COUNT=$((LOCK_COUNT + 1))
       fi
     else
-      # No expires_at field or invalid JSON - fallback to mtime (>60 minutes)
-      if [ -n "$(find "$lock_file" -mmin +60 2> /dev/null)" ]; then
+      # No expires_at field or invalid JSON - fallback to mtime (from config)
+      if [ -n "$(find "$lock_file" -mmin +"${LOCKS_STALE_MINUTES}" 2> /dev/null)" ]; then
         rm -f "$lock_file"
         LOCK_COUNT=$((LOCK_COUNT + 1))
       fi

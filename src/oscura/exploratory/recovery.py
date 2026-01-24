@@ -5,6 +5,8 @@ This module characterizes bit error patterns to diagnose capture quality
 issues (EMI, USB problems, clock jitter) and suggests likely causes.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 

@@ -4,8 +4,6 @@ Provides comprehensive number formatting with SI prefixes, engineering notation,
 locale support, and specification comparison capabilities.
 """
 
-from __future__ import annotations
-
 import math
 from datetime import datetime
 from typing import ClassVar

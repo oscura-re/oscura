@@ -122,7 +122,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01\x01"),
             CANMessage(arbitration_id=0x280, timestamp=0.2, data=b"\x02\x02"),  # Trigger
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -142,7 +143,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x100, timestamp=0.5, data=b"\x02"),
             CANMessage(arbitration_id=0x280, timestamp=0.6, data=b"\x03"),  # Trigger 2
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -160,7 +162,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x200, timestamp=0.2, data=b"\x02"),
             CANMessage(arbitration_id=0x290, timestamp=0.3, data=b"\x03"),  # Trigger B
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -179,7 +182,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x300, timestamp=0.95, data=b"\x02"),  # In window
             CANMessage(arbitration_id=0x280, timestamp=1.0, data=b"\x03"),  # Trigger
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -201,7 +205,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x100, timestamp=0.0, data=b"\x00"),
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -221,7 +226,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x200, timestamp=0.6, data=b"\x04"),
             CANMessage(arbitration_id=0x300, timestamp=0.7, data=b"\x05"),  # Trigger
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -240,7 +246,8 @@ class TestCANStateMachine:
         messages = [
             CANMessage(arbitration_id=0x100, timestamp=0.0, data=b"\x00"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
 
@@ -256,7 +263,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x200, timestamp=0.6, data=b"\x03"),
             CANMessage(arbitration_id=0x300, timestamp=0.7, data=b"\x04"),  # Trigger (long)
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -279,7 +287,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x300, timestamp=0.6, data=b"\x04"),
             CANMessage(arbitration_id=0x400, timestamp=0.7, data=b"\x05"),  # Trigger
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -299,7 +308,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x300, timestamp=1.0, data=b"\x02"),  # ON
             CANMessage(arbitration_id=0x400, timestamp=1.5, data=b"\x03"),  # START
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_with_states(
@@ -324,7 +334,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x101, timestamp=0.1, data=b"\x01"),  # STATE_A (alt)
             CANMessage(arbitration_id=0x200, timestamp=0.5, data=b"\x02"),  # STATE_B
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_with_states(
@@ -343,7 +354,8 @@ class TestCANStateMachine:
         messages = [
             CANMessage(arbitration_id=0x999, timestamp=0.0, data=b"\x00"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
 
@@ -363,7 +375,8 @@ class TestCANStateMachine:
             CANMessage(arbitration_id=0x100, timestamp=10.0, data=b"\x02"),  # STATE_A (new seq)
             CANMessage(arbitration_id=0x300, timestamp=10.1, data=b"\x03"),  # STATE_C
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_with_states(
@@ -397,7 +410,8 @@ class TestLearnStateMachine:
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01"),
             CANMessage(arbitration_id=0x300, timestamp=0.2, data=b"\x02"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         automaton = learn_state_machine(session=session, trigger_ids=[0x300], context_window_ms=500)
 
@@ -421,7 +435,8 @@ class TestCANSessionIntegration:
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01"),
             CANMessage(arbitration_id=0x300, timestamp=0.2, data=b"\x02"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         automaton = session.learn_state_machine(trigger_ids=[0x300], context_window_ms=500)
 
@@ -434,7 +449,8 @@ class TestCANSessionIntegration:
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01"),
             CANMessage(arbitration_id=0x300, timestamp=0.2, data=b"\x02"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         automaton = session.learn_state_machine(trigger_ids=[0x300], context_window_ms=500)
 
@@ -469,7 +485,8 @@ class TestRealWorldUseCases:
             CANMessage(arbitration_id=0x280, timestamp=12.0, data=b"\x03\x00"),  # ON
             CANMessage(arbitration_id=0x280, timestamp=13.0, data=b"\x07\x00"),  # START
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
 
@@ -493,7 +510,8 @@ class TestRealWorldUseCases:
             CANMessage(arbitration_id=0x602, timestamp=0.2, data=b"\x03"),  # Calibration
             CANMessage(arbitration_id=0x603, timestamp=0.3, data=b"\x04"),  # Ready
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -519,7 +537,8 @@ class TestRealWorldUseCases:
             CANMessage(arbitration_id=0x400, timestamp=0.6, data=b"\x04"),
             CANMessage(arbitration_id=0x500, timestamp=0.7, data=b"\x05"),  # Transition
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -543,7 +562,8 @@ class TestRealWorldUseCases:
             CANMessage(arbitration_id=0x200, timestamp=1.05, data=b"\x04"),
             CANMessage(arbitration_id=0x300, timestamp=1.1, data=b"\x05"),  # Trigger
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -566,7 +586,8 @@ class TestStateMachineEdgeCases:
 
     def test_empty_session(self) -> None:
         """Test learning from empty session raises error."""
-        session = CANSession.from_messages([])
+        session = CANSession(name="Empty Test")
+        session._messages.messages = []
 
         sm = CANStateMachine()
 
@@ -578,7 +599,8 @@ class TestStateMachineEdgeCases:
         messages = [
             CANMessage(arbitration_id=0x100, timestamp=0.0, data=b"\x00"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
 
@@ -594,7 +616,8 @@ class TestStateMachineEdgeCases:
             CANMessage(arbitration_id=0x100, timestamp=0.0, data=b"\x00"),
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -612,7 +635,8 @@ class TestStateMachineEdgeCases:
             CANMessage(arbitration_id=0x200, timestamp=1.0, data=b"\x01"),
             CANMessage(arbitration_id=0x300, timestamp=2.0, data=b"\x02"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -633,7 +657,8 @@ class TestStateMachineEdgeCases:
             CANMessage(arbitration_id=0x300, timestamp=0.1, data=b"\x02"),
             CANMessage(arbitration_id=0x200, timestamp=0.15, data=b"\x03"),  # Trigger 2
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         extractions = sm.extract_sequences(
@@ -654,7 +679,8 @@ class TestStateMachineEdgeCases:
             CANMessage(arbitration_id=0x100, timestamp=2.0, data=b"\x04"),
             CANMessage(arbitration_id=0x200, timestamp=2.1, data=b"\x05"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -671,7 +697,8 @@ class TestStateMachineEdgeCases:
             CANMessage(arbitration_id=0x18FEF100, timestamp=0.0, data=b"\x00", is_extended=True),
             CANMessage(arbitration_id=0x18FEF200, timestamp=0.1, data=b"\x01", is_extended=True),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -686,7 +713,8 @@ class TestStateMachineEdgeCases:
             CANMessage(arbitration_id=0x100, timestamp=0.0, data=b"\x00" * 16, is_fd=True),
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01" * 16, is_fd=True),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         sm = CANStateMachine()
         automaton = sm.learn_from_session(
@@ -713,7 +741,8 @@ class TestStateMachineExport:
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01"),
             CANMessage(arbitration_id=0x300, timestamp=0.2, data=b"\x02"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         automaton = session.learn_state_machine(trigger_ids=[0x300], context_window_ms=500)
 
@@ -730,7 +759,8 @@ class TestStateMachineExport:
             CANMessage(arbitration_id=0x100, timestamp=0.0, data=b"\x00"),
             CANMessage(arbitration_id=0x200, timestamp=0.1, data=b"\x01"),
         ]
-        session = CANSession.from_messages(messages)
+        session = CANSession(name="Test")
+        session._messages.messages = messages
 
         automaton = session.learn_state_machine(trigger_ids=[0x200], context_window_ms=500)
 

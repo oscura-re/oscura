@@ -113,7 +113,9 @@ class PatternAnalyzer:
     CAN messages, useful for understanding message dependencies and control flows.
 
     Example - Find message pairs:
-        >>> session = CANSession.from_log("capture.blf")
+        >>> from oscura.automotive.sources import FileSource
+        >>> session = CANSession(name="Analysis")
+        >>> session.add_recording("main", FileSource("capture.blf"))
         >>> pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=100)
         >>> for pair in pairs:
         ...     print(pair)

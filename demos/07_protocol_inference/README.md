@@ -2,7 +2,7 @@
 
 > State machine learning, CRC reverse engineering, message format inference, Wireshark dissector generation
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
@@ -49,15 +49,15 @@ print(f"Match: {result.name if result.name else 'Custom'}")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`auto_protocol_detect.py`|Unknown protocol identification|Basic|
-|`baud_rate_recovery.py`|Baud rate from signal|Basic|
-|`logic_level_detect.py`|TTL/CMOS/LVDS identification|Basic|
-|`state_machine_learning.py`|RPNI automaton inference|Advanced|
-|`crc_reverse.py`|CRC polynomial recovery|Intermediate|
-|`message_format.py`|Field boundary detection|Intermediate|
-|`wireshark_dissector.py`|Lua dissector generation|Advanced|
+| Script                      | Purpose                         | Complexity   |
+| --------------------------- | ------------------------------- | ------------ |
+| `auto_protocol_detect.py`   | Unknown protocol identification | Basic        |
+| `baud_rate_recovery.py`     | Baud rate from signal           | Basic        |
+| `logic_level_detect.py`     | TTL/CMOS/LVDS identification    | Basic        |
+| `state_machine_learning.py` | RPNI automaton inference        | Advanced     |
+| `crc_reverse.py`            | CRC polynomial recovery         | Intermediate |
+| `message_format.py`         | Field boundary detection        | Intermediate |
+| `wireshark_dissector.py`    | Lua dissector generation        | Advanced     |
 
 ## Related Demos
 

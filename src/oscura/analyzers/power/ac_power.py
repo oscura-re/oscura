@@ -11,8 +11,6 @@ Example:
     >>> print(f"Power factor: {pf:.3f}, Reactive power: {q:.2f} VAR")
 """
 
-from __future__ import annotations
-
 import numpy as np
 
 from oscura.analyzers.power.basic import average_power

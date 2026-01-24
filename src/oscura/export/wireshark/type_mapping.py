@@ -7,6 +7,8 @@ References:
     https://wiki.wireshark.org/LuaAPI/Proto
 """
 
+from __future__ import annotations
+
 from typing import Literal
 
 # Map Oscura field types to Wireshark ProtoField types

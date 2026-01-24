@@ -112,7 +112,14 @@ class AutomotiveProtocolDemo(BaseDemo):
         print_info("Generating synthetic CAN traffic...")
 
         self.messages = self._generate_can_traffic()
-        self.session = CANSession.from_messages(self.messages)
+
+        # Create session and populate with messages
+        self.session = CANSession(name="Automotive Demo")
+        # Internal population for demo purposes
+        # In production, would use FileSource with actual log files
+        from oscura.automotive.can.models import CANMessageList
+
+        self.session._messages = CANMessageList(messages=self.messages)
 
         print_result("Messages generated", len(self.messages))
         print_result("Unique IDs", len(self.session.unique_ids()))

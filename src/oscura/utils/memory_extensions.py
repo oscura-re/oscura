@@ -22,7 +22,7 @@ import hashlib
 import os
 import time
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import numpy as np
 
@@ -102,7 +102,7 @@ class ArrayManager(ResourceManager):
 # =============================================================================
 
 
-class LRUCache[T]:
+class LRUCache(Generic[T]):
     """Least-Recently-Used cache with memory-based eviction.
 
     Caches intermediate results with automatic eviction when

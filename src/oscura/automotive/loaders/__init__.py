@@ -8,8 +8,6 @@ This module provides loaders for common automotive logging file formats:
 - PCAP (Packet Capture - SocketCAN)
 """
 
-from __future__ import annotations
-
 __all__ = [
     "detect_format",
     "load_asc",

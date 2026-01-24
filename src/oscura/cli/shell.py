@@ -23,8 +23,6 @@ References:
     - IPython-style interaction patterns
 """
 
-from __future__ import annotations
-
 import atexit
 import code
 import contextlib

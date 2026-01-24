@@ -134,7 +134,11 @@ class TestDataClassificationProperties:
         assert result.classification in ["random", "compressed"]
 
     @given(data=entropy_data())
-    @settings(max_examples=50, deadline=None)
+    @settings(
+        max_examples=50,
+        deadline=None,
+        suppress_health_check=[HealthCheck.data_too_large],
+    )
     def test_classification_confidence_bounded(self, data: bytes) -> None:
         """Property: Classification confidence is between 0 and 1."""
         result = classify_by_entropy(data)

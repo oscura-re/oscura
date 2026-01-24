@@ -9,6 +9,7 @@ Provides signal analysis functionality including:
 - Jitter analysis (RJ, DJ, PJ, DDJ, bathtub curves)
 - Eye diagram analysis (height, width, Q-factor)
 - Signal integrity (S-parameters, equalization)
+- Side-channel analysis (DPA, CPA, timing attacks)
 """
 
 # Import measurements module as namespace for DSL compatibility
@@ -18,6 +19,7 @@ from oscura.analyzers import (
     jitter,
     measurements,
     protocols,
+    side_channel,
     signal_integrity,
     statistics,
     validation,
@@ -30,6 +32,7 @@ __all__ = [
     "jitter",
     "measurements",
     "protocols",
+    "side_channel",
     "signal_integrity",
     "statistics",
     "validation",
