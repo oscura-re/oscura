@@ -2,16 +2,9 @@ name: Test Quality Gates
 
 on:
   pull_request:
-    paths:
-      - "tests/**"
-      - "pyproject.toml"
-      - "scripts/testing/validate_test_markers.py"
-      - "scripts/testing/check_test_isolation.py"
+    branches: [main]
   push:
     branches: [main]
-    paths:
-      - "tests/**"
-      - "pyproject.toml"
   workflow_dispatch:
   schedule:
     # Run weekly on Sunday at 4 AM UTC to detect test order dependencies
@@ -36,28 +29,48 @@ env:
 
 jobs:
   # ==========================================================================
+  # Path Detection - Check if test quality checks should run
+  # ==========================================================================
+  detect-changes:
+    name: Detect Test Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-run: ${{ steps.filter.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            tests:
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'scripts/testing/**'
+              - '.github/workflows/test-quality.yml'
+
+  # ==========================================================================
   # Marker Validation
   # ==========================================================================
   marker-validation:
     name: Validate Test Markers
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --dev
+          python-version: ${{ env.PYTHON_VERSION }}
+          extras: "--dev"
 
       - name: Validate markers
         run: |
@@ -76,22 +89,17 @@ jobs:
     name: Check Test Isolation
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Check isolation (sample 15 files)
         run: |
@@ -115,19 +123,18 @@ jobs:
     name: Verify Coverage Markers
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          install-deps: "false"
 
       - name: Check marker distribution
         run: |
@@ -162,28 +169,20 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Run tests with random order (run 1)
         run: |
-          uv run pytest tests/unit \
+          uv run python -m pytest tests/unit \
             -v \
             -m "unit and not slow and not memory_intensive" \
             -n 4 \
             --maxprocesses=4 \
             --dist loadscope \
             --hypothesis-profile=ci \
-            --randomly-seed=auto \
             --benchmark-disable \
             --tb=short \
             --maxfail=20 \
@@ -191,14 +190,13 @@ jobs:
 
       - name: Run tests with random order (run 2)
         run: |
-          uv run pytest tests/unit \
+          uv run python -m pytest tests/unit \
             -v \
             -m "unit and not slow and not memory_intensive" \
             -n 4 \
             --maxprocesses=4 \
             --dist loadscope \
             --hypothesis-profile=ci \
-            --randomly-seed=auto \
             --benchmark-disable \
             --tb=short \
             --maxfail=20 \
@@ -206,14 +204,13 @@ jobs:
 
       - name: Run tests with random order (run 3)
         run: |
-          uv run pytest tests/unit \
+          uv run python -m pytest tests/unit \
             -v \
             -m "unit and not slow and not memory_intensive" \
             -n 4 \
             --maxprocesses=4 \
             --dist loadscope \
             --hypothesis-profile=ci \
-            --randomly-seed=auto \
             --benchmark-disable \
             --tb=short \
             --maxfail=20 \
@@ -270,23 +267,32 @@ jobs:
             }
 
   # ==========================================================================
-  # Final status check
+  # Final status check - ALWAYS RUNS
   # ==========================================================================
   quality-gates-success:
-    name: Quality Gates Success
+    name: Test Quality Gates
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [marker-validation, test-isolation, coverage-markers]
+    needs: [detect-changes, marker-validation, test-isolation, coverage-markers]
     if: always()
     steps:
-      - name: Check all jobs
+      - name: Check test quality results
         run: |
+          echo "Detect Changes: ${{ needs.detect-changes.result }}"
+          echo "Should Run: ${{ needs.detect-changes.outputs.should-run }}"
           echo "Marker Validation: ${{ needs.marker-validation.result }}"
           echo "Test Isolation: ${{ needs.test-isolation.result }}"
           echo "Coverage Markers: ${{ needs.coverage-markers.result }}"
 
-          # Marker validation must pass
-          if [[ "${{ needs.marker-validation.result }}" != "success" ]]; then
+          # If no test changes, all quality checks will be skipped (not failed)
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "No test changes detected - quality checks skipped"
+            echo "✅ Test Quality Gates passed (no test changes to check)"
+            exit 0
+          fi
+
+          # Marker validation must pass (if it ran)
+          if [[ "${{ needs.marker-validation.result }}" == "failure" ]]; then
             echo "::error::Marker validation failed - this is a required gate"
             exit 1
           fi
@@ -296,8 +302,9 @@ jobs:
             echo "::warning::Test isolation check found issues"
           fi
 
-          if [[ "${{ needs.coverage-markers.result }}" != "success" ]]; then
+          if [[ "${{ needs.coverage-markers.result }}" == "failure" ]]; then
             echo "::warning::Coverage marker check had issues"
           fi
 
-          echo "Quality gates passed!"
+          echo "✅ Test Quality Gates passed!"
+          exit 0

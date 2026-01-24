@@ -12,14 +12,14 @@ Oscura maintains a comprehensive test suite with **18,324 tests** across unit, i
 
 ### Quick Stats
 
-|Metric|Value|Status|
-|---|---|---|
-|**Total Tests**|18,324|✅ All functional|
-|**Skip Rate**|0.00%|✅ ZERO skips|
-|**Pass Rate**|100%|✅ Perfect|
-|**Execution Time**|8-10 min (parallel)|✅ Optimal|
-|**Coverage**|>80%|✅ Meets threshold|
-|**Dependencies**|All installed|✅ Complete|
+| Metric             | Value               | Status             |
+| ------------------ | ------------------- | ------------------ |
+| **Total Tests**    | 18,324              | ✅ All functional  |
+| **Skip Rate**      | 0.00%               | ✅ ZERO skips      |
+| **Pass Rate**      | 100%                | ✅ Perfect         |
+| **Execution Time** | 8-10 min (parallel) | ✅ Optimal         |
+| **Coverage**       | >80%                | ✅ Meets threshold |
+| **Dependencies**   | All installed       | ✅ Complete        |
 
 ---
 
@@ -55,13 +55,13 @@ demos/                      # Working demonstrations with validation
 
 ### Test Types
 
-|Type|Count|Purpose|Execution Time|
-|---|---|---|---|
-|**Unit**|~18,000|Fast, isolated, no I/O|<1s each|
-|**Integration**|~300|Multi-component workflows|1-5s each|
-|**Performance**|~20|Performance benchmarks|5-30s each|
-|**Compliance**|~50|IEEE/JEDEC standard validation|Variable|
-|**Stress**|~10|High-load, memory-intensive|10-60s each|
+| Type            | Count   | Purpose                        | Execution Time |
+| --------------- | ------- | ------------------------------ | -------------- |
+| **Unit**        | ~18,000 | Fast, isolated, no I/O         | <1s each       |
+| **Integration** | ~300    | Multi-component workflows      | 1-5s each      |
+| **Performance** | ~20     | Performance benchmarks         | 5-30s each     |
+| **Compliance**  | ~50     | IEEE/JEDEC standard validation | Variable       |
+| **Stress**      | ~10     | High-load, memory-intensive    | 10-60s each    |
 
 ---
 

@@ -9,8 +9,6 @@ Example:
     >>> section = create_title_section("Signal Analysis Report", author="Engineer")
 """
 
-from __future__ import annotations
-
 from datetime import datetime
 from typing import Any
 

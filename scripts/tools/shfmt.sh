@@ -101,14 +101,21 @@ for path in "${PATHS[@]}"; do
     # Single file
     shell_files+=("${path}")
   elif [[ -d "${path}" ]]; then
-    # Directory - find .sh files
-    while IFS= read -r -d '' file; do
-      shell_files+=("${file}")
-    done < <(find "${path}" -type f -name "*.sh" \
-      -not -path "*/.git/*" \
-      -not -path "*/.venv/*" \
-      -not -path "*/node_modules/*" \
-      -print0 2> /dev/null)
+    # Use git ls-files if in a git repo, otherwise fall back to find
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+      while IFS= read -r file; do
+        [[ -f "${file}" ]] && shell_files+=("${file}")
+      done < <(git ls-files "${path}" | grep '\.sh$')
+    else
+      # Fallback to find if not in a git repo
+      while IFS= read -r -d '' file; do
+        shell_files+=("${file}")
+      done < <(find "${path}" -type f -name "*.sh" \
+        -not -path "*/.git/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/node_modules/*" \
+        -print0 2> /dev/null)
+    fi
   fi
 done
 

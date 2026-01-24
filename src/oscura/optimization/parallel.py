@@ -14,11 +14,14 @@ from concurrent.futures import (
     as_completed,
 )
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import numpy as np
 
 from oscura.core.exceptions import AnalysisError
+
+T = TypeVar("T")
+R = TypeVar("R")
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -29,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ParallelResult[R]:
+class ParallelResult(Generic[R]):
     """Result from parallel execution.
 
     Attributes:
@@ -93,7 +96,7 @@ def get_optimal_workers(max_workers: int | None = None) -> int:
     return min(max_workers, cpu_count)
 
 
-def parallel_map[T, R](
+def parallel_map(
     func: Callable[[T], R],
     iterable: Iterable[T],
     *,
@@ -171,7 +174,7 @@ def parallel_map[T, R](
     )
 
 
-def parallel_reduce[T, R](
+def parallel_reduce(
     func: Callable[[T], R],
     iterable: Iterable[T],
     reducer: Callable[[list[R]], Any],
@@ -219,7 +222,7 @@ def parallel_reduce[T, R](
     return reducer(result.results)
 
 
-def batch_parallel_map[T, R](
+def batch_parallel_map(
     func: Callable[[list[T]], list[R]],
     iterable: Iterable[T],
     *,
@@ -297,7 +300,7 @@ def batch_parallel_map[T, R](
     )
 
 
-def parallel_filter[T](
+def parallel_filter(
     func: Callable[[T], bool],
     iterable: Iterable[T],
     *,

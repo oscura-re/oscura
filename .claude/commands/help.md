@@ -10,24 +10,23 @@ Display available slash commands with descriptions and usage examples.
 
 ## Usage
 
-```bash
+````bash
 /help              # List all available commands
 /help <command>    # Show detailed help for specific command
-```
+```python
 
 ## Examples
 
 ```bash
 /help              # Show all commands
-/help ai           # Detailed help for /ai command
 /help git          # Detailed help for /git command
-```
+/help swarm        # Detailed help for /swarm command
+```bash
 
 ## Available Commands
 
 ### Core Commands
 
-- `/ai <task>` - Universal routing to specialized agents for any task
 - `/help [command]` - Show this help or detailed command usage
 - `/status [--json]` - Show orchestration health, running agents, context usage
 - `/context` - Display context usage and optimization recommendations
@@ -37,13 +36,11 @@ Display available slash commands with descriptions and usage examples.
 
 - `/git [message]` - Smart atomic commits with conventional format
 - `/swarm <task>` - Execute complex tasks with parallel agent coordination
-- `/research <topic>` - Web research with citations
-- `/review [path]` - Code quality review
 
 ## Command Categories
 
-**Task Orchestration**: `/ai`, `/swarm`
-**Development Workflow**: `/git`, `/research`, `/review`
+**Task Orchestration**: `/swarm`, `/route`
+**Development Workflow**: `/git`
 **System Management**: `/status`, `/context`, `/cleanup`, `/help`
 
 ## Getting Detailed Help
@@ -52,7 +49,7 @@ For detailed help on any command, use:
 
 ```bash
 /help <command-name>
-```
+```markdown
 
 This will show:
 
@@ -67,3 +64,8 @@ This will show:
 - `.claude/agents/` - Available agents
 - `.claude/docs/routing-concepts.md` - How routing works
 - `.claude/GETTING_STARTED.md` - Introduction to the orchestration system
+
+## Version History
+
+- v1.0.0 (2026-01-16): Initial creation with command listing and detailed help
+````

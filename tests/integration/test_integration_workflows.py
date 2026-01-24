@@ -385,16 +385,23 @@ class TestValidationWorkflows:
             idle_suffix = np.zeros(5000, dtype=signal.dtype)
             signal_with_idle = np.concatenate([idle_prefix, signal, idle_suffix])
 
-            # Detect idle regions
-            idle_regions = detect_idle_regions(signal_with_idle, threshold=0.1, min_duration=1000)
+            # Convert to DigitalTrace for preprocessing functions
+            from oscura.core.types import DigitalTrace, TraceMetadata
+
+            trace_with_idle = DigitalTrace(
+                data=signal_with_idle, metadata=TraceMetadata(sample_rate=10e6)
+            )
+
+            # Detect idle regions (API uses 'pattern' not 'threshold')
+            idle_regions = detect_idle_regions(trace_with_idle, pattern="auto", min_duration=1000)
 
             assert len(idle_regions) >= 1
 
-            # Trim idle
-            trimmed = trim_idle(signal_with_idle, pattern=0.0, min_duration=1000)
+            # Trim idle (also needs DigitalTrace)
+            trimmed = trim_idle(trace_with_idle, pattern="auto", min_duration=1000)
 
             # Trimmed should be shorter
-            assert len(trimmed) < len(signal_with_idle)
+            assert len(trimmed.data) < len(signal_with_idle)
 
         except Exception as e:
             pytest.skip(f"Preprocessing test skipped: {e}")

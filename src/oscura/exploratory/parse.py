@@ -5,6 +5,8 @@ This module provides robust protocol decoding that continues after errors
 and timestamp correction for jittery captures.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Literal

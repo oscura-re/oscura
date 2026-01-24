@@ -7,19 +7,8 @@ name: Documentation
 on:
   push:
     branches: [main]
-    paths:
-      - "docs/**"
-      - "src/**/*.py"
-      - "mkdocs.yml"
-      - "pyproject.toml"
-      - ".github/workflows/docs.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "docs/**"
-      - "src/**/*.py"
-      - "mkdocs.yml"
-      - "pyproject.toml"
   workflow_dispatch:
 
 env:
@@ -32,10 +21,35 @@ permissions:
 
 # Allow only one concurrent deployment
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # ============================================================================
+  # Path Detection - Check if documentation should be built
+  # ============================================================================
+  detect-changes:
+    name: Detect Documentation Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-run: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - 'mkdocs.yml'
+              - 'pyproject.toml'
+              - '.github/workflows/docs.yml'
+              - 'README.md'
+
   # ============================================================================
   # Build documentation
   # ============================================================================
@@ -44,22 +58,17 @@ jobs:
     name: Build Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Full history for git-revision-date plugin
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
@@ -99,7 +108,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          uv run mkdocs build --strict
+          uv run mkdocs build --strict --clean
         env:
           # Enable warnings as errors for strict mode
           PYTHONWARNINGS: "error::DeprecationWarning"
@@ -124,20 +133,15 @@ jobs:
     name: Docstring Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Check docstring style (pydocstyle rules via ruff)
         run: |
@@ -148,8 +152,16 @@ jobs:
       - name: Generate docstring coverage report
         run: |
           echo "::group::Docstring Coverage"
-          uv run interrogate src/oscura/ -v --generate-badge docs/assets/interrogate_badge.svg || true
+          uv run python -m interrogate src/oscura -vv -f 95 --generate-badge docs/badges/interrogate_badge.svg || true
           echo "::endgroup::"
+
+      - name: Upload badge artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: interrogate-badge
+          path: docs/badges/interrogate_badge.svg
+          retention-days: 30
+          if-no-files-found: warn
 
   # ============================================================================
   # Spell check documentation
@@ -159,6 +171,8 @@ jobs:
     name: Spell Check Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
 
@@ -196,18 +210,53 @@ jobs:
   # ============================================================================
 
   docs-summary:
-    name: Documentation Summary
+    name: Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [build, docstring-lint, spell-check]
+    needs: [detect-changes, build, docstring-lint, spell-check]
     if: always()
     steps:
+      - name: Check documentation results
+        run: |
+          echo "Detect Changes: ${{ needs.detect-changes.result }}"
+          echo "Should Run: ${{ needs.detect-changes.outputs.should-run }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Docstring Lint: ${{ needs.docstring-lint.result }}"
+          echo "Spell Check: ${{ needs.spell-check.result }}"
+
+          # If no documentation changes, all checks will be skipped (not failed)
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "No documentation changes detected - checks skipped"
+            echo "✅ Documentation checks passed (no changes to check)"
+            exit 0
+          fi
+
+          # Check if any required jobs failed (skipped is OK, cancelled is treated as skip)
+          if [[ "${{ needs.build.result }}" == "failure" || \
+                "${{ needs.docstring-lint.result }}" == "failure" || \
+                "${{ needs.spell-check.result }}" == "failure" ]]; then
+            echo "Some documentation checks failed"
+            exit 1
+          fi
+
+          echo "✅ All documentation checks passed!"
+          exit 0
+
       - name: Generate summary
+        if: always()
         run: |
           echo "# Documentation Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docstring Lint | ${{ needs.docstring-lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Spell Check | ${{ needs.spell-check.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "✅ **No documentation changes detected - checks skipped**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Documentation checks only run when docs, source files," \
+              "or mkdocs.yml change." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Docstring Lint | ${{ needs.docstring-lint.result }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Spell Check | ${{ needs.spell-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          fi

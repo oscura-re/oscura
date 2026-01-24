@@ -16,7 +16,7 @@ References:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 import numpy as np
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class CircularBuffer[T]:
+class CircularBuffer(Generic[T]):
     """Fixed-size circular buffer with O(1) operations.
 
     Thread-safe for single producer, single consumer pattern.

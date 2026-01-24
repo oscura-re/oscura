@@ -22,9 +22,9 @@ ARCHIVE_DATE=$(date +%Y-%m)
 LOG_FILE="$CLAUDE_PROJECT_DIR/.claude/hooks/compaction.log"
 METRICS_FILE="$CLAUDE_PROJECT_DIR/.claude/hooks/context_metrics.log"
 
-# Size thresholds
-LARGE_JSON_SIZE=102400 # 100KB in bytes
-OLD_REPORT_DAYS=7
+# Load thresholds from config.yaml
+LARGE_JSON_SIZE=$(python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/get_config.py" hooks.pre_compact_cleanup.large_json_size_bytes 102400)
+OLD_REPORT_DAYS=$(python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/get_config.py" hooks.pre_compact_cleanup.old_report_days 7)
 
 # Ensure log and archive directories exist
 mkdir -p "$CLAUDE_PROJECT_DIR/.claude/hooks"

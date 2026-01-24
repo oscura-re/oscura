@@ -1,14 +1,20 @@
+---
+name: agents
+description: List available agents with their capabilities and routing keywords
+arguments: [keyword, --verbose]
+---
+
 # /agents - List Available Agents
 
 Show all available agents with their capabilities, keywords, and use cases.
 
 ## Usage
 
-```bash
+````bash
 /agents               # List all agents
 /agents code          # Search agents by keyword
 /agents --verbose     # Show routing keywords
-```
+```markdown
 
 ## Purpose
 
@@ -23,7 +29,7 @@ Help users understand:
 
 ### Default View
 
-```
+```bash
 Available Agents (6):
 
 1. orchestrator (opus)
@@ -49,11 +55,11 @@ Available Agents (6):
 6. git_commit_manager (sonnet)
    → Git operations with conventional commit format
    Use: Creating commits, managing version control
-```
+```markdown
 
 ### Verbose View (`--verbose`)
 
-```
+```markdown
 Available Agents (6):
 
 1. orchestrator (opus) - .claude/agents/orchestrator.md
@@ -67,11 +73,11 @@ Available Agents (6):
    Use: Functions, utilities, features, prototypes, bug fixes
 
 [... etc for all agents]
-```
+```markdown
 
 ### Search View (`/agents code`)
 
-```
+```bash
 Agents matching "code" (2):
 
 1. code_assistant (sonnet)
@@ -81,7 +87,7 @@ Agents matching "code" (2):
 2. code_reviewer (sonnet)
    → Code quality audits and reviews
    Match: Keywords include "code review, quality"
-```
+```markdown
 
 ## When to Use /agents
 
@@ -99,7 +105,7 @@ Agents matching "code" (2):
 
 ```bash
 /agents
-```
+```markdown
 
 Shows complete list with descriptions.
 
@@ -107,7 +113,7 @@ Shows complete list with descriptions.
 
 ```bash
 /agents document
-```
+```markdown
 
 Returns: technical_writer agent details.
 
@@ -115,7 +121,7 @@ Returns: technical_writer agent details.
 
 ```bash
 /agents --verbose
-```
+```markdown
 
 Shows all agents with full keyword lists and file paths.
 
@@ -159,7 +165,7 @@ If orchestrator routes to wrong agent:
    ```bash
    /route code_assistant "write a function"
    /route knowledge_researcher "research Docker networking"
-   ```
+```bash
 
 2. **Improve request phrasing**:
 
@@ -167,7 +173,7 @@ If orchestrator routes to wrong agent:
    # Instead of: "make auth"
    # Use: "write an auth function" → code_assistant
    # Or: "research auth patterns" → knowledge_researcher
-   ```
+```markdown
 
 ## Agent Discovery
 
@@ -182,7 +188,7 @@ Agents are **dynamically discovered** from `.claude/agents/*.md`. See `.claude/d
 
 ## Configuration
 
-Agent behavior controlled in `.claude/config.yaml:orchestration.agents.*`:
+Agent behavior controlled in `.claude/config.yaml:orchestration.agents`:
 
 - `max_concurrent`: Max simultaneous agents (default: 2)
 - `max_batch_size`: Max per batch (default: 2)
@@ -206,3 +212,4 @@ Agent behavior controlled in `.claude/config.yaml:orchestration.agents.*`:
 ## Version
 
 v2.0.0 (2026-01-16) - Spec system removed, simplified routing
+````

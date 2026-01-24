@@ -36,7 +36,7 @@ fi
 echo ""
 echo "Creating ~/.pypirc..."
 
-cat >~/.pypirc <<PYPIRC_EOF
+cat > ~/.pypirc << PYPIRC_EOF
 [distutils]
 index-servers =
     testpypi
@@ -61,7 +61,7 @@ echo ""
 echo "Testing configuration..."
 
 # Test the token format
-if uv run twine check dist/oscura-0.1.0* >/dev/null 2>&1; then
+if uv run twine check dist/oscura-0.1.0* > /dev/null 2>&1; then
   echo "✅ Package validation passed"
 else
   echo "⚠️  Warning: Package validation had issues"

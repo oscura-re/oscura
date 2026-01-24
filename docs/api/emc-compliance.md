@@ -1,7 +1,7 @@
 # EMC Compliance Testing API Reference
 
-> **Version**: 0.1.0
-> **Last Updated**: 2026-01-08
+> **Version**: 0.5.1
+> **Last Updated**: 2026-01-19
 
 ## Overview
 
@@ -64,13 +64,13 @@ if not result.passed:
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`trace_or_spectrum`|`WaveformTrace \|tuple[NDArray, NDArray]`|required|Trace to analyze or (freq, mag) spectrum|
-|`mask`|`LimitMask`|required|EMC limit mask|
-|`detector`|`DetectorType \|str`|`"peak"`|Detector type for measurement|
-|`frequency_range`|`tuple[float, float] \|None`|`None`|Frequency range to test (Hz)|
-|`unit_conversion`|`str \|None`|`None`|Convert units ("V_to_dBuV", "W_to_dBm")|
+| Parameter           | Type                                      | Default  | Description                              |
+| ------------------- | ----------------------------------------- | -------- | ---------------------------------------- |
+| `trace_or_spectrum` | `WaveformTrace \|tuple[NDArray, NDArray]` | required | Trace to analyze or (freq, mag) spectrum |
+| `mask`              | `LimitMask`                               | required | EMC limit mask                           |
+| `detector`          | `DetectorType \|str`                      | `"peak"` | Detector type for measurement            |
+| `frequency_range`   | `tuple[float, float] \|None`              | `None`   | Frequency range to test (Hz)             |
+| `unit_conversion`   | `str \|None`                              | `None`   | Convert units ("V_to_dBuV", "W_to_dBm")  |
 
 **Returns:** `ComplianceResult`
 
@@ -131,10 +131,10 @@ mask = load_limit_mask("MyMask", custom_path="./masks")
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`name`|`str`|required|Mask name or path to JSON file|
-|`custom_path`|`str \|Path \|None`|`None`|Directory containing custom mask files|
+| Parameter     | Type                | Default  | Description                            |
+| ------------- | ------------------- | -------- | -------------------------------------- |
+| `name`        | `str`               | required | Mask name or path to JSON file         |
+| `custom_path` | `str \|Path \|None` | `None`   | Directory containing custom mask files |
 
 **Returns:** `LimitMask`
 
@@ -205,14 +205,14 @@ mask = create_custom_mask(
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`name`|`str`|required|Mask name|
-|`frequencies`|`list[float] \|NDArray`|required|Frequency points in Hz|
-|`limits`|`list[float] \|NDArray`|required|Limit values in specified unit|
-|`unit`|`str`|`"dBuV"`|Limit unit ("dBuV", "dBm", "dBuV/m", etc.)|
-|`description`|`str`|`""`|Human-readable description|
-|`**kwargs`|Additional LimitMask attributes||`detector`, `distance`, etc.|
+| Parameter     | Type                            | Default  | Description                                |
+| ------------- | ------------------------------- | -------- | ------------------------------------------ |
+| `name`        | `str`                           | required | Mask name                                  |
+| `frequencies` | `list[float] \|NDArray`         | required | Frequency points in Hz                     |
+| `limits`      | `list[float] \|NDArray`         | required | Limit values in specified unit             |
+| `unit`        | `str`                           | `"dBuV"` | Limit unit ("dBuV", "dBm", "dBuV/m", etc.) |
+| `description` | `str`                           | `""`     | Human-readable description                 |
+| `**kwargs`    | Additional LimitMask attributes |          | `detector`, `distance`, etc.               |
 
 **Returns:** `LimitMask`
 
@@ -262,15 +262,15 @@ generate_compliance_report(
 
 **Parameters:**
 
-|Parameter|Type|Default|Description|
-|---|---|---|---|
-|`result`|`ComplianceResult`|required|Compliance test result|
-|`output_path`|`str \|Path`|required|Output file path|
-|`format`|`ComplianceReportFormat \|str`|`ComplianceReportFormat.HTML`|Report format|
-|`include_plot`|`bool`|`True`|Include spectrum/limit plot (HTML/PDF)|
-|`title`|`str \|None`|`"EMC Compliance Report"`|Report title|
-|`company_name`|`str \|None`|`None`|Company name for header|
-|`dut_info`|`dict[str, str] \|None`|`None`|Device Under Test information|
+| Parameter      | Type                           | Default                       | Description                            |
+| -------------- | ------------------------------ | ----------------------------- | -------------------------------------- |
+| `result`       | `ComplianceResult`             | required                      | Compliance test result                 |
+| `output_path`  | `str \|Path`                   | required                      | Output file path                       |
+| `format`       | `ComplianceReportFormat \|str` | `ComplianceReportFormat.HTML` | Report format                          |
+| `include_plot` | `bool`                         | `True`                        | Include spectrum/limit plot (HTML/PDF) |
+| `title`        | `str \|None`                   | `"EMC Compliance Report"`     | Report title                           |
+| `company_name` | `str \|None`                   | `None`                        | Company name for header                |
+| `dut_info`     | `dict[str, str] \|None`        | `None`                        | Device Under Test information          |
 
 **Returns:** `Path` - Path to generated report
 

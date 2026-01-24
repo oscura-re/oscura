@@ -70,19 +70,27 @@ if ! require_tool "${TOOL_CMD}" "${INSTALL_HINT}" "true"; then
   exit 0
 fi
 
-# Find YAML files
+# Find YAML files (only git-tracked files to avoid build artifacts)
 yaml_files=()
 for path in "${PATHS[@]}"; do
   if [[ -f "${path}" ]]; then
     yaml_files+=("${path}")
   elif [[ -d "${path}" ]]; then
-    while IFS= read -r -d '' file; do
-      yaml_files+=("${file}")
-    done < <(find "${path}" -type f \( -name "*.yaml" -o -name "*.yml" \) \
-      -not -path "*/.git/*" \
-      -not -path "*/.venv/*" \
-      -not -path "*/node_modules/*" \
-      -print0 2> /dev/null)
+    # Use git ls-files if in a git repo, otherwise fall back to find
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+      while IFS= read -r file; do
+        [[ -f "${file}" ]] && yaml_files+=("${file}")
+      done < <(git ls-files "${path}" | grep -E "\.(yaml|yml)$")
+    else
+      # Fallback to find if not in a git repo
+      while IFS= read -r -d "" file; do
+        yaml_files+=("${file}")
+      done < <(find "${path}" -type f \( -name "*.yaml" -o -name "*.yml" \) \
+        -not -path "*/.git/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/node_modules/*" \
+        -print0 2> /dev/null)
+    fi
   fi
 done
 

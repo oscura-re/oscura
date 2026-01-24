@@ -36,12 +36,12 @@ A list of keywords in an agent's frontmatter that trigger routing to that agent.
 
 **Example**:
 
-```yaml
+````yaml
 routing_keywords:
   - write
   - code
   - implement
-```
+```markdown
 
 ### Keyword Matching
 
@@ -92,7 +92,7 @@ A JSON file written by each agent upon task completion. Contains status, deliver
 
 JSON file tracking all active and completed agents. Includes agent ID, status, start time, completion time, and output location. Critical for recovery after context compaction.
 
-**File**: `.claude/agent-registry.json`
+**File**: `.claude/agent-outputs/*.json`
 
 ### Checkpoint
 
@@ -130,7 +130,7 @@ Configured limits that trigger optimization actions:
 - **Checkpoint threshold** (default: 65%): Create checkpoint now
 - **Critical threshold** (default: 75%): Complete current task, then compact
 
-**Configuration**: `.claude/config.yaml:orchestration.context.*`
+**Configuration**: `.claude/config.yaml:orchestration.context`
 
 ### Context Compaction
 
@@ -215,7 +215,7 @@ State of an agent in the registry:
 
 User-facing command that routes tasks to agents. Format: `/command <args>`
 
-**Examples**: `/ai`, `/code`, `/research`, `/review`, `/git`
+**Examples**: natural language requests, code implementation requests, `/research`, `/review`, `/git`
 
 ### Explicit Command
 
@@ -225,7 +225,7 @@ Command that forces routing to a specific agent, bypassing orchestrator intellig
 
 ### Universal Command
 
-The `/ai` command that uses full orchestrator intelligence to route tasks automatically.
+The natural language requests command that uses full orchestrator intelligence to route tasks automatically.
 
 ## Hooks
 
@@ -249,7 +249,7 @@ Hook that observes behavior and logs metrics (e.g., context usage monitoring).
 
 Rules defining how long coordination artifacts are kept before archiving or deletion.
 
-**Configuration**: `.claude/config.yaml:retention.*`
+**Configuration**: `.claude/config.yaml:retention`
 
 ### Archive
 
@@ -299,7 +299,7 @@ routing_keywords:
   - keyword1
   - keyword2
 ---
-```
+```markdown
 
 ### ISO-8601 Timestamp
 
@@ -400,3 +400,4 @@ Pattern of saving agent metadata to registry file immediately upon launch, ensur
 ## Version
 
 v1.0.0 (2026-01-16) - Initial glossary
+````

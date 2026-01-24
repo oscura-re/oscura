@@ -2,7 +2,7 @@
 
 > End-to-end reverse engineering workflows combining multiple Oscura capabilities
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
@@ -52,15 +52,15 @@ save_pdf_report(report, "analysis_report.pdf")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`unknown_protocol_re.py`|Full unknown protocol workflow|Advanced|
-|`automotive_bus_analysis.py`|Complete vehicle bus RE|Advanced|
-|`embedded_debug_workflow.py`|Firmware extraction via debug|Advanced|
-|`power_supply_characterization.py`|DC-DC converter full analysis|Intermediate|
-|`adc_full_characterization.py`|IEEE 1241 complete ADC test|Advanced|
-|`emc_pre_compliance.py`|Pre-compliance testing workflow|Intermediate|
-|`automated_report.py`|Multi-format report generation|Basic|
+| Script                             | Purpose                         | Complexity   |
+| ---------------------------------- | ------------------------------- | ------------ |
+| `unknown_protocol_re.py`           | Full unknown protocol workflow  | Advanced     |
+| `automotive_bus_analysis.py`       | Complete vehicle bus RE         | Advanced     |
+| `embedded_debug_workflow.py`       | Firmware extraction via debug   | Advanced     |
+| `power_supply_characterization.py` | DC-DC converter full analysis   | Intermediate |
+| `adc_full_characterization.py`     | IEEE 1241 complete ADC test     | Advanced     |
+| `emc_pre_compliance.py`            | Pre-compliance testing workflow | Intermediate |
+| `automated_report.py`              | Multi-format report generation  | Basic        |
 
 ## Workflow Examples
 

@@ -11,8 +11,6 @@ References:
     HDF5 specification (https://www.hdfgroup.org/)
 """
 
-from __future__ import annotations
-
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -81,7 +79,7 @@ def export_hdf5(
 
 
 def _write_trace_dataset(
-    f: h5py.File,
+    f: "h5py.File",
     name: str,
     trace: WaveformTrace | DigitalTrace,
     compression: str | None,

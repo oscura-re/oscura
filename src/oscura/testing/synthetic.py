@@ -4,6 +4,8 @@ Provides utilities for generating synthetic test data with known properties
 for validation and testing purposes.
 """
 
+from __future__ import annotations
+
 import struct
 from dataclasses import dataclass, field
 from pathlib import Path

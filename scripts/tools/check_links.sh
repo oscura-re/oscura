@@ -82,16 +82,27 @@ if ! require_tool "${TOOL_CMD}" "${INSTALL_HINT}"; then
   exit 0
 fi
 
-# Build file list for lychee
+# Build file list for lychee (only git-tracked files to avoid build artifacts)
 files_to_check=()
 for path in "${PATHS[@]}"; do
   if [[ -f "${path}" ]]; then
     files_to_check+=("${path}")
   elif [[ -d "${path}" ]]; then
-    # Find all markdown files recursively
-    while IFS= read -r -d '' file; do
-      files_to_check+=("${file}")
-    done < <(find "${path}" -type f -name "*.md" -print0 2> /dev/null)
+    # Use git ls-files if in a git repo, otherwise fall back to find
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+      while IFS= read -r file; do
+        [[ -f "${file}" ]] && files_to_check+=("${file}")
+      done < <(git ls-files "${path}" | grep '\.md$')
+    else
+      # Fallback to find if not in a git repo
+      while IFS= read -r -d '' file; do
+        files_to_check+=("${file}")
+      done < <(find "${path}" -type f -name "*.md" \
+        -not -path "*/.git/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/node_modules/*" \
+        -print0 2> /dev/null)
+    fi
   fi
 done
 

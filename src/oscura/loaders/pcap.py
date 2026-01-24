@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 # Try to import dpkt for full PCAP support
 try:
-    import dpkt  # type: ignore[import-untyped]
+    import dpkt  # type: ignore[import-not-found]
 
     DPKT_AVAILABLE = True
 except ImportError:

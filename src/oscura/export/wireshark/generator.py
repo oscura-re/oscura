@@ -106,7 +106,7 @@ class WiresharkDissectorGenerator:
 
         # Render template
         template = self.env.get_template("dissector.lua.j2")
-        return template.render(**context)
+        return str(template.render(**context))  # type: ignore[no-any-return]
 
     def _build_template_context(self, protocol: ProtocolDefinition) -> dict[str, Any]:
         """Build context dictionary for template rendering.

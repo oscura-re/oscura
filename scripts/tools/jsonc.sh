@@ -340,23 +340,31 @@ if [[ -n "${SCHEMA_FILE}" ]]; then
   fi
 fi
 
-# Find JSON files
+# Find JSON files (only git-tracked files to avoid build artifacts)
 json_files=()
 for path in "${PATHS[@]}"; do
   if [[ -f "${path}" ]]; then
     json_files+=("${path}")
   elif [[ -d "${path}" ]]; then
-    while IFS= read -r -d '' file; do
-      json_files+=("${file}")
-    done < <(find "${path}" -type f \( -name "*.json" -o -name "*.jsonc" \) \
-      -not -path "*/.git/*" \
-      -not -path "*/.venv/*" \
-      -not -path "*/node_modules/*" \
-      -not -path "*/__pycache__/*" \
-      -not -name "package-lock.json" \
-      -not -name "uv.lock" \
-      -not -name "corrupt_registry.json" \
-      -print0 2> /dev/null)
+    # Use git ls-files if in a git repo, otherwise fall back to find
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+      while IFS= read -r file; do
+        [[ -f "${file}" ]] && json_files+=("${file}")
+      done < <(git ls-files "${path}" | grep -E '\.(json|jsonc)$' | grep -v -E '(package-lock\.json|uv\.lock|corrupt_registry\.json)$')
+    else
+      # Fallback to find if not in a git repo
+      while IFS= read -r -d '' file; do
+        json_files+=("${file}")
+      done < <(find "${path}" -type f \( -name "*.json" -o -name "*.jsonc" \) \
+        -not -path "*/.git/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/node_modules/*" \
+        -not -path "*/__pycache__/*" \
+        -not -name "package-lock.json" \
+        -not -name "uv.lock" \
+        -not -name "corrupt_registry.json" \
+        -print0 2> /dev/null)
+    fi
   fi
 done
 

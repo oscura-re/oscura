@@ -129,7 +129,7 @@ run_check "MyPy" uv run mypy src/ --no-error-summary || true
 
 if [[ "${INCLUDE_TESTS}" == "true" ]]; then
   print_section "Quick Tests"
-  run_check "Smoke test" uv run pytest tests/unit/core/test_types.py -x -q --tb=no || true
+  run_check "Smoke test" uv run python -m pytest tests/unit/core/test_types.py -x -q --tb=no || true
 fi
 
 # Summary

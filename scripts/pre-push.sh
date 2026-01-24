@@ -57,7 +57,7 @@ START_TIME=$(date +%s)
 # =============================================================================
 
 show_help() {
-  cat <<'EOF'
+  cat << 'EOF'
 Comprehensive Local CI Verification for Oscura
 
 This script mirrors the GitHub Actions CI pipeline to catch all issues
@@ -117,7 +117,7 @@ EXAMPLES:
 TIPS:
     1. Run with --fix first to auto-correct formatting issues
     2. Use --quick during development, --full before final push
-    3. If tests fail, run: uv run pytest <failing_test> -v --tb=long
+    3. If tests fail, run: uv run python -m pytest <failing_test> -v --tb=long
     4. Check CI logs for exact error messages if local passes but CI fails
 
 EOF
@@ -129,43 +129,43 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  --quick)
-    MODE="quick"
-    shift
-    ;;
-  --full)
-    MODE="full"
-    shift
-    ;;
-  --fix)
-    FIX_MODE=true
-    shift
-    ;;
-  --parallel)
-    PARALLEL_WORKERS="$2"
-    shift 2
-    ;;
-  --no-tests)
-    RUN_TESTS=false
-    shift
-    ;;
-  --profile)
-    PROFILE_TESTS=true
-    shift
-    ;;
-  --verbose | -v)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    show_help
-    exit 0
-    ;;
-  *)
-    echo "Unknown option: $1" >&2
-    echo "Use --help for usage information" >&2
-    exit 2
-    ;;
+    --quick)
+      MODE="quick"
+      shift
+      ;;
+    --full)
+      MODE="full"
+      shift
+      ;;
+    --fix)
+      FIX_MODE=true
+      shift
+      ;;
+    --parallel)
+      PARALLEL_WORKERS="$2"
+      shift 2
+      ;;
+    --no-tests)
+      RUN_TESTS=false
+      shift
+      ;;
+    --profile)
+      PROFILE_TESTS=true
+      shift
+      ;;
+    --verbose | -v)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      show_help
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Use --help for usage information" >&2
+      exit 2
+      ;;
   esac
 done
 
@@ -235,7 +235,7 @@ run_check() {
   local output_file
   output_file=$(mktemp)
 
-  if "${cmd[@]}" >"${output_file}" 2>&1; then
+  if "${cmd[@]}" > "${output_file}" 2>&1; then
     local check_end
     check_end=$(date +%s)
     local duration=$((check_end - check_start))
@@ -255,7 +255,7 @@ run_check() {
       echo -e "    ${DIM}--- Output ---${NC}"
       head -50 "${output_file}" | sed 's/^/    /'
       local lines
-      lines=$(wc -l <"${output_file}")
+      lines=$(wc -l < "${output_file}")
       if [[ ${lines} -gt 50 ]]; then
         echo -e "    ${DIM}... (${lines} total lines, showing first 50)${NC}"
       fi
@@ -296,7 +296,12 @@ check_ssot() {
 }
 
 check_hook_tests() {
-  run_check "Hook unit tests" uv run python .claude/hooks/test_hooks.py
+  # Only run if test file exists
+  if [[ -f ".claude/hooks/test_hooks.py" ]]; then
+    run_check "Hook unit tests" uv run python .claude/hooks/test_hooks.py
+  else
+    log_check_skip "Hook unit tests" "Test file not found (optional)"
+  fi
 }
 
 check_test_markers() {
@@ -310,7 +315,7 @@ check_unit_tests() {
     # This allows pyproject.toml to be the single source of truth
     "-m" "not slow and not performance"
     "--maxfail=10"
-    "--benchmark-disable"
+    "-p" "no:benchmark" # Disable pytest-benchmark to avoid xdist conflict warning
   )
 
   # Add profiling if requested
@@ -327,12 +332,12 @@ check_unit_tests() {
   else
     # AGGRESSIVE: Use ALL available cores (no cap) for sub-2-min target
     local workers
-    workers=$(nproc 2>/dev/null || echo 4)
+    workers=$(nproc 2> /dev/null || echo 4)
     # No cap - use all cores for maximum parallelization
     pytest_args+=("-n" "${workers}" "--dist=worksteal")
   fi
 
-  run_check "Unit tests" uv run pytest "${pytest_args[@]}"
+  run_check "Unit tests" uv run python -m pytest "${pytest_args[@]}"
 }
 
 check_integration_tests() {
@@ -344,12 +349,13 @@ check_integration_tests() {
     # Config-agnostic: Inherits from pyproject.toml
     "-m" "integration"
     "--maxfail=5"
+    "-p" "no:benchmark" # Disable pytest-benchmark to avoid xdist conflict warning
   )
 
   # Use modest parallelization (half of available cores, min 2)
   # Integration tests may share resources, so we're conservative
   local workers
-  workers=$(nproc 2>/dev/null || echo 4)
+  workers=$(nproc 2> /dev/null || echo 4)
   workers=$((workers / 2))
   if [[ ${workers} -lt 2 ]]; then
     workers=2
@@ -357,7 +363,7 @@ check_integration_tests() {
 
   pytest_args+=("-n" "${workers}" "--dist=loadgroup")
 
-  run_check "Integration tests" uv run pytest "${pytest_args[@]}"
+  run_check "Integration tests" uv run python -m pytest "${pytest_args[@]}"
 }
 
 check_compliance_tests() {
@@ -368,7 +374,7 @@ check_compliance_tests() {
     "--maxfail=5"
   )
 
-  run_check "Compliance tests" uv run pytest "${pytest_args[@]}"
+  run_check "Compliance tests" uv run python -m pytest "${pytest_args[@]}"
 }
 
 check_mkdocs_build() {
@@ -382,13 +388,13 @@ check_mkdocs_build() {
 
   # Compute hash of docs/ directory and mkdocs.yml
   local current_hash
-  if command -v sha256sum >/dev/null 2>&1; then
-    current_hash=$(find docs/ mkdocs.yml -type f 2>/dev/null |
-      sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1)
+  if command -v sha256sum > /dev/null 2>&1; then
+    current_hash=$(find docs/ mkdocs.yml -type f 2> /dev/null \
+      | sort | xargs sha256sum 2> /dev/null | sha256sum | cut -d' ' -f1)
   else
     # Fallback for macOS (uses shasum)
-    current_hash=$(find docs/ mkdocs.yml -type f 2>/dev/null |
-      sort | xargs shasum -a 256 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
+    current_hash=$(find docs/ mkdocs.yml -type f 2> /dev/null \
+      | sort | xargs shasum -a 256 2> /dev/null | shasum -a 256 | cut -d' ' -f1)
   fi
 
   # Check if hash matches cached version
@@ -405,9 +411,9 @@ check_mkdocs_build() {
   fi
 
   # Hash changed or no cache - rebuild
-  if run_check "MkDocs build" uv run mkdocs build --strict --clean; then
+  if run_check "MkDocs build" uv run python -m mkdocs build --strict --clean; then
     # Save new hash on success
-    echo "${current_hash}" >"${cache_file}"
+    echo "${current_hash}" > "${cache_file}"
     return 0
   else
     return 1
@@ -425,13 +431,13 @@ check_package_build() {
 
   # Compute hash of pyproject.toml and src/ directory
   local current_hash
-  if command -v sha256sum >/dev/null 2>&1; then
-    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2>/dev/null |
-      sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1)
+  if command -v sha256sum > /dev/null 2>&1; then
+    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2> /dev/null \
+      | sort | xargs sha256sum 2> /dev/null | sha256sum | cut -d' ' -f1)
   else
     # Fallback for macOS (uses shasum)
-    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2>/dev/null |
-      sort | xargs shasum -a 256 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
+    current_hash=$(find pyproject.toml src/ -type f -name "*.py" -o -name "*.toml" 2> /dev/null \
+      | sort | xargs shasum -a 256 2> /dev/null | shasum -a 256 | cut -d' ' -f1)
   fi
 
   # Check if hash matches cached version
@@ -450,7 +456,7 @@ check_package_build() {
   # Hash changed or no cache - rebuild
   if run_check "Package build" uv build; then
     # Save new hash on success
-    echo "${current_hash}" >"${cache_file}"
+    echo "${current_hash}" > "${cache_file}"
     return 0
   else
     return 1
@@ -492,7 +498,7 @@ sys.exit(0)
 
 check_docstring_coverage() {
   # CI uses -f 95 threshold
-  run_check "Docstring coverage" uv run interrogate src/oscura -vv -f 95
+  run_check "Docstring coverage" uv run python -m interrogate src/oscura -vv -f 95
 }
 
 # =============================================================================

@@ -106,8 +106,23 @@ class TestStructuredFormatter:
         assert "Test message" in output
 
 
+@pytest.mark.no_cover  # Test modifies global logging state
 class TestConfigureLogging:
     """Test configure_logging function."""
+
+    @pytest.fixture(autouse=True)
+    def reset_logging(self):
+        """Reset logging configuration before and after each test."""
+        # Store original state of oscura logger (not root logger)
+        oscura_logger = logging.getLogger("oscura")
+        original_level = oscura_logger.level
+        original_handlers = oscura_logger.handlers[:]
+
+        yield
+
+        # Restore original state
+        oscura_logger.setLevel(original_level)
+        oscura_logger.handlers = original_handlers
 
     def test_configure_console_only(self) -> None:
         """Test configuring console-only logging."""

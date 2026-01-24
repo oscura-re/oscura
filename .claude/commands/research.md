@@ -1,268 +1,222 @@
-# /research - Web Research & Citation
+---
+name: research
+description: Conduct comprehensive research with authoritative sources and citations
+arguments: <topic> [--depth=standard|deep]
+version: 1.0.0
+created: 2026-01-22
+updated: 2026-01-22
+status: stable
+target_agent: knowledge_researcher
+---
 
-Force web research workflow with comprehensive citation and documentation.
+# /research - Comprehensive Research with Citations
 
-## Purpose
-
-Bypass intelligent routing and go directly to `knowledge_researcher` agent for in-depth web research, documentation gathering, and cited summaries.
+Conduct thorough research on any topic using authoritative sources with proper citations and validation.
 
 ## Usage
 
-```bash
-/research <topic>                           # Research topic
-/research Docker networking                 # Technical research
-/research Python async best practices       # Language features
-/research compare JWT vs OAuth              # Comparisons
-/research latest React 19 features          # Recent developments
-```
+````bash
+/research <topic>                    # Standard depth research
+/research <topic> --depth=deep       # Deep research with more sources
+/research "Docker networking"        # Research specific topic
+/research "Python async patterns"    # Technical research
+```markdown
 
-## When to Use
+## Purpose
 
-✅ **Use /research when**:
+This command routes to the **knowledge_researcher** agent for:
 
-- Need to learn about unfamiliar technology
-- Want current best practices
-- Comparing alternatives (libraries, approaches, tools)
-- Need recent developments or changes
-- Want cited sources for documentation
-- Learning new technologies or patterns
+- Learning new technologies and frameworks
+- Investigating best practices and patterns
+- Gathering authoritative sources with citations
+- Validating technical accuracy and facts
+- Cross-referencing with existing documentation
+- Quality assurance before publishing content
 
-❌ **Don't use /research when**:
+**When to use**:
+- Need to learn unfamiliar technology
+- Want authoritative sources with citations
+- Require fact-checking and validation
+- Before making important technical decisions
+- Quarterly content audits
 
-- Just want to write code → Use `/code` or `/ai`
-- Already know what to do → Use `/code` or `/feature`
-- Need to implement something → Ask `/ai write...` or `/route code_assistant`
-- Just want documentation created → Use `/doc`
-
-## How It Works
-
-```
-/research <topic>
-  ↓
-Force route to knowledge_researcher (bypass orchestrator)
-  ↓
-knowledge_researcher searches web
-  ↓
-Gathers information from multiple sources
-  ↓
-Synthesizes findings
-  ↓
-Returns: Comprehensive summary with citations
-```
+**When NOT to use**:
+- Just want documentation written → Use `/ai document` or let orchestrator route to technical_writer
+- Just need code implementation → Use natural language or code_assistant
+- Just need code review → Use `/review`
 
 ## Examples
 
 ### Example 1: Technology Research
 
 ```bash
-/research WebAssembly performance characteristics
-```
+/research "Rust async runtime comparison 2026"
+```markdown
 
-Returns:
+**Output**:
+- 5-10 authoritative sources (official docs, RFCs, technical blogs)
+- Comparison of Tokio, async-std, smol
+- Performance benchmarks with citations
+- Best practices and use cases
+- Bibliography in consistent format
 
-- Overview of WebAssembly
-- Performance comparisons with JavaScript
-- Use cases and limitations
-- Code examples
-- Citations from MDN, official docs, benchmarks
-
-### Example 2: Best Practices
-
-```bash
-/research Python async/await patterns 2026
-```
-
-Returns:
-
-- Current async patterns
-- Common pitfalls
-- Performance considerations
-- Code examples
-- Links to official docs and PEPs
-
-### Example 3: Comparison Research
+### Example 2: Deep Research
 
 ```bash
-/research compare PostgreSQL vs MongoDB for time-series data
-```
+/research "gRPC performance optimization" --depth=deep
+```markdown
 
-Returns:
+**Result**:
+- 10+ high-quality sources
+- Technical validation (tested examples)
+- Cross-references to related topics
+- Comprehensive bibliography
 
-- Pros/cons of each
-- Performance characteristics
-- Use case recommendations
-- Citations from benchmarks and case studies
+### Example 3: Best Practices
 
-## Output Format
+```bash
+/research "Python testing strategies 2026"
+```bash
 
-Research results are structured as:
+**Returns**:
+- pytest vs unittest comparison
+- Fixture patterns and examples
+- Coverage best practices
+- Citations from Python testing documentation
 
-````markdown
-# Research: <Topic>
+## Arguments
 
-## Summary
+| Argument | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `topic` | string | Yes | - | Research topic or question |
 
-[Executive summary of findings]
+## Options
 
-## Key Findings
+| Flag | Description |
+|------|-------------|
+| `--depth=standard` | 5-10 authoritative sources (default) |
+| `--depth=deep` | 10+ sources, comprehensive analysis |
 
-1. **Finding 1**
-   - Details
-   - [Source](url)
+## How It Works
 
-2. **Finding 2**
-   - Details
-   - [Source](url)
-
-## Detailed Analysis
-
-### Aspect 1
-
-[In-depth analysis with citations]
-
-### Aspect 2
-
-[In-depth analysis with citations]
-
-## Code Examples
-
-```language
-[Relevant code examples]
-```
-
-## Recommendations
-
-Based on research:
-
-- Recommendation 1
-- Recommendation 2
-
-## Sources
-
-- [Source 1 Title](url) - Description
-- [Source 2 Title](url) - Description
-
-## Next Steps
-
-- Suggested actions based on research
-````
-
-## After Using /research
-
-What you can do next:
-
-1. **Implement findings** - `/code implement [what you learned]`
-2. **Create documentation** - `/doc create guide on [topic]`
-3. **Results documented** - Research findings saved to project docs
-4. **Ask follow-up** - `/research [deeper topic]`
-5. **Build feature** - `/feature implement [based on research]`
-
-## Research Scope
-
-The agent researches:
-
-- ✅ Technical documentation
-- ✅ Best practices and patterns
-- ✅ Performance characteristics
-- ✅ Recent developments (2026)
-- ✅ Comparison analyses
-- ✅ Code examples
-- ✅ Official documentation
-- ✅ Community consensus
-
-The agent does NOT:
-
-- ❌ Write code directly (use `/code` after research)
-- ❌ Implement features (use `/feature` after research)
-- ❌ Create project documentation (use `/doc` for that)
-
-## Benefits of /research
-
-- **Comprehensive**: Gathers from multiple authoritative sources
-- **Current**: Focuses on recent information (2026)
-- **Cited**: All claims backed by sources
-- **Synthesized**: Not just copy-paste, but analyzed and summarized
-- **Actionable**: Includes recommendations and next steps
-
-## Integration with Workflow
-
-Typical flow:
-
-```
-/research Docker best practices 2026
+```bash
+/research <topic>
   ↓
-[Read research results]
+Route to knowledge_researcher agent
   ↓
-/feature implement Docker deployment based on best practices
+1. Investigation: Gather 5-10 authoritative sources
   ↓
-[System generates requirements from research]
+2. Validation: Fact-check and verify technical accuracy
   ↓
-Implementation with validation
-```
+3. Citation: Format citations consistently
+  ↓
+4. Quality Check: Cross-reference and validate
+  ↓
+Return research findings with bibliography
+```markdown
 
-## Search Strategy
+**Research Philosophy**: 80/20 rule - focus on 20% of authoritative sources that provide 80% of value.
 
-knowledge_researcher uses:
+## Research Output Format
 
-1. **Official documentation** (first priority)
-2. **Technical blogs** (authoritative sources)
-3. **Stack Overflow** (community consensus)
-4. **GitHub discussions** (real-world usage)
-5. **Academic papers** (for algorithms/theory)
-6. **Benchmarks** (for performance data)
+Research results include:
 
-## Comparison with Other Commands
+1. **Executive Summary**: Key findings (2-3 paragraphs)
+2. **Detailed Findings**: Organized by topic
+3. **Sources**: All sources with proper citations
+4. **Bibliography**: Formatted citations
+5. **Quality Assessment**: Source authority and recency
+6. **Technical Validation**: Tested examples (if applicable)
 
-|Command|Purpose|Output|Citations|Agent|
-|---|---|---|---|---|
-|`/research`|Learn/gather info|Research summary|✅ Yes|knowledge_researcher|
-|`/doc`|Create docs|Documentation|❌ No|technical_writer|
-|`/code`|Write code|Code|❌ No|code_assistant|
-|`/ai`|General|Varies|Varies|orchestrator|
+## Quality Standards
+
+All research includes:
+
+- ✅ **Authoritative sources**: Official docs, peer-reviewed, established authorities
+- ✅ **Citations**: Proper attribution for all facts
+- ✅ **Recency**: Prioritize recent sources (< 2 years old)
+- ✅ **Technical validation**: Test code examples
+- ✅ **Cross-references**: Link to existing project docs
+
+## Error Handling
+
+### Empty Topic
+
+```bash
+/research ""
+```bash
+
+**Response**:
+```bash
+Error: Topic cannot be empty
+Usage: /research <topic> [--depth=standard|deep]
+```bash
+
+### Insufficient Sources
+
+If fewer than 3 authoritative sources found:
+```bash
+Warning: Only 2 authoritative sources found for "obscure topic"
+Recommend: Broaden search terms or accept limited results
+Proceed? [y/N]:
+```markdown
+
+## Related Commands
+
+| Command | Purpose | When to Use Instead |
+|---------|---------|---------------------|
+| `/research` | Conduct research | Need authoritative sources |
+| `/ai document <topic>` | Create documentation | Just need docs written |
+| `/agents` | List agents | Explore capabilities |
+| `/route knowledge_researcher <task>` | Force routing | Manual control |
+
+## Workflow Integration
+
+Common patterns:
+
+1. **Research → Document**:
+   ```bash
+   /research "Docker networking 2026"
+   # Review findings
+   /ai document Docker networking guide based on research
+```bash
+
+2. **Research → Code**:
+   ```bash
+   /research "Python async best practices"
+   # Learn patterns
+   /ai implement async queue with best practices
+```markdown
+
+3. **Research → Validate**:
+   ```bash
+   /research "JWT security 2026"
+   # Validate existing implementation
+   /review src/auth/jwt.py
+```python
 
 ## Configuration
 
-Research behavior in `.claude/config.yaml`:
+Research behavior controlled in `.claude/config.yaml`:
 
 ```yaml
-agents:
-  knowledge_researcher:
-    max_sources: 10 # Max sources to cite
-    prefer_recent: true # Prioritize 2025-2026 sources
-    depth: comprehensive # or "quick"
-```
-
-## Workflow
-
-```
-/research → knowledge_researcher (direct, no routing)
-          → Web search (multiple queries)
-          → Source analysis
-          → Synthesis
-          → Return summary with citations
-```
-
-## Aliases
-
-The following aliases work identically:
-
-- `/learn` → `/research`
-- `/study` → `/research`
-- `/investigate` → `/research`
-
-## Agent
-
-Routes to: **knowledge_researcher** (always, no routing logic)
-
-For normal routing behavior, see `.claude/docs/routing-concepts.md`
+orchestration:
+  agents:
+    knowledge_researcher:
+      model: opus                    # High reasoning capability
+      max_sources: 10                # Max authoritative sources
+      citation_format: web           # web|academic|apa|mla
+```markdown
 
 ## See Also
 
+- `.claude/agents/knowledge_researcher.md` - Full agent capabilities
+- `.claude/commands/route.md` - Manual routing control
+- `.claude/commands/agents.md` - List all agents
 - `.claude/docs/routing-concepts.md` - How routing works
-- `.claude/agents/knowledge_researcher.md` - Agent details
-- `.claude/commands/agents.md` - All available agents
+- `CLAUDE.md` - Project workflow
 
-## Version
+## Version History
 
-v1.1.0 (2026-01-16) - Removed vestigial "knowledge base" references
-v1.0.0 (2026-01-09) - Initial creation as part of workflow command system
+- **v1.0.0** (2026-01-22): Initial creation with routing to knowledge_researcher agent
+````

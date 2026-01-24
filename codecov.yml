@@ -1,0 +1,41 @@
+# Codecov configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+# Coverage thresholds
+coverage:
+  status:
+    project:
+      default:
+        target: 80% # Minimum coverage target
+        threshold: 2% # Allow 2% drop before failing
+    patch:
+      default:
+        target: 80% # Coverage for new code
+        threshold: 2%
+
+# Comment on pull requests
+comment:
+  layout: "reach,diff,flags,tree,footer"
+  behavior: default
+  require_changes: false
+
+# Ignore paths
+ignore:
+  - "tests/"
+  - "demos/"
+  - "scripts/"
+  - "docs/"
+  - "**/__init__.py"
+  - "**/conftest.py"
+
+# Flags for different test groups
+flags:
+  unittests:
+    paths:
+      - src/
+
+# Badge precision
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true

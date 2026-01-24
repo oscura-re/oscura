@@ -138,14 +138,14 @@
   },
 
   // Python Testing: pytest configuration for team consistency
+  // SSOT COMPLIANCE: All pytest config in pyproject.toml [tool.pytest.ini_options]
+  // VS Code uses those settings automatically. Only specify minimal UI-specific args here.
+  // Note: pyproject.toml has --tb=line (CLI optimized), but UI benefits from --tb=short
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "python.testing.pytestArgs": [
     "tests",
-    "--tb=short",
-    "-v",
-    "--strict-markers",
-    "--strict-config"
+    "--tb=short" // UI override for readability (pyproject.toml has --tb=line for CLI speed)
   ],
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
 

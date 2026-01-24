@@ -43,7 +43,7 @@ except (ImportError, AttributeError):
     HAS_GPU = False
 
 try:
-    import numba  # type: ignore[import-untyped]
+    import numba  # type: ignore[import-not-found]
 
     HAS_NUMBA = True
     del numba

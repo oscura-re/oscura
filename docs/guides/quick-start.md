@@ -44,31 +44,31 @@ That's it! You've loaded, analyzed, and characterized a signal.
 
 Want to decode UART, SPI, I2C, or CAN signals?
 
-→ **[Serial Protocols Demo](https://github.com/lair-click-bats/oscura/tree/main/demos/04_serial_protocols)**
+→ **[Serial Protocols Demo](https://github.com/oscura-re/oscura/tree/main/demos/04_serial_protocols)**
 
 ### 🚗 **Automotive Diagnostics**
 
 Working with CAN bus, OBD-II, or J1939?
 
-→ **[Automotive Demo](https://github.com/lair-click-bats/oscura/tree/main/demos/09_automotive)**
+→ **[Automotive Demo](https://github.com/oscura-re/oscura/tree/main/demos/09_automotive)**
 
 ### 📊 **Spectral Analysis**
 
 Need FFT, THD, SNR, or IEEE 1241 compliance?
 
-→ **[Spectral Compliance Demo](https://github.com/lair-click-bats/oscura/tree/main/demos/12_spectral_compliance)**
+→ **[Spectral Compliance Demo](https://github.com/oscura-re/oscura/tree/main/demos/12_spectral_compliance)**
 
 ### ⚡ **Power Analysis**
 
 Analyzing power quality, ripple, or efficiency?
 
-→ **[Power Analysis Demo](https://github.com/lair-click-bats/oscura/tree/main/demos/14_power_analysis)**
+→ **[Power Analysis Demo](https://github.com/oscura-re/oscura/tree/main/demos/14_power_analysis)**
 
 ### 🔍 **Reverse Engineering**
 
 Unknown signal? Need to discover the protocol?
 
-→ **[Signal RE Demo](https://github.com/lair-click-bats/oscura/tree/main/demos/17_signal_reverse_engineering)**
+→ **[Signal RE Demo](https://github.com/oscura-re/oscura/tree/main/demos/17_signal_reverse_engineering)**
 
 ## Learning Path
 
@@ -83,17 +83,17 @@ Unknown signal? Need to discover the protocol?
 → See [Loader API](../api/loader.md) - Tektronix WFM, VCD, PCAP, CSV, HDF5, and more
 
 **Q: How do I decode a specific protocol?**
-→ See [Protocol Decoders](https://github.com/lair-click-bats/oscura/tree/main/demos/05_protocol_decoding)
+→ See [Protocol Decoders](https://github.com/oscura-re/oscura/tree/main/demos/05_protocol_decoding)
 
 **Q: Can I analyze large files?**
-→ See [Custom DAQ Demo](https://github.com/lair-click-bats/oscura/tree/main/demos/03_custom_daq) for streaming
+→ See [Custom DAQ Demo](https://github.com/oscura-re/oscura/tree/main/demos/03_custom_daq) for streaming
 
 **Q: What measurements are available?**
 → See [Analysis API](../api/analysis.md) for complete list
 
 ## Help & Resources
 
-- **All Demos**: [Browse 19 comprehensive demos](https://github.com/lair-click-bats/oscura/tree/main/demos)
+- **All Demos**: [Browse 19 comprehensive demos](https://github.com/oscura-re/oscura/tree/main/demos)
 - **API Reference**: [Complete function documentation](../api/index.md)
 - **Error Codes**: [Troubleshooting guide](../error-codes.md)
-- **Contributing**: [How to contribute](../contributing.md)
+- **Contributing**: [How to contribute](https://github.com/oscura-re/oscura/blob/main/CONTRIBUTING.md)
