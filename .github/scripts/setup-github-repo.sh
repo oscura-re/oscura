@@ -38,41 +38,41 @@ log_info "Configuring repository: ${REPO_FULL}"
 echo ""
 
 # ============================================================================
-# 1. Configure Branch Protection for main
+# 1. Configure Repository Ruleset for main branch
 # ============================================================================
 
-log_info "Step 1: Configuring branch protection for 'main'..."
+log_info "Step 1: Configuring repository ruleset for 'main' branch..."
 
-gh api \
-  --method PUT \
-  -H "Accept: application/vnd.github+json" \
-  -H "X-GitHub-Api-Version: 2022-11-28" \
-  "/repos/${REPO_FULL}/branches/main/protection" \
-  -f "required_status_checks[strict]=true" \
-  -f "required_status_checks[contexts][]=ci / pre-commit" \
-  -f "required_status_checks[contexts][]=ci / lint" \
-  -f "required_status_checks[contexts][]=ci / type-check" \
-  -f "required_status_checks[contexts][]=ci / test (3.12)" \
-  -f "required_status_checks[contexts][]=ci / test (3.13)" \
-  -f "enforce_admins=true" \
-  -f "required_pull_request_reviews[dismiss_stale_reviews]=true" \
-  -f "required_pull_request_reviews[require_code_owner_reviews]=true" \
-  -f "required_pull_request_reviews[required_approving_review_count]=1" \
-  -f "required_pull_request_reviews[require_last_push_approval]=false" \
-  -f "required_conversation_resolution=true" \
-  -f "required_linear_history=true" \
-  -f "allow_force_pushes=false" \
-  -f "allow_deletions=false" \
-  -f "block_creations=false" \
-  -f "required_signatures=false" \
-  -f "lock_branch=false" \
-  -f "allow_fork_syncing=true" \
-  > /dev/null 2>&1
-# shellcheck disable=SC2181
-if [[ $? -eq 0 ]]; then
-  log_success "Branch protection configured"
+# Get script directory to find ruleset template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RULESET_TEMPLATE="${SCRIPT_DIR}/../config/main-branch-ruleset-template.json"
+
+if [[ ! -f "${RULESET_TEMPLATE}" ]]; then
+  log_error "Ruleset template not found: ${RULESET_TEMPLATE}"
+  exit 1
+fi
+
+# Check if ruleset already exists by name
+EXISTING_RULESET=$(gh api "/repos/${REPO_FULL}/rulesets" --jq '.[] | select(.name == "main branch protection with merge queue") | .id' 2> /dev/null)
+
+if [[ -n "${EXISTING_RULESET}" ]]; then
+  log_info "Updating existing ruleset (ID: ${EXISTING_RULESET})..."
+  gh api \
+    --method PUT \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "/repos/${REPO_FULL}/rulesets/${EXISTING_RULESET}" \
+    --input "${RULESET_TEMPLATE}" \
+    > /dev/null && log_success "Repository ruleset updated"
 else
-  log_warning "Branch protection may need manual adjustment (some status checks may not exist yet)"
+  log_info "Creating new ruleset..."
+  gh api \
+    --method POST \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "/repos/${REPO_FULL}/rulesets" \
+    --input "${RULESET_TEMPLATE}" \
+    > /dev/null && log_success "Repository ruleset created"
 fi
 
 # ============================================================================
@@ -346,7 +346,7 @@ log_success "GitHub repository setup complete!"
 echo "========================================================================"
 echo ""
 log_info "Configured:"
-echo "  ✓ Branch protection for 'main' (1 approval required)"
+echo "  ✓ Repository ruleset for 'main' (merge queue with ALLGREEN strategy)"
 echo "  ✓ Repository settings (squash merge, auto-delete branches)"
 echo "  ✓ Security features (Dependabot, secret scanning, vulnerability reporting)"
 echo "  ✓ Repository topics for discoverability"
@@ -357,9 +357,9 @@ echo "  ✓ PyPI API token secret"
 echo ""
 log_info "Next steps:"
 echo "  1. Verify settings: gh repo view --web"
-echo "  2. Check branch protection: gh api /repos/${REPO_FULL}/branches/main/protection"
+echo "  2. Check ruleset: gh api /repos/${REPO_FULL}/rulesets"
 echo "  3. Test the setup with a test PR"
 echo "  4. Consider enabling CodeQL (may require manual setup)"
 echo ""
-log_warning "Note: Some status checks in branch protection may show as not found until CI runs at least once."
+log_warning "Note: Merge queue is enabled - PRs will be validated before merging to prevent broken commits on main."
 echo ""

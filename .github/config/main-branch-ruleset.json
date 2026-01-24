@@ -1,0 +1,53 @@
+{
+  "id": 12055878,
+  "name": "main branch protection with merge queue",
+  "target": "branch",
+  "source_type": "Repository",
+  "source": "oscura-re/oscura",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": ["refs/heads/main"]
+    }
+  },
+  "rules": [
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 0,
+        "dismiss_stale_reviews_on_push": false,
+        "required_reviewers": [],
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false,
+        "allowed_merge_methods": ["squash"]
+      }
+    },
+    {
+      "type": "merge_queue",
+      "parameters": {
+        "merge_method": "SQUASH",
+        "max_entries_to_build": 5,
+        "min_entries_to_merge": 1,
+        "max_entries_to_merge": 5,
+        "min_entries_to_merge_wait_minutes": 0,
+        "grouping_strategy": "ALLGREEN",
+        "check_response_timeout_minutes": 60
+      }
+    }
+  ],
+  "node_id": "RRS_lACqUmVwb3NpdG9yec5D805OzgC39UY",
+  "created_at": "2026-01-22T18:09:28.843Z",
+  "updated_at": "2026-01-24T16:30:10.799Z",
+  "bypass_actors": [],
+  "current_user_can_bypass": "never",
+  "_links": {
+    "self": {
+      "href": "https://api.github.com/repos/oscura-re/oscura/rulesets/12055878"
+    },
+    "html": {
+      "href": "https://github.com/oscura-re/oscura/rules/12055878"
+    }
+  }
+}
