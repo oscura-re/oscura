@@ -64,21 +64,21 @@ Then reload Lua plugins in Wireshark: **Analyze > Reload Lua Plugins** (Ctrl+Shi
 
 ## Supported Field Types
 
-|Oscura Type|Wireshark Type|Size|Notes|
-|---|---|---|---|
-|`uint8`|`ProtoField.uint8`|1 byte|Unsigned 8-bit integer|
-|`uint16`|`ProtoField.uint16`|2 bytes|Unsigned 16-bit integer|
-|`uint32`|`ProtoField.uint32`|4 bytes|Unsigned 32-bit integer|
-|`uint64`|`ProtoField.uint64`|8 bytes|Unsigned 64-bit integer|
-|`int8`|`ProtoField.int8`|1 byte|Signed 8-bit integer|
-|`int16`|`ProtoField.int16`|2 bytes|Signed 16-bit integer|
-|`int32`|`ProtoField.int32`|4 bytes|Signed 32-bit integer|
-|`int64`|`ProtoField.int64`|8 bytes|Signed 64-bit integer|
-|`float32`|`ProtoField.float`|4 bytes|IEEE 754 single precision|
-|`float64`|`ProtoField.double`|8 bytes|IEEE 754 double precision|
-|`bool`|`ProtoField.bool`|1 byte|Boolean value|
-|`bytes`|`ProtoField.bytes`|Variable|Raw byte array|
-|`string`|`ProtoField.string`|Variable|Text string|
+| Oscura Type | Wireshark Type      | Size     | Notes                     |
+| ----------- | ------------------- | -------- | ------------------------- |
+| `uint8`     | `ProtoField.uint8`  | 1 byte   | Unsigned 8-bit integer    |
+| `uint16`    | `ProtoField.uint16` | 2 bytes  | Unsigned 16-bit integer   |
+| `uint32`    | `ProtoField.uint32` | 4 bytes  | Unsigned 32-bit integer   |
+| `uint64`    | `ProtoField.uint64` | 8 bytes  | Unsigned 64-bit integer   |
+| `int8`      | `ProtoField.int8`   | 1 byte   | Signed 8-bit integer      |
+| `int16`     | `ProtoField.int16`  | 2 bytes  | Signed 16-bit integer     |
+| `int32`     | `ProtoField.int32`  | 4 bytes  | Signed 32-bit integer     |
+| `int64`     | `ProtoField.int64`  | 8 bytes  | Signed 64-bit integer     |
+| `float32`   | `ProtoField.float`  | 4 bytes  | IEEE 754 single precision |
+| `float64`   | `ProtoField.double` | 8 bytes  | IEEE 754 double precision |
+| `bool`      | `ProtoField.bool`   | 1 byte   | Boolean value             |
+| `bytes`     | `ProtoField.bytes`  | Variable | Raw byte array            |
+| `string`    | `ProtoField.string` | Variable | Text string               |
 
 ## Display Bases
 

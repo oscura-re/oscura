@@ -6,6 +6,8 @@ in binary data, useful for pattern identification, data characterization,
 and protocol fingerprinting.
 """
 
+from __future__ import annotations
+
 from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Union
@@ -310,7 +312,7 @@ def find_unusual_ngrams(
     return unusual
 
 
-def ngram_heatmap(data: DataType, n: int = 2) -> "NDArray[np.float64]":
+def ngram_heatmap(data: DataType, n: int = 2) -> NDArray[np.float64]:
     """Generate n-gram co-occurrence heatmap.
 
     : N-gram Frequency Analysis
@@ -586,7 +588,7 @@ class NGramAnalyzer:
         """
         return find_unusual_ngrams(data, baseline=baseline, n=self.n, z_threshold=z_threshold)
 
-    def heatmap(self, data: DataType) -> "NDArray[np.float64]":
+    def heatmap(self, data: DataType) -> NDArray[np.float64]:
         """Generate bigram heatmap.
 
         Args:

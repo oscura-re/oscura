@@ -1,0 +1,98 @@
+name: Security Vulnerability
+description: Report a security vulnerability (NOT for hardware vulnerability discoveries)
+title: "[Security]: "
+labels: ["security", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ IMPORTANT: Security Disclosure Policy
+
+        **This template is for reporting security vulnerabilities in Oscura itself** (the software library).
+
+        **This is NOT for:**
+        - Hardware vulnerabilities discovered using Oscura (those are features!)
+        - Protocol weaknesses found during reverse engineering
+        - Security issues in systems you're analyzing
+
+        If you've found a **critical security vulnerability**, please email the
+        maintainers directly instead of creating a public issue.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this vulnerability?
+      options:
+        - Critical (Remote code execution, data loss)
+        - High (Privilege escalation, authentication bypass)
+        - Medium (Information disclosure, DoS)
+        - Low (Minor information leak, low-impact issue)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Vulnerability Description
+      description: Describe the security issue in Oscura
+      placeholder: |
+        When processing a maliciously crafted signal file, Oscura...
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What could an attacker do with this vulnerability?
+      placeholder: |
+        An attacker could:
+        - Execute arbitrary code on the user's system
+        - Crash the application with a DoS
+        - Read sensitive data from memory
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How to reproduce this vulnerability (provide minimal example if safe)
+      placeholder: |
+        1. Create a malformed VCD file with...
+        2. Load it using oscura.load()
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-versions
+    attributes:
+      label: Affected Versions
+      description: Which versions of Oscura are affected?
+      placeholder: "All versions up to and including 0.3.4"
+    validations:
+      required: true
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested Mitigation
+      description: If you have suggestions for fixing this, include them here
+      placeholder: |
+        Add input validation to check...
+        Sanitize the input by...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: responsible-disclosure
+    attributes:
+      label: Responsible Disclosure
+      description: Please confirm you'll follow responsible disclosure
+      options:
+        - label: I will not publicly disclose details until a fix is released
+          required: true
+        - label: I have not shared this vulnerability publicly yet
+          required: true

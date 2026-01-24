@@ -7,7 +7,7 @@ expressing signal analysis operations in a readable, intuitive way.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import numpy as np
 
@@ -26,7 +26,7 @@ __all__ = [
 
 
 @dataclass
-class FluentResult[T]:
+class FluentResult(Generic[T]):
     """Result container with fluent interface.
 
     Provides method chaining for result processing.

@@ -2,7 +2,7 @@
 
 > IEEE 181-2011 compliant rise/fall time, pulse width, duty cycle measurements
 
-**Oscura Version**: 0.3.x | **Last Updated**: 2026-01-16 | **Status**: Production
+**Oscura Version**: 0.3.0 | **Last Updated**: 2026-01-16 | **Status**: Production
 
 ---
 
@@ -22,10 +22,10 @@ This demo category covers time-domain measurements per IEEE 181-2011. Oscura pro
 
 ### Standards Compliance
 
-|Standard|Coverage|Notes|
-|---|---|---|
-|IEEE 181-2011|Full|Rise/fall time, pulse measurements|
-|JEDEC JESD8C|Partial|Setup/hold timing|
+| Standard      | Coverage | Notes                              |
+| ------------- | -------- | ---------------------------------- |
+| IEEE 181-2011 | Full     | Rise/fall time, pulse measurements |
+| JEDEC JESD8C  | Partial  | Setup/hold timing                  |
 
 ## Quick Start
 
@@ -52,13 +52,13 @@ print(f"Slew rate: {sr:.3f} V/ns")
 
 ## Demo Scripts
 
-|Script|Purpose|Complexity|
-|---|---|---|
-|`rise_fall_time.py`|Basic rise/fall measurement|Basic|
-|`pulse_characteristics.py`|Width, duty cycle, period|Basic|
-|`slew_rate_analysis.py`|Edge rate characterization|Intermediate|
-|`setup_hold_timing.py`|Digital timing margins|Intermediate|
-|`ieee181_compliance.py`|Full IEEE 181 validation|Advanced|
+| Script                     | Purpose                     | Complexity   |
+| -------------------------- | --------------------------- | ------------ |
+| `rise_fall_time.py`        | Basic rise/fall measurement | Basic        |
+| `pulse_characteristics.py` | Width, duty cycle, period   | Basic        |
+| `slew_rate_analysis.py`    | Edge rate characterization  | Intermediate |
+| `setup_hold_timing.py`     | Digital timing margins      | Intermediate |
+| `ieee181_compliance.py`    | Full IEEE 181 validation    | Advanced     |
 
 ## Related Demos
 

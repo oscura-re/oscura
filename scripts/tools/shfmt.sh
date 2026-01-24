@@ -32,53 +32,53 @@ PATHS=()
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --check)
-      MODE="check"
-      shift
-      ;;
-    --fix)
-      MODE="fix"
-      shift
-      ;;
-    --json)
-      enable_json
-      shift
-      ;;
-    -v)
-      VERBOSE=true
-      shift
-      ;;
-    -h | --help)
-      echo "Usage: $0 [OPTIONS] [paths...]"
-      echo ""
-      echo "Shell script formatting with shfmt"
-      echo ""
-      echo "Options:"
-      echo "  --check     Check formatting only (default)"
-      echo "  --fix       Fix formatting in place"
-      echo "  --json      Output machine-readable JSON"
-      echo "  -v          Verbose output"
-      echo "  -h, --help  Show this help message"
-      echo ""
-      echo "Formatting options (matching .editorconfig):"
-      echo "  -i 2   2-space indentation"
-      echo "  -bn    Binary ops may start a line"
-      echo "  -ci    Indent switch cases"
-      echo "  -sr    Space after redirect operators"
-      echo ""
-      echo "Example:"
-      echo "  $0 --check scripts/"
-      echo "  $0 --fix scripts/"
-      exit 0
-      ;;
-    -*)
-      echo "Unknown option: $1" >&2
-      exit 2
-      ;;
-    *)
-      PATHS+=("$1")
-      shift
-      ;;
+  --check)
+    MODE="check"
+    shift
+    ;;
+  --fix)
+    MODE="fix"
+    shift
+    ;;
+  --json)
+    enable_json
+    shift
+    ;;
+  -v)
+    VERBOSE=true
+    shift
+    ;;
+  -h | --help)
+    echo "Usage: $0 [OPTIONS] [paths...]"
+    echo ""
+    echo "Shell script formatting with shfmt"
+    echo ""
+    echo "Options:"
+    echo "  --check     Check formatting only (default)"
+    echo "  --fix       Fix formatting in place"
+    echo "  --json      Output machine-readable JSON"
+    echo "  -v          Verbose output"
+    echo "  -h, --help  Show this help message"
+    echo ""
+    echo "Formatting options (matching .editorconfig):"
+    echo "  -i 2   2-space indentation"
+    echo "  -bn    Binary ops may start a line"
+    echo "  -ci    Indent switch cases"
+    echo "  -sr    Space after redirect operators"
+    echo ""
+    echo "Example:"
+    echo "  $0 --check scripts/"
+    echo "  $0 --fix scripts/"
+    exit 0
+    ;;
+  -*)
+    echo "Unknown option: $1" >&2
+    exit 2
+    ;;
+  *)
+    PATHS+=("$1")
+    shift
+    ;;
   esac
 done
 
@@ -101,14 +101,21 @@ for path in "${PATHS[@]}"; do
     # Single file
     shell_files+=("${path}")
   elif [[ -d "${path}" ]]; then
-    # Directory - find .sh files
-    while IFS= read -r -d '' file; do
-      shell_files+=("${file}")
-    done < <(find "${path}" -type f -name "*.sh" \
-      -not -path "*/.git/*" \
-      -not -path "*/.venv/*" \
-      -not -path "*/node_modules/*" \
-      -print0 2> /dev/null)
+    # Use git ls-files if in a git repo, otherwise fall back to find
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+      while IFS= read -r file; do
+        [[ -f "${file}" ]] && shell_files+=("${file}")
+      done < <(git ls-files "${path}" | grep '\.sh$')
+    else
+      # Fallback to find if not in a git repo
+      while IFS= read -r -d '' file; do
+        shell_files+=("${file}")
+      done < <(find "${path}" -type f -name "*.sh" \
+        -not -path "*/.git/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/node_modules/*" \
+        -print0 2>/dev/null)
+    fi
   fi
 done
 
@@ -123,57 +130,57 @@ ${VERBOSE} && print_info "Found ${file_count} shell script(s)"
 
 # Run shfmt
 case ${MODE} in
-  check)
-    # Use -d (diff) flag to check without modifying
-    # shellcheck disable=SC2086
-    if ${VERBOSE}; then
-      if shfmt ${SHFMT_OPTS} -d "${shell_files[@]}"; then
-        print_pass "All ${file_count} scripts formatted correctly"
-        json_result "${TOOL_CMD}" "pass" ""
-        exit 0
-      else
-        print_fail "Formatting issues found"
-        json_result "${TOOL_CMD}" "fail" "Formatting issues"
-        exit 1
-      fi
+check)
+  # Use -d (diff) flag to check without modifying
+  # shellcheck disable=SC2086
+  if ${VERBOSE}; then
+    if shfmt ${SHFMT_OPTS} -d "${shell_files[@]}"; then
+      print_pass "All ${file_count} scripts formatted correctly"
+      json_result "${TOOL_CMD}" "pass" ""
+      exit 0
     else
-      # shellcheck disable=SC2086
-      if shfmt ${SHFMT_OPTS} -d "${shell_files[@]}" &> /dev/null; then
-        print_pass "All ${file_count} scripts formatted correctly"
-        json_result "${TOOL_CMD}" "pass" ""
-        exit 0
-      else
-        print_fail "Formatting issues found"
-        print_info "Run with --fix to format"
-        json_result "${TOOL_CMD}" "fail" "Formatting issues"
-        exit 1
-      fi
+      print_fail "Formatting issues found"
+      json_result "${TOOL_CMD}" "fail" "Formatting issues"
+      exit 1
     fi
-    ;;
-  fix)
-    # Use -w (write) flag to format in place
+  else
     # shellcheck disable=SC2086
-    if ${VERBOSE}; then
-      if shfmt ${SHFMT_OPTS} -w "${shell_files[@]}"; then
-        print_pass "Formatted ${file_count} scripts"
-        json_result "${TOOL_CMD}" "pass" "Formatted"
-        exit 0
-      else
-        print_fail "Formatting failed"
-        json_result "${TOOL_CMD}" "fail" "Format error"
-        exit 1
-      fi
+    if shfmt ${SHFMT_OPTS} -d "${shell_files[@]}" &>/dev/null; then
+      print_pass "All ${file_count} scripts formatted correctly"
+      json_result "${TOOL_CMD}" "pass" ""
+      exit 0
     else
-      # shellcheck disable=SC2086
-      if shfmt ${SHFMT_OPTS} -w "${shell_files[@]}" 2> /dev/null; then
-        print_pass "Formatted ${file_count} scripts"
-        json_result "${TOOL_CMD}" "pass" "Formatted"
-        exit 0
-      else
-        print_fail "Formatting failed"
-        json_result "${TOOL_CMD}" "fail" "Format error"
-        exit 1
-      fi
+      print_fail "Formatting issues found"
+      print_info "Run with --fix to format"
+      json_result "${TOOL_CMD}" "fail" "Formatting issues"
+      exit 1
     fi
-    ;;
+  fi
+  ;;
+fix)
+  # Use -w (write) flag to format in place
+  # shellcheck disable=SC2086
+  if ${VERBOSE}; then
+    if shfmt ${SHFMT_OPTS} -w "${shell_files[@]}"; then
+      print_pass "Formatted ${file_count} scripts"
+      json_result "${TOOL_CMD}" "pass" "Formatted"
+      exit 0
+    else
+      print_fail "Formatting failed"
+      json_result "${TOOL_CMD}" "fail" "Format error"
+      exit 1
+    fi
+  else
+    # shellcheck disable=SC2086
+    if shfmt ${SHFMT_OPTS} -w "${shell_files[@]}" 2>/dev/null; then
+      print_pass "Formatted ${file_count} scripts"
+      json_result "${TOOL_CMD}" "pass" "Formatted"
+      exit 0
+    else
+      print_fail "Formatting failed"
+      json_result "${TOOL_CMD}" "fail" "Format error"
+      exit 1
+    fi
+  fi
+  ;;
 esac

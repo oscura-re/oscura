@@ -14,8 +14,6 @@ References:
     IEEE 181-2011: Standard for Transitional Waveform Definitions
 """
 
-from __future__ import annotations
-
 import ast
 import operator
 from collections.abc import Callable

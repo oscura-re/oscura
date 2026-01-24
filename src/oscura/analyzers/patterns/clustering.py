@@ -7,6 +7,8 @@ using various distance metrics and clustering approaches.
 Author: Oscura Development Team
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Literal
 
@@ -984,7 +986,7 @@ class PatternClusterer:
 
     def fit(
         self, patterns: list[bytes | np.ndarray[tuple[int], np.dtype[np.uint8]]]
-    ) -> "PatternClusterer":
+    ) -> PatternClusterer:
         """Fit the clusterer to patterns (sklearn-style interface).
 
         Args:

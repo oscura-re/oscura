@@ -3,6 +3,8 @@
 Provides workflows for processing and analyzing multiple traces together.
 """
 
+from __future__ import annotations
+
 import concurrent.futures
 from collections.abc import Iterator
 from dataclasses import dataclass, field

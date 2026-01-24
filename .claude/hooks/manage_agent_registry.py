@@ -26,8 +26,8 @@ from shared.paths import get_absolute_path
 PROJECT_DIR = Path(os.getenv("CLAUDE_PROJECT_DIR", "."))
 REGISTRY_FILE = PROJECT_DIR / ".claude" / "agent-registry.json"
 BACKUP_FILE = PROJECT_DIR / ".claude" / "agent-registry.backup.json"
-SUMMARIES_DIR = get_absolute_path("claude.coordination.root", PROJECT_DIR) / "summaries"
-AGENT_OUTPUTS_DIR = get_absolute_path("claude.outputs.root", PROJECT_DIR)
+SUMMARIES_DIR = get_absolute_path("claude.summaries", PROJECT_DIR)
+AGENT_OUTPUTS_DIR = get_absolute_path("claude.agent_outputs", PROJECT_DIR)
 METRICS_FILE = get_absolute_path("claude.hooks", PROJECT_DIR) / "orchestration-metrics.json"
 
 # Ensure directories exist

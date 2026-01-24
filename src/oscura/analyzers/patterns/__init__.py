@@ -22,6 +22,8 @@ Author: Oscura Development Team
 
 # Periodic pattern detection (PAT-001)
 # Pattern clustering (PAT-004)
+from __future__ import annotations
+
 from .clustering import (
     ClusteringResult,
     ClusterResult,
@@ -125,7 +127,7 @@ def find_motifs(
     return results
 
 
-def extract_motif(data: Any, start: int, length: int) -> "NDArray[np.generic]":
+def extract_motif(data: Any, start: int, length: int) -> NDArray[np.generic]:
     """Extract a motif from data.
 
     Args:
@@ -137,10 +139,9 @@ def extract_motif(data: Any, start: int, length: int) -> "NDArray[np.generic]":
         Extracted motif as numpy array.
     """
     import numpy as np
-    from numpy.typing import NDArray
 
     data_arr = np.asarray(data)
-    result: NDArray[np.generic] = data_arr[start : start + length]
+    result = data_arr[start : start + length]
     return result
 
 

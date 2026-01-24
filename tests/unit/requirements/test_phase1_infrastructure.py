@@ -18,6 +18,23 @@ pytestmark = pytest.mark.unit
 class TestExtensionPoints:
     """Tests for EXT-001 through EXT-006."""
 
+    @pytest.fixture(autouse=True)
+    def clear_registry(self):
+        """Clear registry before each test to ensure isolation."""
+        from oscura.extensibility.extensions import get_registry
+
+        registry = get_registry()
+        # Clear all algorithms and hooks registered during tests
+        registry.clear_hooks()
+        # Clear test-specific algorithms by category
+        for category in ["test_category", "selection_test", "benchmark_category"]:
+            try:
+                if category in registry._algorithms:
+                    registry._algorithms[category].clear()
+            except (AttributeError, KeyError):
+                pass
+        yield
+
     def test_ext001_extension_point_registry(self):
         """Test EXT-001: Extension Point Registry."""
         from oscura.extensibility.extensions import (

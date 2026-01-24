@@ -10,15 +10,15 @@ This demo showcases Oscura's complete automotive protocol toolkit for security r
 
 ### Protocols Supported
 
-|Protocol|Speed|Description|Use Cases|
-|---|---|---|---|
-|**CAN 2.0**|125-1000 kbps|Controller Area Network (11/29-bit)|Powertrain, body, chassis|
-|**CAN-FD**|2-8 Mbps|Flexible Data Rate CAN|ADAS, high-bandwidth sensors|
-|**LIN 2.0**|2.4-19.2 kbps|Local Interconnect Network|Body control, HVAC, seats|
-|**FlexRay**|10 Mbps|Time-triggered dual-channel|X-by-wire, safety-critical systems|
-|**OBD-II**|Over CAN/K|On-Board Diagnostics|Emissions, diagnostics, testing|
-|**UDS**|Over CAN|Unified Diagnostic Services (ISO14229)|ECU programming, security access|
-|**J1939**|250 kbps|Heavy-duty vehicle protocol|Trucks, buses, construction|
+| Protocol    | Speed         | Description                            | Use Cases                          |
+| ----------- | ------------- | -------------------------------------- | ---------------------------------- |
+| **CAN 2.0** | 125-1000 kbps | Controller Area Network (11/29-bit)    | Powertrain, body, chassis          |
+| **CAN-FD**  | 2-8 Mbps      | Flexible Data Rate CAN                 | ADAS, high-bandwidth sensors       |
+| **LIN 2.0** | 2.4-19.2 kbps | Local Interconnect Network             | Body control, HVAC, seats          |
+| **FlexRay** | 10 Mbps       | Time-triggered dual-channel            | X-by-wire, safety-critical systems |
+| **OBD-II**  | Over CAN/K    | On-Board Diagnostics                   | Emissions, diagnostics, testing    |
+| **UDS**     | Over CAN      | Unified Diagnostic Services (ISO14229) | ECU programming, security access   |
+| **J1939**   | 250 kbps      | Heavy-duty vehicle protocol            | Trucks, buses, construction        |
 
 ## 🚀 Quick Start
 
@@ -67,20 +67,27 @@ python demos/08_automotive/comprehensive_automotive_demo.py --list
 ```python
 import cantools
 from oscura.automotive.can import CANSession
+from oscura.acquisition import FileSource
 
 # Load DBC database
 db = cantools.database.load_file("vehicle.dbc")
 
-# Load CAN log
-session = CANSession.from_log("capture.blf")
+# Create session and load CAN data
+session = CANSession(name="Vehicle Analysis")
+session.add_recording("capture", FileSource("capture.blf"))
 
-# Decode messages
-for msg in session.messages:
-    decoded_msg = db.get_message_by_name("Engine_Status")
-    if decoded_msg.frame_id == msg.arbitration_id:
-        signals = decoded_msg.decode(msg.data)
-        rpm = signals['engine_rpm']
-        print(f"RPM: {rpm}")
+# Analyze traffic
+analysis = session.analyze()
+print(f"Total messages: {analysis['inventory']['total_messages']}")
+
+# Decode messages (access via session recordings)
+for recording_name, messages in session._recordings.items():
+    for msg in messages:
+        decoded_msg = db.get_message_by_name("Engine_Status")
+        if decoded_msg.frame_id == msg.arbitration_id:
+            signals = decoded_msg.decode(msg.data)
+            rpm = signals['engine_rpm']
+            print(f"RPM: {rpm}")
 ```
 
 **Use Cases**:
@@ -107,11 +114,17 @@ for msg in session.messages:
 
 ```python
 from oscura.automotive.can import CANSession
+from oscura.acquisition import FileSource
 from oscura.automotive.can.discovery import DiscoveryDocument
 from oscura.automotive.dbc import DBCGenerator
 
-# Load unknown CAN traffic
-session = CANSession.from_log("unknown.blf")
+# Create session and load unknown CAN traffic
+session = CANSession(name="Unknown Protocol RE")
+session.add_recording("unknown", FileSource("unknown.blf"))
+
+# Analyze traffic
+analysis = session.analyze()
+print(f"Unique IDs: {len(analysis['inventory']['message_ids'])}")
 
 # Generate message inventory
 inventory = session.inventory()
@@ -119,7 +132,7 @@ print(inventory)
 
 # Analyze specific message
 msg = session.message(0x280)
-analysis = msg.analyze()
+msg_analysis = msg.analyze()
 
 # Test hypothesis
 hypothesis = msg.test_hypothesis(
@@ -305,14 +318,14 @@ python demos/08_automotive/generate_demo_data.py
 
 Generated files:
 
-|File|Size|Description|
-|---|---|---|
-|`can_bus_normal_traffic.mf4`|~10 MB|CAN 2.0B with engine/body messages|
-|`can_fd_high_speed.mf4`|~8 MB|CAN-FD high-throughput data|
-|`lin_body_control.wfm`|~2 MB|LIN 2.0 @ 19.2 kbps|
-|`obd2_diagnostic_session.pcap`|~1 MB|OBD-II diagnostic sequence|
-|`uds_security_sequence.mf4`|~3 MB|UDS security access + memory read|
-|`demo_signals.dbc`|~5 KB|Sample DBC with common signals|
+| File                           | Size   | Description                        |
+| ------------------------------ | ------ | ---------------------------------- |
+| `can_bus_normal_traffic.mf4`   | ~10 MB | CAN 2.0B with engine/body messages |
+| `can_fd_high_speed.mf4`        | ~8 MB  | CAN-FD high-throughput data        |
+| `lin_body_control.wfm`         | ~2 MB  | LIN 2.0 @ 19.2 kbps                |
+| `obd2_diagnostic_session.pcap` | ~1 MB  | OBD-II diagnostic sequence         |
+| `uds_security_sequence.mf4`    | ~3 MB  | UDS security access + memory read  |
+| `demo_signals.dbc`             | ~5 KB  | Sample DBC with common signals     |
 
 ## 🎯 Use Cases
 
@@ -359,22 +372,37 @@ Generated files:
 
 ```python
 from oscura.automotive.can import CANSession
+from oscura.acquisition import FileSource
 
-# Load from various formats
-session = CANSession.from_log("capture.blf")  # BLF
-session = CANSession.from_log("capture.asc")  # ASC
-session = CANSession.from_log("capture.csv")  # CSV
-session = CANSession.from_pcap("capture.pcap")  # PCAP
+# Create session
+session = CANSession(name="Vehicle Analysis")
+
+# Load from various formats using unified Source protocol
+session.add_recording("baseline", FileSource("capture.blf"))  # BLF
+session.add_recording("test1", FileSource("capture.asc"))  # ASC
+session.add_recording("test2", FileSource("capture.csv"))  # CSV
+
+# Analyze traffic
+analysis = session.analyze()
+print(f"Total messages: {analysis['inventory']['total_messages']}")
+print(f"Unique IDs: {len(analysis['inventory']['message_ids'])}")
 
 # Message inventory
 inventory = session.inventory()  # pandas DataFrame
 
 # Analyze specific message
 msg = session.message(0x280)
-analysis = msg.analyze()  # Message statistics
+msg_analysis = msg.analyze()  # Message statistics
 
 # Get unique IDs
 ids = session.unique_ids()  # Set of all CAN IDs
+
+# Compare recordings
+diff = session.compare("baseline", "test1")
+print(f"Changed IDs: {len(diff.details['changed_ids'])}")
+
+# Export DBC file
+session.export_dbc("discovered.dbc")
 ```
 
 ### Hypothesis Testing
@@ -462,15 +490,15 @@ service = UDSDecoder.decode_service(can_message)
 
 ## 🔗 Standards References
 
-|Standard|Title|Coverage|
-|---|---|---|
-|ISO 11898-1|CAN data link layer and physical layer|CAN 2.0|
-|ISO 11898-7|CAN FD data link layer|CAN-FD|
-|ISO 14229|Unified Diagnostic Services (UDS)|UDS|
-|ISO 15765-4|Diagnostic communication over CAN|OBD-II over CAN|
-|ISO 17987|Local Interconnect Network (LIN)|LIN 2.0+|
-|SAE J1939|Recommended Practice for Vehicle Network|J1939|
-|FlexRay Consortium|FlexRay Communications System Protocol|FlexRay|
+| Standard           | Title                                    | Coverage        |
+| ------------------ | ---------------------------------------- | --------------- |
+| ISO 11898-1        | CAN data link layer and physical layer   | CAN 2.0         |
+| ISO 11898-7        | CAN FD data link layer                   | CAN-FD          |
+| ISO 14229          | Unified Diagnostic Services (UDS)        | UDS             |
+| ISO 15765-4        | Diagnostic communication over CAN        | OBD-II over CAN |
+| ISO 17987          | Local Interconnect Network (LIN)         | LIN 2.0+        |
+| SAE J1939          | Recommended Practice for Vehicle Network | J1939           |
+| FlexRay Consortium | FlexRay Communications System Protocol   | FlexRay         |
 
 ## 💡 Tips & Best Practices
 

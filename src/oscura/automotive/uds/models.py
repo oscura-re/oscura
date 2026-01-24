@@ -3,8 +3,6 @@
 This module defines the core data structures for UDS protocol analysis.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 __all__ = [

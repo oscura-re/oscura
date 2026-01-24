@@ -12,28 +12,35 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+# Add shared module to path
+sys.path.insert(0, str(Path(__file__).parent))
+from shared.config import load_config
+from shared.logging_utils import get_hook_logger
 
-def log_error(message: str) -> None:
-    """Log error to errors.log file."""
-    log_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")) / ".claude" / "hooks"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "errors.log"
-    timestamp = datetime.now().isoformat()
-    with log_file.open("a") as f:
-        f.write(f"[{timestamp}] check_subagent_stop: {message}\n")
+# Load configuration
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+CONFIG = load_config(PROJECT_DIR)
+HOOK_CONFIG = CONFIG.get("hooks", {}).get("check_subagent_stop", {})
+
+# Get config values with fallbacks
+OUTPUT_SIZE_THRESHOLD_BYTES = HOOK_CONFIG.get("output_size_threshold_bytes", 204800)
+RECENT_WINDOW_MINUTES = HOOK_CONFIG.get("recent_window_minutes", 5)
+
+# Initialize logger
+logger = get_hook_logger(__name__)
 
 
 def auto_summarize_large_output(
     report_file: Path, report: dict[str, Any], project_dir: Path
 ) -> bool:
-    """Auto-summarize large completion reports (>50K tokens ~200KB).
+    """Auto-summarize large completion reports.
 
     Returns:
         True if summarized, False otherwise
     """
-    # Check if output is large (>200KB)
+    # Check if output is large (threshold from config)
     file_size = report_file.stat().st_size
-    if file_size < 200000:  # 200KB threshold
+    if file_size < OUTPUT_SIZE_THRESHOLD_BYTES:
         return False
 
     # Create summary directory
@@ -125,25 +132,25 @@ def check_subagent_completion() -> dict[str, bool | str]:
     Returns:
         dict: {"ok": True} or {"ok": False, "reason": "explanation"}
     """
-    project_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
-    agent_outputs = project_dir / ".claude" / "agent-outputs"
+    agent_outputs = PROJECT_DIR / ".claude" / "agent-outputs"
     auto_summarized = False
 
-    # Check for recent completion reports (within last 5 minutes)
+    # Check for recent completion reports (within configured window)
     if agent_outputs.exists():
         now = datetime.now()
         recent_reports = []
+        window_seconds = RECENT_WINDOW_MINUTES * 60
 
         for report_file in agent_outputs.glob("*-complete.json"):
             try:
-                # Check if file was modified in last 5 minutes
+                # Check if file was modified within recent window
                 mtime = datetime.fromtimestamp(report_file.stat().st_mtime)
-                if (now - mtime).total_seconds() < 300:  # 5 minutes
+                if (now - mtime).total_seconds() < window_seconds:
                     with report_file.open() as f:
                         report = json.load(f)
                         recent_reports.append((report_file, report))
             except (OSError, json.JSONDecodeError) as e:
-                log_error(f"Failed to read {report_file}: {e}")
+                logger.error(f"Failed to read {report_file}: {e}")
                 continue
 
         # If we found recent reports, validate them
@@ -157,11 +164,11 @@ def check_subagent_completion() -> dict[str, bool | str]:
                 status = report.get("status", "unknown")
 
                 # Auto-summarize large outputs
-                if auto_summarize_large_output(report_file, report, project_dir):
+                if auto_summarize_large_output(report_file, report, PROJECT_DIR):
                     auto_summarized = True
 
                 # Update registry
-                update_agent_registry(report, project_dir)
+                update_agent_registry(report, PROJECT_DIR)
 
                 # Block if any recent report shows blocked status
                 if status == "blocked":
@@ -173,16 +180,16 @@ def check_subagent_completion() -> dict[str, bool | str]:
 
                 # Warn but allow if needs-review (orchestrator should handle)
                 if status == "needs-review":
-                    log_error(
+                    logger.warning(
                         f"Report {report_file.name} needs review - allowing stop for orchestrator to handle"
                     )
 
                 # Validate artifacts exist if specified
                 artifacts = report.get("artifacts", [])
                 for artifact in artifacts:
-                    artifact_path = project_dir / artifact
+                    artifact_path = PROJECT_DIR / artifact
                     if not artifact_path.exists():
-                        log_error(f"Artifact missing: {artifact}")
+                        logger.warning(f"Artifact missing: {artifact}")
                         # Don't block on missing artifacts - may be optional
 
     # All checks passed (or no recent reports found)
@@ -213,7 +220,7 @@ def main() -> None:
         print(json.dumps(result))
         sys.exit(0 if result["ok"] else 2)
     except Exception as e:
-        log_error(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}", exc_info=True)
         # Fail safe - allow stop on error
         print(json.dumps({"ok": True}))
         sys.exit(0)

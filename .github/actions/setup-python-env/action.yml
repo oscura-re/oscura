@@ -18,6 +18,10 @@ inputs:
     description: "Extra dependencies to install (--all-extras, --dev, etc.)"
     required: false
     default: "--all-extras"
+  install-optional:
+    description: "Install all optional dependencies for comprehensive testing"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -35,6 +39,14 @@ runs:
     - name: Install dependencies
       if: inputs.install-deps == 'true'
       run: uv sync ${{ inputs.extras }}
+      shell: bash
+
+    - name: Install optional dependencies
+      if: inputs.install-optional == 'true'
+      run: |
+        echo "Installing all optional dependencies for comprehensive testing..."
+        uv pip install ".[all]"
+        echo "✓ All optional dependencies installed"
       shell: bash
 
     - name: Verify installation

@@ -85,12 +85,22 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ### Installation
 
-```bash
+````bash
 # Clone your fork
 git clone https://github.com/YOUR-USERNAME/oscura.git
 cd oscura
 
-# Install all dependencies (REQUIRED)
+# Complete setup (RECOMMENDED - does everything)
+./scripts/setup.sh
+
+# Verify setup
+./scripts/verify-setup.sh
+```bash
+
+**Alternative (manual steps):**
+
+```bash
+# Install all dependencies
 uv sync --all-extras
 
 # Install git hooks (REQUIRED - prevents CI failures)
@@ -98,7 +108,7 @@ uv sync --all-extras
 
 # Verify setup
 uv run pytest tests/unit -x --maxfail=5
-```
+```bash
 
 **IMPORTANT:** The `install-hooks.sh` script installs BOTH pre-commit and pre-push hooks.
 These hooks are **REQUIRED** to prevent CI failures. Do not skip this step!
@@ -128,7 +138,7 @@ These hooks are **REQUIRED** to prevent CI failures. Do not skip this step!
 git add .
 git commit -m "feat: your change"  # Pre-commit hook runs automatically
 git push                           # Pre-push hook runs automatically
-```
+```bash
 
 ### Verification Scripts
 
@@ -175,12 +185,49 @@ Oscura uses two types of git hooks to prevent CI failures:
 1. **Pre-commit hooks** (via pre-commit framework) - Run quality checks on every commit
 2. **Pre-push hooks** (custom) - Run comprehensive CI verification before push
 
-**Bypassing hooks:**
-Only bypass hooks when you have a good reason (e.g., WIP branch):
+#### Bypassing Git Hooks (Use Sparingly)
+
+In rare cases, you may need to bypass git hooks:
 
 ```bash
-git commit --no-verify    # Skip pre-commit (use sparingly)
-git push --no-verify      # Skip pre-push (DANGEROUS - only for emergencies)
+git commit --no-verify    # Skip pre-commit hooks
+git push --no-verify      # Skip pre-push hook
+````
+
+**When to bypass:**
+
+✅ **Acceptable reasons:**
+
+- Creating a WIP (work-in-progress) commit on a feature branch
+- Emergency hotfix needed immediately (fix CI in next commit)
+- Hook has a bug preventing legitimate work
+- Rebasing/amending commits (hooks already ran before)
+
+❌ **NOT acceptable:**
+
+- "Hooks are too slow" (use `--quick` mode instead)
+- "I'll fix it later" (fix it now before committing)
+- Pushing to main/develop (hooks are there to protect these branches)
+- Avoiding test failures (tests exist for a reason)
+
+**Important notes:**
+
+- **Branch protection still applies**: Even with `--no-verify`, failing code CANNOT merge to main
+- **You're not circumventing CI**: GitHub CI will still run all checks
+- **You're bypassing local validation**: This means pushing untested code, which will fail CI
+- **Use pre-push `--quick` instead**: For faster feedback during development
+
+**Better alternatives:**
+
+```bash
+# Instead of --no-verify, use quick mode:
+./scripts/pre-push.sh --quick        # Fast checks (2 min)
+
+# Or auto-fix issues first:
+./scripts/pre-push.sh --fix          # Auto-fix then verify
+
+# For feature branches, hooks run quick mode automatically
+git push  # Quick verification for feature branches
 ```
 
 ### Running Tests
@@ -189,10 +236,10 @@ For comprehensive test documentation, see **[docs/testing/test-suite-guide.md](d
 
 **Recommended:** Use the optimized test script:
 
-```bash
+````bash
 ./scripts/test.sh              # Full tests with coverage (8-10 min)
 ./scripts/test.sh --fast       # Quick tests without coverage (5-7 min)
-```
+```bash
 
 **Manual test commands** (only if needed for specific scenarios):
 
@@ -209,7 +256,7 @@ uv run pytest tests/unit/protocols -v
 
 # Run in parallel
 uv run pytest tests/unit -n auto
-```
+```markdown
 
 ## Coding Standards
 
@@ -224,13 +271,13 @@ uv run pytest tests/unit -n auto
 
 We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-```
+```bash
 <type>(<scope>): <subject>
 
 <body>
 
 <footer>
-```
+```bash
 
 **Types:**
 
@@ -244,12 +291,12 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 **Examples:**
 
-```
+```markdown
 feat(protocols): add FlexRay decoder support
 fix(loaders): correct Tektronix WFM channel parsing
 docs(api): add spectral analysis examples
 test(analyzers): increase rise time test coverage
-```
+```markdown
 
 ### Testing
 
@@ -293,7 +340,7 @@ def rise_time(trace: TraceData, low: float = 0.1, high: float = 0.9) -> float:
     References:
         IEEE 181-2011 Section 5.2 "Rise Time and Fall Time"
     """
-```
+```python
 
 ## Documentation Checklist
 
@@ -312,7 +359,7 @@ Before submitting a PR that includes new code, ensure:
 
 ### Docstring Format
 
-Use NumPy-style docstrings:
+Use Google-style docstrings (as configured in pyproject.toml):
 
 ```python
 def example_function(param1: str, param2: int = 0) -> bool:
@@ -321,43 +368,32 @@ def example_function(param1: str, param2: int = 0) -> bool:
     Extended description if needed. Can span multiple lines
     and provide additional context.
 
-    Parameters
-    ----------
-    param1 : str
-        Description of first parameter.
-    param2 : int, optional
-        Description of second parameter. Default is 0.
+    Args:
+        param1: Description of first parameter.
+        param2: Description of second parameter. Defaults to 0.
 
-    Returns
-    -------
-    bool
+    Returns:
         Description of return value.
 
-    Raises
-    ------
-    ValueError
-        When param1 is empty.
-    TypeError
-        When param2 is not an integer.
+    Raises:
+        ValueError: When param1 is empty.
+        TypeError: When param2 is not an integer.
 
-    Examples
-    --------
-    >>> example_function("value", 10)
-    True
+    Examples:
+        >>> example_function("value", 10)
+        True
 
-    Notes
-    -----
-    Additional implementation notes if needed.
+    Note:
+        Additional implementation notes if needed.
 
-    References
-    ----------
-    IEEE 181-2011 Section X.X (if applicable)
+    References:
+        IEEE 181-2011 Section X.X (if applicable)
     """
-```
+```markdown
 
 ## Project Structure
 
-```
+```bash
 oscura/
 ├── demos/                  # Primary documentation (working examples)
 │   ├── 01_waveform_analysis/       # Waveform loading and analysis
@@ -407,7 +443,7 @@ oscura/
     ├── unit/               # Unit tests
     ├── integration/        # Integration tests
     └── conftest.py         # Test fixtures and configuration
-```
+```bash
 
 ## Troubleshooting CI Failures
 
@@ -421,7 +457,7 @@ If CI fails after push, here's how to debug:
 
 # If tests fail locally, get detailed output
 uv run pytest <failing_test> -v --tb=long
-```
+```bash
 
 ### 2. Common CI Failure Causes
 
@@ -444,7 +480,7 @@ python --version
 
 # Run tests with strict markers (like CI)
 uv run pytest tests/unit -v --strict-markers --strict-config
-```
+```markdown
 
 ## Getting Help
 
@@ -466,3 +502,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 ---
 
 Thank you for contributing to Oscura!
+````

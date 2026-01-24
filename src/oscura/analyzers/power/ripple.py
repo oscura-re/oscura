@@ -9,8 +9,6 @@ Example:
     >>> print(f"Ripple: {r_pp*1e3:.2f} mV pp, {r_rms*1e3:.2f} mV rms")
 """
 
-from __future__ import annotations
-
 import numpy as np
 from scipy import signal
 

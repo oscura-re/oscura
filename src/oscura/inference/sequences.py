@@ -8,8 +8,6 @@ streams, identifying request-response pairs, and analyzing communication
 flows.
 """
 
-from __future__ import annotations
-
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -83,7 +81,7 @@ class CommunicationFlow:
 
     flow_id: int
     messages: list[Any]
-    pairs: list[RequestResponsePair]
+    pairs: list["RequestResponsePair"]
     direction: str
     participants: list[str]
     duration: float
@@ -127,7 +125,7 @@ class SequencePatternDetector:
         messages: Sequence[Any],
         key: Callable[[Any], Any] | None = None,
         timestamp_key: Callable[[Any], float] | None = None,
-    ) -> list[SequencePattern]:
+    ) -> list["SequencePattern"]:
         """Detect sequential patterns in message stream.
 
         Implements RE-SEQ-002: Pattern detection workflow.
@@ -222,7 +220,7 @@ class SequencePatternDetector:
         messages: Sequence[Any],
         key: Callable[[Any], Any] | None = None,
         timestamp_key: Callable[[Any], float] | None = None,
-    ) -> list[SequencePattern]:
+    ) -> list["SequencePattern"]:
         """Detect patterns that occur at regular intervals.
 
         Implements RE-SEQ-002: Periodic pattern detection.
@@ -287,7 +285,7 @@ class SequencePatternDetector:
         candidates: dict[tuple[Any, ...], list[int]],
         identifiers: list[Any],
         timestamps: list[float] | None,
-    ) -> list[SequencePattern]:
+    ) -> list["SequencePattern"]:
         """Score candidate patterns.
 
         Args:
@@ -386,7 +384,7 @@ class RequestResponseCorrelator:
         request_filter: Callable[[Any], bool] | None = None,
         response_filter: Callable[[Any], bool] | None = None,
         timestamp_key: Callable[[Any], float] | None = None,
-    ) -> list[RequestResponsePair]:
+    ) -> list["RequestResponsePair"]:
         """Correlate requests with responses.
 
         Implements RE-SEQ-003: Request-response correlation workflow.
@@ -441,7 +439,7 @@ class RequestResponseCorrelator:
         messages: Sequence[Any],
         content_key: Callable[[Any], bytes],
         timestamp_key: Callable[[Any], float] | None = None,
-    ) -> list[RequestResponsePair]:
+    ) -> list["RequestResponsePair"]:
         """Correlate by analyzing message content similarity.
 
         Implements RE-SEQ-003: Content-based correlation.
@@ -500,10 +498,10 @@ class RequestResponseCorrelator:
 
     def extract_flows(
         self,
-        pairs: Sequence[RequestResponsePair],
+        pairs: Sequence["RequestResponsePair"],
         messages: Sequence[Any],
         flow_key: Callable[[Any], str] | None = None,
-    ) -> list[CommunicationFlow]:
+    ) -> list["CommunicationFlow"]:
         """Extract communication flows from pairs.
 
         Implements RE-SEQ-003: Flow extraction.
@@ -569,7 +567,7 @@ class RequestResponseCorrelator:
         self,
         requests: list[tuple[int, Any, float, Any]],
         responses: list[tuple[int, Any, float, Any]],
-    ) -> list[RequestResponsePair]:
+    ) -> list["RequestResponsePair"]:
         """Match request and response messages.
 
         Args:
@@ -664,7 +662,7 @@ def detect_sequence_patterns(
     min_length: int = 2,
     max_length: int = 10,
     min_frequency: int = 2,
-) -> list[SequencePattern]:
+) -> list["SequencePattern"]:
     """Detect sequential patterns in messages.
 
     Implements RE-SEQ-002: Sequence Pattern Detection.
@@ -699,7 +697,7 @@ def correlate_requests(
     response_filter: Callable[[Any], bool],
     timestamp_key: Callable[[Any], float] | None = None,
     max_latency: float = 10.0,
-) -> list[RequestResponsePair]:
+) -> list["RequestResponsePair"]:
     """Correlate request and response messages.
 
     Implements RE-SEQ-003: Request-Response Correlation.
@@ -760,7 +758,7 @@ def find_message_dependencies(
 
 
 def calculate_latency_stats(
-    pairs: Sequence[RequestResponsePair],
+    pairs: Sequence["RequestResponsePair"],
 ) -> dict[str, float]:
     """Calculate latency statistics for request-response pairs.
 

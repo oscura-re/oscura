@@ -594,7 +594,7 @@ def get_available_analyses(input_type: InputType) -> list[AnalysisDomain]:
 
 
 # Type alias for progress callbacks
-ProgressCallback = Callable[[ProgressInfo], None]
+ProgressCallback = Callable[["ProgressInfo"], None]
 
 
 __all__ = [

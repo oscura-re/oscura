@@ -4,8 +4,6 @@ This submodule provides CAN-specific analysis tools for reverse engineering
 automotive protocols from captured CAN bus data.
 """
 
-from __future__ import annotations
-
 __all__ = [
     "ByteChange",
     "CANMessage",

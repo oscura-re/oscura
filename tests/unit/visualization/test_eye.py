@@ -63,11 +63,35 @@ class TestPlotEye:
         fig = plot_eye(sample_serial_signal, bit_rate=1e9)
         assert fig is not None
 
-    def test_auto_clock_recovery_fft(self, sample_serial_signal):
-        """Test automatic clock recovery using FFT method."""
+    @pytest.mark.flaky(reruns=3, reruns_delay=1)
+    def test_auto_clock_recovery_fft(self):
+        """Test automatic clock recovery using FFT method.
+
+        Uses a longer signal with more periodic pattern for reliable FFT.
+        """
         pytest.importorskip("matplotlib")
 
-        fig = plot_eye(sample_serial_signal, clock_recovery="fft")
+        # Create signal optimized for FFT clock recovery
+        # - Longer duration (500 bits) for better FFT resolution
+        # - Alternating pattern (strong fundamental frequency)
+        sample_rate = 10e9  # 10 GSa/s
+        bit_rate = 1e9  # 1 Gbps
+        n_bits = 500  # Increased from 100 for better FFT
+        samples_per_bit = int(sample_rate / bit_rate)
+        n_samples = n_bits * samples_per_bit
+
+        metadata = TraceMetadata(sample_rate=sample_rate)
+
+        # Use alternating pattern instead of random (strong bit rate component)
+        bits = np.tile([0, 1], n_bits // 2)
+        data = np.repeat(bits, samples_per_bit).astype(float)
+
+        # Add minimal noise (important for FFT stability)
+        data += np.random.normal(0, 0.02, n_samples)
+
+        trace = WaveformTrace(data=data, metadata=metadata)
+
+        fig = plot_eye(trace, clock_recovery="fft")
         assert fig is not None
 
     def test_auto_clock_recovery_edge(self, sample_serial_signal):

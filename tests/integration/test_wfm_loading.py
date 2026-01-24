@@ -152,9 +152,14 @@ class TestWFMAnalysisPipelines:
 
         try:
             from oscura import load, low_pass
+            from oscura.core.types import IQTrace
 
             wfm_path = wfm_files[0]
             trace = load(wfm_path)
+
+            # Skip IQ traces (they have i_data/q_data, not data)
+            if isinstance(trace, IQTrace):
+                pytest.skip("IQ trace filtering not tested here")
 
             # Apply low-pass filter
             if hasattr(trace.metadata, "sample_rate") and trace.metadata.sample_rate:
@@ -177,9 +182,14 @@ class TestWFMAnalysisPipelines:
 
         try:
             from oscura import detect_edges, load, to_digital
+            from oscura.core.types import IQTrace
 
             wfm_path = wfm_files[0]
             trace = load(wfm_path)
+
+            # Skip IQ traces (they have i_data/q_data, not data)
+            if isinstance(trace, IQTrace):
+                pytest.skip("IQ trace digital conversion not tested here")
 
             # Convert to digital
             digital = to_digital(trace.data)
@@ -286,14 +296,12 @@ class TestRealCaptureManifest:
 
         missing_files = []
         for file_info in real_captures_manifest.get("files", []):
-            filename = file_info.get("filename")
-            category = file_info.get("category")
-            subcategory = file_info.get("subcategory", "")
+            # Manifest uses 'path' field with full relative path
+            file_path = file_info.get("path")
+            if not file_path:
+                continue
 
-            if subcategory:
-                expected_path = real_captures_dir / category / subcategory / filename
-            else:
-                expected_path = real_captures_dir / category / filename
+            expected_path = real_captures_dir / file_path
 
             if not expected_path.exists():
                 missing_files.append(str(expected_path))
@@ -315,15 +323,14 @@ class TestRealCaptureManifest:
         mismatches = []
 
         for file_info in real_captures_manifest.get("files", [])[:10]:
-            filename = file_info.get("filename")
-            category = file_info.get("category")
-            subcategory = file_info.get("subcategory", "")
+            # Manifest uses 'path' field with full relative path
+            relative_path = file_info.get("path")
             expected_md5 = file_info.get("md5_hash")
 
-            if subcategory:
-                file_path = real_captures_dir / category / subcategory / filename
-            else:
-                file_path = real_captures_dir / category / filename
+            if not relative_path:
+                continue
+
+            file_path = real_captures_dir / relative_path
 
             if not file_path.exists() or not expected_md5:
                 continue
@@ -340,7 +347,7 @@ class TestRealCaptureManifest:
             if actual_md5 == expected_md5:
                 files_matched += 1
             else:
-                mismatches.append(filename)
+                mismatches.append(relative_path)
 
         if files_checked == 0:
             pytest.skip("No files with checksums to verify")

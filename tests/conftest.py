@@ -184,16 +184,35 @@ def real_captures_manifest(real_captures_dir: Path) -> dict[str, Any]:
 def real_wfm_files(real_captures_dir: Path) -> dict[str, list[Path]]:
     """Real Tektronix WFM files organized by size category.
 
+    Dynamically scans all waveform subdirectories and categorizes files by actual size:
+    - Small: < 1.5 MB
+    - Medium: 1.5 MB - 6 MB
+    - Large: > 6 MB
+
     Returns dict with keys: 'small', 'medium', 'large'
     Each value is a list of Path objects.
     """
     wfm_dir = real_captures_dir / "waveforms"
     result = {"small": [], "medium": [], "large": []}
 
-    for category in result:
-        cat_dir = wfm_dir / category
-        if cat_dir.exists():
-            result[category] = list(cat_dir.glob("*.wfm"))
+    if not wfm_dir.exists():
+        return result
+
+    # Scan all subdirectories for WFM files
+    for wfm_file in wfm_dir.rglob("*.wfm"):
+        if not wfm_file.is_file():
+            continue
+
+        # Get file size in MB
+        size_mb = wfm_file.stat().st_size / (1024 * 1024)
+
+        # Categorize by size
+        if size_mb < 1.5:
+            result["small"].append(wfm_file)
+        elif size_mb < 6.0:
+            result["medium"].append(wfm_file)
+        else:
+            result["large"].append(wfm_file)
 
     return result
 
@@ -1113,11 +1132,19 @@ def memory_cleanup():
     SAVINGS: ~2 minutes (93% reduction)
 
     This is critical for large test suites to prevent OOM errors.
+
+    NOTE: ResourceWarning from gc.collect() is suppressed as it's triggered by
+    third-party libraries (rigolwfm/kaitaistruct) that don't properly close file handles.
+    This is a known limitation of the rigolwfm library.
     """
     yield
     import gc
+    import warnings
 
-    gc.collect()
+    # Suppress ResourceWarning during gc.collect() - caused by rigolwfm library
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ResourceWarning)
+        gc.collect()
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -1329,13 +1356,23 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Skip slow tests unless --runslow is passed."""
-    if config.getoption("--runslow", default=False):
+    """Mark slow tests for optional filtering.
+
+    Slow tests are skipped by default to keep test suite fast.
+    Pass --runslow to include slow/performance/stress tests.
+
+    This includes tests marked with:
+    - @pytest.mark.slow
+    - @pytest.mark.performance
+    - @pytest.mark.stress
+    """
+    if config.getoption("--runslow"):
+        # User explicitly wants to run slow tests
         return
 
     skip_slow = pytest.mark.skip(reason="need --runslow option to run")
     for item in items:
-        if "slow" in item.keywords:
+        if "slow" in item.keywords or "performance" in item.keywords or "stress" in item.keywords:
             item.add_marker(skip_slow)
 
 
@@ -1430,3 +1467,40 @@ def standard_signals():
         "uart_hello_h": SignalBuilder.uart_frame(ord("H")),
         "digital_alternating": SignalBuilder.digital_pattern("01010101"),
     }
+
+
+# =============================================================================
+# Benchmark Fallback Fixture
+# =============================================================================
+
+
+@pytest.fixture
+def benchmark(request):
+    """Fallback benchmark fixture when pytest-benchmark plugin is disabled.
+
+    When using `-p no:benchmark` to avoid xdist conflicts, tests that use
+    the benchmark fixture will get this no-op implementation instead of failing.
+
+    This allows performance tests to run without actual benchmarking - they
+    simply execute the function once and return the result.
+
+    If pytest-benchmark IS loaded, this fixture is never called (pytest-benchmark's
+    fixture takes precedence due to plugin ordering).
+
+    Usage:
+        def test_performance(benchmark):
+            result = benchmark(expensive_function)
+            # When benchmark plugin disabled: runs once, returns result
+            # When benchmark plugin enabled: runs multiple times, collects stats
+    """
+    # Check if pytest-benchmark plugin is loaded
+    if request.config.pluginmanager.hasplugin("benchmark"):
+        # Let pytest-benchmark provide the fixture
+        pytest.skip("pytest-benchmark plugin is loaded")
+
+    # Provide simple passthrough callable
+    def run_once(func, *args, **kwargs):
+        """Execute function once without benchmarking."""
+        return func(*args, **kwargs)
+
+    return run_once

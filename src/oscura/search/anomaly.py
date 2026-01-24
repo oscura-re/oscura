@@ -4,6 +4,8 @@ This module provides automated detection of glitches, timing violations,
 and protocol errors with context extraction for debugging.
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 import numpy as np

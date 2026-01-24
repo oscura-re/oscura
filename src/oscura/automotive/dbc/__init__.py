@@ -3,8 +3,6 @@
 This module provides DBC file parsing and generation capabilities.
 """
 
-from __future__ import annotations
-
 __all__ = ["DBCGenerator", "DBCParser", "load_dbc"]
 
 try:

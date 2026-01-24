@@ -12,8 +12,6 @@ Example:
     In [2]: display_trace(trace)  # Shows rich HTML summary
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 try:

@@ -35,7 +35,7 @@ check_name() {
 
   # 2. GitHub repository
   echo "[2/4] GitHub Repository"
-  GITHUB_COUNT=$(gh search repos "${name}" --limit 5 --json nameWithOwner --jq 'length' 2>/dev/null || echo "0")
+  GITHUB_COUNT=$(gh search repos "${name}" --limit 5 --json nameWithOwner --jq 'length' 2> /dev/null || echo "0")
   if [ "$GITHUB_COUNT" -eq 0 ]; then
     echo "  ✅ AVAILABLE - No exact matches found"
   elif [ "$GITHUB_COUNT" -lt 3 ]; then

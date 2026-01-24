@@ -39,7 +39,8 @@ class TestMessagePairs:
                 )  # 30ms delay
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=100, min_occurrence=3)
 
         # Should find the 0x100 -> 0x200 pair
@@ -59,7 +60,8 @@ class TestMessagePairs:
         for i in range(10):
             messages.append(CANMessage(arbitration_id=0x100, timestamp=i * 1.0, data=b"\x00" * 8))
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=10, min_occurrence=3)
 
         assert len(pairs) == 0
@@ -80,7 +82,8 @@ class TestMessagePairs:
                 CANMessage(arbitration_id=0x300, timestamp=base_time + 0.04, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=100, min_occurrence=3)
 
         # Should find at least 2 pairs (100->200, 100->300)
@@ -104,7 +107,8 @@ class TestMessagePairs:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.03, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
 
         # With min_occurrence=3, should find nothing
         pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=100, min_occurrence=3)
@@ -126,7 +130,8 @@ class TestMessagePairs:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.15, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
 
         # With 100ms window, should not find the pair
         pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=100, min_occurrence=3)
@@ -148,7 +153,8 @@ class TestMessagePairs:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.03, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=100, min_occurrence=3)
 
         assert len(pairs) > 0
@@ -167,7 +173,8 @@ class TestMessagePairs:
                 CANMessage(arbitration_id=0x100, timestamp=base_time + 0.01, data=b"\x01" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         pairs = PatternAnalyzer.find_message_pairs(session, time_window_ms=100, min_occurrence=3)
 
         # Should not find 0x100 -> 0x100 pairs
@@ -189,7 +196,8 @@ class TestMessageSequences:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.05, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         sequences = PatternAnalyzer.find_message_sequences(
             session, max_sequence_length=2, time_window_ms=200, min_support=0.5
         )
@@ -217,7 +225,8 @@ class TestMessageSequences:
                 CANMessage(arbitration_id=0x300, timestamp=base_time + 0.10, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         sequences = PatternAnalyzer.find_message_sequences(
             session, max_sequence_length=3, time_window_ms=300, min_support=0.5
         )
@@ -249,7 +258,8 @@ class TestMessageSequences:
                 CANMessage(arbitration_id=0x400, timestamp=base_time + 0.06, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         sequences = PatternAnalyzer.find_message_sequences(
             session, max_sequence_length=4, time_window_ms=200, min_support=0.5
         )
@@ -278,7 +288,8 @@ class TestMessageSequences:
                 CANMessage(arbitration_id=0x300, timestamp=base_time + 0.05, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
 
         # High support threshold should exclude rare sequence
         sequences = PatternAnalyzer.find_message_sequences(
@@ -308,7 +319,8 @@ class TestMessageSequences:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.6, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
 
         # 500ms window should not capture the 0x100 -> 0x200 sequence
         sequences = PatternAnalyzer.find_message_sequences(
@@ -327,7 +339,8 @@ class TestMessageSequences:
 
     def test_max_sequence_length_validation(self):
         """Test validation of max_sequence_length parameter."""
-        session = CANSession(CANMessageList())
+        session = CANSession(name="Pattern Test")
+        session._messages = CANMessageList()
 
         # Too small
         with pytest.raises(ValueError, match="at least 2"):
@@ -343,7 +356,8 @@ class TestMessageSequences:
 
     def test_min_support_validation(self):
         """Test validation of min_support parameter."""
-        session = CANSession(CANMessageList())
+        session = CANSession(name="Pattern Test")
+        session._messages = CANMessageList()
 
         # Out of range
         with pytest.raises(ValueError, match="between 0.0 and 1.0"):
@@ -354,7 +368,8 @@ class TestMessageSequences:
 
     def test_empty_session(self):
         """Test with empty session."""
-        session = CANSession(CANMessageList())
+        session = CANSession(name="Pattern Test")
+        session._messages = CANMessageList()
         sequences = PatternAnalyzer.find_message_sequences(session)
         assert len(sequences) == 0
 
@@ -373,7 +388,8 @@ class TestMessageSequences:
                 CANMessage(arbitration_id=0x300, timestamp=base_time + 0.08, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         sequences = PatternAnalyzer.find_message_sequences(
             session, max_sequence_length=3, time_window_ms=200, min_support=0.5
         )
@@ -404,7 +420,8 @@ class TestTemporalCorrelations:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.03, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=100)
 
         # Should find correlation
@@ -437,7 +454,8 @@ class TestTemporalCorrelations:
                 CANMessage(arbitration_id=0x400, timestamp=base_time + 0.05, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=100)
 
         # Should find multiple correlations
@@ -458,7 +476,8 @@ class TestTemporalCorrelations:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.15, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
 
         # With 100ms limit, should not find correlation
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=100)
@@ -483,7 +502,8 @@ class TestTemporalCorrelations:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.04, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=100)
 
         # Should count only first occurrence
@@ -500,7 +520,8 @@ class TestTemporalCorrelations:
         for i in range(10):
             messages.append(CANMessage(arbitration_id=0x100, timestamp=i * 1.0, data=b"\x00" * 8))
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=10)
 
         assert len(correlations) == 0
@@ -517,7 +538,8 @@ class TestTemporalCorrelations:
                 CANMessage(arbitration_id=0x100, timestamp=base_time + 0.01, data=b"\x01" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=100)
 
         # Should not find 0x100 -> 0x100
@@ -536,7 +558,8 @@ class TestTemporalCorrelations:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + delay, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=100)
 
         corr = correlations[(0x100, 0x200)]
@@ -553,7 +576,8 @@ class TestTemporalCorrelations:
         messages.append(CANMessage(arbitration_id=0x100, timestamp=0.0, data=b"\x00" * 8))
         messages.append(CANMessage(arbitration_id=0x200, timestamp=0.03, data=b"\x00" * 8))
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = PatternAnalyzer.find_temporal_correlations(session, max_delay_ms=100)
 
         # Should not create correlation with only 1 sample
@@ -574,7 +598,8 @@ class TestIntegrationWithCANSession:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.03, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         pairs = session.find_message_pairs(time_window_ms=100, min_occurrence=3)
 
         assert len(pairs) > 0
@@ -591,7 +616,8 @@ class TestIntegrationWithCANSession:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.05, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         sequences = session.find_message_sequences(
             max_sequence_length=2, time_window_ms=200, min_support=0.5
         )
@@ -610,7 +636,8 @@ class TestIntegrationWithCANSession:
                 CANMessage(arbitration_id=0x200, timestamp=base_time + 0.03, data=b"\x00" * 8)
             )
 
-        session = CANSession(messages)
+        session = CANSession(name="Pattern Test")
+        session._messages = messages
         correlations = session.find_temporal_correlations(max_delay_ms=100)
 
         assert len(correlations) > 0

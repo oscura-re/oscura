@@ -12,12 +12,12 @@ The orchestration system uses **keyword-based routing** to automatically select 
 
 The system dynamically discovers available agents at runtime:
 
-```
+````python
 1. Scan `.claude/agents/*.md` for agent files
 2. Parse YAML frontmatter from each file
 3. Extract `routing_keywords` list
 4. Build routing table in memory
-```
+```yaml
 
 **Key principle**: No hardcoded routing tables. Adding a new agent file automatically makes it available for routing.
 
@@ -25,7 +25,7 @@ The system dynamically discovers available agents at runtime:
 
 When a user makes a request:
 
-```
+```yaml
 1. Parse user request → Extract keywords
 2. For each discovered agent:
    - Calculate keyword overlap score
@@ -33,11 +33,11 @@ When a user makes a request:
 3. Sort agents by score (highest first)
 4. Select top-scoring agent
 5. Route task to selected agent
-```
+```bash
 
 **Scoring example**:
 
-```
+```markdown
 User request: "write a function to parse JSON"
 
 Agent keyword matches:
@@ -46,7 +46,7 @@ Agent keyword matches:
 - technical_writer: [] → Score: 0/10
 
 Selected: code_assistant (highest score)
-```
+```markdown
 
 ### 3. Complexity Detection
 
@@ -73,7 +73,7 @@ For certain keywords, the orchestrator may detect that a task requires multiple 
 
 # Multi-agent (creates workflow with code_assistant + code_reviewer + technical_writer)
 /ai comprehensive email validation with tests and documentation
-```
+```yaml
 
 ## Agent Frontmatter Format
 
@@ -88,7 +88,7 @@ routing_keywords:
   - keyword2
   - keyword3
 ---
-```
+```yaml
 
 **Example** (code_assistant):
 
@@ -108,7 +108,7 @@ routing_keywords:
   - build
   - develop
 ---
-```
+```markdown
 
 ## Current Agents and Keywords
 
@@ -138,7 +138,7 @@ Include agent-specific keywords:
 
 # Routes to technical_writer
 /ai document the authentication module
-```
+```bash
 
 ### Method 2: Use Explicit Commands
 
@@ -148,7 +148,7 @@ Bypass routing intelligence with direct commands:
 /research <topic>     # Always → knowledge_researcher
 /review <path>        # Always → code_reviewer
 /git <message>        # Always → git_commit_manager
-```
+```markdown
 
 ### Method 3: Force Specific Agent with /route
 
@@ -157,7 +157,7 @@ Override orchestrator completely:
 ```bash
 /route code_assistant "your task here"
 /route knowledge_researcher "your task here"
-```
+```markdown
 
 **Warning**: `/route` bypasses safety checks and complexity detection. Use only when you're certain of the right agent.
 
@@ -174,19 +174,19 @@ Override orchestrator completely:
    ```bash
    # Instead of: "make authentication"
    /ai write authentication function  # → code_assistant
-   ```
+```markdown
 
 2. **Use explicit command**:
 
    ```bash
    /code write authentication function  # Force ad-hoc code
-   ```
+```markdown
 
 3. **Force route**:
 
    ```bash
    /route code_assistant "write authentication function"
-   ```
+```markdown
 
 ### Scenario 2: Ambiguous Request
 
@@ -196,7 +196,7 @@ Override orchestrator completely:
 
 ```bash
 /ai authentication
-```
+```bash
 
 Could mean:
 
@@ -210,7 +210,7 @@ Could mean:
 /ai write authentication code        # → code_assistant
 /ai research authentication methods  # → knowledge_researcher
 /ai document authentication flow     # → technical_writer
-```
+```markdown
 
 ### Scenario 3: Complex Multi-Agent Task
 
@@ -222,7 +222,7 @@ Could mean:
 /ai implement authentication
 # Routes to code_assistant (single agent)
 # But you want code + tests + docs
-```
+```bash
 
 **Solution**: Use multi-agent keywords:
 
@@ -232,13 +232,13 @@ Could mean:
 #   1. code_assistant (implementation)
 #   2. code_reviewer (review)
 #   3. technical_writer (documentation)
-```
+```markdown
 
 Or use `/swarm` for parallel execution:
 
 ```bash
 /swarm complete authentication with code, tests, and docs
-```
+```markdown
 
 ## Routing Decision Visibility
 
@@ -246,14 +246,14 @@ Or use `/swarm` for parallel execution:
 
 When orchestrator routes a task, it shows:
 
-```
+```yaml
 Routing Decision:
   Task: "write a function"
   Complexity: Single-agent (low)
   Matched Agent: code_assistant
   Keywords: ["write", "function"]
   Score: 8/10
-```
+```yaml
 
 ### Method 2: Enable Logging
 
@@ -263,13 +263,13 @@ Set in `.claude/config.yaml`:
 orchestration:
   workflow:
     show_routing_decisions: true
-```
+```markdown
 
-The orchestrator will log routing decisions to `.claude/orchestration.log`:
+The orchestrator will log routing decisions to `.claude/hooks/orchestration.log (file created at runtime)`:
 
-```
+```markdown
 [2026-01-16 14:30:45] ROUTE | Complexity: 25 | Path: SINGLE | Agent: code_assistant | Keywords: write,function
-```
+```markdown
 
 ### Method 3: Use /agents Command
 
@@ -278,7 +278,7 @@ See which keywords would match:
 ```bash
 /agents --verbose     # Show all agents with keywords
 /agents write         # Search for agents matching "write"
-```
+```markdown
 
 ## Troubleshooting Routing Issues
 
@@ -292,7 +292,7 @@ See which keywords would match:
 
 1. Check available agents: `/agents`
 2. Rephrase with explicit keywords
-3. Use direct command (e.g., `/code`, `/research`)
+3. Use direct command (e.g., code implementation requests, `/research`)
 
 ### Issue 2: Wrong Agent Selected Repeatedly
 
@@ -306,7 +306,7 @@ See which keywords would match:
 
 **Solution**:
 
-1. Use explicit commands (`/code`, `/research`, etc.)
+1. Use explicit commands (code implementation requests, `/research`, etc.)
 2. Use `/route` to force correct agent
 3. Improve request phrasing with specific keywords
 4. Check agent keywords: `/agents --verbose`
@@ -331,7 +331,7 @@ See which keywords would match:
 
 # Detected as simple (better)
 /ai write authentication function
-```
+```markdown
 
 ## Best Practices
 
@@ -352,7 +352,7 @@ Specify what you're working with:
 /ai write Python function      # "Python" + "function" → code_assistant
 /ai research React patterns    # "React" → knowledge_researcher
 /ai document API endpoints     # "API" + "document" → technical_writer
-```
+```bash
 
 ### 3. Use Explicit Commands When Certain
 
@@ -363,7 +363,7 @@ If you know which agent you want, use direct commands:
 /research <topic>    # Direct to knowledge_researcher
 /review <path>       # Direct to code_reviewer
 /git <message>       # Direct to git_commit_manager
-```
+```markdown
 
 ### 4. Let /ai Decide for Unknown Tasks
 
@@ -371,7 +371,7 @@ If unsure which agent to use, let orchestrator decide:
 
 ```bash
 /ai <description of what you want>
-```
+```markdown
 
 The keyword matching will find the best agent.
 
@@ -381,7 +381,7 @@ For important work, verify routing will be correct:
 
 ```bash
 /agents <keyword>    # Check which agents match
-```
+```yaml
 
 ## Configuration
 
@@ -396,7 +396,7 @@ orchestration:
   agent_registry:
     enabled: true                    # Track agent execution
     auto_persist: true               # Save registry on launch
-```
+```markdown
 
 ## Related Documentation
 
@@ -408,3 +408,4 @@ orchestration:
 ## Version
 
 v1.0.0 (2026-01-16) - Initial routing concepts documentation
+````

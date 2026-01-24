@@ -1,6 +1,6 @@
 # Oscura Workflow Helpers API Documentation
 
-> **Version**: 0.1.0 | **Last Updated**: 2026-01-08
+> **Version**: 0.5.1 | **Last Updated**: 2026-01-19
 
 Complete guide to high-level workflow functions that combine multiple Oscura features for common analysis tasks.
 
@@ -790,14 +790,14 @@ The `emc_compliance_test()` workflow performs these analysis steps:
 
 #### Regulatory Standards Reference
 
-|Standard|Application|Frequency Range|Measurement|
-|---|---|---|---|
-|FCC Part 15 Class A|Commercial/Industrial|150 kHz - 1 GHz|Radiated|
-|FCC Part 15 Class B|Residential|150 kHz - 1 GHz|Radiated|
-|CISPR 22/32 Class A|Commercial IT Equipment|150 kHz - 1 GHz|Conducted/Radiated|
-|CISPR 22/32 Class B|Residential IT Equipment|150 kHz - 1 GHz|Conducted/Radiated|
-|MIL-STD-461G CE102|Military Conducted|10 kHz - 50 MHz|Conducted|
-|MIL-STD-461G RE102|Military Radiated|2 MHz - 18 GHz|Radiated|
+| Standard            | Application              | Frequency Range | Measurement        |
+| ------------------- | ------------------------ | --------------- | ------------------ |
+| FCC Part 15 Class A | Commercial/Industrial    | 150 kHz - 1 GHz | Radiated           |
+| FCC Part 15 Class B | Residential              | 150 kHz - 1 GHz | Radiated           |
+| CISPR 22/32 Class A | Commercial IT Equipment  | 150 kHz - 1 GHz | Conducted/Radiated |
+| CISPR 22/32 Class B | Residential IT Equipment | 150 kHz - 1 GHz | Conducted/Radiated |
+| MIL-STD-461G CE102  | Military Conducted       | 10 kHz - 50 MHz | Conducted          |
+| MIL-STD-461G RE102  | Military Radiated        | 2 MHz - 18 GHz  | Radiated           |
 
 #### References
 
