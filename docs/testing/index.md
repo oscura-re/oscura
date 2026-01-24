@@ -1,6 +1,6 @@
 # Testing Guide
 
-> **Version**: 0.4.0 | **Last Updated**: 2026-01-17
+> **Version**: 0.5.1 | **Last Updated**: 2026-01-17
 
 Comprehensive guide to running and writing tests for Oscura using our modern testing infrastructure.
 

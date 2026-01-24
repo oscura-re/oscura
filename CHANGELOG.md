@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-01-24
+
+**Clean History Release**: Fresh git history starting from v0.1.2, incorporating all production-ready features through comprehensive v0.4.0 commit, plus diff coverage improvements.
+
 ### Added
 
 - **Demonstration Framework Architecture Documentation** (demonstrations/ARCHITECTURE.md): Comprehensive guide (400+ lines) explaining the demonstration system for contributors and maintainers. Covers: BaseDemo template pattern and lifecycle (init → execute → generate_test_data → run_demonstration → validate); validation framework with validate_approximately, validate_range helpers and tolerance levels (STRICT/NORMAL/RELAXED); data generation principles (self-contained, deterministic, realistic); capability tracking system and API coverage reporting; common utilities overview (BaseDemo, data_generation, constants, validation); best practices for writing new demonstrations (8 key principles); file organization and naming conventions; execution flow; and troubleshooting guide. Enables consistent demonstration development across 112 existing demonstrations and supports 20+ categories.

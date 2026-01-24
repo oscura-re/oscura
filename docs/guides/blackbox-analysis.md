@@ -1,6 +1,6 @@
 # Black-Box Protocol Analysis Guide
 
-**Version**: 0.4.0
+**Version**: 0.5.1
 **Last Updated**: 2026-01-20
 
 Complete guide to reverse engineering unknown protocols using Oscura's BlackBoxSession.

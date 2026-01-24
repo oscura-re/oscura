@@ -1,6 +1,6 @@
 # Side-Channel Analysis Guide
 
-**Version**: 0.4.0
+**Version**: 0.5.1
 **Last Updated**: 2026-01-20
 
 Guide to power analysis, timing attacks, and electromagnetic analysis using Oscura.
