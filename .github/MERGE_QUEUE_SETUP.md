@@ -33,59 +33,86 @@
 
 ---
 
-## Step 1: Enable Merge Queue in Repository Settings
+## Step 1: Apply Repository Ruleset
 
-### Via Web UI
+### Via Setup Script (Recommended)
 
-1. Go to https://github.com/oscura-re/oscura/settings/branches
-2. Find the `main` branch rule (or create one)
-3. Scroll to "Merge queue"
-4. Click ✅ "Require merge queue"
-5. Configure settings:
-   - **Merge method**: Squash (recommended)
-   - **Build concurrency**: 1 (prevent race conditions)
-   - **Merge queue grouping**: HEADGREEN
-   - **Minimum time in queue**: 0 minutes
-   - **Maximum time in queue**: 60 minutes
-   - **Only merge non-failing PRs**: ✅ Enabled
-6. Click "Save changes"
+```bash
+# Automated setup - creates/updates ruleset from template
+.github/scripts/setup-github-repo.sh
+```
 
-### Via API (Alternative)
+This script:
+
+- Reads configuration from `.github/config/main-branch-ruleset-template.json`
+- Creates new ruleset if it doesn't exist
+- Updates existing ruleset if it does exist
+- Idempotent (safe to run multiple times)
+
+### Via API (Manual)
 
 ```bash
 # Requires GitHub CLI with admin permissions
-gh api -X PUT repos/oscura-re/oscura/branches/main/protection \
-  --field required_status_checks='{"strict":true,"contexts":["merge-queue-summary"]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{"dismiss_stale_reviews":true,"require_code_owner_reviews":false}' \
-  --field restrictions=null \
-  --field allow_force_pushes=false \
-  --field allow_deletions=false \
-  --field required_conversation_resolution=true \
-  --field lock_branch=false \
-  --field allow_fork_syncing=false
+
+# Apply ruleset from template
+gh api -X POST repos/oscura-re/oscura/rulesets \
+  --input .github/config/main-branch-ruleset-template.json
+
+# OR update existing ruleset (get ID from: gh api repos/oscura-re/oscura/rulesets)
+gh api -X PUT repos/oscura-re/oscura/rulesets/12055878 \
+  --input .github/config/main-branch-ruleset-template.json
 ```
+
+### Via Web UI
+
+1. Go to https://github.com/oscura-re/oscura/settings/rules
+2. Click "New ruleset" → "New branch ruleset"
+3. Name: `main branch protection with merge queue`
+4. Target branches: `refs/heads/main`
+5. Add rules:
+   - **Require pull request before merging**
+     - Required approvals: 0
+     - Dismiss stale reviews: No
+     - Require code owner review: No
+     - Allowed merge methods: Squash only
+   - **Require merge queue**
+     - Merge method: Squash
+     - Build concurrency: 5
+     - Grouping strategy: ALLGREEN
+     - Timeout: 60 minutes
+6. Create ruleset
 
 ---
 
-## Step 2: Update Branch Protection Rules
+## Step 2: Understanding the Configuration
 
-**Required status checks**:
+**Why no explicit required status checks?**
 
-- `Pre-Commit Hooks`
-- `CI`
-- `Code Quality`
-- `Documentation`
-- `Test Quality Gates`
-- `CodeQL`
-- **`merge-queue-summary`** ← NEW: Merge queue check
+The ruleset uses **ALLGREEN grouping strategy** which automatically requires ALL workflow checks to pass. This is superior to explicit required status checks because:
 
-**Settings to enable**:
+- ✅ **No configuration drift**: Automatically adapts when you add/remove CI jobs
+- ✅ **Works with merge queue**: Checks run on both PR and merge_group events
+- ✅ **Prevents stale config**: No need to update ruleset when CI changes
+- ❌ **Old approach**: Required explicit check names that only ran on pull_request events, causing merge queue to get stuck
 
-- ✅ Require branches to be up to date before merging
-- ✅ Require status checks to pass before merging
-- ✅ Require conversation resolution before merging
-- ✅ Require linear history (optional but recommended)
+**What ALLGREEN does**:
+
+1. Waits for ALL workflow checks to complete
+2. Requires ALL to pass (no failures allowed)
+3. Works on both `pull_request` and `merge_group` events
+4. Automatically includes new checks without config changes
+
+**Key ruleset settings**:
+
+```json
+{
+  "grouping_strategy": "ALLGREEN",      // Require all checks to pass
+  "merge_method": "SQUASH",              // Squash commits
+  "check_response_timeout_minutes": 60,  // 1-hour timeout
+  "max_entries_to_build": 5,             // Batch up to 5 PRs
+  "allowed_merge_methods": ["squash"]    // Only squash allowed
+}
+```
 
 ---
 
@@ -254,6 +281,40 @@ queue:
 ---
 
 ## Troubleshooting
+
+### Problem: Merge queue stuck in AWAITING_CHECKS
+
+**Symptoms**: PR enters merge queue, workflows run and pass, but queue stays stuck forever
+
+**Cause**: Ruleset has `required_status_checks` that only run on `pull_request` events. Merge queue creates `merge_group` events, so required checks never run.
+
+**Example of broken configuration**:
+
+```json
+{
+  "rules": [
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "required_status_checks": [
+          {"context": "CI"},           // Only runs on pull_request
+          {"context": "Diff Coverage"}  // Never runs on merge_group
+        ]
+      }
+    }
+  ]
+}
+```
+
+**Solution**: Remove the `required_status_checks` rule and rely on ALLGREEN strategy:
+
+```bash
+# Apply correct configuration
+gh api -X PUT repos/oscura-re/oscura/rulesets/RULESET_ID \
+  --input .github/config/main-branch-ruleset-template.json
+```
+
+**Why this works**: ALLGREEN requires all checks to pass without naming them explicitly. This works for both `pull_request` and `merge_group` events.
 
 ### Problem: Merge queue CI fails but PR CI passed
 

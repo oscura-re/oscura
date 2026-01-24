@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Infrastructure** (.github/config/): Version-controlled GitHub configuration with main-branch-ruleset-template.json for replicable repository setup, main-branch-ruleset.json for current live config reference, comprehensive README.md documenting ruleset details and troubleshooting
 - **Infrastructure** (.github/INFRASTRUCTURE.md): Complete IaC guide covering configuration philosophy, file structure, fork setup, merge queue strategy, best practices, and migration from old branch protection
-- **Infrastructure** (.github/scripts/export-github-config.sh): Idempotent repository setup script using rulesets API instead of deprecated branch protection, creates/updates ruleset from template, handles existing rulesets gracefully
+- **Infrastructure** (.github/scripts/export-github-config.sh): Automated backup script for exporting live repository configuration (rulesets, settings, environments, labels, topics) to JSON files
 
 ### Changed
 
 - **Documentation** (README.md): Accurate repositioning emphasizing workflow automation value, adds "Built On" transparency section showing integration with sigrok/scipy/ChipWhisperer, clarifies unique contributions (hypothesis-driven RE, DBC generation, Wireshark dissector automation) vs integrated capabilities (protocol decoding, signal processing), provides guidance on when to use Oscura vs other tools, maintains honest positioning as workflow automation platform that chains established tools
+- **Infrastructure** (.github/scripts/setup-github-repo.sh): Idempotent repository setup script using rulesets API instead of deprecated branch protection, creates/updates ruleset from template, handles existing rulesets gracefully
 - **Infrastructure** (.github/MERGE_QUEUE_SETUP.md): Updated to use repository rulesets instead of branch protection API, documents ALLGREEN strategy benefits, explains why explicit required_status_checks cause merge queue to get stuck, adds troubleshooting section for AWAITING_CHECKS issue
 
 ### Fixed
