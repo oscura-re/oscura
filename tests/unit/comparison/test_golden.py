@@ -299,9 +299,10 @@ class TestBatchCompare:
         golden = create_golden(reference_trace, tolerance=0.05)
 
         traces = []
-        # Good traces
+        # Good traces - use deterministic RNG to avoid flaky test
+        rng = np.random.default_rng(42)
         for _i in range(3):
-            noise = np.random.normal(0, 0.01, 1000)
+            noise = rng.normal(0, 0.01, 1000)
             data = reference_trace.data + noise
             traces.append(WaveformTrace(data=data, metadata=reference_trace.metadata))
 
