@@ -23,9 +23,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import numpy as np
+from oscura.analyzers.protocols.parallel_bus import decode_centronics, decode_gpib
 
 from demonstrations.common import BaseDemo
-from oscura.analyzers.protocols.parallel_bus import decode_centronics, decode_gpib
 from oscura.core.types import DigitalTrace, TraceMetadata
 
 

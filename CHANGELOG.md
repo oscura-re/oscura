@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Test Infrastructure** (tests/hooks/test_enforce_agent_limit.py): Added missing pytestmark decorator (1 test fixed)
+- **CI/CD** (GitHub branch protection): Added Diff Coverage to required status checks to prevent merging PRs with <80% coverage
+
 ## [0.5.1] - 2026-01-24
 
 **Clean History Release**: Production-ready framework with ultra-clean git history.
 
 ### Added
+
 - Comprehensive hardware reverse engineering framework
 - 112 working demonstrations across 19 categories
 - 16+ protocol decoders (UART, SPI, I2C, CAN, LIN, FlexRay, JTAG, SWD, etc.)
@@ -26,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 5/5 quality validators passing
 
 ### Infrastructure
+
 - Complete test coverage with parallel execution
 - Automated quality checks (ruff, mypy, pytest)
 - Claude Code orchestration with 6 specialized agents
@@ -37,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Initial Public Release**: Foundation of the Oscura framework.
 
 ### Added
+
 - Core signal processing and analysis capabilities
 - Basic protocol decoding infrastructure
 - Initial test suite and CI/CD pipeline

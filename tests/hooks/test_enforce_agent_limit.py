@@ -8,11 +8,15 @@ correctly and doesn't always default to 2.
 import sys
 from pathlib import Path
 
+import pytest
+
 # Add hooks directory to path
 hooks_dir = Path(__file__).parent.parent.parent / ".claude" / "hooks"
 sys.path.insert(0, str(hooks_dir))
 
 from enforce_agent_limit import DEFAULT_MAX_RUNNING, get_max_running_limit
+
+pytestmark = [pytest.mark.unit, pytest.mark.core]
 
 
 def test_get_max_running_limit_with_max_concurrent_only():
