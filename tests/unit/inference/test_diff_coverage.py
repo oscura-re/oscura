@@ -27,13 +27,18 @@ References:
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-pytestmark = pytest.mark.unit
+# Skip on Python 3.13 - compatibility issues with test dependencies
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.skipif(sys.version_info >= (3, 13), reason="Python 3.13 compatibility issues"),
+]
 
 
 # =============================================================================
