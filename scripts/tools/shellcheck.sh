@@ -24,37 +24,37 @@ PATHS=()
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-  --json)
-    enable_json
-    shift
-    ;;
-  -v)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    echo "Usage: $0 [OPTIONS] [paths...]"
-    echo ""
-    echo "Shell script linting with ShellCheck"
-    echo ""
-    echo "Options:"
-    echo "  --json      Output machine-readable JSON"
-    echo "  -v          Verbose output"
-    echo "  -h, --help  Show this help message"
-    echo ""
-    echo "Example:"
-    echo "  $0 scripts/"
-    echo "  $0 *.sh"
-    exit 0
-    ;;
-  -*)
-    echo "Unknown option: $1" >&2
-    exit 2
-    ;;
-  *)
-    PATHS+=("$1")
-    shift
-    ;;
+    --json)
+      enable_json
+      shift
+      ;;
+    -v)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      echo "Usage: $0 [OPTIONS] [paths...]"
+      echo ""
+      echo "Shell script linting with ShellCheck"
+      echo ""
+      echo "Options:"
+      echo "  --json      Output machine-readable JSON"
+      echo "  -v          Verbose output"
+      echo "  -h, --help  Show this help message"
+      echo ""
+      echo "Example:"
+      echo "  $0 scripts/"
+      echo "  $0 *.sh"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+    *)
+      PATHS+=("$1")
+      shift
+      ;;
   esac
 done
 
@@ -77,7 +77,7 @@ for path in "${PATHS[@]}"; do
     shell_files+=("${path}")
   elif [[ -d "${path}" ]]; then
     # Use git ls-files if in a git repo, otherwise fall back to find
-    if git rev-parse --git-dir >/dev/null 2>&1; then
+    if git rev-parse --git-dir > /dev/null 2>&1; then
       while IFS= read -r file; do
         [[ -f "${file}" && -x "${file}" ]] || [[ "${file}" == *.sh ]] && shell_files+=("${file}")
       done < <(git ls-files "${path}" | grep "\.sh$")
@@ -89,7 +89,7 @@ for path in "${PATHS[@]}"; do
         -not -path "*/.git/*" \
         -not -path "*/.venv/*" \
         -not -path "*/node_modules/*" \
-        -print0 2>/dev/null)
+        -print0 2> /dev/null)
     fi
   fi
 done
@@ -115,7 +115,7 @@ if ${VERBOSE}; then
     exit 1
   fi
 else
-  if shellcheck --severity=warning "${shell_files[@]}" &>/dev/null; then
+  if shellcheck --severity=warning "${shell_files[@]}" &> /dev/null; then
     print_pass "All ${file_count} scripts passed"
     json_result "${TOOL_CMD}" "pass" ""
     exit 0

@@ -25,50 +25,50 @@ PATHS=()
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-  --check)
-    MODE="check"
-    shift
-    ;;
-  --format)
-    MODE="format"
-    shift
-    ;;
-  --json)
-    enable_json
-    shift
-    ;;
-  -v)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    echo "Usage: $0 [OPTIONS] [paths...]"
-    echo ""
-    echo "XML validation and formatting with xmllint"
-    echo ""
-    echo "Options:"
-    echo "  --check       Validate XML syntax (default)"
-    echo "  --format      Format XML files in place"
-    echo "  --json        Output machine-readable JSON"
-    echo "  -v            Verbose output"
-    echo "  -h, --help    Show this help message"
-    echo ""
-    echo "File patterns: *.xml, *.xsd, *.xsl, *.xslt, *.svg"
-    echo ""
-    echo "Exit codes:"
-    echo "  0 - All files valid / formatted"
-    echo "  1 - Validation errors found"
-    echo "  2 - Tool not installed"
-    exit 0
-    ;;
-  -*)
-    echo "Unknown option: $1" >&2
-    exit 2
-    ;;
-  *)
-    PATHS+=("$1")
-    shift
-    ;;
+    --check)
+      MODE="check"
+      shift
+      ;;
+    --format)
+      MODE="format"
+      shift
+      ;;
+    --json)
+      enable_json
+      shift
+      ;;
+    -v)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      echo "Usage: $0 [OPTIONS] [paths...]"
+      echo ""
+      echo "XML validation and formatting with xmllint"
+      echo ""
+      echo "Options:"
+      echo "  --check       Validate XML syntax (default)"
+      echo "  --format      Format XML files in place"
+      echo "  --json        Output machine-readable JSON"
+      echo "  -v            Verbose output"
+      echo "  -h, --help    Show this help message"
+      echo ""
+      echo "File patterns: *.xml, *.xsd, *.xsl, *.xslt, *.svg"
+      echo ""
+      echo "Exit codes:"
+      echo "  0 - All files valid / formatted"
+      echo "  1 - Validation errors found"
+      echo "  2 - Tool not installed"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+    *)
+      PATHS+=("$1")
+      shift
+      ;;
   esac
 done
 
@@ -91,7 +91,7 @@ for path in "${PATHS[@]}"; do
     xml_files+=("${path}")
   elif [[ -d "${path}" ]]; then
     # Use git ls-files if in a git repo, otherwise fall back to find
-    if git rev-parse --git-dir >/dev/null 2>&1; then
+    if git rev-parse --git-dir > /dev/null 2>&1; then
       while IFS= read -r file; do
         [[ -f "${file}" ]] && xml_files+=("${file}")
       done < <(git ls-files "${path}" | grep -E '\.(xml|xsd|xsl|xslt)$')
@@ -100,7 +100,7 @@ for path in "${PATHS[@]}"; do
       while IFS= read -r -d '' file; do
         xml_files+=("${file}")
       done < <(find "${path}" -type f \( -name "*.xml" -o -name "*.xsd" -o -name "*.xsl" -o -name "*.xslt" \) \
-        -not -path "*/.git/*" -not -path "*/.venv/*" -not -path "*/node_modules/*" -print0 2>/dev/null)
+        -not -path "*/.git/*" -not -path "*/.venv/*" -not -path "*/node_modules/*" -print0 2> /dev/null)
     fi
   fi
 done
@@ -126,7 +126,7 @@ if [[ "${MODE}" == "check" ]]; then
         ((error_count++)) || true
       fi
     else
-      if ! xmllint --noout "${file}" 2>/dev/null; then
+      if ! xmllint --noout "${file}" 2> /dev/null; then
         has_errors=true
         ((error_count++)) || true
         print_fail "Invalid: $(basename "${file}")"
@@ -152,8 +152,8 @@ if [[ "${MODE}" == "format" ]]; then
   for file in "${xml_files[@]}"; do
     # Format in place
     temp_file=$(mktemp)
-    if xmllint --format "${file}" >"${temp_file}" 2>/dev/null; then
-      if ! diff -q "${file}" "${temp_file}" &>/dev/null; then
+    if xmllint --format "${file}" > "${temp_file}" 2> /dev/null; then
+      if ! diff -q "${file}" "${temp_file}" &> /dev/null; then
         mv "${temp_file}" "${file}"
         ((formatted_count++)) || true
         ${VERBOSE} && echo "    Formatted: $(basename "${file}")"

@@ -26,60 +26,60 @@ OUTPUT_FORMAT="png"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-  --check)
-    MODE="check"
-    shift
-    ;;
-  --export)
-    MODE="export"
-    shift
-    ;;
-  --png)
-    OUTPUT_FORMAT="png"
-    shift
-    ;;
-  --svg)
-    OUTPUT_FORMAT="svg"
-    shift
-    ;;
-  --json)
-    enable_json
-    shift
-    ;;
-  -v)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    echo "Usage: $0 [OPTIONS] [paths...]"
-    echo ""
-    echo "PlantUML diagram validation and export"
-    echo ""
-    echo "Options:"
-    echo "  --check       Validate PlantUML syntax (default)"
-    echo "  --export      Export diagrams to images"
-    echo "  --png         Export as PNG (default for --export)"
-    echo "  --svg         Export as SVG"
-    echo "  --json        Output machine-readable JSON"
-    echo "  -v            Verbose output"
-    echo "  -h, --help    Show this help message"
-    echo ""
-    echo "File patterns: *.puml, *.plantuml, *.pu"
-    echo ""
-    echo "Exit codes:"
-    echo "  0 - All diagrams valid / exported"
-    echo "  1 - Syntax errors found"
-    echo "  2 - Tool not installed"
-    exit 0
-    ;;
-  -*)
-    echo "Unknown option: $1" >&2
-    exit 2
-    ;;
-  *)
-    PATHS+=("$1")
-    shift
-    ;;
+    --check)
+      MODE="check"
+      shift
+      ;;
+    --export)
+      MODE="export"
+      shift
+      ;;
+    --png)
+      OUTPUT_FORMAT="png"
+      shift
+      ;;
+    --svg)
+      OUTPUT_FORMAT="svg"
+      shift
+      ;;
+    --json)
+      enable_json
+      shift
+      ;;
+    -v)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      echo "Usage: $0 [OPTIONS] [paths...]"
+      echo ""
+      echo "PlantUML diagram validation and export"
+      echo ""
+      echo "Options:"
+      echo "  --check       Validate PlantUML syntax (default)"
+      echo "  --export      Export diagrams to images"
+      echo "  --png         Export as PNG (default for --export)"
+      echo "  --svg         Export as SVG"
+      echo "  --json        Output machine-readable JSON"
+      echo "  -v            Verbose output"
+      echo "  -h, --help    Show this help message"
+      echo ""
+      echo "File patterns: *.puml, *.plantuml, *.pu"
+      echo ""
+      echo "Exit codes:"
+      echo "  0 - All diagrams valid / exported"
+      echo "  1 - Syntax errors found"
+      echo "  2 - Tool not installed"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+    *)
+      PATHS+=("$1")
+      shift
+      ;;
   esac
 done
 
@@ -102,7 +102,7 @@ for path in "${PATHS[@]}"; do
     puml_files+=("${path}")
   elif [[ -d "${path}" ]]; then
     # Use git ls-files if in a git repo, otherwise fall back to find
-    if git rev-parse --git-dir >/dev/null 2>&1; then
+    if git rev-parse --git-dir > /dev/null 2>&1; then
       while IFS= read -r file; do
         [[ -f "${file}" ]] && puml_files+=("${file}")
       done < <(git ls-files "${path}" | grep -E '\.(puml|plantuml|pu)$')
@@ -111,7 +111,7 @@ for path in "${PATHS[@]}"; do
       while IFS= read -r -d '' file; do
         puml_files+=("${file}")
       done < <(find "${path}" -type f \( -name "*.puml" -o -name "*.plantuml" -o -name "*.pu" \) \
-        -not -path "*/.git/*" -not -path "*/.venv/*" -not -path "*/node_modules/*" -print0 2>/dev/null)
+        -not -path "*/.git/*" -not -path "*/.venv/*" -not -path "*/node_modules/*" -print0 2> /dev/null)
     fi
   fi
 done
@@ -138,7 +138,7 @@ if [[ "${MODE}" == "check" ]]; then
         ((error_count++)) || true
       fi
     else
-      if ! plantuml -syntax "${file}" &>/dev/null; then
+      if ! plantuml -syntax "${file}" &> /dev/null; then
         has_errors=true
         ((error_count++)) || true
         print_fail "Syntax error: $(basename "${file}")"
@@ -171,7 +171,7 @@ if [[ "${MODE}" == "export" ]]; then
         has_errors=true
       fi
     else
-      if plantuml -t"${OUTPUT_FORMAT}" "${file}" &>/dev/null; then
+      if plantuml -t"${OUTPUT_FORMAT}" "${file}" &> /dev/null; then
         ((exported_count++)) || true
       else
         has_errors=true

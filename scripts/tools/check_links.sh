@@ -25,48 +25,48 @@ PATHS=()
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-  --check)
-    MODE="offline"
-    shift
-    ;;
-  --online)
-    MODE="online"
-    shift
-    ;;
-  --json)
-    enable_json
-    shift
-    ;;
-  -v)
-    VERBOSE=true
-    shift
-    ;;
-  -h | --help)
-    echo "Usage: $0 [OPTIONS] [paths...]"
-    echo ""
-    echo "Link validation with lychee"
-    echo ""
-    echo "Options:"
-    echo "  --check     Check internal links only (offline mode, default)"
-    echo "  --online    Check all links including external URLs"
-    echo "  --json      Output machine-readable JSON"
-    echo "  -v          Verbose output"
-    echo "  -h, --help  Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0                  # Check all markdown in current directory (offline)"
-    echo "  $0 --online docs/   # Check docs/ including external URLs"
-    echo "  $0 README.md        # Check specific file"
-    exit 0
-    ;;
-  -*)
-    echo "Unknown option: $1" >&2
-    exit 2
-    ;;
-  *)
-    PATHS+=("$1")
-    shift
-    ;;
+    --check)
+      MODE="offline"
+      shift
+      ;;
+    --online)
+      MODE="online"
+      shift
+      ;;
+    --json)
+      enable_json
+      shift
+      ;;
+    -v)
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      echo "Usage: $0 [OPTIONS] [paths...]"
+      echo ""
+      echo "Link validation with lychee"
+      echo ""
+      echo "Options:"
+      echo "  --check     Check internal links only (offline mode, default)"
+      echo "  --online    Check all links including external URLs"
+      echo "  --json      Output machine-readable JSON"
+      echo "  -v          Verbose output"
+      echo "  -h, --help  Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0                  # Check all markdown in current directory (offline)"
+      echo "  $0 --online docs/   # Check docs/ including external URLs"
+      echo "  $0 README.md        # Check specific file"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 2
+      ;;
+    *)
+      PATHS+=("$1")
+      shift
+      ;;
   esac
 done
 
@@ -89,7 +89,7 @@ for path in "${PATHS[@]}"; do
     files_to_check+=("${path}")
   elif [[ -d "${path}" ]]; then
     # Use git ls-files if in a git repo, otherwise fall back to find
-    if git rev-parse --git-dir >/dev/null 2>&1; then
+    if git rev-parse --git-dir > /dev/null 2>&1; then
       while IFS= read -r file; do
         [[ -f "${file}" ]] && files_to_check+=("${file}")
       done < <(git ls-files "${path}" | grep '\.md$')
@@ -101,7 +101,7 @@ for path in "${PATHS[@]}"; do
         -not -path "*/.git/*" \
         -not -path "*/.venv/*" \
         -not -path "*/node_modules/*" \
-        -print0 2>/dev/null)
+        -print0 2> /dev/null)
     fi
   fi
 done
@@ -139,14 +139,14 @@ done
 # Mode-specific arguments
 mode_args=()
 case ${MODE} in
-offline)
-  mode_args+=("--offline")
-  ;;
-online)
-  mode_args+=("--timeout" "30")
-  mode_args+=("--max-redirects" "5")
-  mode_args+=("--retry-wait-time" "2")
-  ;;
+  offline)
+    mode_args+=("--offline")
+    ;;
+  online)
+    mode_args+=("--timeout" "30")
+    mode_args+=("--max-redirects" "5")
+    mode_args+=("--retry-wait-time" "2")
+    ;;
 esac
 
 # Verbose arguments
