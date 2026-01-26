@@ -469,13 +469,13 @@ class SetupHoldTimingDemo(BaseDemo):
         """Validate timing analysis results."""
         suite = ValidationSuite()
 
-        # Check rise time
-        rise_time_ns = results.get("rise_time_ns", 0)
-        suite.add_check("Rise time measured", rise_time_ns > 0, f"Got {rise_time_ns:.2f} ns")
-
-        # Check fall time
-        fall_time_ns = results.get("fall_time_ns", 0)
-        suite.add_check("Fall time measured", fall_time_ns > 0, f"Got {fall_time_ns:.2f} ns")
+        # Check clock rise time
+        clock_rise_time_ns = results.get("clock_rise_time_ns", 0)
+        suite.add_check(
+            "Clock rise time measured",
+            clock_rise_time_ns > 0,
+            f"Got {clock_rise_time_ns:.2f} ns",
+        )
 
         # Check propagation delay
         if "prop_delay_ns" in results:

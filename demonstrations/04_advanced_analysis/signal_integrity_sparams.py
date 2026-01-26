@@ -423,12 +423,12 @@ class SParametersDemo(BaseDemo):
             "ABCD round-trip error", abcd_error < 1e-6, f"Got {abcd_error:.2e} (<1e-6 expected)"
         )
 
-        # Check cascade behavior
-        cascade_loss = results.get("cascade_loss_db", 0)
+        # Check cascade behavior (ratio should be ~2.0x)
+        cascade_ratio = results.get("cascade_il_ratio", 0)
         suite.add_check(
-            "Cascade loss reasonable",
-            1.5 < cascade_loss < 2.5,
-            f"Got {cascade_loss:.2f} dB (should be ~2x single loss)",
+            "Cascade loss ratio",
+            1.8 < cascade_ratio < 2.2,
+            f"Got {cascade_ratio:.2f}x (should be ~2.0x for identical cascaded networks)",
         )
 
         suite.report()

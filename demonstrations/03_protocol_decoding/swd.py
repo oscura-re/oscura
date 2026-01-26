@@ -345,6 +345,7 @@ class SWDDemo(BaseDemo):
         self.results["dp_writes"] = len(dp_writes)
         self.results["ap_reads"] = len(ap_reads)
         self.results["ap_writes"] = len(ap_writes)
+        self.results["ap_accesses"] = len(ap_reads) + len(ap_writes)
 
         # Extract DPIDR if present
         for pkt in dp_reads:
