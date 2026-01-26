@@ -411,27 +411,27 @@ class TestHILTesterDryRun:
 class TestHILTesterMockedSerial:
     """Test HILTester with mocked serial interface."""
 
-    @patch("oscura.validation.hil_testing.serial")
-    def test_serial_connection(self, mock_serial: Mock) -> None:
+    @patch("oscura.validation.hil_testing.connect_serial_port")
+    def test_serial_connection(self, mock_connect: Mock) -> None:
         """Test serial connection establishment."""
         mock_serial_instance = MagicMock()
-        mock_serial.Serial.return_value = mock_serial_instance
+        mock_connect.return_value = mock_serial_instance
 
         config = HILConfig(interface="serial", port="/dev/ttyUSB0", baud_rate=9600, setup_delay=0.0)
         tester = HILTester(config)
         tester.setup()
 
-        mock_serial.Serial.assert_called_once_with(port="/dev/ttyUSB0", baudrate=9600, timeout=1.0)
+        mock_connect.assert_called_once_with(port="/dev/ttyUSB0", baud_rate=9600, timeout=1.0)
 
         tester.teardown()
         mock_serial_instance.close.assert_called_once()
 
-    @patch("oscura.validation.hil_testing.serial")
-    def test_serial_send_receive(self, mock_serial: Mock) -> None:
+    @patch("oscura.validation.hil_testing.connect_serial_port")
+    def test_serial_send_receive(self, mock_connect: Mock) -> None:
         """Test serial send/receive operation."""
         mock_serial_instance = MagicMock()
         mock_serial_instance.read.return_value = b"\x02\x03"
-        mock_serial.Serial.return_value = mock_serial_instance
+        mock_connect.return_value = mock_serial_instance
 
         config = HILConfig(interface="serial", port="/dev/ttyUSB0", setup_delay=0.0)
         tester = HILTester(config)
@@ -446,12 +446,12 @@ class TestHILTesterMockedSerial:
 
         tester.teardown()
 
-    @patch("oscura.validation.hil_testing.serial")
-    def test_serial_timeout(self, mock_serial: Mock) -> None:
+    @patch("oscura.validation.hil_testing.connect_serial_port")
+    def test_serial_timeout(self, mock_connect: Mock) -> None:
         """Test serial timeout handling."""
         mock_serial_instance = MagicMock()
         mock_serial_instance.read.return_value = b""  # Empty response = timeout
-        mock_serial.Serial.return_value = mock_serial_instance
+        mock_connect.return_value = mock_serial_instance
 
         config = HILConfig(interface="serial", port="/dev/ttyUSB0", setup_delay=0.0)
         tester = HILTester(config)

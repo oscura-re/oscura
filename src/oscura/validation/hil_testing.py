@@ -34,6 +34,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol
 
+import serial  # type: ignore[import-untyped]
+
 from oscura.utils.serial import connect_serial_port
 
 
@@ -823,8 +825,6 @@ class HILTester:
 
     def _send_receive_serial(self, data: bytes, timeout: float) -> bytes | None:
         """Send/receive via serial port."""
-        import serial  # type: ignore[import-untyped]  # Optional dependency
-
         ser: serial.Serial = self._connection
         original_timeout = ser.timeout
         ser.timeout = timeout
