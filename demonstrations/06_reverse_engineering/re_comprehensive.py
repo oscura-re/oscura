@@ -28,9 +28,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import oscura as osc
 from demonstrations.common import BaseDemo, ValidationSuite, print_info, print_result
+from oscura.utils.builders.signal_builder import SignalBuilder
 from demonstrations.common.base_demo import run_demo_main
 from demonstrations.common.formatting import print_subheader
-from demonstrations.common import SignalBuilder
 from oscura.core.types import TraceMetadata, WaveformTrace
 
 
