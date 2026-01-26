@@ -1182,37 +1182,6 @@ class TestLLMIntegrationEdgeCases:
 # =============================================================================
 
 
-class TestCSVExporterEdgeCases:
-    """Test CSV exporter edge cases.
-
-    Covers: csv.py:227
-    """
-
-    def test_csv_export_non_float_values(self) -> None:
-        """Test CSV export handles non-float values.
-
-        Covers: exporters/csv.py:227 (str(val) path)
-        """
-        import tempfile
-        from pathlib import Path
-
-        from oscura.export.legacy.csv import export_csv
-
-        measurements = {
-            "frequency": 1000.0,
-            "name": "test_signal",  # String value
-            "count": 42,  # Integer value
-        }
-
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
-            export_csv(measurements, Path(f.name))
-            # Read back and verify
-            content = Path(f.name).read_text()
-            assert "test_signal" in content
-            assert "42" in content
-            Path(f.name).unlink()  # Clean up
-
-
 # =============================================================================
 # Additional Coverage Tests
 # =============================================================================

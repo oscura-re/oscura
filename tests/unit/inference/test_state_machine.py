@@ -382,6 +382,7 @@ class TestFiniteAutomaton:
         try:
             import networkx  # noqa: F401
 
+            pytest.skip("networkx is installed, cannot test ImportError behavior")
         except ImportError:
             pass
 

@@ -45,7 +45,7 @@ def test_export_help():
 
     assert result.exit_code == 0
     assert "export" in result.output.lower()
-    assert "FORMAT" in result.output
+    assert "json" in result.output  # Check for format options
     assert "SESSION" in result.output
     assert "--output" in result.output
 

@@ -631,11 +631,12 @@ def test_cli_with_invalid_config_path():
     """Test CLI with non-existent config path."""
     runner = CliRunner()
 
-    # Should not crash, just ignore the config
+    # Should error when config path doesn't exist (validates path)
     result = runner.invoke(cli, ["--config", "/nonexistent/path.yaml", "analyze", "--help"])
 
-    # Should still show help (config file optional)
-    assert result.exit_code == 0
+    # Should exit with error code 2 (CLI usage error)
+    assert result.exit_code == 2
+    assert "does not exist" in result.output
 
 
 @pytest.mark.unit
