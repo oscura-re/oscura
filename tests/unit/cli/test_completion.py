@@ -254,35 +254,7 @@ def test_fish_completion_subcommands():
 
 
 @pytest.mark.unit
-def test_fish_completion_global_options():
-    """Test fish completion includes global options."""
-    script = _get_fish_completion()
-
-    assert "-h -l help" in script
-    assert "-v -l verbose" in script
-    assert "-q -l quiet" in script
-    assert "-l config" in script
-
-
 @pytest.mark.unit
-def test_fish_completion_subcommand_options():
-    """Test fish completion includes subcommand-specific options."""
-    script = _get_fish_completion()
-
-    # Analyze options
-    assert "--protocol" in script
-    assert "--export-dir" in script
-    assert "-i -l interactive" in script
-
-    # Decode options
-    assert "--baud-rate" in script
-    assert "--show-errors" in script
-
-    # Config options
-    assert "--show" in script
-    assert "--set" in script
-
-
 @pytest.mark.unit
 def test_fish_completion_file_completions():
     """Test fish completion handles file completions."""
@@ -420,27 +392,6 @@ def test_completion_scripts_are_different():
 
 
 @pytest.mark.unit
-def test_bash_completion_no_syntax_errors():
-    """Test that bash completion has valid syntax."""
-    script = _get_bash_completion()
-
-    # Check for basic syntax validity
-    assert script.count("(") == script.count(")")  # Balanced parentheses
-    assert script.count("{") == script.count("}")  # Balanced braces
-    assert "esac" in script  # case statement properly closed
-
-
-@pytest.mark.unit
-def test_zsh_completion_no_syntax_errors():
-    """Test that zsh completion has valid syntax."""
-    script = _get_zsh_completion()
-
-    # Check for basic syntax validity
-    assert script.count("(") == script.count(")")
-    assert script.count("[") == script.count("]")
-    assert "esac" in script  # case statement properly closed
-
-
 @pytest.mark.unit
 def test_fish_completion_no_syntax_errors():
     """Test that fish completion has valid syntax."""

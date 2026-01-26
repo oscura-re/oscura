@@ -409,11 +409,13 @@ def test_edit_config_creates_if_missing(tmp_path):
 @pytest.mark.unit
 def test_edit_config_editor_failure(tmp_path):
     """Test error handling when editor fails."""
+    import subprocess
+
     config_path = tmp_path / "config.yaml"
     config_path.touch()
 
     with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = Exception("Editor crashed")
+        mock_run.side_effect = subprocess.CalledProcessError(1, "editor")
 
         with pytest.raises(RuntimeError, match="Editor failed"):
             _edit_config(config_path)

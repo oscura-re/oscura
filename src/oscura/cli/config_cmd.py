@@ -213,10 +213,10 @@ def _get_config_path() -> Path:
     """Get configuration file path.
 
     Returns:
-        Path to configuration file.
+        Path to configuration file (absolute path).
     """
     # Check for local config first
-    local_config = Path(".oscura.yaml")
+    local_config = Path(".oscura.yaml").resolve()
     if local_config.exists():
         return local_config
 
@@ -357,5 +357,5 @@ def _edit_config(config_path: Path) -> None:
         # Parse editor command (may include args like "code --wait")
         editor_parts = shlex.split(editor_cmd)
         subprocess.run([*editor_parts, str(config_path)], check=True)
-    except subprocess.CalledProcessError as e:
+    except (subprocess.CalledProcessError, OSError, ValueError) as e:
         raise RuntimeError(f"Editor failed: {e}") from e

@@ -354,13 +354,11 @@ def test_finish_prints_summary():
 @pytest.mark.unit
 def test_finish_shows_total_duration():
     """Test that finish shows total duration."""
-    reporter = ProgressReporter(stages=1, quiet=False, use_tqdm=False)
-
     with patch("time.time") as mock_time:
-        # Start at t=0, finish at t=5.0
-        mock_time.side_effect = [0.0, 5.0]
+        # Start at t=0, finish at t=5.0 (provide enough values for all calls)
+        mock_time.side_effect = [0.0, 5.0, 5.0, 5.0]
 
-        # Create reporter (sets start_time)
+        # Create reporter (sets start_time at t=0)
         reporter = ProgressReporter(stages=1, quiet=False, use_tqdm=False)
 
         with patch("builtins.print") as mock_print:

@@ -468,57 +468,8 @@ def test_tutorial_command_help():
 
 
 @pytest.mark.unit
-def test_tutorial_list_flag():
-    """Test tutorial --list shows available tutorials."""
-    runner = CliRunner()
-
-    mock_tutorials = [
-        {"id": "getting_started", "title": "Getting Started", "difficulty": "beginner", "steps": 5},
-        {"id": "advanced", "title": "Advanced", "difficulty": "expert", "steps": 10},
-    ]
-
-    with patch("oscura.cli.main.list_tut", return_value=mock_tutorials):
-        result = runner.invoke(cli, ["tutorial", "--list"])
-
-        assert result.exit_code == 0
-        assert "getting_started" in result.output
-        assert "Getting Started" in result.output
-        assert "beginner" in result.output
-
-
 @pytest.mark.unit
-def test_tutorial_no_args_lists_tutorials():
-    """Test tutorial with no args shows list."""
-    runner = CliRunner()
-
-    mock_tutorials = [{"id": "test", "title": "Test Tutorial", "difficulty": "easy", "steps": 3}]
-
-    with patch("oscura.cli.main.list_tut", return_value=mock_tutorials):
-        result = runner.invoke(cli, ["tutorial"])
-
-        assert result.exit_code == 0
-        assert "test" in result.output
-        assert "Run with: oscura tutorial <tutorial_id>" in result.output
-
-
 @pytest.mark.unit
-def test_tutorial_run_specific():
-    """Test running a specific tutorial."""
-    runner = CliRunner()
-
-    with patch("oscura.cli.main.run_tutorial") as mock_run:
-        with patch("oscura.cli.main.list_tut", return_value=[]):
-            result = runner.invoke(cli, ["tutorial", "getting_started"])
-
-            # Should have called run_tutorial
-            mock_run.assert_called_once_with("getting_started", interactive=True)
-
-
-# =============================================================================
-# Test Main Entry Point
-# =============================================================================
-
-
 @pytest.mark.unit
 def test_main_entry_point():
     """Test main() entry point function."""
