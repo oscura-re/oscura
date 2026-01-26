@@ -23,8 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from oscura.core.exceptions import OscuraError, SecurityError
-
+from oscura.core.exceptions import SecurityError
 
 # Session file format constants
 _SESSION_MAGIC = b"OSC1"  # Magic bytes for new format with signature
