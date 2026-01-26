@@ -182,6 +182,97 @@ class UDPStreamReassembler:
         key = flow_key or f"{segment.src}-{segment.dst}"
         self._segments[key].append(segment)
 
+    def _get_empty_stream(self) -> ReassembledStream:
+        """Create empty stream result.
+
+        Returns:
+            Empty ReassembledStream.
+        """
+        return ReassembledStream(
+            data=b"",
+            src="",
+            dst="",
+            start_time=0.0,
+            end_time=0.0,
+            segments=0,
+        )
+
+    def _resolve_flow_key(self, flow_key: str | None) -> str | None:
+        """Resolve flow key to actual key or None if empty.
+
+        Args:
+            flow_key: Requested flow key.
+
+        Returns:
+            Resolved flow key or None.
+        """
+        if flow_key is None:
+            if not self._segments:
+                return None
+            return next(iter(self._segments.keys()))
+        return flow_key
+
+    def _count_out_of_order(self, segments: list[StreamSegment]) -> int:
+        """Count out-of-order segments.
+
+        Args:
+            segments: List of segments (unsorted).
+
+        Returns:
+            Number of out-of-order segments.
+        """
+        out_of_order = 0
+        max_seq_seen = -1
+        for segment in segments:
+            if segment.sequence_number < max_seq_seen:
+                out_of_order += 1
+            max_seq_seen = max(max_seq_seen, segment.sequence_number)
+        return out_of_order
+
+    def _detect_gaps(self, sorted_segments: list[StreamSegment]) -> list[tuple[int, int]]:
+        """Detect gaps in sequence numbers.
+
+        Args:
+            sorted_segments: Segments sorted by sequence number.
+
+        Returns:
+            List of (expected, actual) gap tuples.
+        """
+        gaps: list[tuple[int, int]] = []
+        for i in range(1, len(sorted_segments)):
+            expected = sorted_segments[i - 1].sequence_number + len(sorted_segments[i - 1].data)
+            actual = sorted_segments[i].sequence_number
+            if actual > expected:
+                gaps.append((expected, actual))
+        return gaps
+
+    def _get_time_range(self, sorted_segments: list[StreamSegment]) -> tuple[float, float]:
+        """Get start and end times from segments.
+
+        Args:
+            sorted_segments: List of segments.
+
+        Returns:
+            Tuple of (start_time, end_time).
+        """
+        timestamps = [s.timestamp for s in sorted_segments if s.timestamp > 0]
+        if timestamps:
+            return min(timestamps), max(timestamps)
+        return 0.0, 0.0
+
+    def _extract_addresses(self, sorted_segments: list[StreamSegment]) -> tuple[str, str]:
+        """Extract source and destination addresses from segments.
+
+        Args:
+            sorted_segments: List of segments.
+
+        Returns:
+            Tuple of (src, dst).
+        """
+        if sorted_segments:
+            return sorted_segments[0].src, sorted_segments[0].dst
+        return "", ""
+
     def get_stream(self, flow_key: str | None = None) -> ReassembledStream:
         """Get reassembled stream for a flow.
 
@@ -193,60 +284,32 @@ class UDPStreamReassembler:
         Returns:
             ReassembledStream with ordered data.
         """
-        if flow_key is None:
-            # Get first/only flow
-            if not self._segments:
-                return ReassembledStream(
-                    data=b"",
-                    src="",
-                    dst="",
-                    start_time=0.0,
-                    end_time=0.0,
-                    segments=0,
-                )
-            flow_key = next(iter(self._segments.keys()))
+        # Resolve flow key
+        resolved_key = self._resolve_flow_key(flow_key)
+        if resolved_key is None:
+            return self._get_empty_stream()
 
-        segments = self._segments.get(flow_key, [])
+        # Get segments
+        segments = self._segments.get(resolved_key, [])
         if not segments:
-            return ReassembledStream(
-                data=b"",
-                src="",
-                dst="",
-                start_time=0.0,
-                end_time=0.0,
-                segments=0,
-            )
+            return self._get_empty_stream()
 
         # Sort by sequence number
         sorted_segments = sorted(segments, key=lambda s: s.sequence_number)
 
-        # Concatenate data
+        # Build stream components
         data = b"".join(s.data for s in sorted_segments)
-
-        # Detect out-of-order: count segments that arrived after a higher sequence number
-        out_of_order = 0
-        max_seq_seen = -1
-        for segment in segments:
-            if segment.sequence_number < max_seq_seen:
-                out_of_order += 1
-            max_seq_seen = max(max_seq_seen, segment.sequence_number)
-
-        # Detect gaps
-        gaps = []
-        for i in range(1, len(sorted_segments)):
-            expected = sorted_segments[i - 1].sequence_number + len(sorted_segments[i - 1].data)
-            actual = sorted_segments[i].sequence_number
-            if actual > expected:
-                gaps.append((expected, actual))
-
-        timestamps = [s.timestamp for s in sorted_segments if s.timestamp > 0]
+        out_of_order = self._count_out_of_order(segments)
+        gaps = self._detect_gaps(sorted_segments)
+        start_time, end_time = self._get_time_range(sorted_segments)
+        src, dst = self._extract_addresses(sorted_segments)
 
         return ReassembledStream(
             data=data,
-            src=sorted_segments[0].src if sorted_segments else "",
-            dst=sorted_segments[0].dst if sorted_segments else "",
-            start_time=min(timestamps) if timestamps else 0.0,
-            end_time=max(timestamps) if timestamps else 0.0,
+            src=src,
+            dst=dst,
+            start_time=start_time,
+            end_time=end_time,
             segments=len(sorted_segments),
             gaps=gaps,
             retransmits=0,
@@ -354,6 +417,99 @@ class TCPStreamReassembler:
 
         self._segments[key].append(seg)
 
+    def _extract_addresses(self, sorted_segments: list[StreamSegment]) -> tuple[str, str]:
+        """Extract source and destination addresses from segments.
+
+        Args:
+            sorted_segments: Sorted list of stream segments.
+
+        Returns:
+            Tuple of (source, destination) addresses.
+        """
+        if not sorted_segments:
+            return ("", "")
+        return (sorted_segments[0].src, sorted_segments[0].dst)
+
+    def _count_anomalies(self, segments: list[StreamSegment]) -> tuple[int, int]:
+        """Count retransmits and out-of-order segments.
+
+        Args:
+            segments: List of segments in arrival order.
+
+        Returns:
+            Tuple of (retransmits, out_of_order) counts.
+        """
+        # Count retransmits
+        retransmits = sum(1 for seg in segments if seg.is_retransmit)
+
+        # Count out-of-order segments
+        out_of_order = 0
+        for i, seg in enumerate(segments):
+            for j in range(i):
+                if segments[j].sequence_number > seg.sequence_number:
+                    out_of_order += 1
+                    break
+
+        return (retransmits, out_of_order)
+
+    def _detect_isn(self, flow_key: str, segments: list[StreamSegment]) -> int:
+        """Detect initial sequence number for flow.
+
+        Args:
+            flow_key: Flow identifier.
+            segments: List of segments.
+
+        Returns:
+            Initial sequence number.
+        """
+        isn = self._isn.get(flow_key, 0) or 0
+
+        # If ISN wasn't detected via SYN, use minimum sequence number
+        if isn == 0 or isn > min(s.sequence_number for s in segments):
+            isn = min(s.sequence_number for s in segments)
+
+        return isn
+
+    def _build_data_buffer(
+        self, sorted_segments: list[StreamSegment], isn: int
+    ) -> tuple[bytes, list[tuple[int, int]]]:
+        """Build data buffer from sorted segments, handling gaps and overlaps.
+
+        Args:
+            sorted_segments: Segments sorted by sequence number.
+            isn: Initial sequence number.
+
+        Returns:
+            Tuple of (reassembled_data, gaps).
+        """
+        data_buffer = bytearray()
+        current_offset = 0
+        gaps = []
+
+        for seg in sorted_segments:
+            if seg.is_retransmit:
+                continue
+
+            rel_seq = (seg.sequence_number - isn) % (2**32)
+
+            if rel_seq > current_offset:
+                # Gap detected
+                gaps.append((current_offset, rel_seq))
+                data_buffer.extend(b"\x00" * (rel_seq - current_offset))
+                current_offset = rel_seq
+
+            if rel_seq < current_offset:
+                # Overlap - use only non-overlapping part
+                overlap = current_offset - rel_seq
+                if overlap < len(seg.data):
+                    data_buffer.extend(seg.data[overlap:])
+                    current_offset += len(seg.data) - overlap
+            else:
+                data_buffer.extend(seg.data)
+                current_offset += len(seg.data)
+
+        return (bytes(data_buffer), gaps)
+
     def get_stream(self, flow_key: str | None = None) -> ReassembledStream:
         """Get reassembled TCP stream.
 
@@ -365,6 +521,7 @@ class TCPStreamReassembler:
         Returns:
             ReassembledStream with complete data.
         """
+        # Handle empty or default flow key
         if flow_key is None:
             if not self._segments:
                 return ReassembledStream(
@@ -388,62 +545,22 @@ class TCPStreamReassembler:
                 segments=0,
             )
 
-        isn = self._isn.get(flow_key, 0) or 0
+        # Detect ISN and count anomalies
+        isn = self._detect_isn(flow_key, segments)
+        retransmits, out_of_order = self._count_anomalies(segments)
 
-        # Count retransmits first (before filtering)
-        retransmits = sum(1 for seg in segments if seg.is_retransmit)
-
-        # If ISN wasn't detected via SYN, use minimum sequence number
-        if isn == 0 or isn > min(s.sequence_number for s in segments):
-            isn = min(s.sequence_number for s in segments)
-
-        # Detect out-of-order by checking arrival order vs sequence order
-        # Count segments that arrived before a segment with lower sequence
-        out_of_order = 0
-        for i, seg in enumerate(segments):
-            # Check if any earlier segment has higher sequence
-            for j in range(i):
-                if segments[j].sequence_number > seg.sequence_number:
-                    out_of_order += 1
-                    break
-
-        # Sort by relative sequence number
+        # Sort and reassemble
         sorted_segments = sorted(segments, key=lambda s: (s.sequence_number - isn) % (2**32))
+        data, gaps = self._build_data_buffer(sorted_segments, isn)
 
-        # Build stream handling overlaps and gaps
-        data_buffer = bytearray()
-        current_offset = 0
-        gaps = []
-
-        for seg in sorted_segments:
-            if seg.is_retransmit:
-                continue  # Skip retransmits when building data
-
-            rel_seq = (seg.sequence_number - isn) % (2**32)
-
-            if rel_seq > current_offset:
-                # Gap detected
-                gaps.append((current_offset, rel_seq))
-                # Fill gap with zeros
-                data_buffer.extend(b"\x00" * (rel_seq - current_offset))
-                current_offset = rel_seq
-
-            if rel_seq < current_offset:
-                # Overlap - use only non-overlapping part
-                overlap = current_offset - rel_seq
-                if overlap < len(seg.data):
-                    data_buffer.extend(seg.data[overlap:])
-                    current_offset += len(seg.data) - overlap
-            else:
-                data_buffer.extend(seg.data)
-                current_offset += len(seg.data)
-
+        # Extract metadata
+        src, dst = self._extract_addresses(sorted_segments)
         timestamps = [s.timestamp for s in sorted_segments if s.timestamp > 0]
 
         return ReassembledStream(
-            data=bytes(data_buffer),
-            src=sorted_segments[0].src if sorted_segments else "",
-            dst=sorted_segments[0].dst if sorted_segments else "",
+            data=data,
+            src=src,
+            dst=dst,
             start_time=min(timestamps) if timestamps else 0.0,
             end_time=max(timestamps) if timestamps else 0.0,
             segments=len(sorted_segments),
@@ -542,7 +659,29 @@ class MessageFramer:
         Returns:
             Detected framing type string.
         """
-        # Check for common delimiters
+        # Check for delimiter-based framing
+        if self._is_delimiter_framed(data):
+            return "delimiter"
+
+        # Check for length-prefixed framing
+        if self._is_length_prefixed(data):
+            return "length_prefix"
+
+        # Check for fixed-size framing
+        if self._is_fixed_size(data):
+            return "fixed"
+
+        return "unknown"
+
+    def _is_delimiter_framed(self, data: bytes) -> bool:
+        """Check if data uses delimiter-based framing.
+
+        Args:
+            data: Sample data.
+
+        Returns:
+            True if delimiter framing detected.
+        """
         common_delimiters = [b"\r\n", b"\n", b"\x00", b"\r"]
         for delim in common_delimiters:
             count = data.count(delim)
@@ -550,35 +689,56 @@ class MessageFramer:
                 # Check for regular spacing
                 parts = data.split(delim)
                 if parts and len({len(p) for p in parts if p}) <= 3:
-                    return "delimiter"
+                    return True
+        return False
 
-        # Check for length-prefixed
-        if len(data) >= 4:
-            # Try big-endian 2-byte length
-            for offset in range(min(8, len(data) - 2)):
-                length = int.from_bytes(data[offset : offset + 2], "big")
-                if 4 < length < len(data) and length < 65536:
-                    # Check if data continues with similar pattern
-                    next_offset = offset + length
-                    if next_offset + 2 < len(data):
-                        next_length = int.from_bytes(data[next_offset : next_offset + 2], "big")
-                        if 4 < next_length < len(data):
-                            return "length_prefix"
+    def _is_length_prefixed(self, data: bytes) -> bool:
+        """Check if data uses length-prefixed framing.
 
-        # Check for fixed size
-        if len(data) >= 32:
-            # Look for repeating pattern
-            for size in range(4, 128):
-                if len(data) % size == 0:
-                    chunks = [data[i : i + size] for i in range(0, len(data), size)]
-                    if len(chunks) >= 3:
-                        # Check structural similarity
-                        first = chunks[0][:4] if len(chunks[0]) >= 4 else chunks[0]
-                        matches = sum(1 for c in chunks[1:] if c[: len(first)] == first)
-                        if matches >= len(chunks) * 0.5:
-                            return "fixed"
+        Args:
+            data: Sample data.
 
-        return "unknown"
+        Returns:
+            True if length-prefixed framing detected.
+        """
+        if len(data) < 4:
+            return False
+
+        # Try big-endian 2-byte length
+        for offset in range(min(8, len(data) - 2)):
+            length = int.from_bytes(data[offset : offset + 2], "big")
+            if 4 < length < len(data) and length < 65536:
+                # Check if data continues with similar pattern
+                next_offset = offset + length
+                if next_offset + 2 < len(data):
+                    next_length = int.from_bytes(data[next_offset : next_offset + 2], "big")
+                    if 4 < next_length < len(data):
+                        return True
+        return False
+
+    def _is_fixed_size(self, data: bytes) -> bool:
+        """Check if data uses fixed-size framing.
+
+        Args:
+            data: Sample data.
+
+        Returns:
+            True if fixed-size framing detected.
+        """
+        if len(data) < 32:
+            return False
+
+        # Look for repeating pattern
+        for size in range(4, 128):
+            if len(data) % size == 0:
+                chunks = [data[i : i + size] for i in range(0, len(data), size)]
+                if len(chunks) >= 3:
+                    # Check structural similarity
+                    first = chunks[0][:4] if len(chunks[0]) >= 4 else chunks[0]
+                    matches = sum(1 for c in chunks[1:] if c[: len(first)] == first)
+                    if matches >= len(chunks) * 0.5:
+                        return True
+        return False
 
     def _auto_frame(self, data: bytes) -> FramingResult:
         """Automatically detect and apply framing.

@@ -9,14 +9,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oscura.comparison.compare import (
+from oscura.core.types import IQTrace, TraceMetadata, WaveformTrace
+from oscura.utils.comparison.compare import (
     ComparisonResult,
     compare_traces,
     correlation,
     difference,
     similarity_score,
 )
-from oscura.core.types import IQTrace, TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

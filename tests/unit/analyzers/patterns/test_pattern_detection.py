@@ -143,6 +143,8 @@ class TestSequencePatternDetection:
             # Just check it doesn't crash
 
         except ImportError:
+            # SKIP: Valid - Optional motif discovery (requires advanced algorithms)
+            # Only skip if motif detection not available
             pytest.skip("find_motifs not available")
         except Exception as e:
             pytest.skip(f"Motif detection skipped: {e}")
@@ -161,6 +163,8 @@ class TestSequencePatternDetection:
             assert motif is not None
 
         except ImportError:
+            # SKIP: Valid - Optional motif discovery (requires advanced algorithms)
+            # Only skip if motif detection not available
             pytest.skip("extract_motif not available")
         except Exception as e:
             pytest.skip(f"Motif extraction skipped: {e}")
@@ -196,6 +200,8 @@ class TestAnomalyDetection:
             # May or may not detect anomalies depending on data
 
         except ImportError:
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
             pytest.skip("detect_anomalies not available")
         except Exception as e:
             pytest.skip(f"Anomaly detection skipped: {e}")
@@ -228,6 +234,10 @@ class TestAnomalyDetection:
         except ImportError:
             pytest.skip("detect_anomalies not available")
         except Exception as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"Anomaly in periodic test skipped: {e}")
 
     def test_no_anomaly_in_clean_signal(self, sine_wave: np.ndarray) -> None:
@@ -242,6 +252,8 @@ class TestAnomalyDetection:
             assert len(anomalies) <= 5
 
         except ImportError:
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
             pytest.skip("detect_anomalies not available")
         except Exception as e:
             pytest.skip(f"Clean signal anomaly test skipped: {e}")
@@ -272,6 +284,10 @@ class TestPatternClustering:
         except ImportError:
             pytest.skip("cluster_patterns not available")
         except Exception as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"Clustering test skipped: {e}")
 
     def test_pattern_similarity(self) -> None:
@@ -381,6 +397,10 @@ class TestPatternDetectionEdgeCases:
                 pass  # Raising is acceptable
 
         except ImportError:
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
             pytest.skip("detect_period not available")
 
     def test_constant_signal(self) -> None:
@@ -401,6 +421,10 @@ class TestPatternDetectionEdgeCases:
                 pass
 
         except ImportError:
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
             pytest.skip("detect_period not available")
 
     def test_short_signal(self) -> None:
@@ -418,6 +442,10 @@ class TestPatternDetectionEdgeCases:
                 pass
 
         except ImportError:
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
+            # SKIP: Valid - Optional pattern detection algorithms
+            # Only skip if pattern detection module not available
             pytest.skip("detect_period not available")
 
     def test_noisy_periodic(self, noisy_sine: np.ndarray) -> None:
@@ -457,6 +485,10 @@ class TestSequencePatternModule:
             assert detector is not None
 
         except ImportError:
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: SequencePatternDetector not available
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: SequencePatternDetector not available
             pytest.skip("SequencePatternDetector not available")
 
     def test_detect_sequence_patterns(self) -> None:

@@ -878,28 +878,42 @@ class TestParameterValidation:
         """Test behavior with zero sample rate (edge case)."""
         tie_data = create_pure_periodic_tie(n_samples=1000, sample_rate=10e6)
 
-        # This might raise an error or produce invalid results
-        # We test that it doesn't crash catastrophically
+        # Zero sample rate should raise ValueError or ZeroDivisionError
+        exception_raised = False
         try:
             result = jitter_spectrum(tie_data, sample_rate=0)
-            # If it doesn't raise, check for inf/nan
-            assert True  # Didn't crash
+            # If it doesn't raise, check for invalid results (inf/nan in frequencies)
+            import numpy as np
+
+            assert np.any(np.isinf(result.frequency)) or np.any(np.isnan(result.frequency)), (
+                "Expected inf or nan frequencies with zero sample rate"
+            )
         except (ZeroDivisionError, ValueError):
-            # Acceptable to raise error
-            pass
+            # Expected behavior - exception raised for invalid sample rate
+            exception_raised = True
+
+        # Test passes if either exception raised OR invalid frequencies detected
+        assert exception_raised or result is not None
 
     def test_negative_sample_rate_behavior(self) -> None:
         """Test behavior with negative sample rate."""
         tie_data = create_pure_periodic_tie(n_samples=1000, sample_rate=10e6)
 
-        # Negative sample rate is unphysical but might not be validated
+        # Negative sample rate is unphysical and should raise ValueError
+        exception_raised = False
         try:
             result = jitter_spectrum(tie_data, sample_rate=-10e6)
-            # If it runs, frequencies might be negative
-            assert True  # Didn't crash
+            # If it doesn't raise, verify result is computed (even if frequencies are negative)
+
+            assert hasattr(result, "frequency"), "Expected result to have frequency attribute"
+            assert hasattr(result, "magnitude"), "Expected result to have magnitude attribute"
+            assert len(result.frequency) > 0, "Expected non-empty frequency array"
         except ValueError:
-            # Acceptable to raise error
-            pass
+            # Expected behavior - exception raised for negative sample rate
+            exception_raised = True
+
+        # Test passes if either exception raised OR result computed successfully
+        assert exception_raised or result is not None
 
     def test_n_peaks_zero(self) -> None:
         """Test with n_peaks=0 returns no peaks."""

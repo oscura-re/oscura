@@ -1,19 +1,23 @@
-"""Oscura Core CLI Framework implementing CLI-001.
+"""Oscura Core CLI Framework implementing CLI-001 (Enhanced Edition).
 
 Provides the main entry point for the oscura command-line interface with
-support for multiple output formats and verbose logging.
+comprehensive subcommands, interactive mode, batch processing, configuration
+management, and shell completion support.
 
 
 Example:
     $ oscura --help
-    $ oscura characterize signal.wfm --output json
-    $ oscura decode uart.wfm -vv
+    $ oscura analyze signal.wfm --output json
+    $ oscura decode uart capture.wfm --baud-rate 115200
     $ oscura shell   # Interactive REPL
+    $ oscura config --show  # View configuration
+    $ oscura plugins list  # Manage plugins
 """
 
 import json
 import logging
 import sys
+from pathlib import Path
 from typing import Any
 
 import click
@@ -126,37 +130,98 @@ def format_output(data: dict[str, Any], format_type: str) -> str:
     return formatter(data)
 
 
-@click.group()  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+def load_config_file(config_path: Path | None = None) -> dict[str, Any]:
+    """Load configuration from YAML file.
+
+    Args:
+        config_path: Path to config file. If None, searches for config in:
+            1. .oscura.yaml in current directory
+            2. ~/.config/oscura/config.yaml
+
+    Returns:
+        Configuration dictionary.
+    """
+    import yaml
+
+    if config_path is None:
+        # Search for config files
+        candidates = [
+            Path(".oscura.yaml"),
+            Path.home() / ".config" / "oscura" / "config.yaml",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                config_path = candidate
+                break
+
+    if config_path is None or not config_path.exists():
+        return {}
+
+    with open(config_path) as f:
+        return yaml.safe_load(f) or {}
+
+
+@click.group()
+@click.option(
     "-v",
     "--verbose",
     count=True,
     help="Increase verbosity (-v for INFO, -vv for DEBUG).",
 )
-@click.version_option(version="0.1.0", prog_name="oscura")  # type: ignore[misc]
-@click.pass_context  # type: ignore[misc]
-def cli(ctx: click.Context, verbose: int) -> None:
-    """Oscura - Signal Analysis Framework for Oscilloscope Data.
+@click.option(
+    "--config",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to configuration file (YAML).",
+)
+@click.option(
+    "--quiet",
+    "-q",
+    is_flag=True,
+    help="Quiet mode (suppress non-error output).",
+)
+@click.option(
+    "--json",
+    "json_output",
+    is_flag=True,
+    help="JSON output mode for scripting.",
+)
+@click.version_option(prog_name="oscura")  # Version auto-detected from package metadata
+@click.pass_context
+def cli(
+    ctx: click.Context,
+    verbose: int,
+    config: str | None,
+    quiet: bool,
+    json_output: bool,
+) -> None:
+    """Oscura - Hardware Reverse Engineering Framework.
 
-    Command-line tools for characterizing buffers, decoding protocols,
-    analyzing spectra, and comparing signals.
+    Unified framework for extracting all information from hardware systems through
+    signals and data. Features unknown protocol discovery, state machine extraction,
+    CRC recovery, and security analysis.
 
     Args:
         ctx: Click context object.
         verbose: Verbosity level (0=WARNING, 1=INFO, 2+=DEBUG).
+        config: Path to configuration file.
+        quiet: Quiet mode flag.
+        json_output: JSON output mode flag.
 
     Examples:
-        oscura characterize signal.wfm
+        oscura analyze signal.wfm
         oscura decode uart.wfm --protocol auto
         oscura batch '*.wfm' --analysis characterize
-        oscura compare before.wfm after.wfm
+        oscura visualize trace.wfm
         oscura shell  # Interactive REPL
     """
     # Ensure ctx.obj exists
     ctx.ensure_object(dict)
 
     # Set logging level based on verbosity
-    if verbose == 0:
+    if quiet:
+        logger.setLevel(logging.ERROR)
+    elif verbose == 0:
         logger.setLevel(logging.WARNING)
     elif verbose == 1:
         logger.setLevel(logging.INFO)
@@ -166,9 +231,28 @@ def cli(ctx: click.Context, verbose: int) -> None:
         logger.debug("Debug mode enabled")
 
     ctx.obj["verbose"] = verbose
+    ctx.obj["quiet"] = quiet
+    ctx.obj["json_output"] = json_output
+
+    # Load configuration
+    config_path = Path(config) if config else None
+    ctx.obj["config"] = load_config_file(config_path)
 
 
-@click.command()  # type: ignore[misc]
+# Enhanced subcommands - imported below
+from oscura.cli.analyze import analyze
+from oscura.cli.batch import batch
+from oscura.cli.benchmark import benchmark
+from oscura.cli.characterize import characterize
+from oscura.cli.compare import compare
+from oscura.cli.config_cmd import config as config_cmd
+from oscura.cli.decode import decode
+from oscura.cli.export import export
+from oscura.cli.validate_cmd import validate
+from oscura.cli.visualize import visualize
+
+
+@click.command()
 def shell() -> None:
     """Start an interactive Oscura shell.
 
@@ -177,7 +261,7 @@ def shell() -> None:
 
     Example:
         $ oscura shell
-        Oscura Shell v0.1.0
+        Oscura Shell v0.6.0
         >>> trace = load("signal.wfm")
         >>> rise_time(trace)
     """
@@ -186,9 +270,9 @@ def shell() -> None:
     start_shell()
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("tutorial_id", required=False, default=None)  # type: ignore[misc]
-@click.option("--list", "list_tutorials", is_flag=True, help="List available tutorials")  # type: ignore[misc]
+@click.command()
+@click.argument("tutorial_id", required=False, default=None)
+@click.option("--list", "list_tutorials", is_flag=True, help="List available tutorials")
 def tutorial(tutorial_id: str | None, list_tutorials: bool) -> None:
     """Run an interactive tutorial.
 
@@ -202,8 +286,8 @@ def tutorial(tutorial_id: str | None, list_tutorials: bool) -> None:
         oscura tutorial --list           # List available tutorials
         oscura tutorial getting_started  # Run the getting started tutorial
     """
-    from oscura.onboarding import list_tutorials as list_tut
-    from oscura.onboarding import run_tutorial
+    from oscura.cli.onboarding import list_tutorials as list_tut
+    from oscura.cli.onboarding import run_tutorial
 
     if list_tutorials or tutorial_id is None:
         tutorials = list_tut()
@@ -217,15 +301,15 @@ def tutorial(tutorial_id: str | None, list_tutorials: bool) -> None:
     run_tutorial(tutorial_id, interactive=True)
 
 
-# Import subcommands
-from oscura.cli.batch import batch  # noqa: E402
-from oscura.cli.characterize import characterize  # noqa: E402
-from oscura.cli.compare import compare  # noqa: E402
-from oscura.cli.decode import decode  # noqa: E402
-
-# Register subcommands
-cli.add_command(characterize)  # type: ignore[has-type]
+# Register all subcommands
+cli.add_command(analyze)  # type: ignore[has-type]
 cli.add_command(decode)  # type: ignore[has-type]
+cli.add_command(export)
+cli.add_command(visualize)
+cli.add_command(benchmark)
+cli.add_command(validate)
+cli.add_command(config_cmd, name="config")
+cli.add_command(characterize)  # type: ignore[has-type]
 cli.add_command(batch)  # type: ignore[has-type]
 cli.add_command(compare)  # type: ignore[has-type]
 cli.add_command(shell)

@@ -112,27 +112,21 @@ class TestRecordingManagement:
 
     def test_add_recording_file_source(self, tmp_path):
         """Test adding a recording from FileSource."""
-        from oscura.acquisition import FileSource
+        from oscura.hardware.acquisition import FileSource
 
         # Create a temporary BLF file (empty is fine for this test)
         blf_file = tmp_path / "test.blf"
         blf_file.write_bytes(b"")  # Empty file
 
         session = CANSession(name="Test")
+        source = FileSource(str(blf_file))
 
-        # For this test, we'll just verify the API works
-        # Actual file loading is tested elsewhere
-        try:
-            source = FileSource(str(blf_file))
-            # Don't load immediately to avoid parsing empty file
-            session.add_recording("baseline", source, load_immediately=False)
+        # Don't load immediately to avoid parsing empty file
+        session.add_recording("baseline", source, load_immediately=False)
 
-            assert "baseline" in session.recordings
-            assert len(session.list_recordings()) == 1
-        except Exception:
-            # File parsing might fail with empty file, that's OK
-            # We're just testing the API structure
-            pass
+        assert "baseline" in session.recordings
+        assert len(session.list_recordings()) == 1
+        assert session.list_recordings()[0] == "baseline"
 
     def test_list_recordings_empty(self):
         """Test listing recordings on empty session."""
@@ -143,7 +137,7 @@ class TestRecordingManagement:
 
     def test_add_duplicate_recording_raises(self, tmp_path):
         """Test that adding duplicate recording name raises ValueError."""
-        from oscura.acquisition import FileSource
+        from oscura.hardware.acquisition import FileSource
 
         blf_file = tmp_path / "test.blf"
         blf_file.write_bytes(b"")
@@ -151,14 +145,10 @@ class TestRecordingManagement:
         session = CANSession(name="Test")
         source = FileSource(str(blf_file))
 
-        try:
-            session.add_recording("baseline", source, load_immediately=False)
+        session.add_recording("baseline", source, load_immediately=False)
 
-            with pytest.raises(ValueError, match="already exists"):
-                session.add_recording("baseline", source, load_immediately=False)
-        except Exception:
-            # File parsing might fail, that's OK
-            pass
+        with pytest.raises(ValueError, match="already exists"):
+            session.add_recording("baseline", source, load_immediately=False)
 
 
 class TestUnifiedComparison:

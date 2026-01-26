@@ -48,6 +48,75 @@ class JitterSpectrumResult:
     peaks: list[tuple[float, float]]
 
 
+def _create_empty_jitter_spectrum() -> JitterSpectrumResult:
+    """Create empty jitter spectrum result for insufficient data.
+
+    Returns:
+        Empty JitterSpectrumResult.
+    """
+    return JitterSpectrumResult(
+        frequencies=np.array([]),
+        magnitude=np.array([]),
+        magnitude_db=np.array([]),
+        dominant_frequency=None,
+        dominant_magnitude=None,
+        noise_floor=0.0,
+        peaks=[],
+    )
+
+
+def _preprocess_tie_data(
+    valid_data: NDArray[np.float64], window: str, detrend: bool
+) -> tuple[NDArray[np.float64], float, int]:
+    """Preprocess TIE data with detrending and windowing.
+
+    Args:
+        valid_data: Valid TIE data (NaNs removed).
+        window: Window function name.
+        detrend: Whether to detrend data.
+
+    Returns:
+        Tuple of (windowed_data, window_factor, n_samples).
+    """
+    n = len(valid_data)
+
+    if detrend:
+        x = np.arange(n)
+        slope, intercept = np.polyfit(x, valid_data, 1)
+        data_detrended = valid_data - (slope * x + intercept)
+    else:
+        data_detrended = valid_data - np.mean(valid_data)
+
+    win = {"hann": np.hanning(n), "hamming": np.hamming(n), "blackman": np.blackman(n)}.get(
+        window, np.ones(n)
+    )
+
+    window_factor = np.sqrt(np.mean(win**2))
+    return data_detrended * win, float(window_factor), n
+
+
+def _compute_jitter_fft(
+    data_windowed: NDArray[np.float64], n: int, window_factor: float, sample_rate: float
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Compute FFT of windowed jitter data.
+
+    Args:
+        data_windowed: Windowed TIE data.
+        n: Original sample count.
+        window_factor: Window power factor.
+        sample_rate: Sample rate in Hz.
+
+    Returns:
+        Tuple of (frequencies, magnitude, magnitude_db).
+    """
+    nfft = int(2 ** np.ceil(np.log2(n)))
+    spectrum = np.fft.rfft(data_windowed, n=nfft)
+    frequencies = np.fft.rfftfreq(nfft, d=1.0 / sample_rate)
+    magnitude = np.abs(spectrum) * 2 / n / window_factor
+    magnitude_db = 20 * np.log10(magnitude / 1e-12 + 1e-20)
+    return frequencies, magnitude, magnitude_db
+
+
 def jitter_spectrum(
     tie_data: NDArray[np.float64],
     sample_rate: float,
@@ -79,76 +148,23 @@ def jitter_spectrum(
     References:
         IEEE 2414-2020 Section 6.8
     """
+    # Setup: validate and prepare data
     valid_data = tie_data[~np.isnan(tie_data)]
-    n = len(valid_data)
+    if len(valid_data) < 16:
+        return _create_empty_jitter_spectrum()
 
-    if n < 16:
-        return JitterSpectrumResult(
-            frequencies=np.array([]),
-            magnitude=np.array([]),
-            magnitude_db=np.array([]),
-            dominant_frequency=None,
-            dominant_magnitude=None,
-            noise_floor=0.0,
-            peaks=[],
-        )
-
-    # Detrend if requested
-    if detrend:
-        # Remove linear trend
-        x = np.arange(n)
-        slope, intercept = np.polyfit(x, valid_data, 1)
-        data_detrended = valid_data - (slope * x + intercept)
-    else:
-        data_detrended = valid_data - np.mean(valid_data)
-
-    # Apply window
-    if window == "hann":
-        win = np.hanning(n)
-    elif window == "hamming":
-        win = np.hamming(n)
-    elif window == "blackman":
-        win = np.blackman(n)
-    else:
-        win = np.ones(n)
-
-    # Compensate for window power loss
-    window_factor = np.sqrt(np.mean(win**2))
-    data_windowed = data_detrended * win
-
-    # Zero-pad to next power of 2
-    nfft = int(2 ** np.ceil(np.log2(n)))
-
-    # Compute FFT
-    spectrum = np.fft.rfft(data_windowed, n=nfft)
-    frequencies = np.fft.rfftfreq(nfft, d=1.0 / sample_rate)
-
-    # Calculate magnitude spectrum
-    # Scale for proper amplitude: 2/N for single-sided, compensate for window
-    magnitude = np.abs(spectrum) * 2 / n / window_factor
-
-    # Convert to dB (relative to 1 ps = 1e-12 s)
-    reference = 1e-12  # 1 ps
-    magnitude_db = 20 * np.log10(magnitude / reference + 1e-20)
-
-    # Estimate noise floor (median of spectrum)
-    noise_floor = float(np.median(magnitude))
-
-    # Find peaks
-    peaks = identify_periodic_components(
-        frequencies,
-        magnitude,
-        n_peaks=n_peaks,
-        min_height=noise_floor * 3,
+    # Processing: apply preprocessing and FFT
+    data_windowed, window_factor, n = _preprocess_tie_data(valid_data, window, detrend)
+    frequencies, magnitude, magnitude_db = _compute_jitter_fft(
+        data_windowed, n, window_factor, sample_rate
     )
 
-    # Get dominant component
-    if len(peaks) > 0:
-        dominant_frequency = peaks[0][0]
-        dominant_magnitude = peaks[0][1]
-    else:
-        dominant_frequency = None
-        dominant_magnitude = None
+    # Formatting: identify peaks and dominant frequency
+    noise_floor = float(np.median(magnitude))
+    peaks = identify_periodic_components(
+        frequencies, magnitude, n_peaks=n_peaks, min_height=noise_floor * 3
+    )
+    dominant_frequency, dominant_magnitude = (peaks[0][0], peaks[0][1]) if peaks else (None, None)
 
     return JitterSpectrumResult(
         frequencies=frequencies,

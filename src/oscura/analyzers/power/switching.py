@@ -47,6 +47,273 @@ class SwitchingEvent:
     event_type: Literal["turn_on", "turn_off"]
 
 
+def _prepare_switching_data(
+    voltage: WaveformTrace,
+    current: WaveformTrace,
+) -> tuple[NDArray[np.floating[Any]], NDArray[np.floating[Any]], NDArray[np.floating[Any]], float]:
+    """Prepare synchronized voltage, current, and power arrays.
+
+    Args:
+        voltage: Drain-source voltage trace.
+        current: Drain current trace.
+
+    Returns:
+        Tuple of (v_data, i_data, p_data, sample_period).
+    """
+    power = instantaneous_power(voltage, current)
+    min_len = min(len(voltage.data), len(current.data))
+    v_data = voltage.data[:min_len]
+    i_data = current.data[:min_len]
+    p_data = power.data[:min_len]
+    sample_period = power.metadata.time_base
+    return v_data, i_data, p_data, sample_period
+
+
+def _compute_thresholds(
+    v_data: NDArray[np.floating[Any]],
+    i_data: NDArray[np.floating[Any]],
+    v_threshold: float | None,
+    i_threshold: float | None,
+    hysteresis_factor: float = 0.2,
+) -> tuple[float, float, float, float, float, float]:
+    """Compute voltage and current thresholds with hysteresis.
+
+    Args:
+        v_data: Voltage data array.
+        i_data: Current data array.
+        v_threshold: User-provided voltage threshold (or None for auto).
+        i_threshold: User-provided current threshold (or None for auto).
+        hysteresis_factor: Hysteresis band factor (default 20%).
+
+    Returns:
+        Tuple of (v_threshold, i_threshold, v_high, v_low, i_high, i_low).
+    """
+    if v_threshold is None:
+        v_threshold = 0.1 * float(np.max(np.abs(v_data)))
+    if i_threshold is None:
+        i_threshold = 0.1 * float(np.max(np.abs(i_data)))
+
+    v_threshold_high = v_threshold * (1 + hysteresis_factor)
+    v_threshold_low = v_threshold * (1 - hysteresis_factor)
+    i_threshold_high = i_threshold * (1 + hysteresis_factor)
+    i_threshold_low = i_threshold * (1 - hysteresis_factor)
+
+    return (
+        v_threshold,
+        i_threshold,
+        v_threshold_high,
+        v_threshold_low,
+        i_threshold_high,
+        i_threshold_low,
+    )
+
+
+def _build_device_state(
+    v_data: NDArray[np.floating[Any]],
+    i_data: NDArray[np.floating[Any]],
+    v_high: float,
+    v_low: float,
+    i_high: float,
+    i_low: float,
+) -> NDArray[np.signedinteger[Any]]:
+    """Build device state array using hysteresis comparator.
+
+    Args:
+        v_data: Voltage data array.
+        i_data: Current data array.
+        v_high: High voltage threshold.
+        v_low: Low voltage threshold.
+        i_high: High current threshold.
+        i_low: Low current threshold.
+
+    Returns:
+        State array: 0=unknown, 1=on (low V, high I), 2=off (high V, low I).
+    """
+    min_len = len(v_data)
+    device_state = np.zeros(min_len, dtype=int)
+    current_state = 0
+
+    for i in range(min_len):
+        v = v_data[i]
+        i_val = i_data[i]
+
+        if current_state == 1:  # Currently ON
+            if v > v_high:
+                current_state = 2  # Transition to OFF
+        elif current_state == 2:  # Currently OFF
+            if v < v_low and i_val > i_low:
+                current_state = 1  # Transition to ON
+        else:  # Unknown state
+            if v < v_low and i_val > i_high:
+                current_state = 1  # ON
+            elif v > v_high and i_val < i_low:
+                current_state = 2  # OFF
+
+        device_state[i] = current_state
+
+    return device_state
+
+
+def _find_transition_events(
+    device_state: NDArray[np.signedinteger[Any]],
+    p_data: NDArray[np.floating[Any]],
+    sample_period: float,
+) -> list[SwitchingEvent]:
+    """Find all switching events in device state trajectory.
+
+    Args:
+        device_state: State array (0=unknown, 1=on, 2=off).
+        p_data: Power data array.
+        sample_period: Sample period in seconds.
+
+    Returns:
+        List of switching events (turn-on and turn-off).
+    """
+    from scipy.integrate import trapezoid
+
+    events: list[SwitchingEvent] = []
+    device_on = device_state == 1
+    device_off = device_state == 2
+
+    i = 0
+    while i < len(device_on) - 1:
+        # Check for turn-on transition
+        if device_off[i] and not device_off[i + 1]:
+            event = _create_turn_on_event(i, device_on, p_data, sample_period, trapezoid)
+            if event:
+                events.append(event)
+                i = int(event.end_time / sample_period)
+                continue
+
+        # Check for turn-off transition
+        if device_on[i] and not device_on[i + 1]:
+            event = _create_turn_off_event(i, device_off, p_data, sample_period, trapezoid)
+            if event:
+                events.append(event)
+                i = int(event.end_time / sample_period)
+                continue
+
+        i += 1
+
+    return events
+
+
+def _create_turn_on_event(
+    start_idx: int,
+    device_on: NDArray[np.bool_],
+    p_data: NDArray[np.floating[Any]],
+    sample_period: float,
+    trapezoid: Any,
+) -> SwitchingEvent | None:
+    """Create turn-on event from transition indices.
+
+    Args:
+        start_idx: Start index of transition.
+        device_on: Boolean array indicating ON state.
+        p_data: Power data array.
+        sample_period: Sample period in seconds.
+        trapezoid: Integration function.
+
+    Returns:
+        SwitchingEvent or None if invalid transition.
+    """
+    end_idx = start_idx + 1
+    while end_idx < len(device_on) and not device_on[end_idx]:
+        end_idx += 1
+
+    if end_idx >= len(device_on):
+        return None
+
+    transition_power = p_data[start_idx : end_idx + 1]
+    e = float(trapezoid(transition_power, dx=sample_period))
+    peak_p = float(np.max(transition_power))
+
+    return SwitchingEvent(
+        start_time=start_idx * sample_period,
+        end_time=end_idx * sample_period,
+        duration=(end_idx - start_idx) * sample_period,
+        energy=e,
+        peak_power=peak_p,
+        event_type="turn_on",
+    )
+
+
+def _create_turn_off_event(
+    start_idx: int,
+    device_off: NDArray[np.bool_],
+    p_data: NDArray[np.floating[Any]],
+    sample_period: float,
+    trapezoid: Any,
+) -> SwitchingEvent | None:
+    """Create turn-off event from transition indices.
+
+    Args:
+        start_idx: Start index of transition.
+        device_off: Boolean array indicating OFF state.
+        p_data: Power data array.
+        sample_period: Sample period in seconds.
+        trapezoid: Integration function.
+
+    Returns:
+        SwitchingEvent or None if invalid transition.
+    """
+    end_idx = start_idx + 1
+    while end_idx < len(device_off) and not device_off[end_idx]:
+        end_idx += 1
+
+    if end_idx >= len(device_off):
+        return None
+
+    transition_power = p_data[start_idx : end_idx + 1]
+    e = float(trapezoid(transition_power, dx=sample_period))
+    peak_p = float(np.max(transition_power))
+
+    return SwitchingEvent(
+        start_time=start_idx * sample_period,
+        end_time=end_idx * sample_period,
+        duration=(end_idx - start_idx) * sample_period,
+        energy=e,
+        peak_power=peak_p,
+        event_type="turn_off",
+    )
+
+
+def _calculate_loss_metrics(events: list[SwitchingEvent]) -> dict[str, Any]:
+    """Calculate energy and power metrics from switching events.
+
+    Args:
+        events: List of switching events.
+
+    Returns:
+        Dictionary with energy, frequency, and power metrics.
+    """
+    turn_on_events = [e for e in events if e.event_type == "turn_on"]
+    turn_off_events = [e for e in events if e.event_type == "turn_off"]
+
+    e_on = float(np.mean([e.energy for e in turn_on_events])) if turn_on_events else 0.0
+    e_off = float(np.mean([e.energy for e in turn_off_events])) if turn_off_events else 0.0
+    e_total = e_on + e_off
+
+    # Estimate switching frequency
+    if len(events) >= 2:
+        event_times = [e.start_time for e in events]
+        avg_period = float(np.mean(np.diff(event_times))) * 2
+        f_sw = 1.0 / avg_period if avg_period > 0 else 0.0
+    else:
+        f_sw = 0.0
+
+    return {
+        "e_on": e_on,
+        "e_off": e_off,
+        "e_total": e_total,
+        "f_sw": f_sw,
+        "p_sw": e_total * f_sw,
+        "events": events,
+        "n_turn_on": len(turn_on_events),
+        "n_turn_off": len(turn_off_events),
+    }
+
+
 def switching_loss(
     voltage: WaveformTrace,
     current: WaveformTrace,
@@ -86,151 +353,13 @@ def switching_loss(
     References:
         Infineon Application Note AN-9010
     """
-    # Calculate instantaneous power
-    power = instantaneous_power(voltage, current)
-
-    # Ensure i_data matches v_data length (handle mismatched array sizes)
-    min_len = min(len(voltage.data), len(current.data))
-    v_data = voltage.data[:min_len]
-    i_data = current.data[:min_len]
-    p_data = power.data[:min_len]
-    sample_period = power.metadata.time_base
-
-    # Auto-detect thresholds if not provided
-    if v_threshold is None:
-        v_threshold = 0.1 * float(np.max(np.abs(v_data)))
-    if i_threshold is None:
-        i_threshold = 0.1 * float(np.max(np.abs(i_data)))
-
-    # Add hysteresis to prevent false transitions due to ringing (Schmitt trigger)
-    # Use 20% hysteresis band around thresholds
-    hysteresis_factor = 0.2
-    v_threshold_high = v_threshold * (1 + hysteresis_factor)
-    v_threshold_low = v_threshold * (1 - hysteresis_factor)
-    i_threshold_high = i_threshold * (1 + hysteresis_factor)
-    i_threshold_low = i_threshold * (1 - hysteresis_factor)
-
-    # Find switching events
-    events: list[SwitchingEvent] = []
-
-    # Determine device state at each sample with hysteresis
-    # ON: low voltage, high current
-    # OFF: high voltage, low current
-    # Use hysteresis to avoid rapid state changes due to noise/ringing
-    device_state = np.zeros(min_len, dtype=int)  # 0=unknown, 1=on, 2=off
-    current_state = 0  # Start in unknown state
-
-    for i in range(min_len):
-        v = v_data[i]
-        i_val = i_data[i]
-
-        # Determine next state based on current state and measurements
-        if current_state == 1:  # Currently ON
-            # Stay ON unless voltage goes high (with hysteresis)
-            if v > v_threshold_high:
-                current_state = 2  # Transition to OFF
-        elif current_state == 2:  # Currently OFF
-            # Stay OFF unless voltage goes low (with hysteresis)
-            if v < v_threshold_low and i_val > i_threshold_low:
-                current_state = 1  # Transition to ON
-        else:  # Unknown state - determine initial state
-            if v < v_threshold_low and i_val > i_threshold_high:
-                current_state = 1  # ON
-            elif v > v_threshold_high and i_val < i_threshold_low:
-                current_state = 2  # OFF
-
-        device_state[i] = current_state
-
-    device_on = device_state == 1
-    device_off = device_state == 2
-
-    # Find transitions
-    i = 0
-    while i < len(device_on) - 1:
-        # Look for turn-on: device was off, now turning on
-        if device_off[i] and not device_off[i + 1]:
-            # Find end of transition (device fully on)
-            start_idx = i
-            end_idx = start_idx + 1
-            while end_idx < len(device_on) and not device_on[end_idx]:
-                end_idx += 1
-
-            if end_idx < len(device_on):
-                # Calculate transition energy (scipy for stable API)
-                from scipy.integrate import trapezoid
-
-                transition_power = p_data[start_idx : end_idx + 1]
-                e = float(trapezoid(transition_power, dx=sample_period))
-                peak_p = float(np.max(transition_power))
-
-                events.append(
-                    SwitchingEvent(
-                        start_time=start_idx * sample_period,
-                        end_time=end_idx * sample_period,
-                        duration=(end_idx - start_idx) * sample_period,
-                        energy=e,
-                        peak_power=peak_p,
-                        event_type="turn_on",
-                    )
-                )
-                i = end_idx
-                continue
-
-        # Look for turn-off: device was on, now turning off
-        if device_on[i] and not device_on[i + 1]:
-            start_idx = i
-            end_idx = start_idx + 1
-            while end_idx < len(device_off) and not device_off[end_idx]:
-                end_idx += 1
-
-            if end_idx < len(device_off):
-                from scipy.integrate import trapezoid
-
-                transition_power = p_data[start_idx : end_idx + 1]
-                e = float(trapezoid(transition_power, dx=sample_period))
-                peak_p = float(np.max(transition_power))
-
-                events.append(
-                    SwitchingEvent(
-                        start_time=start_idx * sample_period,
-                        end_time=end_idx * sample_period,
-                        duration=(end_idx - start_idx) * sample_period,
-                        energy=e,
-                        peak_power=peak_p,
-                        event_type="turn_off",
-                    )
-                )
-                i = end_idx
-                continue
-
-        i += 1
-
-    # Calculate average energies
-    turn_on_events = [e for e in events if e.event_type == "turn_on"]
-    turn_off_events = [e for e in events if e.event_type == "turn_off"]
-
-    e_on = float(np.mean([e.energy for e in turn_on_events])) if turn_on_events else 0.0
-    e_off = float(np.mean([e.energy for e in turn_off_events])) if turn_off_events else 0.0
-    e_total = e_on + e_off
-
-    # Estimate switching frequency from event spacing
-    if len(events) >= 2:
-        event_times = [e.start_time for e in events]
-        avg_period = float(np.mean(np.diff(event_times))) * 2  # Full cycle
-        f_sw = 1.0 / avg_period if avg_period > 0 else 0.0
-    else:
-        f_sw = 0.0
-
-    return {
-        "e_on": e_on,
-        "e_off": e_off,
-        "e_total": e_total,
-        "f_sw": f_sw,
-        "p_sw": e_total * f_sw,  # Switching power at this frequency
-        "events": events,
-        "n_turn_on": len(turn_on_events),
-        "n_turn_off": len(turn_off_events),
-    }
+    v_data, i_data, p_data, sample_period = _prepare_switching_data(voltage, current)
+    _, _, v_high, v_low, i_high, i_low = _compute_thresholds(
+        v_data, i_data, v_threshold, i_threshold
+    )
+    device_state = _build_device_state(v_data, i_data, v_high, v_low, i_high, i_low)
+    events = _find_transition_events(device_state, p_data, sample_period)
+    return _calculate_loss_metrics(events)
 
 
 def switching_energy(
@@ -425,6 +554,17 @@ def switching_times(
     def find_transition_time(
         data: NDArray[np.floating[Any]], low: float, high: float, rising: bool
     ) -> float:
+        """Find transition time between threshold levels.
+
+        Args:
+            data: Signal data array.
+            low: Lower threshold level (10% point).
+            high: Upper threshold level (90% point).
+            rising: True for rising transition, False for falling.
+
+        Returns:
+            Transition time in seconds, or np.nan if not found.
+        """
         if rising:
             below_low = data < low
             start_idx_arr = np.where(below_low[:-1] & ~below_low[1:])[0]

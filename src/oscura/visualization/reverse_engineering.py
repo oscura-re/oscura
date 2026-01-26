@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
     from oscura.inference.crc_reverse import CRCParameters
     from oscura.inference.message_format import InferredField, MessageSchema
-    from oscura.pipeline.reverse_engineering import (
+    from oscura.utils.pipeline.reverse_engineering import (
         MessageTypeInfo,
         ProtocolCandidate,
         REAnalysisResult,
@@ -67,7 +67,7 @@ def plot_re_summary(
         Matplotlib figure object.
 
     Example:
-        >>> from oscura.pipeline.reverse_engineering import REPipeline
+        >>> from oscura.utils.pipeline.reverse_engineering import REPipeline
         >>> pipeline = REPipeline()
         >>> result = pipeline.analyze(data)
         >>> fig = plot_re_summary(result)
@@ -105,6 +105,110 @@ def plot_re_summary(
         fig.suptitle("Reverse Engineering Analysis Summary", fontsize=14, fontweight="bold")
 
     return fig
+
+
+def _get_field_type_colors() -> dict[str, str]:
+    """Get color map for field types."""
+    return {
+        "constant": "#4CAF50",  # Green
+        "counter": "#2196F3",  # Blue
+        "timestamp": "#9C27B0",  # Purple
+        "length": "#FF9800",  # Orange
+        "checksum": "#F44336",  # Red
+        "data": "#607D8B",  # Gray
+        "unknown": "#9E9E9E",  # Light gray
+    }
+
+
+def _draw_field_rectangles(
+    ax: Any,
+    fields: list[InferredField],
+    total_bytes: int,
+    bar_height: float,
+    y_center: float,
+    type_colors: dict[str, str],
+) -> None:
+    """Draw field rectangles with labels."""
+    for field in fields:
+        color = type_colors.get(field.field_type, "#9E9E9E")
+        width = field.size / total_bytes
+
+        rect = Rectangle(
+            (field.offset / total_bytes, y_center - bar_height / 2),
+            width,
+            bar_height,
+            facecolor=color,
+            edgecolor="black",
+            linewidth=1.5,
+        )
+        ax.add_patch(rect)
+
+        x_center = (field.offset + field.size / 2) / total_bytes
+        label = f"{field.name}\n({field.field_type})" if field.size > 2 else field.field_type[:3]
+
+        ax.text(
+            x_center,
+            y_center,
+            label,
+            ha="center",
+            va="center",
+            fontsize=9 if field.size > 2 else 7,
+            fontweight="bold",
+            color="white",
+        )
+
+
+def _add_field_offsets(
+    ax: Any,
+    fields: list[InferredField],
+    total_bytes: int,
+    bar_height: float,
+    y_center: float,
+) -> None:
+    """Add byte offset labels."""
+    for field in fields:
+        ax.text(
+            field.offset / total_bytes,
+            y_center - bar_height / 2 - 0.08,
+            f"{field.offset}",
+            ha="center",
+            va="top",
+            fontsize=8,
+        )
+
+    ax.text(
+        1.0,
+        y_center - bar_height / 2 - 0.08,
+        f"{total_bytes}",
+        ha="center",
+        va="top",
+        fontsize=8,
+    )
+
+
+def _add_field_legend(ax: Any, fields: list[InferredField], type_colors: dict[str, str]) -> None:
+    """Add legend for field types."""
+    legend_elements = [
+        Rectangle((0, 0), 1, 1, facecolor=color, label=ftype)
+        for ftype, color in type_colors.items()
+        if any(f.field_type == ftype for f in fields)
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", fontsize=8)
+
+
+def _format_layout_axes(ax: Any, total_bytes: int, title: str | None) -> None:
+    """Format axes for layout plot."""
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_ylim(0, 1)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    if title:
+        ax.set_title(title, fontsize=12, fontweight="bold", pad=20)
+    else:
+        ax.set_title(
+            f"Message Field Layout ({total_bytes} bytes)", fontsize=12, fontweight="bold", pad=20
+        )
 
 
 def plot_message_type_distribution(
@@ -190,93 +294,15 @@ def plot_message_field_layout(
         ax.set_axis_off()
         return fig
 
-    # Color map for field types
-    type_colors = {
-        "constant": "#4CAF50",  # Green
-        "counter": "#2196F3",  # Blue
-        "timestamp": "#9C27B0",  # Purple
-        "length": "#FF9800",  # Orange
-        "checksum": "#F44336",  # Red
-        "data": "#607D8B",  # Gray
-        "unknown": "#9E9E9E",  # Light gray
-    }
-
+    type_colors = _get_field_type_colors()
     total_bytes = schema.total_size
     bar_height = 0.6
     y_center = 0.5
 
-    # Draw each field as a colored rectangle
-    for field in schema.fields:
-        color = type_colors.get(field.field_type, "#9E9E9E")
-        width = field.size / total_bytes
-
-        # Draw field rectangle
-        rect = Rectangle(
-            (field.offset / total_bytes, y_center - bar_height / 2),
-            width,
-            bar_height,
-            facecolor=color,
-            edgecolor="black",
-            linewidth=1.5,
-        )
-        ax.add_patch(rect)
-
-        # Add field label
-        x_center = (field.offset + field.size / 2) / total_bytes
-        label = f"{field.name}\n({field.field_type})"
-        if field.size <= 2:
-            label = field.field_type[:3]
-
-        ax.text(
-            x_center,
-            y_center,
-            label,
-            ha="center",
-            va="center",
-            fontsize=9 if field.size > 2 else 7,
-            fontweight="bold",
-            color="white",
-        )
-
-        # Add byte offset below
-        ax.text(
-            field.offset / total_bytes,
-            y_center - bar_height / 2 - 0.08,
-            f"{field.offset}",
-            ha="center",
-            va="top",
-            fontsize=8,
-        )
-
-    # Add end offset
-    ax.text(
-        1.0,
-        y_center - bar_height / 2 - 0.08,
-        f"{total_bytes}",
-        ha="center",
-        va="top",
-        fontsize=8,
-    )
-
-    # Add legend
-    legend_elements = [
-        Rectangle((0, 0), 1, 1, facecolor=color, label=ftype)
-        for ftype, color in type_colors.items()
-        if any(f.field_type == ftype for f in schema.fields)
-    ]
-    ax.legend(handles=legend_elements, loc="upper right", fontsize=8)
-
-    ax.set_xlim(-0.02, 1.02)
-    ax.set_ylim(0, 1)
-    ax.set_aspect("equal")
-    ax.axis("off")
-
-    if title:
-        ax.set_title(title, fontsize=12, fontweight="bold", pad=20)
-    else:
-        ax.set_title(
-            f"Message Field Layout ({total_bytes} bytes)", fontsize=12, fontweight="bold", pad=20
-        )
+    _draw_field_rectangles(ax, schema.fields, total_bytes, bar_height, y_center, type_colors)
+    _add_field_offsets(ax, schema.fields, total_bytes, bar_height, y_center)
+    _add_field_legend(ax, schema.fields, type_colors)
+    _format_layout_axes(ax, schema.total_size, title)
 
     return fig
 
@@ -476,11 +502,20 @@ def plot_crc_parameters(
         >>> fig = plot_crc_parameters(params)
     """
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+    _plot_crc_parameter_table(ax1, params)
+    _plot_crc_confidence_gauge(ax2, params)
+    _finalize_crc_plot(fig, title)
+    return fig
 
-    # Left panel: CRC configuration
-    ax1.axis("off")
 
-    # Build parameter table
+def _plot_crc_parameter_table(ax: Any, params: CRCParameters) -> None:
+    """Plot CRC parameter table.
+
+    Args:
+        ax: Axes object.
+        params: CRC parameters.
+    """
+    ax.axis("off")
     param_lines = [
         f"Width: {params.width} bits",
         f"Polynomial: 0x{params.polynomial:0{params.width // 4}X}",
@@ -493,26 +528,30 @@ def plot_crc_parameters(
     if params.algorithm_name:
         param_lines.insert(0, f"Algorithm: {params.algorithm_name}")
 
+    ax.text(0.5, 0.98, "CRC Parameters", ha="center", fontsize=14, fontweight="bold")
+
     y_start = 0.9
     y_step = 0.12
-
-    ax1.text(0.5, 0.98, "CRC Parameters", ha="center", fontsize=14, fontweight="bold")
-
     for i, line in enumerate(param_lines):
         y = y_start - i * y_step
-        ax1.text(0.1, y, line, fontsize=11, fontfamily="monospace", va="top")
+        ax.text(0.1, y, line, fontsize=11, fontfamily="monospace", va="top")
 
-    # Right panel: Confidence gauge
-    ax2.set_aspect("equal")
 
-    # Draw confidence gauge
+def _plot_crc_confidence_gauge(ax: Any, params: CRCParameters) -> None:
+    """Plot confidence gauge for CRC parameters.
+
+    Args:
+        ax: Axes object.
+        params: CRC parameters.
+    """
+    ax.set_aspect("equal")
+
+    # Background arc
     theta = np.linspace(0, np.pi, 100)
     r = 0.8
     x = r * np.cos(theta)
     y = r * np.sin(theta)
-
-    # Background arc (gray)
-    ax2.plot(x, y, color="#E0E0E0", linewidth=20, solid_capstyle="round")
+    ax.plot(x, y, color="#E0E0E0", linewidth=20, solid_capstyle="round")
 
     # Confidence arc (colored)
     conf_angle = np.pi * params.confidence
@@ -520,29 +559,15 @@ def plot_crc_parameters(
     x_conf = r * np.cos(theta_conf)
     y_conf = r * np.sin(theta_conf)
 
-    if params.confidence >= 0.8:
-        color = "#4CAF50"  # Green
-    elif params.confidence >= 0.5:
-        color = "#FF9800"  # Orange
-    else:
-        color = "#F44336"  # Red
+    color = _get_confidence_color(params.confidence)
+    ax.plot(x_conf, y_conf, color=color, linewidth=20, solid_capstyle="round")
 
-    ax2.plot(x_conf, y_conf, color=color, linewidth=20, solid_capstyle="round")
-
-    # Add confidence text
-    ax2.text(
-        0,
-        0.2,
-        f"{params.confidence:.0%}",
-        ha="center",
-        va="center",
-        fontsize=24,
-        fontweight="bold",
+    # Add text annotations
+    ax.text(
+        0, 0.2, f"{params.confidence:.0%}", ha="center", va="center", fontsize=24, fontweight="bold"
     )
-    ax2.text(0, -0.1, "Confidence", ha="center", va="center", fontsize=12)
-
-    # Add test pass rate
-    ax2.text(
+    ax.text(0, -0.1, "Confidence", ha="center", va="center", fontsize=12)
+    ax.text(
         0,
         -0.4,
         f"Test Pass Rate: {params.test_pass_rate:.0%}",
@@ -551,17 +576,39 @@ def plot_crc_parameters(
         fontsize=10,
     )
 
-    ax2.set_xlim(-1.2, 1.2)
-    ax2.set_ylim(-0.6, 1.2)
-    ax2.axis("off")
+    ax.set_xlim(-1.2, 1.2)
+    ax.set_ylim(-0.6, 1.2)
+    ax.axis("off")
 
+
+def _get_confidence_color(confidence: float) -> str:
+    """Get color based on confidence level.
+
+    Args:
+        confidence: Confidence value (0-1).
+
+    Returns:
+        Hex color code.
+    """
+    if confidence >= 0.8:
+        return "#4CAF50"  # Green
+    if confidence >= 0.5:
+        return "#FF9800"  # Orange
+    return "#F44336"  # Red
+
+
+def _finalize_crc_plot(fig: Figure, title: str | None) -> None:
+    """Finalize CRC plot with title.
+
+    Args:
+        fig: Figure object.
+        title: Optional title.
+    """
     if title:
         fig.suptitle(title, fontsize=14, fontweight="bold")
     else:
         fig.suptitle("CRC Parameter Recovery", fontsize=14, fontweight="bold")
-
     plt.tight_layout()
-    return fig
 
 
 def plot_pipeline_timing(

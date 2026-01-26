@@ -123,6 +123,8 @@ from oscura.inference.spectral import auto_spectral_config
 from oscura.inference.state_machine import (
     FiniteAutomaton,
     State,
+    StateMachine,
+    StateMachineExtractor,
     StateMachineInferrer,
     Transition,
     infer_rpni,
@@ -196,6 +198,8 @@ __all__ = [
     "SequentialBayesian",
     "SimulatorTeacher",
     "State",
+    "StateMachine",
+    "StateMachineExtractor",
     "StateMachineInferrer",
     "StreamSegment",
     "TCPStreamReassembler",

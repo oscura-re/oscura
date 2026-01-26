@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Memory-efficient streaming loader using Oscura core APIs.
 
+# SKIP_VALIDATION: Processes 2.9GB file, takes >30s
+
 This script demonstrates that Oscura's core load_packets_streaming() API
 already provides optimal memory-efficient chunked processing. You don't need
 to implement custom chunking - the core API handles it automatically!

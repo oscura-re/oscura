@@ -218,7 +218,34 @@ class LogQuery:
         """
         results = self._records.copy()
 
-        # Filter by timestamp range
+        # Apply all filters
+        results = self._filter_by_time(results, start_time, end_time)
+        results = self._filter_by_level(results, level)
+        results = self._filter_by_module(results, module, module_pattern)
+        results = self._filter_by_correlation(results, correlation_id)
+        results = self._filter_by_message(results, message_pattern)
+
+        # Apply pagination
+        results = self._apply_pagination(results, offset, limit)
+
+        return results
+
+    def _filter_by_time(
+        self,
+        results: list[LogRecord],
+        start_time: datetime | None,
+        end_time: datetime | None,
+    ) -> list[LogRecord]:
+        """Filter records by timestamp range.
+
+        Args:
+            results: Input records.
+            start_time: Start time filter.
+            end_time: End time filter.
+
+        Returns:
+            Filtered records.
+        """
         if start_time is not None:
             start_str = format_timestamp(start_time, format="iso8601")
             results = [r for r in results if r.timestamp >= start_str]
@@ -227,36 +254,99 @@ class LogQuery:
             end_str = format_timestamp(end_time, format="iso8601")
             results = [r for r in results if r.timestamp <= end_str]
 
-        # Filter by log level
-        if level is not None:
-            results = [r for r in results if r.level == level.upper()]
+        return results
 
-        # Filter by module
+    def _filter_by_level(self, results: list[LogRecord], level: str | None) -> list[LogRecord]:
+        """Filter records by log level.
+
+        Args:
+            results: Input records.
+            level: Level filter.
+
+        Returns:
+            Filtered records.
+        """
+        if level is not None:
+            return [r for r in results if r.level == level.upper()]
+        return results
+
+    def _filter_by_module(
+        self,
+        results: list[LogRecord],
+        module: str | None,
+        module_pattern: str | None,
+    ) -> list[LogRecord]:
+        """Filter records by module name.
+
+        Args:
+            results: Input records.
+            module: Exact module filter.
+            module_pattern: Module pattern filter.
+
+        Returns:
+            Filtered records.
+        """
         if module is not None:
             results = [r for r in results if r.module == module]
 
-        # Filter by module pattern
         if module_pattern is not None:
             # Convert glob pattern to regex
             pattern = module_pattern.replace(".", r"\.").replace("*", ".*")
             regex = re.compile(f"^{pattern}$")
             results = [r for r in results if regex.match(r.module)]
 
-        # Filter by correlation ID
-        if correlation_id is not None:
-            results = [r for r in results if r.correlation_id == correlation_id]
+        return results
 
-        # Filter by message pattern
+    def _filter_by_correlation(
+        self, results: list[LogRecord], correlation_id: str | None
+    ) -> list[LogRecord]:
+        """Filter records by correlation ID.
+
+        Args:
+            results: Input records.
+            correlation_id: Correlation ID filter.
+
+        Returns:
+            Filtered records.
+        """
+        if correlation_id is not None:
+            return [r for r in results if r.correlation_id == correlation_id]
+        return results
+
+    def _filter_by_message(
+        self, results: list[LogRecord], message_pattern: str | None
+    ) -> list[LogRecord]:
+        """Filter records by message pattern.
+
+        Args:
+            results: Input records.
+            message_pattern: Message pattern filter.
+
+        Returns:
+            Filtered records.
+        """
         if message_pattern is not None:
             regex = re.compile(message_pattern)
-            results = [r for r in results if regex.search(r.message)]
+            return [r for r in results if regex.search(r.message)]
+        return results
 
-        # Apply pagination
+    def _apply_pagination(
+        self, results: list[LogRecord], offset: int, limit: int | None
+    ) -> list[LogRecord]:
+        """Apply pagination to results.
+
+        Args:
+            results: Input records.
+            offset: Number to skip.
+            limit: Maximum to return.
+
+        Returns:
+            Paginated records.
+        """
         if offset > 0:
             results = results[offset:]
         if limit is not None:
             results = results[:limit]
-
         return results
 
     def export_logs(

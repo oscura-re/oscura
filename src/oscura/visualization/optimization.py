@@ -65,37 +65,52 @@ def calculate_optimal_y_range(
     References:
         VIS-013: Auto Y-Axis Range Optimization
     """
+    clean_data = _validate_and_clean_data(data)
+    filtered_data = _filter_outliers(clean_data, outlier_threshold)
+    _check_clipping(clean_data, filtered_data, clip_warning_threshold)
+
+    # Calculate data range
+    data_min, data_max = float(np.min(filtered_data)), float(np.max(filtered_data))
+    margin = _select_smart_margin(len(filtered_data), margin_percent)
+
+    # Apply range mode
+    if symmetric:
+        return _symmetric_range(data_min, data_max, margin)
+    else:
+        return _asymmetric_range(data_min, data_max, margin)
+
+
+def _validate_and_clean_data(data: NDArray[np.float64]) -> NDArray[np.float64]:
+    """Validate data and remove NaN values."""
     if len(data) == 0:
         raise ValueError("Data array is empty")
 
-    # Remove NaN values
     clean_data = data[~np.isnan(data)]
-
     if len(clean_data) == 0:
         raise ValueError("Data contains only NaN values")
 
-    # Use percentile-based outlier detection (1st-99th percentile default)
-    # This corresponds to approximately 3-sigma for normal distributions
-    lower_percentile = 0.5
-    upper_percentile = 99.5
+    return clean_data
 
-    # Calculate robust statistics using percentiles
-    np.percentile(clean_data, lower_percentile)
-    np.percentile(clean_data, upper_percentile)
 
-    # Filter outliers beyond threshold sigma
-    median = np.median(clean_data)
-    mad = np.median(np.abs(clean_data - median))
+def _filter_outliers(data: NDArray[np.float64], outlier_threshold: float) -> NDArray[np.float64]:
+    """Filter outliers using robust MAD-based z-scores."""
+    median = np.median(data)
+    mad = np.median(np.abs(data - median))
     robust_std = 1.4826 * mad  # MAD to std conversion
 
     if robust_std > 0:
-        z_scores = np.abs(clean_data - median) / robust_std
-        inlier_mask = z_scores <= outlier_threshold
-        filtered_data = clean_data[inlier_mask]
-    else:
-        filtered_data = clean_data
+        z_scores = np.abs(data - median) / robust_std
+        filtered: NDArray[np.float64] = data[z_scores <= outlier_threshold]
+        return filtered
+    return data
 
-    # Detect clipping
+
+def _check_clipping(
+    clean_data: NDArray[np.float64],
+    filtered_data: NDArray[np.float64],
+    clip_warning_threshold: float,
+) -> None:
+    """Check and warn if too many samples are clipped."""
     clipped_fraction = 1.0 - (len(filtered_data) / len(clean_data))
     if clipped_fraction > clip_warning_threshold:
         import warnings
@@ -107,34 +122,28 @@ def calculate_optimal_y_range(
             stacklevel=2,
         )
 
-    # Calculate data range
-    data_min = np.min(filtered_data)
-    data_max = np.max(filtered_data)
+
+def _select_smart_margin(n_samples: int, margin_percent: float) -> float:
+    """Select margin based on data density."""
+    if n_samples > 10000:
+        return 0.02  # Dense data: smaller margin
+    elif n_samples < 100:
+        return 0.10  # Sparse data: larger margin
+    return margin_percent / 100.0
+
+
+def _symmetric_range(data_min: float, data_max: float, margin: float) -> tuple[float, float]:
+    """Calculate symmetric range for bipolar signals."""
+    max_abs = max(abs(data_min), abs(data_max))
+    margin_value = max_abs * margin
+    return (-(max_abs + margin_value), max_abs + margin_value)
+
+
+def _asymmetric_range(data_min: float, data_max: float, margin: float) -> tuple[float, float]:
+    """Calculate asymmetric range."""
     data_range = data_max - data_min
-
-    # Smart margin selection based on data density
-    if len(filtered_data) > 10000:
-        # Dense data: smaller margin (2%)
-        margin = 0.02
-    elif len(filtered_data) < 100:
-        # Sparse data: larger margin (10%)
-        margin = 0.10
-    else:
-        # Default margin (5%)
-        margin = margin_percent / 100.0
-
-    # Apply symmetric range mode for bipolar signals
-    if symmetric:
-        max_abs = max(abs(data_min), abs(data_max))
-        margin_value = max_abs * margin
-        y_min = -(max_abs + margin_value)
-        y_max = max_abs + margin_value
-    else:
-        margin_value = data_range * margin
-        y_min = data_min - margin_value
-        y_max = data_max + margin_value
-
-    return (float(y_min), float(y_max))
+    margin_value = data_range * margin
+    return (data_min - margin_value, data_max + margin_value)
 
 
 def calculate_optimal_x_window(

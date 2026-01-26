@@ -189,7 +189,9 @@ class ChecksumDetector:
 
         if match_rate > 0.95:  # 95% match rate
             covered_bytes = list(range(len(messages.messages[0].data)))
-            covered_bytes.remove(byte_pos)
+            # Only remove byte_pos if it's within range
+            if byte_pos in covered_bytes:
+                covered_bytes.remove(byte_pos)
 
             return ChecksumInfo(
                 byte_position=byte_pos,

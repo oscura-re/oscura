@@ -332,11 +332,13 @@ class TestCANDecoder:
         """Test decoding a standard CAN frame."""
         decoder = CANDecoder(bitrate=500000)
 
-        list(decoder.decode(can_trace_standard))
+        frames = list(decoder.decode(can_trace_standard))
 
         # Should decode at least one frame
-        # Note: This depends on the simplified frame generation
-        # In practice, may need more realistic frame generation
+        assert len(frames) > 0, "Expected at least one decoded frame"
+        # Verify frame structure
+        assert hasattr(frames[0], "arbitration_id")
+        assert hasattr(frames[0], "data")
 
     def test_decoder_reset(self, can_trace_standard: DigitalTrace):
         """Test decoder reset between uses."""
@@ -482,10 +484,13 @@ class TestProtocolsCanEdgeCases:
         trace = DigitalTrace(data=data, metadata=TraceMetadata(sample_rate=5e6))
 
         decoder = CANDecoder(bitrate=500000)
-        list(decoder.decode(trace))
+        frames = list(decoder.decode(trace))
 
-        # Should not crash
-        # May or may not find "frames" in random data
+        # Should not crash - decoder must be resilient to noise
+        assert isinstance(frames, list)
+        # All returned frames should have basic structure even if from noise
+        for frame in frames:
+            assert hasattr(frame, "arbitration_id")
 
     def test_low_sample_rate(self):
         """Test with sample rate too low for CAN."""
@@ -526,12 +531,12 @@ class TestMalformedCANFrames:
         decoder = CANDecoder(bitrate=500000)
         frames = list(decoder.decode(trace))
 
-        # Should not crash, should return no valid frames
-        # or frames with errors noted
-        for frame in frames:
-            if hasattr(frame, "errors"):
-                # If errors are tracked, may have truncation error
-                pass
+        # Should not crash, should return no valid frames or frames with errors noted
+        assert isinstance(frames, list)
+        # Malformed frame should either be skipped (no frames) or marked with error
+        if frames:
+            # If decoder returns frames, they should have error tracking
+            assert hasattr(frames[0], "errors") or len(frames) == 0
 
     def test_missing_eof(self):
         """Test handling of frame missing End of Frame sequence."""
@@ -542,7 +547,9 @@ class TestMalformedCANFrames:
         frames = list(decoder.decode(trace))
 
         # Should handle gracefully - may detect as error or skip frame
-        # Should not crash
+        assert isinstance(frames, list)
+        # Decoder should not crash on malformed frames
+        assert frames is not None
 
     def test_stuff_error(self):
         """Test handling of bit stuffing error (6 consecutive same bits)."""
@@ -553,7 +560,11 @@ class TestMalformedCANFrames:
         frames = list(decoder.decode(trace))
 
         # Should detect stuffing error and not crash
-        # Decoder should either skip this frame or mark it with error
+        assert isinstance(frames, list)
+        # Decoder should either skip this frame (empty) or mark it with error
+        for frame in frames:
+            # If frame is returned, it should be valid or have error marked
+            assert hasattr(frame, "data") or hasattr(frame, "errors")
 
     def test_invalid_dlc(self):
         """Test handling of invalid DLC value (> 8)."""
@@ -564,7 +575,9 @@ class TestMalformedCANFrames:
         frames = list(decoder.decode(trace))
 
         # Should handle invalid DLC - may skip or report error
-        # Should not crash
+        assert isinstance(frames, list)
+        # Decoder must not crash on invalid DLC
+        assert frames is not None
 
     def test_short_frame(self):
         """Test handling of frame too short to contain header."""
@@ -604,8 +617,12 @@ class TestMalformedCANFrames:
         decoder = CANDecoder(bitrate=500000)
         frames = list(decoder.decode(trace))
 
-        # Should not crash, should not detect valid frames from glitches
-        # (single dominant bit is not a valid SOF without following frame)
+        # Should not crash when handling glitches
+        assert isinstance(frames, list)
+        # If decoder finds frames from glitches, they should have error markers
+        for frame in frames:
+            if hasattr(frame, "errors"):
+                assert len(frame.errors) > 0  # Glitch-based frames should have errors
 
     def test_bus_off_recovery(self):
         """Test handling of bus-off pattern (many dominant bits then recovery)."""
@@ -635,11 +652,16 @@ class TestProtocolsCanIntegration:
         """Test that decoder produces annotations."""
         decoder = CANDecoder(bitrate=500000)
 
-        list(decoder.decode(can_trace_standard))
+        frames = list(decoder.decode(can_trace_standard))
 
         # Get annotations
-        decoder.get_annotations()
-        # May or may not have annotations depending on implementation
+        annotations = decoder.get_annotations()
+
+        # Verify annotations structure
+        assert isinstance(annotations, (list, dict))
+        # If frames were decoded, annotations should exist
+        if len(frames) > 0:
+            assert len(annotations) > 0 or annotations is not None
 
     def test_all_supported_bitrates(self):
         """Test decoding at all standard bitrates."""

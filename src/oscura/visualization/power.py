@@ -132,8 +132,8 @@ def _create_figure_layout(
         n_plots = n_channels + (1 if show_energy else 0)
         fig, axes_obj = plt.subplots(n_plots, 1, figsize=figsize, sharex=True)
         if n_plots == 1:
-            return fig, [axes_obj]  # type: ignore[list-item]
-        return fig, list(axes_obj)  # type: ignore[arg-type]
+            return fig, [axes_obj]
+        return fig, list(axes_obj)
 
     fig, ax_power = plt.subplots(figsize=figsize)
     return fig, [ax_power]
@@ -181,7 +181,7 @@ def _plot_stacked_channels(
         # Annotations
         if show_average:
             ax.axhline(
-                avg * 1e3,
+                float(avg * 1e3),
                 color="r",
                 linestyle="--",
                 linewidth=1,
@@ -306,6 +306,83 @@ def _plot_overlay_channels(
             )
 
 
+def _prepare_power_plot_data(
+    power: NDArray[np.float64] | dict[str, NDArray[np.float64]],
+    time_array: NDArray[np.float64] | None,
+    sample_rate: float | None,
+) -> tuple[dict[str, NDArray[np.float64]], bool, NDArray[np.float64], str]:
+    """Prepare data for power plot.
+
+    Args:
+        power: Power data (array or dict).
+        time_array: Optional time array.
+        sample_rate: Optional sample rate.
+
+    Returns:
+        Tuple of (channels, is_multi, time_scaled, time_unit).
+    """
+    channels, is_multi = _normalize_power_channels(power)
+    time_array_validated = _validate_and_create_time_array(
+        time_array, sample_rate, len(next(iter(channels.values())))
+    )
+    time_scaled, time_unit = _compute_time_scale(time_array_validated)
+    return channels, is_multi, time_scaled, time_unit
+
+
+def _render_power_plots(
+    axes: list[Axes],
+    channels: dict[str, NDArray[np.float64]],
+    time_scaled: NDArray[np.float64],
+    time_unit: str,
+    is_multi: bool,
+    layout: str,
+    statistics: dict[str, float] | None,
+    show_average: bool,
+    show_peak: bool,
+    show_energy: bool,
+    sample_rate: float | None,
+) -> None:
+    """Render power plots based on layout.
+
+    Args:
+        axes: List of axes.
+        channels: Channel data.
+        time_scaled: Scaled time array.
+        time_unit: Time unit string.
+        is_multi: Multiple channels flag.
+        layout: Layout type.
+        statistics: Optional statistics.
+        show_average: Show average line.
+        show_peak: Show peak marker.
+        show_energy: Show energy plot.
+        sample_rate: Sample rate.
+    """
+    if is_multi and layout == "stacked":
+        _plot_stacked_channels(
+            axes,
+            channels,
+            time_scaled,
+            time_unit,
+            statistics,
+            show_average,
+            show_peak,
+            show_energy,
+            sample_rate,
+        )
+    else:
+        _plot_overlay_channels(
+            axes[0],
+            channels,
+            time_scaled,
+            time_unit,
+            statistics,
+            show_average,
+            show_peak,
+            show_energy,
+            sample_rate,
+        )
+
+
 def _finalize_plot(
     fig: Figure,
     title: str | None,
@@ -355,7 +432,7 @@ def plot_power_profile(
 ) -> Figure:
     """Generate power profile plot with annotations.
 
-    : Time-domain power visualization with average/peak markers
+    Time-domain power visualization with average/peak markers
     and optional energy accumulation overlay. Supports multi-channel stacked view.
 
     Args:
@@ -385,36 +462,19 @@ def plot_power_profile(
         ValueError: If time_array length doesn't match power trace
 
     Examples:
-        >>> # Simple power profile plot
         >>> import numpy as np
-        >>> power = np.random.rand(1000) * 0.5 + 0.3  # 300-800 mW
-        >>> fig = plot_power_profile(
-        ...     power,
-        ...     sample_rate=1e6,
-        ...     title="Device Power Consumption"
-        ... )
+        >>> power = np.random.rand(1000) * 0.5 + 0.3
+        >>> fig = plot_power_profile(power, sample_rate=1e6, title="Power")
 
-        >>> # With pre-computed statistics
         >>> from oscura.analyzers.power import power_statistics
         >>> stats = power_statistics(power, sample_rate=1e6)
-        >>> fig = plot_power_profile(
-        ...     power,
-        ...     sample_rate=1e6,
-        ...     statistics=stats,
-        ...     show_energy=True
-        ... )
+        >>> fig = plot_power_profile(power, sample_rate=1e6, statistics=stats)
 
-        >>> # Multi-channel stacked view
         >>> power_channels = {
         ...     'VDD_CORE': np.random.rand(1000) * 0.5,
         ...     'VDD_IO': np.random.rand(1000) * 0.3,
-        ...     'VDD_ANALOG': np.random.rand(1000) * 0.2,
         ... }
-        >>> fig = plot_power_profile(
-        ...     power_channels,
-        ...     sample_rate=1e6,
-        ...     multi_channel_layout='stacked'
-        ... )
+        >>> fig = plot_power_profile(power_channels, sample_rate=1e6)
 
     Notes:
         - Energy accumulation computed via cumulative sum
@@ -425,45 +485,24 @@ def plot_power_profile(
     References:
         PWR-004: Power Profile Visualization
     """
-    # Normalize and validate inputs
-    channels, is_multi = _normalize_power_channels(power)
-    time_array_validated = _validate_and_create_time_array(
-        time_array, sample_rate, len(next(iter(channels.values())))
+    channels, is_multi, time_scaled, time_unit = _prepare_power_plot_data(
+        power, time_array, sample_rate
     )
-    time_scaled, time_unit = _compute_time_scale(time_array_validated)
-
-    # Create figure layout
     fig, axes = _create_figure_layout(
         is_multi, multi_channel_layout, len(channels), show_energy, figsize
     )
-
-    # Render plots
-    if is_multi and multi_channel_layout == "stacked":
-        _plot_stacked_channels(
-            axes,
-            channels,
-            time_scaled,
-            time_unit,
-            statistics,
-            show_average,
-            show_peak,
-            show_energy,
-            sample_rate,
-        )
-    else:
-        _plot_overlay_channels(
-            axes[0],
-            channels,
-            time_scaled,
-            time_unit,
-            statistics,
-            show_average,
-            show_peak,
-            show_energy,
-            sample_rate,
-        )
-
-    # Finalize plot
+    _render_power_plots(
+        axes,
+        channels,
+        time_scaled,
+        time_unit,
+        is_multi,
+        multi_channel_layout,
+        statistics,
+        show_average,
+        show_peak,
+        show_energy,
+        sample_rate,
+    )
     _finalize_plot(fig, title, is_multi, save_path, show)
-
     return fig

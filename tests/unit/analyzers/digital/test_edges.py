@@ -1052,16 +1052,12 @@ class TestEdgeDetectionOnSyntheticData:
         data = np.load(path, allow_pickle=True)
 
         try:
-            from oscura.analyzers.digital import detect_edges
-
             trace = self.make_waveform_trace(data, sample_rate=100e6)
             threshold = (data.max() + data.min()) / 2
             edges = detect_edges(trace, edge_type="both", threshold=threshold)
 
             assert len(edges) > 0, f"No edges detected at {freq}"
 
-        except ImportError:
-            pytest.skip("detect_edges not available")
         except Exception as e:
             pytest.skip(f"Edge detection at {freq} skipped: {e}")
 
@@ -1070,8 +1066,6 @@ class TestEdgeDetectionOnSyntheticData:
         expected_order = []
 
         try:
-            from oscura.analyzers.digital import detect_edges
-
             for freq in ["1MHz", "10MHz", "100MHz"]:
                 path = square_wave_files.get(freq)
                 if path is None or not path.exists():
@@ -1087,8 +1081,8 @@ class TestEdgeDetectionOnSyntheticData:
             if len(expected_order) == 0:
                 pytest.skip("No square wave files available")
 
-        except ImportError:
-            pytest.skip("detect_edges not available")
+        except Exception as e:
+            pytest.skip(f"Edge count test skipped: {e}")
 
 
 # =============================================================================

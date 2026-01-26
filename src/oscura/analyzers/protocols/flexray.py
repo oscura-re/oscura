@@ -70,6 +70,123 @@ class FlexRayFrame:
     errors: list[str]
 
 
+class _FlexRayBitSampler:
+    """Helper for sampling bits from FlexRay frames."""
+
+    def __init__(self, data: NDArray[np.bool_], bit_idx: int, bit_period: float):
+        """Initialize bit sampler.
+
+        Args:
+            data: Digital data array.
+            bit_idx: Starting bit index.
+            bit_period: Bit period in samples.
+        """
+        self.data = data
+        self.bit_idx: float = float(bit_idx)
+        self.bit_period = bit_period
+
+    def sample_bits(self, count: int) -> list[int]:
+        """Sample specified number of bits.
+
+        Args:
+            count: Number of bits to sample.
+
+        Returns:
+            List of sampled bit values (0 or 1).
+        """
+        bits = []
+        for _ in range(count):
+            sample_idx_raw = self.bit_idx + self.bit_period / 2
+            sample_idx = int(sample_idx_raw)
+            if sample_idx < len(self.data):
+                bits.append(1 if self.data[sample_idx] else 0)
+                self.bit_idx += self.bit_period
+            else:
+                return bits
+        return bits
+
+    def validate_fss(self) -> bool:
+        """Validate Frame Start Sequence (1 bit, must be 0).
+
+        Returns:
+            True if FSS is valid.
+        """
+        fss_bits = self.sample_bits(1)
+        return bool(fss_bits and fss_bits[0] == 0)
+
+    def parse_header(self) -> dict[str, int] | None:
+        """Parse 40-bit FlexRay header.
+
+        Returns:
+            Dict with slot_id, header_crc, cycle_count, payload_length or None if incomplete.
+        """
+        header_bits = self.sample_bits(40)
+        if len(header_bits) < 40:
+            return None
+
+        return {
+            "slot_id": self._bits_to_int(header_bits[4:15]),
+            "header_crc": self._bits_to_int(header_bits[15:26]),
+            "cycle_count": self._bits_to_int(header_bits[26:32]),
+            "payload_length": self._bits_to_int(header_bits[33:40]),
+        }
+
+    def parse_payload(self, payload_length: int, errors: list[str]) -> list[int]:
+        """Parse payload bytes.
+
+        Args:
+            payload_length: Payload length in 16-bit words.
+            errors: Error list to append to.
+
+        Returns:
+            List of payload byte values.
+        """
+        payload_byte_count = payload_length * 2
+        payload_bytes = []
+
+        for _ in range(payload_byte_count):
+            byte_bits = self.sample_bits(8)
+            if len(byte_bits) == 8:
+                payload_bytes.append(self._bits_to_int(byte_bits))
+            else:
+                errors.append("Incomplete payload")
+                break
+
+        return payload_bytes
+
+    def parse_crc(self) -> int:
+        """Parse 24-bit frame CRC.
+
+        Returns:
+            CRC value.
+        """
+        crc_bits = self.sample_bits(24)
+        return self._bits_to_int(crc_bits)
+
+    def get_bit_idx(self) -> int:
+        """Get current bit index.
+
+        Returns:
+            Current bit index position.
+        """
+        return int(self.bit_idx)
+
+    @staticmethod
+    def _bits_to_int(bits: list[int]) -> int:
+        """Convert bit list to integer.
+
+        Args:
+            bits: List of bit values.
+
+        Returns:
+            Integer value.
+        """
+        result = 0
+        for bit in bits:
+            result = (result << 1) | bit
+        return result
+
+
 class FlexRayDecoder(AsyncDecoder):
     """FlexRay protocol decoder.
 
@@ -92,14 +209,14 @@ class FlexRayDecoder(AsyncDecoder):
     longname = "FlexRay Automotive Network"
     desc = "FlexRay protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("bp", "BP", "FlexRay Bus Plus", required=True),
         ChannelDef("bm", "BM", "FlexRay Bus Minus", required=True),
     ]
 
-    optional_channels = []  # noqa: RUF012
+    optional_channels = []
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef(
             "bitrate",
             "Bitrate",
@@ -109,7 +226,7 @@ class FlexRayDecoder(AsyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("tss", "Transmission Start Sequence"),
         ("fss", "Frame Start Sequence"),
         ("header", "Frame header"),
@@ -285,95 +402,37 @@ class FlexRayDecoder(AsyncDecoder):
         errors = []
         bit_idx = tss_idx + int(3 * bit_period)  # Skip TSS
 
-        # Sample bits
-        def sample_bits(count: int) -> list[int]:
-            nonlocal bit_idx
-            bits = []
-            for _ in range(count):
-                sample_idx = int(bit_idx + bit_period / 2)
-                if sample_idx < len(data):
-                    bits.append(1 if data[sample_idx] else 0)
-                    bit_idx += bit_period  # type: ignore[assignment]
-                else:
-                    return bits
-            return bits
+        sampler = _FlexRayBitSampler(data, bit_idx, bit_period)
 
-        # FSS (Frame Start Sequence) - 1 bit
-        fss_bits = sample_bits(1)
-        if not fss_bits or fss_bits[0] != 0:
+        # Validate FSS
+        if not sampler.validate_fss():
             errors.append("Invalid FSS")
 
-        # Header (5 bytes = 40 bits)
-        # Byte 1: Reserved (1) + Payload preamble (1) + NULL frame (1) + Sync (1) + Startup (1) + Slot ID[10:8] (3)
-        # Byte 2: Slot ID[7:0] (8)
-        # Byte 3: Header CRC[10:3] (8)
-        # Byte 4: Header CRC[2:0] (3) + Cycle count[5:0] (6) - split to bits 7:5 and 4:0
-        # Byte 5: Cycle count continued + Payload length[6:0] (7)
+        # Parse header
+        header_fields = sampler.parse_header()
+        if header_fields is None:
+            return None, sampler.get_bit_idx()
 
-        header_bits = sample_bits(40)
-        if len(header_bits) < 40:
-            return None, int(bit_idx)
+        # Parse payload
+        payload_bytes = sampler.parse_payload(header_fields["payload_length"], errors)
 
-        # Extract header fields (simplified)
-        # Slot ID (11 bits): bits 4-14
-        slot_id_bits = header_bits[4:15]
-        slot_id = 0
-        for bit in slot_id_bits:
-            slot_id = (slot_id << 1) | bit
-
-        # Header CRC (11 bits): bits 15-25
-        header_crc_bits = header_bits[15:26]
-        header_crc = 0
-        for bit in header_crc_bits:
-            header_crc = (header_crc << 1) | bit
-
-        # Cycle count (6 bits): bits 26-31
-        cycle_bits = header_bits[26:32]
-        cycle_count = 0
-        for bit in cycle_bits:
-            cycle_count = (cycle_count << 1) | bit
-
-        # Payload length (7 bits): bits 33-39
-        payload_len_bits = header_bits[33:40]
-        payload_length = 0
-        for bit in payload_len_bits:
-            payload_length = (payload_length << 1) | bit
-
-        # Payload (payload_length * 2 bytes, as length is in 16-bit words)
-        payload_byte_count = payload_length * 2
-        payload_bytes = []
-
-        for _ in range(payload_byte_count):
-            byte_bits = sample_bits(8)
-            if len(byte_bits) == 8:
-                byte_val = 0
-                for bit in byte_bits:
-                    byte_val = (byte_val << 1) | bit
-                payload_bytes.append(byte_val)
-            else:
-                errors.append("Incomplete payload")
-                break
-
-        # Frame CRC (24 bits)
-        crc_bits = sample_bits(24)
-        frame_crc = 0
-        for bit in crc_bits:
-            frame_crc = (frame_crc << 1) | bit
+        # Parse CRC
+        frame_crc = sampler.parse_crc()
 
         # Create frame
         frame = FlexRayFrame(
-            slot_id=slot_id,
-            cycle_count=cycle_count,
-            payload_length=payload_length,
-            header_crc=header_crc,
+            slot_id=header_fields["slot_id"],
+            cycle_count=header_fields["cycle_count"],
+            payload_length=header_fields["payload_length"],
+            header_crc=header_fields["header_crc"],
             payload=bytes(payload_bytes),
             frame_crc=frame_crc,
-            segment=FlexRaySegment.STATIC,  # Simplified: assume static
+            segment=FlexRaySegment.STATIC,
             timestamp=tss_idx / sample_rate,
             errors=errors,
         )
 
-        return frame, int(bit_idx)
+        return frame, sampler.get_bit_idx()
 
 
 def decode_flexray(

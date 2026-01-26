@@ -61,6 +61,12 @@ from oscura.reporting.core_formats import (  # core_formats/ directory
 from oscura.reporting.engine import (
     AnalysisEngine,
 )
+from oscura.reporting.enhanced_reports import (
+    EnhancedReportGenerator,
+)
+from oscura.reporting.enhanced_reports import (
+    ReportConfig as EnhancedReportConfig,
+)
 from oscura.reporting.export import (
     batch_export_formats,
     export_multiple_reports,
@@ -158,6 +164,9 @@ __all__ = [
     "ColorScheme",
     "DataOutputConfig",
     "DomainConfig",
+    # Enhanced Reports (Feature 6)
+    "EnhancedReportConfig",
+    "EnhancedReportGenerator",
     "ExecutiveSummary",
     # Summary Generation
     "Finding",

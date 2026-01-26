@@ -92,6 +92,101 @@ class ZoomState:
     home_ylim: tuple[float, float] | None = None
 
 
+def _create_scroll_handler(ax: Axes, state: ZoomState, zoom_factor: float) -> Any:
+    """Create scroll event handler for zooming."""
+
+    def on_scroll(event):  # type: ignore[no-untyped-def]
+        if event.inaxes != ax:
+            return
+
+        x_data = event.xdata
+        y_data = event.ydata
+
+        if x_data is None or y_data is None:
+            return
+
+        if event.button == "up":
+            factor = 1 / zoom_factor
+        elif event.button == "down":
+            factor = zoom_factor
+        else:
+            return
+
+        state.history.append((state.xlim, state.ylim))
+
+        cur_xlim = ax.get_xlim()
+        cur_ylim = ax.get_ylim()
+
+        new_width = (cur_xlim[1] - cur_xlim[0]) * factor
+        new_height = (cur_ylim[1] - cur_ylim[0]) * factor
+
+        rel_x = (x_data - cur_xlim[0]) / (cur_xlim[1] - cur_xlim[0])
+        rel_y = (y_data - cur_ylim[0]) / (cur_ylim[1] - cur_ylim[0])
+
+        new_xlim = (
+            x_data - new_width * rel_x,
+            x_data + new_width * (1 - rel_x),
+        )
+        new_ylim = (
+            y_data - new_height * rel_y,
+            y_data + new_height * (1 - rel_y),
+        )
+
+        ax.set_xlim(new_xlim)
+        ax.set_ylim(new_ylim)
+        state.xlim = new_xlim
+        state.ylim = new_ylim
+
+        ax.figure.canvas.draw_idle()
+
+    return on_scroll
+
+
+def _create_pan_handlers(ax: Axes, state: ZoomState) -> tuple[Any, Any, Any]:
+    """Create pan event handlers for click-drag panning."""
+    pan_active = [False]
+    pan_start: list[float | None] = [None, None]
+
+    def on_press(event):  # type: ignore[no-untyped-def]
+        if event.inaxes != ax:
+            return
+        if event.button == 1:
+            pan_active[0] = True
+            pan_start[0] = event.xdata
+            pan_start[1] = event.ydata
+
+    def on_release(event: MouseEvent) -> None:
+        pan_active[0] = False
+
+    def on_motion(event: MouseEvent) -> None:
+        if not pan_active[0]:
+            return
+        if event.inaxes != ax:
+            return
+        if event.xdata is None or event.ydata is None:
+            return
+        if pan_start[0] is None or pan_start[1] is None:
+            return
+
+        dx = pan_start[0] - event.xdata
+        dy = pan_start[1] - event.ydata
+
+        cur_xlim = ax.get_xlim()
+        cur_ylim = ax.get_ylim()
+
+        new_xlim = (cur_xlim[0] + dx, cur_xlim[1] + dx)
+        new_ylim = (cur_ylim[0] + dy, cur_ylim[1] + dy)
+
+        ax.set_xlim(new_xlim)
+        ax.set_ylim(new_ylim)
+        state.xlim = new_xlim
+        state.ylim = new_ylim
+
+        ax.figure.canvas.draw_idle()
+
+    return on_press, on_release, on_motion
+
+
 def enable_zoom_pan(
     ax: Axes,
     *,
@@ -126,112 +221,19 @@ def enable_zoom_pan(
     if not MATPLOTLIB_AVAILABLE:
         raise ImportError("matplotlib is required for interactive visualization")
 
-    # Store initial state
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
-    state = ZoomState(
-        xlim=xlim,
-        ylim=ylim,
-        home_xlim=xlim,
-        home_ylim=ylim,
-    )
-
-    def on_scroll(event):  # type: ignore[no-untyped-def]
-        if event.inaxes != ax:
-            return
-
-        # Get mouse position
-        x_data = event.xdata
-        y_data = event.ydata
-
-        if x_data is None or y_data is None:
-            return
-
-        # Determine zoom direction
-        if event.button == "up":
-            factor = 1 / zoom_factor
-        elif event.button == "down":
-            factor = zoom_factor
-        else:
-            return
-
-        # Save current state
-        state.history.append((state.xlim, state.ylim))
-
-        # Calculate new limits centered on mouse position
-        cur_xlim = ax.get_xlim()
-        cur_ylim = ax.get_ylim()
-
-        new_width = (cur_xlim[1] - cur_xlim[0]) * factor
-        new_height = (cur_ylim[1] - cur_ylim[0]) * factor
-
-        rel_x = (x_data - cur_xlim[0]) / (cur_xlim[1] - cur_xlim[0])
-        rel_y = (y_data - cur_ylim[0]) / (cur_ylim[1] - cur_ylim[0])
-
-        new_xlim = (
-            x_data - new_width * rel_x,
-            x_data + new_width * (1 - rel_x),
-        )
-        new_ylim = (
-            y_data - new_height * rel_y,
-            y_data + new_height * (1 - rel_y),
-        )
-
-        ax.set_xlim(new_xlim)
-        ax.set_ylim(new_ylim)
-        state.xlim = new_xlim
-        state.ylim = new_ylim
-
-        ax.figure.canvas.draw_idle()
+    state = ZoomState(xlim=xlim, ylim=ylim, home_xlim=xlim, home_ylim=ylim)
 
     if enable_zoom:
+        on_scroll = _create_scroll_handler(ax, state, zoom_factor)
         ax.figure.canvas.mpl_connect("scroll_event", on_scroll)
 
-    # Pan state
-    pan_active = [False]
-    pan_start: list[float | None] = [None, None]
-
-    def on_press(event):  # type: ignore[no-untyped-def]
-        if event.inaxes != ax:
-            return
-        if event.button == 1:  # Left click
-            pan_active[0] = True
-            pan_start[0] = event.xdata
-            pan_start[1] = event.ydata
-
-    def on_release(event: MouseEvent) -> None:
-        pan_active[0] = False
-
-    def on_motion(event: MouseEvent) -> None:
-        if not pan_active[0]:
-            return
-        if event.inaxes != ax:
-            return
-        if event.xdata is None or event.ydata is None:
-            return
-        if pan_start[0] is None or pan_start[1] is None:
-            return
-
-        dx = pan_start[0] - event.xdata
-        dy = pan_start[1] - event.ydata
-
-        cur_xlim = ax.get_xlim()
-        cur_ylim = ax.get_ylim()
-
-        new_xlim = (cur_xlim[0] + dx, cur_xlim[1] + dx)
-        new_ylim = (cur_ylim[0] + dy, cur_ylim[1] + dy)
-
-        ax.set_xlim(new_xlim)
-        ax.set_ylim(new_ylim)
-        state.xlim = new_xlim
-        state.ylim = new_ylim
-
-        ax.figure.canvas.draw_idle()
-
     if enable_pan:
+        on_press, on_release, on_motion = _create_pan_handlers(ax, state)
         ax.figure.canvas.mpl_connect("button_press_event", on_press)
-        ax.figure.canvas.mpl_connect("button_release_event", on_release)  # type: ignore[arg-type]
-        ax.figure.canvas.mpl_connect("motion_notify_event", on_motion)  # type: ignore[arg-type]
+        ax.figure.canvas.mpl_connect("button_release_event", on_release)
+        ax.figure.canvas.mpl_connect("motion_notify_event", on_motion)
 
     return state
 
@@ -339,42 +341,70 @@ def add_measurement_cursors(
     if not MATPLOTLIB_AVAILABLE:
         raise ImportError("matplotlib is required for interactive visualization")
 
-    state: dict[str, float | None | Any] = {
-        "x1": None,
-        "x2": None,
-        "y1": None,
-        "y2": None,
-        "line1": None,
-        "line2": None,
-    }
+    # Setup: initialize state
+    state = _create_cursor_state()
 
-    def onselect(xmin: float, xmax: float) -> None:
-        state["x1"] = xmin
-        state["x2"] = xmax
-
-        # Get Y values at cursor positions
-        for line in ax.get_lines():
-            xdata = line.get_xdata()
-            ydata = line.get_ydata()
-            # Type narrowing: these return ArrayLike from Line2D
-            xdata_arr = np.asarray(xdata)
-            ydata_arr = np.asarray(ydata)
-            if len(xdata_arr) > 0:
-                # Interpolate Y at cursor positions
-                y1_interp: float = float(np.interp(xmin, xdata_arr, ydata_arr))
-                y2_interp: float = float(np.interp(xmax, xdata_arr, ydata_arr))
-                state["y1"] = y1_interp
-                state["y2"] = y2_interp
-                break
-
+    # Processing: create selector with callback
+    onselect_callback = _create_cursor_select_handler(ax, state)
     span = SpanSelector(
         ax,
-        onselect,
+        onselect_callback,
         "horizontal",
         useblit=True,
         props={"alpha": 0.3, "facecolor": color},
         interactive=True,
     )
+
+    # Formatting: create measurement accessor
+    get_measurement = _create_measurement_getter(state)
+
+    return {"span": span, "state": state, "get_measurement": get_measurement}
+
+
+def _create_cursor_state() -> dict[str, float | None | Any]:
+    """Create cursor state dictionary.
+
+    Returns:
+        State dictionary with x/y positions and line references.
+    """
+    return {"x1": None, "x2": None, "y1": None, "y2": None, "line1": None, "line2": None}
+
+
+def _create_cursor_select_handler(ax: Axes, state: dict[str, float | None | Any]) -> Any:
+    """Create cursor selection callback.
+
+    Args:
+        ax: Axes to interpolate data from.
+        state: Cursor state dictionary.
+
+    Returns:
+        Selection callback function.
+    """
+
+    def onselect(xmin: float, xmax: float) -> None:
+        state["x1"] = xmin
+        state["x2"] = xmax
+
+        for line in ax.get_lines():
+            xdata_arr = np.asarray(line.get_xdata())
+            ydata_arr = np.asarray(line.get_ydata())
+            if len(xdata_arr) > 0:
+                state["y1"] = float(np.interp(xmin, xdata_arr, ydata_arr))
+                state["y2"] = float(np.interp(xmax, xdata_arr, ydata_arr))
+                break
+
+    return onselect
+
+
+def _create_measurement_getter(state: dict[str, float | None | Any]) -> Any:
+    """Create measurement getter function.
+
+    Args:
+        state: Cursor state dictionary.
+
+    Returns:
+        Function that returns CursorMeasurement or None.
+    """
 
     def get_measurement() -> CursorMeasurement | None:
         x1 = state["x1"]
@@ -406,11 +436,7 @@ def add_measurement_cursors(
             slope=delta_y / delta_x if delta_x != 0 else None,
         )
 
-    return {
-        "span": span,
-        "state": state,
-        "get_measurement": get_measurement,
-    }
+    return get_measurement
 
 
 def plot_phase(
@@ -649,35 +675,81 @@ def plot_waterfall(
         raise ImportError("matplotlib is required for interactive visualization")
 
     data = np.asarray(data)
+    Sxx_db, frequencies, times = _prepare_waterfall_data(
+        data, time_axis, freq_axis, sample_rate, nperseg, noverlap
+    )
+    fig, ax = _create_waterfall_figure(ax)
+    T, F = np.meshgrid(times, frequencies)
+    Sxx_db = _align_waterfall_dimensions(Sxx_db, T)
+    surf = _plot_waterfall_surface(ax, T, F, Sxx_db, cmap)
+    _format_waterfall_axes(ax, fig, surf)
 
-    # Check if data is 2D (precomputed spectrogram)
+    return fig, ax
+
+
+def _prepare_waterfall_data(
+    data: NDArray[np.floating[Any]],
+    time_axis: NDArray[np.floating[Any]] | None,
+    freq_axis: NDArray[np.floating[Any]] | None,
+    sample_rate: float,
+    nperseg: int,
+    noverlap: int | None,
+) -> tuple[NDArray[np.floating[Any]], NDArray[np.floating[Any]], NDArray[np.floating[Any]]]:
+    """Prepare spectrogram data for waterfall plot.
+
+    Args:
+        data: Input data array.
+        time_axis: Time axis.
+        freq_axis: Frequency axis.
+        sample_rate: Sample rate.
+        nperseg: Segment length.
+        noverlap: Overlap length.
+
+    Returns:
+        Tuple of (Sxx_db, frequencies, times).
+    """
     if data.ndim == 2:
-        # Treat as precomputed spectrogram (n_traces, n_points)
         Sxx_db = data
         n_traces, n_points = data.shape
-        frequencies = freq_axis if freq_axis is not None else np.arange(n_points)
-        times = time_axis if time_axis is not None else np.arange(n_traces)
+        frequencies: NDArray[np.floating[Any]] = (
+            freq_axis if freq_axis is not None else np.arange(n_points, dtype=np.float64)
+        )
+        times: NDArray[np.floating[Any]] = (
+            time_axis if time_axis is not None else np.arange(n_traces, dtype=np.float64)
+        )
     elif freq_axis is not None:
-        # 1D data with explicit freq_axis means precomputed
         Sxx_db = data
         frequencies = freq_axis
         times = (
             time_axis
             if time_axis is not None
-            else np.arange(Sxx_db.shape[1] if Sxx_db.ndim > 1 else 1)
+            else np.arange(Sxx_db.shape[1] if Sxx_db.ndim > 1 else 1, dtype=np.float64)
         )
     else:
-        # Compute spectrogram from 1D signal
         if noverlap is None:
             noverlap = nperseg // 2
-
-        frequencies, times, Sxx = scipy_signal.spectrogram(
+        frequencies_raw, times_raw, Sxx = scipy_signal.spectrogram(
             data, fs=sample_rate, nperseg=nperseg, noverlap=noverlap
         )
+        frequencies = np.asarray(frequencies_raw, dtype=np.float64)
         Sxx_db = 10 * np.log10(Sxx + 1e-10)
-        times = time_axis if time_axis is not None else np.arange(Sxx_db.shape[1])
+        times = time_axis if time_axis is not None else np.arange(Sxx_db.shape[1], dtype=np.float64)
 
-    # Create 3D figure
+    return Sxx_db, frequencies, times
+
+
+def _create_waterfall_figure(ax: Axes | None) -> tuple[Figure, Axes]:
+    """Create 3D figure for waterfall plot.
+
+    Args:
+        ax: Existing axes or None.
+
+    Returns:
+        Tuple of (figure, axes).
+
+    Raises:
+        ValueError: If axes has no figure.
+    """
     if ax is None:
         fig = plt.figure(figsize=(12, 8))
         ax = fig.add_subplot(111, projection="3d")
@@ -686,40 +758,70 @@ def plot_waterfall(
         if fig_temp is None:
             raise ValueError("Axes must have an associated figure")
         fig = cast("Figure", fig_temp)
+    return fig, ax
 
-    # Create meshgrid
-    T, F = np.meshgrid(times, frequencies)
 
-    # Ensure Sxx_db matches meshgrid shape (n_frequencies, n_times)
+def _align_waterfall_dimensions(
+    Sxx_db: NDArray[np.floating[Any]], T: NDArray[np.floating[Any]]
+) -> NDArray[np.floating[Any]]:
+    """Align spectrogram dimensions to match meshgrid.
+
+    Args:
+        Sxx_db: Spectrogram data.
+        T: Meshgrid time array.
+
+    Returns:
+        Aligned spectrogram.
+    """
     if Sxx_db.shape != T.shape:
         if Sxx_db.T.shape == T.shape:
             Sxx_db = Sxx_db.T
-        # If still mismatched, the data dimensions may be incompatible
-        # but we'll let plot_surface raise a more informative error
+    return Sxx_db
 
-    # Plot surface
-    # Type checking: ax must be a 3D axes at this point
+
+def _plot_waterfall_surface(
+    ax: Axes,
+    T: NDArray[np.floating[Any]],
+    F: NDArray[np.floating[Any]],
+    Sxx_db: NDArray[np.floating[Any]],
+    cmap: str,
+) -> Any:
+    """Plot waterfall surface.
+
+    Args:
+        ax: 3D axes.
+        T: Time meshgrid.
+        F: Frequency meshgrid.
+        Sxx_db: Spectrogram data.
+        cmap: Colormap.
+
+    Returns:
+        Surface object.
+
+    Raises:
+        TypeError: If axes is not 3D.
+    """
     if not hasattr(ax, "plot_surface"):
         raise TypeError("Axes must be a 3D axes for waterfall plot")
-    surf = ax.plot_surface(  # type: ignore[attr-defined,union-attr]
-        T,
-        F,
-        Sxx_db,
-        cmap=cmap,
-        linewidth=0,
-        antialiased=True,
-        alpha=0.8,
+    return cast("Any", ax).plot_surface(
+        T, F, Sxx_db, cmap=cmap, linewidth=0, antialiased=True, alpha=0.8
     )
 
+
+def _format_waterfall_axes(ax: Axes, fig: Figure, surf: Any) -> None:
+    """Format waterfall plot axes.
+
+    Args:
+        ax: 3D axes.
+        fig: Figure object.
+        surf: Surface object.
+    """
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Frequency (Hz)")
     if hasattr(ax, "set_zlabel"):
-        ax.set_zlabel("Power (dB)")  # type: ignore[attr-defined]
+        ax.set_zlabel("Power (dB)")
     ax.set_title("Waterfall Plot (Spectrogram)")
-
     fig.colorbar(surf, ax=ax, label="Power (dB)", shrink=0.5)
-
-    return fig, ax
 
 
 def plot_histogram(
@@ -767,10 +869,30 @@ def plot_histogram(
     if not MATPLOTLIB_AVAILABLE:
         raise ImportError("matplotlib is required for interactive visualization")
 
-    # Get data
     data = trace.data if isinstance(trace, WaveformTrace) else np.asarray(trace)
+    fig, ax = _setup_histogram_figure(ax)
+    stats = _calculate_histogram_statistics(data)
+    bin_edges = _plot_histogram_data(ax, data, bins, density, hist_kwargs)
+    stats["bins"] = len(bin_edges) - 1
+    _add_histogram_overlays(ax, data, stats, bin_edges, density, show_stats, show_kde)
+    _format_histogram_axes(ax, density, show_stats, show_kde)
+    _handle_histogram_output(fig, save_path, show)
 
-    # Create figure if needed
+    return fig, ax, stats
+
+
+def _setup_histogram_figure(ax: Axes | None) -> tuple[Figure, Axes]:
+    """Setup figure and axes for histogram.
+
+    Args:
+        ax: Existing axes or None.
+
+    Returns:
+        Tuple of (figure, axes).
+
+    Raises:
+        ValueError: If axes has no figure.
+    """
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 6))
     else:
@@ -778,71 +900,124 @@ def plot_histogram(
         if fig_temp is None:
             raise ValueError("Axes must have an associated figure")
         fig = cast("Figure", fig_temp)
+    return fig, ax
 
-    # Calculate statistics
-    mean = float(np.mean(data))
-    std = float(np.std(data))
-    median = float(np.median(data))
-    min_val = float(np.min(data))
-    max_val = float(np.max(data))
 
-    stats = {
-        "mean": mean,
-        "std": std,
-        "median": median,
-        "min": min_val,
-        "max": max_val,
+def _calculate_histogram_statistics(data: NDArray[np.floating[Any]]) -> dict[str, Any]:
+    """Calculate histogram statistics.
+
+    Args:
+        data: Data array.
+
+    Returns:
+        Statistics dictionary.
+    """
+    return {
+        "mean": float(np.mean(data)),
+        "std": float(np.std(data)),
+        "median": float(np.median(data)),
+        "min": float(np.min(data)),
+        "max": float(np.max(data)),
         "count": len(data),
     }
 
-    # Plot histogram
+
+def _plot_histogram_data(
+    ax: Axes,
+    data: NDArray[np.floating[Any]],
+    bins: int | str | NDArray[np.floating[Any]],
+    density: bool,
+    hist_kwargs: dict[str, Any],
+) -> NDArray[Any]:
+    """Plot histogram data.
+
+    Args:
+        ax: Axes to plot on.
+        data: Data array.
+        bins: Bin specification.
+        density: Normalize to density.
+        hist_kwargs: Additional histogram arguments.
+
+    Returns:
+        Bin edges array.
+    """
     defaults: dict[str, Any] = {"alpha": 0.7, "edgecolor": "black", "linewidth": 0.5}
     defaults.update(hist_kwargs)
     _counts, bin_edges, _patches = ax.hist(data, bins=bins, density=density, **defaults)  # type: ignore[arg-type]
+    return bin_edges
 
-    stats["bins"] = len(bin_edges) - 1
 
-    # Show statistics lines
+def _add_histogram_overlays(
+    ax: Axes,
+    data: NDArray[np.floating[Any]],
+    stats: dict[str, Any],
+    bin_edges: NDArray[Any],
+    density: bool,
+    show_stats: bool,
+    show_kde: bool,
+) -> None:
+    """Add overlays to histogram.
+
+    Args:
+        ax: Axes object.
+        data: Data array.
+        stats: Statistics dict.
+        bin_edges: Bin edges.
+        density: Whether density normalized.
+        show_stats: Show statistics lines.
+        show_kde: Show KDE overlay.
+    """
     if show_stats:
-        ax.get_ylim()
+        mean, std = stats["mean"], stats["std"]
         ax.axvline(mean, color="red", linestyle="--", linewidth=2, label=f"Mean: {mean:.3g}")
         ax.axvline(mean - std, color="orange", linestyle=":", linewidth=1.5, label="Mean - Std")
         ax.axvline(mean + std, color="orange", linestyle=":", linewidth=1.5, label="Mean + Std")
 
-    # Show KDE
     if show_kde:
         from scipy.stats import gaussian_kde
 
         kde = gaussian_kde(data)
-        x_kde = np.linspace(min_val, max_val, 200)
+        x_kde = np.linspace(stats["min"], stats["max"], 200)
         y_kde = kde(x_kde)
 
         if density:
             ax.plot(x_kde, y_kde, "r-", linewidth=2, label="KDE")
         else:
-            # Scale KDE to histogram
             bin_width = bin_edges[1] - bin_edges[0]
             ax.plot(x_kde, y_kde * len(data) * bin_width, "r-", linewidth=2, label="KDE")
 
+
+def _format_histogram_axes(ax: Axes, density: bool, show_stats: bool, show_kde: bool) -> None:
+    """Format histogram axes.
+
+    Args:
+        ax: Axes object.
+        density: Whether density normalized.
+        show_stats: Whether stats shown.
+        show_kde: Whether KDE shown.
+    """
     ax.set_xlabel("Amplitude")
     ax.set_ylabel("Density" if density else "Count")
     ax.set_title("Amplitude Distribution")
-    # Only show legend if there are labeled artists
     if show_stats or show_kde:
         ax.legend(loc="upper right")
     ax.grid(True, alpha=0.3)
 
-    # Save if requested
+
+def _handle_histogram_output(fig: Figure, save_path: str | None, show: bool) -> None:
+    """Handle histogram output.
+
+    Args:
+        fig: Figure object.
+        save_path: Save path.
+        show: Whether to show.
+    """
     if save_path is not None:
         fig.savefig(save_path, dpi=150, bbox_inches="tight")
-
-    # Show or close
     if show:
         plt.show()
     else:
         plt.close(fig)
-
-    return fig, ax, stats
 
 
 __all__ = [

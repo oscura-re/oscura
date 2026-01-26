@@ -85,17 +85,67 @@ def characterize_buffer(
         IEEE 181-2011 Section 5.2 (Edge timing)
         JEDEC Standard No. 65B (Logic family specifications)
     """
-    # Import here to avoid circular dependencies
-    from oscura.analyzers.waveform.measurements import (
-        fall_time,
-        overshoot,
-        rise_time,
-        undershoot,
-    )
-    from oscura.inference.logic import detect_logic_family
+    # Detect or use specified logic family
+    logic_family, confidence, voh, vol = _determine_logic_family(trace, logic_family)
 
-    # Auto-detect logic family if not specified
+    # Measure timing parameters
+    t_rise, t_fall = _measure_timing_params(trace)
+
+    # Measure voltage overshoots
+    v_overshoot, v_undershoot, overshoot_pct, undershoot_pct = _measure_overshoots(trace, voh, vol)
+
+    # Calculate noise margins
+    logic_specs = _get_logic_specs(logic_family)
+    noise_margin_high = voh - logic_specs["vih"]
+    noise_margin_low = logic_specs["vil"] - vol
+
+    # Measure propagation delay if reference provided
+    propagation_delay = _measure_propagation_delay(reference_trace, trace)
+
+    # Determine pass/fail status
+    status = _evaluate_pass_fail(t_rise, t_fall, overshoot_pct, thresholds, logic_specs)
+
+    # Build result dictionary
+    result = _build_result_dict(
+        logic_family,
+        confidence,
+        t_rise,
+        t_fall,
+        propagation_delay,
+        v_overshoot,
+        overshoot_pct,
+        v_undershoot,
+        undershoot_pct,
+        noise_margin_high,
+        noise_margin_low,
+        voh,
+        vol,
+        status,
+        reference_trace,
+    )
+
+    # Generate report if requested
+    if report is not None:
+        _generate_buffer_report(result, report)
+
+    return result
+
+
+def _determine_logic_family(
+    trace: WaveformTrace, logic_family: str | None
+) -> tuple[str, float, float, float]:
+    """Determine logic family and voltage levels.
+
+    Args:
+        trace: Input waveform trace.
+        logic_family: Optional logic family override.
+
+    Returns:
+        Tuple of (logic_family, confidence, voh, vol).
+    """
     if logic_family is None:
+        from oscura.inference.logic import detect_logic_family
+
         detection = detect_logic_family(trace)
         logic_family = detection["primary"]["name"]
         confidence = detection["primary"]["confidence"]
@@ -103,67 +153,167 @@ def characterize_buffer(
         vol = detection["primary"]["vol"]
     else:
         confidence = 1.0
-        # Measure VOH/VOL from trace
         voh = np.percentile(trace.data, 95)
         vol = np.percentile(trace.data, 5)
 
-    # Measure timing parameters
+    return logic_family, confidence, voh, vol
+
+
+def _measure_timing_params(trace: WaveformTrace) -> tuple[float, float]:
+    """Measure rise and fall times.
+
+    Args:
+        trace: Input waveform trace.
+
+    Returns:
+        Tuple of (rise_time, fall_time).
+
+    Raises:
+        AnalysisError: If measurement fails.
+    """
+    from oscura.analyzers.waveform.measurements import fall_time, rise_time
+
     try:
-        t_rise = rise_time(trace)
-        t_fall = fall_time(trace)
+        t_rise_raw = rise_time(trace)
+        t_fall_raw = fall_time(trace)
+        t_rise: float = float(t_rise_raw)
+        t_fall: float = float(t_fall_raw)
     except Exception as e:
         raise AnalysisError(f"Failed to measure rise/fall time: {e}") from e
 
-    # Measure overshoot/undershoot
-    v_overshoot = overshoot(trace)
-    v_undershoot = undershoot(trace)
+    return t_rise, t_fall
 
-    # Calculate percentages
+
+def _measure_overshoots(
+    trace: WaveformTrace, voh: float, vol: float
+) -> tuple[float, float, float, float]:
+    """Measure voltage overshoots and undershoots.
+
+    Args:
+        trace: Input waveform trace.
+        voh: High voltage level.
+        vol: Low voltage level.
+
+    Returns:
+        Tuple of (v_overshoot, v_undershoot, overshoot_pct, undershoot_pct).
+    """
+    from oscura.analyzers.waveform.measurements import overshoot, undershoot
+
+    v_overshoot_raw = overshoot(trace)
+    v_undershoot_raw = undershoot(trace)
+    v_overshoot: float = float(v_overshoot_raw)
+    v_undershoot: float = float(v_undershoot_raw)
+
     swing = voh - vol
     if swing > 0:
-        overshoot_pct = (v_overshoot / swing) * 100.0
-        undershoot_pct = (v_undershoot / swing) * 100.0
+        overshoot_pct: float = (v_overshoot / swing) * 100.0
+        undershoot_pct: float = (v_undershoot / swing) * 100.0
     else:
         overshoot_pct = 0.0
         undershoot_pct = 0.0
 
-    # Calculate noise margins (simplified - uses typical values)
-    # In a real implementation, these would come from LOGIC_FAMILIES constants
-    logic_specs = _get_logic_specs(logic_family)
-    noise_margin_high = voh - logic_specs["vih"]
-    noise_margin_low = logic_specs["vil"] - vol
+    return v_overshoot, v_undershoot, overshoot_pct, undershoot_pct
 
-    # Propagation delay if reference provided
-    propagation_delay = None
-    timing_drift = None
-    if reference_trace is not None:
-        try:
-            from oscura.analyzers.digital.timing import (
-                propagation_delay as prop_delay,
-            )
 
-            propagation_delay = prop_delay(reference_trace, trace)
-        except Exception:
-            # If propagation delay measurement fails, set to None
-            propagation_delay = None
+def _measure_propagation_delay(
+    reference_trace: WaveformTrace | None, trace: WaveformTrace
+) -> float | None:
+    """Measure propagation delay if reference trace provided.
 
-    # Apply thresholds and determine pass/fail
-    status = "PASS"
+    Args:
+        reference_trace: Optional reference trace.
+        trace: Output trace.
+
+    Returns:
+        Propagation delay in seconds, or None if not measurable.
+    """
+    if reference_trace is None:
+        return None
+
+    try:
+        from oscura.analyzers.digital.timing import propagation_delay as prop_delay
+
+        delay_raw = prop_delay(reference_trace, trace)
+        delay: float = float(delay_raw)
+        return delay
+    except Exception:
+        return None
+
+
+def _evaluate_pass_fail(
+    t_rise: float,
+    t_fall: float,
+    overshoot_pct: float,
+    thresholds: dict[str, float] | None,
+    logic_specs: dict[str, float],
+) -> str:
+    """Evaluate pass/fail status based on thresholds.
+
+    Args:
+        t_rise: Rise time measurement.
+        t_fall: Fall time measurement.
+        overshoot_pct: Overshoot percentage.
+        thresholds: Optional custom thresholds.
+        logic_specs: Logic family specifications.
+
+    Returns:
+        "PASS" or "FAIL" status string.
+    """
     if thresholds is not None:
         if "rise_time" in thresholds and t_rise > thresholds["rise_time"]:
-            status = "FAIL"
+            return "FAIL"
         if "fall_time" in thresholds and t_fall > thresholds["fall_time"]:
-            status = "FAIL"
+            return "FAIL"
         if "overshoot_percent" in thresholds and overshoot_pct > thresholds["overshoot_percent"]:
-            status = "FAIL"
+            return "FAIL"
     else:
-        # Use logic family defaults
         if t_rise > logic_specs.get("max_rise_time", float("inf")):
-            status = "FAIL"
+            return "FAIL"
         if t_fall > logic_specs.get("max_fall_time", float("inf")):
-            status = "FAIL"
+            return "FAIL"
 
-    # Build result dictionary
+    return "PASS"
+
+
+def _build_result_dict(
+    logic_family: str,
+    confidence: float,
+    t_rise: float,
+    t_fall: float,
+    propagation_delay: float | None,
+    v_overshoot: float,
+    overshoot_pct: float,
+    v_undershoot: float,
+    undershoot_pct: float,
+    noise_margin_high: float,
+    noise_margin_low: float,
+    voh: float,
+    vol: float,
+    status: str,
+    reference_trace: WaveformTrace | None,
+) -> dict[str, Any]:
+    """Build result dictionary.
+
+    Args:
+        logic_family: Logic family name.
+        confidence: Detection confidence.
+        t_rise: Rise time.
+        t_fall: Fall time.
+        propagation_delay: Propagation delay measurement.
+        v_overshoot: Overshoot voltage.
+        overshoot_pct: Overshoot percentage.
+        v_undershoot: Undershoot voltage.
+        undershoot_pct: Undershoot percentage.
+        noise_margin_high: High noise margin.
+        noise_margin_low: Low noise margin.
+        voh: High output voltage.
+        vol: Low output voltage.
+        status: Pass/fail status.
+        reference_trace: Optional reference trace.
+
+    Returns:
+        Result dictionary with all measurements.
+    """
     result = {
         "logic_family": logic_family,
         "confidence": confidence,
@@ -185,12 +335,8 @@ def characterize_buffer(
     if reference_trace is not None and propagation_delay is not None:
         result["reference_comparison"] = {
             "propagation_delay": propagation_delay,
-            "timing_drift": timing_drift,
+            "timing_drift": None,
         }
-
-    # Generate report if requested
-    if report is not None:
-        _generate_buffer_report(result, report)
 
     return result
 

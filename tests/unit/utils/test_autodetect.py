@@ -17,12 +17,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oscura.core.types import DigitalTrace, TraceMetadata, WaveformTrace
+from oscura.core.types import DigitalTrace, TraceMetadata
 from oscura.utils.autodetect import (
     STANDARD_BAUD_RATES,
     detect_baud_rate,
     detect_logic_family,
 )
+from tests.utils.factories import make_waveform_trace
 
 pytestmark = pytest.mark.unit
 
@@ -36,12 +37,6 @@ def make_digital_trace(data: np.ndarray, sample_rate: float = 1e6) -> DigitalTra
     """Create a DigitalTrace from raw boolean data for testing."""
     metadata = TraceMetadata(sample_rate=sample_rate)
     return DigitalTrace(data=data.astype(bool), metadata=metadata)
-
-
-def make_waveform_trace(data: np.ndarray, sample_rate: float = 1e6) -> WaveformTrace:
-    """Create a WaveformTrace from raw data for testing."""
-    metadata = TraceMetadata(sample_rate=sample_rate)
-    return WaveformTrace(data=data.astype(np.float64), metadata=metadata)
 
 
 def generate_uart_signal(baudrate: int, num_bits: int = 80, sample_rate: float = 1e6) -> np.ndarray:

@@ -25,12 +25,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.analyzer, pytest.mark.spectral]
 
 
 @pytest.fixture
-def sample_rate() -> float:
-    """Sample rate for test signals."""
-    return 1e6  # 1 MHz
-
-
-@pytest.fixture
 def pure_sine(sample_rate: float) -> WaveformTrace:
     """Generate pure 10 kHz sine wave."""
     duration = 0.01  # 10 ms

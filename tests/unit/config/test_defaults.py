@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from oscura.config.defaults import (
+from oscura.core.config.defaults import (
     DEFAULT_CONFIG,
     SCHEMA_DEFAULTS,
     deep_merge,

@@ -5,11 +5,11 @@ verbosity levels for troubleshooting and diagnostics.
 
 
 Example:
-    >>> from oscura.core.debug import enable_debug, is_debug_enabled, debug_context
+    >>> from oscura.core.debug import enable_debug, is_debug_enabled, DebugContext
     >>> enable_debug(level='verbose')
     >>> if is_debug_enabled():
     ...     logger.debug("Extra diagnostic information")
-    >>> with debug_context(level='trace'):
+    >>> with DebugContext(level='trace'):
     ...     # Temporarily increase verbosity
     ...     analyze_complex_signal()
 
@@ -157,7 +157,7 @@ def get_debug_level() -> DebugLevel:
     return DebugLevel(_debug_level.get())
 
 
-class debug_context:
+class DebugContext:
     """Context manager for temporary debug level changes.
 
     Temporarily sets a debug level for the duration of a code block,
@@ -168,7 +168,7 @@ class debug_context:
 
     Example:
         >>> # Normal debug level
-        >>> with debug_context(level='trace'):
+        >>> with DebugContext(level='trace'):
         ...     # Temporarily enable trace-level debugging
         ...     analyze_signal(complex_data)
         >>> # Back to normal debug level
@@ -190,7 +190,7 @@ class debug_context:
         self.token: contextvars.Token | None = None  # type: ignore[type-arg]
         self.previous_log_level: str | None = None
 
-    def __enter__(self) -> debug_context:
+    def __enter__(self) -> DebugContext:
         """Enter the debug context and set new level."""
         # Save current debug level
         self.token = _debug_level.set(self.level)
@@ -224,6 +224,10 @@ class debug_context:
             from oscura.core.logging import set_log_level
 
             set_log_level(self.previous_log_level)
+
+
+# Backward compatibility alias (deprecated, use DebugContext)
+debug_context = DebugContext
 
 
 def should_log_debug(min_level: DebugLevel = DebugLevel.NORMAL) -> bool:

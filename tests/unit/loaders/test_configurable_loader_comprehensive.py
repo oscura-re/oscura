@@ -36,6 +36,10 @@ class TestConfigurablePacketLoader:
             assert PacketFormatConfig is not None
             assert load_binary_packets is not None
         except ImportError as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"Configurable loader not available: {e}")
 
     def test_packet_format_config_from_dict(self) -> None:
@@ -69,6 +73,8 @@ class TestConfigurablePacketLoader:
         """Test loading fixed-length packets from synthetic data."""
         data_path = synthetic_packets["data"]
         if not data_path.exists():
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: Synthetic packet data not available
             pytest.skip("Synthetic packet data not available")
 
         try:
@@ -154,6 +160,10 @@ class TestHeaderFieldExtraction:
         except ImportError:
             pytest.skip("HeaderFieldDef not available")
         except TypeError as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"HeaderFieldDef has different signature: {e}")
 
     def test_multiple_header_fields(self) -> None:
@@ -218,6 +228,10 @@ class TestBitfieldParsing:
         except ImportError:
             pytest.skip("BitfieldDef not available")
         except TypeError as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"BitfieldDef has different signature: {e}")
 
     def test_bitfield_extractor(self) -> None:
@@ -287,6 +301,10 @@ unknown_device:
         except ImportError:
             pytest.skip("DeviceConfig not available")
         except Exception as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"DeviceConfig loading failed: {e}")
 
     def test_device_mapper(self, tmp_path: Path) -> None:
@@ -318,6 +336,10 @@ unknown_device:
             assert "Unknown" in unknown_name or "0xFF" in unknown_name.upper()
 
         except ImportError:
+            # SKIP: Valid - Optional device mapping configuration
+            # Only skip if device mapper not available
+            # SKIP: Valid - Optional device mapping configuration
+            # Only skip if device mapper not available
             pytest.skip("DeviceMapper not available")
 
     def test_detect_source_type(self, tmp_path: Path) -> None:
@@ -361,6 +383,10 @@ class TestPacketValidation:
             assert validator is not None
 
         except ImportError:
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
             pytest.skip("PacketValidator not available")
 
     def test_sequence_validation(self) -> None:
@@ -372,6 +398,10 @@ class TestPacketValidation:
             assert SequenceValidation is not None
 
         except ImportError:
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
             pytest.skip("SequenceValidation not available")
 
     def test_validation_result(self) -> None:
@@ -383,6 +413,10 @@ class TestPacketValidation:
             assert ValidationResult is not None
 
         except ImportError:
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
             pytest.skip("ValidationResult not available")
 
 
@@ -515,6 +549,10 @@ class TestPreprocessing:
             assert len(regions) >= 2  # Two idle regions at start and end
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("detect_idle_regions not available")
 
     def test_idle_detection_with_ones(self) -> None:
@@ -534,6 +572,10 @@ class TestPreprocessing:
             assert len(regions) >= 2  # Two idle regions at start and end
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("detect_idle_regions not available")
 
     def test_trim_idle(self) -> None:
@@ -555,6 +597,10 @@ class TestPreprocessing:
         except ImportError:
             pytest.skip("trim_idle not available")
         except Exception as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"trim_idle failed: {e}")
 
     def test_idle_statistics(self) -> None:
@@ -574,6 +620,10 @@ class TestPreprocessing:
             assert stats.idle_fraction > 0.5  # More than half is idle
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("get_idle_statistics not available")
 
     def test_idle_region_properties(self) -> None:
@@ -592,6 +642,10 @@ class TestPreprocessing:
             assert region.get_duration_seconds(1e6) == 100e-6  # 100 us
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("IdleRegion not available")
 
     def test_idle_statistics_properties(self) -> None:

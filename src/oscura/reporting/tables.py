@@ -21,6 +21,138 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
 
+def _build_table_headers(show_spec: bool, show_margin: bool, show_status: bool) -> list[str]:
+    """Build table headers based on display options.
+
+    Args:
+        show_spec: Include specification column.
+        show_margin: Include margin column.
+        show_status: Include status column.
+
+    Returns:
+        List of header strings.
+    """
+    headers = ["Parameter", "Value"]
+    if show_spec:
+        headers.append("Specification")
+    if show_margin:
+        headers.append("Margin")
+    if show_status:
+        headers.append("Status")
+    return headers
+
+
+def _format_value_cell(value: Any, unit: str, formatter: NumberFormatter) -> str:
+    """Format measurement value cell.
+
+    Args:
+        value: Measurement value.
+        unit: Unit string.
+        formatter: Number formatter instance.
+
+    Returns:
+        Formatted value string.
+    """
+    if value is None:
+        return "N/A"
+    return formatter.format(value, unit)
+
+
+def _format_spec_cell(spec: Any, spec_type: str, unit: str, formatter: NumberFormatter) -> str:
+    """Format specification cell with comparison operator.
+
+    Args:
+        spec: Specification value.
+        spec_type: Spec type ("max", "min", or "exact").
+        unit: Unit string.
+        formatter: Number formatter instance.
+
+    Returns:
+        Formatted specification string.
+    """
+    if spec is None:
+        return "-"
+
+    prefix = "<" if spec_type == "max" else ">" if spec_type == "min" else "="
+    return f"{prefix}{formatter.format(spec, unit)}"
+
+
+def _calculate_margin(value: float, spec: float, spec_type: str) -> str:
+    """Calculate margin percentage between value and spec.
+
+    Args:
+        value: Measured value.
+        spec: Specification limit.
+        spec_type: Specification type ("max" or "min").
+
+    Returns:
+        Formatted margin percentage string.
+    """
+    if spec == 0:
+        return "-"
+
+    if spec_type == "max":
+        margin = (spec - value) / spec * 100
+    else:
+        margin = (value - spec) / spec * 100
+
+    return f"{margin:.1f}%"
+
+
+def _build_measurement_row(
+    name: str,
+    meas: dict[str, Any],
+    formatter: NumberFormatter,
+    show_spec: bool,
+    show_margin: bool,
+    show_status: bool,
+) -> list[str]:
+    """Build single measurement table row.
+
+    Args:
+        name: Measurement parameter name.
+        meas: Measurement data dictionary.
+        formatter: Number formatter instance.
+        show_spec: Include specification column.
+        show_margin: Include margin column.
+        show_status: Include status column.
+
+    Returns:
+        List of cell values for table row.
+    """
+    row = [name]
+    value = meas.get("value")
+    unit = meas.get("unit", "")
+
+    # Value column
+    row.append(_format_value_cell(value, unit, formatter))
+
+    # Specification column
+    if show_spec:
+        spec = meas.get("spec")
+        spec_type = meas.get("spec_type", "max")
+        row.append(_format_spec_cell(spec, spec_type, unit, formatter))
+
+    # Margin column
+    if show_margin:
+        spec = meas.get("spec")
+        if value is not None and spec is not None:
+            spec_type = meas.get("spec_type", "max")
+            row.append(_calculate_margin(value, spec, spec_type))
+        else:
+            row.append("-")
+
+    # Status column
+    if show_status:
+        passed = meas.get("passed", True)
+        if value is None:
+            row.append("N/A")
+        else:
+            row.append("✓ PASS" if passed else "✗ FAIL")
+
+    return row
+
+
 def create_measurement_table(
     measurements: dict[str, Any],
     *,
@@ -56,62 +188,14 @@ def create_measurement_table(
     References:
         REPORT-004, REPORT-006
     """
-    # Build table headers
-    headers = ["Parameter", "Value"]
-    if show_spec:
-        headers.append("Specification")
-    if show_margin:
-        headers.append("Margin")
-    if show_status:
-        headers.append("Status")
-
-    # Build table rows
-    rows = []
+    headers = _build_table_headers(show_spec, show_margin, show_status)
     formatter = NumberFormatter(sig_figs=3)
 
-    for name, meas in measurements.items():
-        row = [name]
-
-        # Value
-        value = meas.get("value")
-        unit = meas.get("unit", "")
-        if value is not None:
-            row.append(formatter.format(value, unit))
-        else:
-            row.append("N/A")
-
-        # Specification
-        if show_spec:
-            spec = meas.get("spec")
-            spec_type = meas.get("spec_type", "max")
-            if spec is not None:
-                prefix = "<" if spec_type == "max" else ">" if spec_type == "min" else "="
-                row.append(f"{prefix}{formatter.format(spec, unit)}")
-            else:
-                row.append("-")
-
-        # Margin
-        if show_margin:
-            spec = meas.get("spec")
-            if value is not None and spec is not None and spec != 0:
-                spec_type = meas.get("spec_type", "max")
-                if spec_type == "max":
-                    margin = (spec - value) / spec * 100
-                else:
-                    margin = (value - spec) / spec * 100
-                row.append(f"{margin:.1f}%")
-            else:
-                row.append("-")
-
-        # Status
-        if show_status:
-            passed = meas.get("passed", True)
-            if value is None:
-                row.append("N/A")
-            else:
-                row.append("✓ PASS" if passed else "✗ FAIL")
-
-        rows.append(row)
+    # Build rows
+    rows = [
+        _build_measurement_row(name, meas, formatter, show_spec, show_margin, show_status)
+        for name, meas in measurements.items()
+    ]
 
     # Sort if requested
     if sort_by and sort_by in headers:

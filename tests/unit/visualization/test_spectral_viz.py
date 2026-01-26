@@ -912,6 +912,7 @@ class TestPlotSpectrogram:
         mock_spectrogram.return_value = mock_spectrogram_result
         mock_fig = MagicMock()
         mock_ax = MagicMock()
+        mock_ax.get_figure.return_value = mock_fig  # Connect ax to fig
         mock_plt.subplots.return_value = (mock_fig, mock_ax)
 
         # Create a mock colorbar

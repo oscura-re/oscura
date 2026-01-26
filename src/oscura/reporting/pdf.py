@@ -132,108 +132,73 @@ def generate_pdf_report(
 def _create_styles() -> dict[str, ParagraphStyle]:
     """Create PDF paragraph styles."""
     base_styles = getSampleStyleSheet()
+    base = base_styles["Normal"]
 
-    # Create a new dict to hold our custom styles
-    styles: dict[str, ParagraphStyle] = {}
-
-    # Copy base styles we want to keep
-    styles["Normal"] = base_styles["Normal"]
-
-    # Title style (24pt) - override default
-    styles["Title"] = ParagraphStyle(
-        name="Title",
-        parent=base_styles["Normal"],
-        fontSize=24,
-        textColor=colors.HexColor("#2c3e50"),
-        spaceAfter=12,
-        alignment=1,  # Center
-        fontName="Helvetica-Bold",
-    )
-
-    # Heading styles. - override defaults
-    styles["Heading1"] = ParagraphStyle(
-        name="Heading1",
-        parent=base_styles["Normal"],
-        fontSize=18,
-        textColor=colors.HexColor("#2c3e50"),
-        spaceBefore=12,
-        spaceAfter=6,
-        fontName="Helvetica-Bold",
-    )
-
-    styles["Heading2"] = ParagraphStyle(
-        name="Heading2",
-        parent=base_styles["Normal"],
-        fontSize=14,
-        textColor=colors.HexColor("#34495e"),
-        spaceBefore=10,
-        spaceAfter=4,
-        fontName="Helvetica-Bold",
-    )
-
-    styles["Heading3"] = ParagraphStyle(
-        name="Heading3",
-        parent=base_styles["Normal"],
-        fontSize=12,
-        textColor=colors.HexColor("#34495e"),
-        spaceBefore=8,
-        spaceAfter=4,
-        fontName="Helvetica-Bold",
-    )
-
-    # Body text (10pt, serif, 1.5 line spacing)
-    styles["Body"] = ParagraphStyle(
-        name="Body",
-        parent=base_styles["Normal"],
-        fontSize=10,
-        leading=15,  # 1.5 line spacing
-        fontName="Times-Roman",
-    )
-
-    # Metadata style
-    styles["Metadata"] = ParagraphStyle(
-        name="Metadata",
-        parent=base_styles["Normal"],
-        fontSize=9,
-        textColor=colors.HexColor("#555555"),
-        fontName="Helvetica",
-    )
-
-    # TOC style
-    styles["TOC"] = ParagraphStyle(
-        name="TOC",
-        parent=base_styles["Normal"],
-        fontSize=10,
-        leftIndent=20,
-        spaceAfter=4,
-    )
-
-    # Pass/Fail styles with visual emphasis.
-    styles["Pass"] = ParagraphStyle(
-        name="Pass",
-        parent=base_styles["Normal"],
-        fontSize=10,
-        textColor=colors.HexColor("#27ae60"),
-        fontName="Helvetica-Bold",
-    )
-
-    styles["Fail"] = ParagraphStyle(
-        name="Fail",
-        parent=base_styles["Normal"],
-        fontSize=10,
-        textColor=colors.HexColor("#e74c3c"),
-        fontName="Helvetica-Bold",
-    )
-
-    styles["Warning"] = ParagraphStyle(
-        name="Warning",
-        parent=base_styles["Normal"],
-        fontSize=10,
-        textColor=colors.HexColor("#f39c12"),
-        fontName="Helvetica-Bold",
-    )
-
-    return styles
+    return {
+        "Normal": base,
+        "Title": ParagraphStyle(
+            "Title",
+            base,
+            fontSize=24,
+            textColor=colors.HexColor("#2c3e50"),
+            spaceAfter=12,
+            alignment=1,
+            fontName="Helvetica-Bold",
+        ),
+        "Heading1": ParagraphStyle(
+            "Heading1",
+            base,
+            fontSize=18,
+            textColor=colors.HexColor("#2c3e50"),
+            spaceBefore=12,
+            spaceAfter=6,
+            fontName="Helvetica-Bold",
+        ),
+        "Heading2": ParagraphStyle(
+            "Heading2",
+            base,
+            fontSize=14,
+            textColor=colors.HexColor("#34495e"),
+            spaceBefore=10,
+            spaceAfter=4,
+            fontName="Helvetica-Bold",
+        ),
+        "Heading3": ParagraphStyle(
+            "Heading3",
+            base,
+            fontSize=12,
+            textColor=colors.HexColor("#34495e"),
+            spaceBefore=8,
+            spaceAfter=4,
+            fontName="Helvetica-Bold",
+        ),
+        "Body": ParagraphStyle("Body", base, fontSize=10, leading=15, fontName="Times-Roman"),
+        "Metadata": ParagraphStyle(
+            "Metadata", base, fontSize=9, textColor=colors.HexColor("#555555"), fontName="Helvetica"
+        ),
+        "TOC": ParagraphStyle("TOC", base, fontSize=10, leftIndent=20, spaceAfter=4),
+        "Pass": ParagraphStyle(
+            "Pass",
+            base,
+            fontSize=10,
+            textColor=colors.HexColor("#27ae60"),
+            fontName="Helvetica-Bold",
+        ),
+        "Fail": ParagraphStyle(
+            "Fail",
+            base,
+            fontSize=10,
+            textColor=colors.HexColor("#e74c3c"),
+            fontName="Helvetica-Bold",
+        ),
+        "Warning": ParagraphStyle(
+            "Warning",
+            base,
+            fontSize=10,
+            textColor=colors.HexColor("#f39c12"),
+            fontName="Helvetica-Bold",
+        ),
+    }
 
 
 def _format_metadata(report: Report) -> str:

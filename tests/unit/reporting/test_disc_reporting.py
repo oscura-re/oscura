@@ -10,9 +10,9 @@ import numpy as np
 from oscura.core.types import TraceMetadata, WaveformTrace
 from oscura.discovery.comparison import TraceDiff, compare_traces
 from oscura.guidance.recommender import Recommendation, suggest_next_steps
+from oscura.jupyter.ui.progressive_display import ProgressiveDisplay
 from oscura.reporting.auto_report import generate_report as generate_auto_report
 from oscura.reporting.summary_generator import Finding, Summary, generate_summary
-from oscura.ui.progressive_display import ProgressiveDisplay
 
 pytestmark = pytest.mark.unit
 

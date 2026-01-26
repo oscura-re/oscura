@@ -91,7 +91,7 @@ def stream_records(
         buffer: BinaryIO = io.BytesIO(file_or_buffer)
         should_close = True
     elif isinstance(file_or_buffer, str | Path):
-        buffer = open(file_or_buffer, "rb")  # noqa: SIM115
+        buffer = open(file_or_buffer, "rb")
         should_close = True
     else:
         buffer = file_or_buffer
@@ -144,7 +144,7 @@ def stream_packets(
         buffer: BinaryIO = io.BytesIO(file_or_buffer)
         should_close = True
     elif isinstance(file_or_buffer, str | Path):
-        buffer = open(file_or_buffer, "rb")  # noqa: SIM115
+        buffer = open(file_or_buffer, "rb")
         should_close = True
     else:
         buffer = file_or_buffer
@@ -210,7 +210,7 @@ def stream_delimited(
         buffer: BinaryIO = io.BytesIO(file_or_buffer)
         should_close = True
     elif isinstance(file_or_buffer, str | Path):
-        buffer = open(file_or_buffer, "rb")  # noqa: SIM115
+        buffer = open(file_or_buffer, "rb")
         should_close = True
     else:
         buffer = file_or_buffer
@@ -326,7 +326,7 @@ def take(source: Iterator[T], n: int) -> Iterator[T]:
         if count >= n:
             break
         yield item
-        count += 1  # noqa: SIM113
+        count += 1
 
 
 def skip(source: Iterator[T], n: int) -> Iterator[T]:
@@ -343,7 +343,7 @@ def skip(source: Iterator[T], n: int) -> Iterator[T]:
     for item in source:
         if count >= n:
             yield item
-        count += 1  # noqa: SIM113
+        count += 1
 
 
 __all__ = [

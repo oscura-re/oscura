@@ -41,7 +41,7 @@ Oscura automates complete workflows in Python:
 - **Hypothesis-driven RE workflows** with differential analysis and confidence scoring
 - **Automatic Wireshark dissector generation** from inferred protocols
 - **DBC file generation** from raw CAN captures (no manual signal definition)
-- **Multi-format file loading** (Tektronix, Rigol, LeCroy, Sigrok, BLF, PCAP, ChipWhisperer)
+- **Multi-format file loading** (Tektronix, Rigol, Sigrok, BLF, PCAP, ChipWhisperer)
 - **CRC/checksum recovery** from message-checksum pairs
 - **Unified Python API** eliminating tool-hopping and format conversions
 
@@ -136,16 +136,15 @@ print(f"Standard: {crc.standard_name or 'Custom'}")  # Matches CRC-8, CRC-16, et
 ```python
 import oscura as osc
 
-# Load Tektronix/Rigol/LeCroy waveform
+# Load Tektronix/Rigol waveform
 trace = osc.load("mystery_device.wfm")
 
 # Statistical protocol detection (timing, voltage levels, bit patterns)
-decoder = osc.auto_detect_protocol(trace)
-messages = decoder.decode(trace)
-print(f"Detected {decoder.name}: {len(messages)} messages decoded")
+result = osc.auto_decode(trace)
+print(f"Detected {result.protocol}: {len(result.frames)} frames decoded")
 ```
 
-[**112 working demonstrations**](demonstrations/) across 19 categories show complete workflows in depth.
+[**6 working examples**](examples/) demonstrating core workflows and analysis patterns.
 
 ---
 
@@ -158,7 +157,7 @@ print(f"Detected {decoder.name}: {len(messages)} messages decoded")
 | **Hypothesis-Driven RE**              | BlackBoxSession with differential analysis, field detection, confidence scoring, audit trails     | Systematic unknown protocol analysis vs manual guesswork                                 |
 | **DBC Auto-Generation**               | Statistical CAN signal inference from captures → DBC export                                       | Open-source alternative to Vector CANalyzer ($$$)                                        |
 | **Wireshark Dissector Generation**    | Infer protocol → generate validated Lua dissector                                                 | End-to-end automation (others require manual YAML specs)                                 |
-| **Multi-Format File Loading**         | Oscilloscopes (Tektronix WFM, Rigol, LeCroy TRC), logic analyzers (Sigrok, VCD), automotive BLF  | Eliminate format conversion steps                                                        |
+| **Multi-Format File Loading**         | Oscilloscopes (Tektronix WFM, Rigol), logic analyzers (Sigrok, VCD), automotive BLF  | Eliminate format conversion steps                                                        |
 | **Statistical Protocol Auto-Detect**  | Waveform analysis (timing, voltage, patterns) → protocol identification                           | Goes beyond sigrok's signal name matching                                                |
 | **Unified Workflow API**              | Single Python script: oscilloscope file → decode → infer → export dissector                       | Replace 7-tool chains with one script                                                    |
 | **CRC Recovery**                      | Message-checksum pairs → polynomial, init, XOR out, reflection                                    | Practical automation (CRC RevEng is more robust for edge cases)                          |
@@ -224,7 +223,7 @@ print(f"Detected {decoder.name}: {len(messages)} messages decoded")
 - **Reproducible workflows** with evidence tracking and audit trails
 - **Statistical validation** with confidence scoring
 - **IEEE-based measurements** for publishable results (181/1241/1459/2414)
-- **302 unit tests, 80%+ coverage** ensure reliability
+- **22,000+ comprehensive tests, 80%+ coverage** ensure reliability
 
 ### Industrial & Automotive
 
@@ -258,7 +257,7 @@ Oscura integrates proven open-source tools:
 
 Production-ready validation:
 
-- **302 unit tests** with property-based validation (Hypothesis)
+- **22,000+ comprehensive tests** with property-based validation (Hypothesis)
 - **80%+ code coverage** with branch coverage enabled
 - **Pre-commit hooks** (format, lint, type check) enforce consistency
 - **Merge queue CI** prevents untested code from landing
@@ -292,53 +291,31 @@ Built for extensibility:
 
 ## Learn By Doing
 
-### 112 Demonstrations Across 19 Categories
+### Working Examples
 
-Every demo includes working code, validation, and comprehensive explanations.
+Core functionality demonstrated with working code:
 
-**Getting Started (Beginner):**
+- [Side-Channel Analysis](examples/side_channel_analysis_demo.py) - DPA/CPA attacks, trace analysis
+- [ML Signal Classification](examples/ml_signal_classification_demo.py) - Machine learning for signal identification
+- [Wireshark Dissector Generation](examples/export/wireshark_dissector_demo.py) - Auto-generate protocol dissectors
+- [DBC File Generation](examples/automotive/dbc_generation_example.py) - CAN bus DBC export
+- [LIN Bus Analysis](examples/automotive/lin_analysis_example.py) - LIN protocol decoding
+- [Web Dashboard](examples/web_dashboard_example.py) - Interactive visualization
 
-- [Waveform Analysis](demos/01_waveform_analysis/) - Load oscilloscope captures, basic measurements
-- [File Format I/O](demos/02_file_format_io/) - CSV, HDF5, NumPy, VCD, custom formats
-- [Serial Protocols](demos/04_serial_protocols/) - UART, SPI, I2C with auto-detection
-- [Protocol Decoding](demos/05_protocol_decoding/) - Auto-detect unknown protocols
-
-**Reverse Engineering (Intermediate):**
-
-- [Protocol Inference](demos/07_protocol_inference/) - State machines, CRC recovery, field detection
-- [Automotive Protocols](demos/08_automotive_protocols/) - CAN, LIN, FlexRay analysis
-- [Signal RE](demos/17_signal_reverse_engineering/) - Complete unknown signal workflow
-- [Advanced Inference](demos/18_advanced_inference/) - Bayesian methods, protocol DSL
-
-**Security & Compliance (Advanced):**
-
-- [Spectral Compliance](demos/12_spectral_compliance/) - FFT, THD, SNR, SINAD (IEEE 1241)
-- [Jitter Analysis](demos/13_jitter_analysis/) - TIE, RJ/DJ decomposition (IEEE 2414)
-- [Power Analysis](demos/14_power_analysis/) - DC-DC converters, efficiency (IEEE 1459)
-- [Signal Integrity](demos/15_signal_integrity/) - TDR, S-parameters, setup/hold timing
-- [EMC Compliance](demos/16_emc_compliance/) - CISPR, FCC, MIL-STD testing
-
-**Complete Workflows (Expert):**
-
-- [End-to-End Pipelines](demos/19_complete_workflows/) - Unknown signal → documented protocol
-
-### Run Your First Demo
+### Run Your First Example
 
 ```bash
-# Generate synthetic test data
-python demos/generate_all_demo_data.py
+# Install development dependencies
+./scripts/setup.sh
 
-# Analyze oscilloscope waveforms
-python demos/01_waveform_analysis/comprehensive_wfm_analysis.py
+# Side-channel analysis demo
+python examples/side_channel_analysis_demo.py
 
-# Reverse engineer unknown protocol
-python demos/07_protocol_inference/state_machine_learning.py
-
-# Automotive CAN analysis
-python demos/08_automotive_protocols/can_differential_analysis.py
+# ML signal classification
+python examples/ml_signal_classification_demo.py
 ```
 
-[**Browse all demos**](demos/) | [Demo index with descriptions](demos/README.md)
+[**Browse all examples**](examples/)
 
 ---
 
@@ -359,9 +336,6 @@ oscura compare baseline.wfm modified.wfm
 
 # Interactive REPL for exploration
 oscura shell
-
-# Generate synthetic test signals
-oscura generate --protocol spi --frequency 1MHz --output test.bin
 ```
 
 [**Full CLI reference**](docs/cli.md)
@@ -470,7 +444,7 @@ python3 .claude/hooks/validate_all.py # Must show 5/5 passing
 
 ## Project Status
 
-**Current Version:** [0.5.1](https://github.com/oscura-re/oscura/releases/latest) (2026-01-24)
+**Current Version:** [0.6.0](https://github.com/oscura-re/oscura/releases/latest) (2026-01-25)
 
 **Active Development Areas:**
 
@@ -496,7 +470,7 @@ If Oscura contributes to your research, please cite:
   author = {Oscura Contributors},
   year = {2026},
   url = {https://github.com/oscura-re/oscura},
-  version = {0.5.1}
+  version = {0.6.0}
 }
 ```
 

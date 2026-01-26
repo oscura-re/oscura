@@ -47,7 +47,7 @@ def load_mdf(file_path: Path | str) -> CANMessageList:
         >>> print(f"Unique IDs: {len(messages.unique_ids())}")
     """
     try:
-        from asammdf import MDF  # type: ignore[import-untyped]
+        from asammdf import MDF
     except ImportError as e:
         raise ImportError(
             "asammdf is required for MDF/MF4 file support. "
@@ -142,61 +142,102 @@ def _extract_structured_can_frames(
         timestamps: Array of timestamps.
         messages: CANMessageList to append to.
     """
-    # Common field names in structured CAN logging
-    id_fields = ["ID", "id", "BusID", "Identifier", "ArbitrationID"]
-    data_fields = ["Data", "data", "DataBytes", "Payload"]
-    dlc_fields = ["DLC", "dlc", "DataLength"]
-
-    # Find which fields are present
     field_names = samples.dtype.names
     if not field_names:
         return
 
-    id_field = next((f for f in id_fields if f in field_names), None)
-    data_field = next((f for f in data_fields if f in field_names), None)
-    dlc_field = next((f for f in dlc_fields if f in field_names), None)
-
-    if not id_field:
+    field_map = _find_can_field_mapping(field_names)
+    if not field_map["id_field"]:
         return
 
     for i in range(len(samples)):
         try:
-            # Extract CAN ID
-            arb_id = int(samples[id_field][i])
-
-            # Extract data bytes
-            if data_field:
-                data_bytes = samples[data_field][i]
-                if isinstance(data_bytes, bytes):
-                    data = data_bytes
-                else:
-                    # Convert array to bytes
-                    data = bytes(data_bytes)
-            else:
-                data = b""
-
-            # Extract DLC if available
-            if dlc_field:
-                dlc = int(samples[dlc_field][i])
-                data = data[:dlc]
-
-            # Determine if extended ID
-            is_extended = arb_id > 0x7FF
-
-            # Create message
-            can_msg = CANMessage(
-                arbitration_id=arb_id,
-                timestamp=float(timestamps[i]),
-                data=data,
-                is_extended=is_extended,
-                is_fd=False,  # MDF doesn't typically indicate CAN-FD
-                channel=0,  # Channel info not always available in MDF
-            )
+            can_msg = _extract_can_message_from_sample(samples, timestamps, i, field_map)
             messages.append(can_msg)
-
         except (IndexError, ValueError, TypeError):
-            # Skip malformed frames
             continue
+
+
+def _find_can_field_mapping(field_names: tuple[str, ...]) -> dict[str, str | None]:
+    """Find mapping of CAN field names in structured array.
+
+    Args:
+        field_names: Field names from structured array.
+
+    Returns:
+        Dictionary mapping field types to actual field names.
+    """
+    id_fields = ["ID", "id", "BusID", "Identifier", "ArbitrationID"]
+    data_fields = ["Data", "data", "DataBytes", "Payload"]
+    dlc_fields = ["DLC", "dlc", "DataLength"]
+
+    return {
+        "id_field": next((f for f in id_fields if f in field_names), None),
+        "data_field": next((f for f in data_fields if f in field_names), None),
+        "dlc_field": next((f for f in dlc_fields if f in field_names), None),
+    }
+
+
+def _extract_can_message_from_sample(
+    samples: npt.NDArray[Any],
+    timestamps: npt.NDArray[Any],
+    index: int,
+    field_map: dict[str, str | None],
+) -> CANMessage:
+    """Extract single CAN message from sample.
+
+    Args:
+        samples: Structured array.
+        timestamps: Timestamp array.
+        index: Sample index.
+        field_map: Field name mapping.
+
+    Returns:
+        CANMessage instance.
+    """
+    arb_id = int(samples[field_map["id_field"]][index])
+    data = _extract_can_data_field(samples, index, field_map)
+    is_extended = arb_id > 0x7FF
+
+    return CANMessage(
+        arbitration_id=arb_id,
+        timestamp=float(timestamps[index]),
+        data=data,
+        is_extended=is_extended,
+        is_fd=False,
+        channel=0,
+    )
+
+
+def _extract_can_data_field(
+    samples: npt.NDArray[Any], index: int, field_map: dict[str, str | None]
+) -> bytes:
+    """Extract data bytes from sample.
+
+    Args:
+        samples: Structured array.
+        index: Sample index.
+        field_map: Field name mapping.
+
+    Returns:
+        Data bytes.
+    """
+    data_field = field_map["data_field"]
+    if not data_field:
+        return b""
+
+    data_bytes = samples[data_field][index]
+    if isinstance(data_bytes, bytes):
+        data = data_bytes
+    else:
+        data = bytes(data_bytes)
+
+    dlc_field = field_map["dlc_field"]
+    if dlc_field:
+        dlc = int(samples[dlc_field][index])
+        data = data[:dlc]
+
+    return data
 
 
 def _extract_raw_can_frames(

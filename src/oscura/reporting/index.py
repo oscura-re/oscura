@@ -312,26 +312,61 @@ class IndexGenerator:
 
         Requirements:
         """
-        # Extract timestamp properly from output_dir name
-        # Format is: YYYYMMDD_HHMMSS_name_analysis
-        dir_name = result.output_dir.name
-        timestamp = "N/A"
-        if "_" in dir_name:
-            parts = dir_name.split("_")
-            if len(parts) >= 2:
-                date_part = parts[0]  # YYYYMMDD
-                time_part = parts[1]  # HHMMSS
-                if len(date_part) == 8 and len(time_part) == 6:
-                    try:
-                        timestamp = (
-                            f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]} "
-                            f"{time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}"
-                        )
-                    except (IndexError, ValueError):
-                        timestamp = f"{date_part}_{time_part}"
+        # Extract timestamp and basic metadata
+        timestamp = self._extract_timestamp(result.output_dir.name)
+        context = self._build_basic_metadata(result, timestamp)
 
-        # Basic metadata
-        context: dict[str, Any] = {
+        # Build domain information
+        domains = self._build_domains_info(result)
+        context["domains"] = domains
+
+        # Build error information
+        if result.errors:
+            context["errors"] = self._build_errors_info(result.errors)
+
+        return context
+
+    def _extract_timestamp(self, dir_name: str) -> str:
+        """Extract formatted timestamp from directory name.
+
+        Args:
+            dir_name: Directory name in format YYYYMMDD_HHMMSS_name_analysis.
+
+        Returns:
+            Formatted timestamp string.
+        """
+        if "_" not in dir_name:
+            return "N/A"
+
+        parts = dir_name.split("_")
+        if len(parts) < 2:
+            return "N/A"
+
+        date_part = parts[0]  # YYYYMMDD
+        time_part = parts[1]  # HHMMSS
+
+        if len(date_part) == 8 and len(time_part) == 6:
+            try:
+                return (
+                    f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]} "
+                    f"{time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}"
+                )
+            except (IndexError, ValueError):
+                return f"{date_part}_{time_part}"
+
+        return "N/A"
+
+    def _build_basic_metadata(self, result: AnalysisResult, timestamp: str) -> dict[str, Any]:
+        """Build basic metadata context.
+
+        Args:
+            result: Analysis result.
+            timestamp: Formatted timestamp.
+
+        Returns:
+            Dictionary with basic metadata.
+        """
+        return {
             "title": "Analysis Report",
             "input_name": result.input_file or "In-Memory Data",
             "input_size": self._format_size(result.input_file),
@@ -345,44 +380,23 @@ class IndexGenerator:
             "has_errors": len(result.errors) > 0,
         }
 
-        # Build domain information
-        # domain_summaries contains {AnalysisDomain: {func_name: result, ...}}
+    def _build_domains_info(self, result: AnalysisResult) -> list[dict[str, Any]]:
+        """Build domain information list.
+
+        Args:
+            result: Analysis result.
+
+        Returns:
+            List of domain dictionaries.
+        """
         domains: list[dict[str, Any]] = []
+
         for domain, domain_results in result.domain_summaries.items():
-            # Count successful analyses in this domain
-            # domain_results is a dict of {function_name: result_value}
             analyses_count = len(domain_results) if isinstance(domain_results, dict) else 0
 
-            # Find plots for this domain
-            domain_plots = []
-            if result.plot_paths:
-                domain_id = domain.value
-                for plot_path in result.plot_paths:
-                    # Check if plot belongs to this domain
-                    plot_str = str(plot_path)
-                    if f"/{domain_id}/" in plot_str or plot_str.startswith(domain_id):
-                        domain_plots.append(
-                            {
-                                "title": plot_path.stem.replace("_", " ").title(),
-                                "path": str(plot_path.name)
-                                if plot_path.parent == result.output_dir
-                                else str(plot_path.relative_to(result.output_dir)),
-                                "filename": plot_path.name,
-                            }
-                        )
-
-            # Find data files for this domain
-            domain_data_files = []
-            domain_dir = result.domain_dirs.get(domain)
-            if domain_dir and domain_dir.exists():
-                for data_file in domain_dir.glob("*.json"):
-                    domain_data_files.append(
-                        {
-                            "filename": data_file.name,
-                            "path": str(data_file.relative_to(result.output_dir)),
-                            "format": "JSON",
-                        }
-                    )
+            # Find plots and data files for this domain
+            domain_plots = self._find_domain_plots(result, domain)
+            domain_data_files = self._find_domain_data_files(result, domain)
 
             # Build key findings from results
             key_findings = self._extract_key_findings(domain_results)
@@ -399,22 +413,80 @@ class IndexGenerator:
             }
             domains.append(domain_data)
 
-        context["domains"] = domains
+        return domains
 
-        # Build error information
-        if result.errors:
-            errors: list[dict[str, Any]] = []
-            for error in result.errors:
-                errors.append(
+    def _find_domain_plots(self, result: AnalysisResult, domain: Any) -> list[dict[str, Any]]:
+        """Find plots for a specific domain.
+
+        Args:
+            result: Analysis result.
+            domain: Analysis domain.
+
+        Returns:
+            List of plot dictionaries.
+        """
+        domain_plots: list[dict[str, Any]] = []
+        if not result.plot_paths:
+            return domain_plots
+
+        domain_id = domain.value
+        for plot_path in result.plot_paths:
+            plot_str = str(plot_path)
+            if f"/{domain_id}/" in plot_str or plot_str.startswith(domain_id):
+                domain_plots.append(
                     {
-                        "domain": error.domain.value,
-                        "analysis_name": error.function,
-                        "error_message": error.error_message,
+                        "title": plot_path.stem.replace("_", " ").title(),
+                        "path": str(plot_path.name)
+                        if plot_path.parent == result.output_dir
+                        else str(plot_path.relative_to(result.output_dir)),
+                        "filename": plot_path.name,
                     }
                 )
-            context["errors"] = errors
 
-        return context
+        return domain_plots
+
+    def _find_domain_data_files(self, result: AnalysisResult, domain: Any) -> list[dict[str, Any]]:
+        """Find data files for a specific domain.
+
+        Args:
+            result: Analysis result.
+            domain: Analysis domain.
+
+        Returns:
+            List of data file dictionaries.
+        """
+        domain_data_files = []
+        domain_dir = result.domain_dirs.get(domain)
+
+        if domain_dir and domain_dir.exists():
+            for data_file in domain_dir.glob("*.json"):
+                domain_data_files.append(
+                    {
+                        "filename": data_file.name,
+                        "path": str(data_file.relative_to(result.output_dir)),
+                        "format": "JSON",
+                    }
+                )
+
+        return domain_data_files
+
+    def _build_errors_info(self, errors: list[Any]) -> list[dict[str, Any]]:
+        """Build error information list.
+
+        Args:
+            errors: List of error objects.
+
+        Returns:
+            List of error dictionaries.
+        """
+        return [
+            {
+                "domain": error.domain.value,
+                "analysis_name": error.function,
+                "error_message": error.error_message,
+            }
+            for error in errors
+        ]
 
     def _extract_key_findings(self, domain_results: dict[str, Any]) -> list[str]:
         """Extract key findings from domain results for display.

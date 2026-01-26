@@ -930,3 +930,19 @@ class TestCoverageAndCompleteness:
     def test_all_result_types_instantiated(self) -> None:
         """Verify all result types are instantiated in tests."""
         # This is verified through the fixture-based tests above
+        from oscura.analyzers.jitter.classification import (
+            JitterClassificationResult,
+            JitterComponentEstimate,
+        )
+
+        # Verify result classes are instantiable
+        result = JitterClassificationResult(
+            rj_estimate=JitterComponentEstimate(value=0.1, confidence=0.9, unit="UI"),
+            dj_estimate=JitterComponentEstimate(value=0.2, confidence=0.85, unit="UI"),
+            tj_estimate=0.3,
+            classification_method="dual_dirac",
+            ber_target=1e-12,
+        )
+        assert result.tj_estimate == 0.3
+        assert result.rj_estimate.value == 0.1
+        assert result.dj_estimate.value == 0.2

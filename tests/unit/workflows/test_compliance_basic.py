@@ -6,7 +6,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from oscura.compliance import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.validation.compliance import (
     AVAILABLE_MASKS,
     ComplianceReportFormat,
     ComplianceResult,
@@ -18,7 +19,6 @@ from oscura.compliance import (
     generate_compliance_report,
     load_limit_mask,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

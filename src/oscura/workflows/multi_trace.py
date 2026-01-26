@@ -107,7 +107,7 @@ class MultiTraceWorkflow:
         if not self.pattern:
             return
 
-        paths = glob_func(self.pattern)  # noqa: PTH207
+        paths = glob_func(self.pattern)
         if not paths:
             raise OscuraError(f"No files match pattern: {self.pattern}")
 
@@ -131,20 +131,20 @@ class MultiTraceWorkflow:
 
         try:
             if ext == ".csv":
-                from oscura.loaders.csv import (  # type: ignore[import-not-found]
-                    load_csv,  # type: ignore[import-not-found]
+                from oscura.loaders.csv import (
+                    load_csv,
                 )
 
                 return load_csv(str(path))
             elif ext == ".bin":
-                from oscura.loaders.binary import (  # type: ignore[import-not-found]
-                    load_binary,  # type: ignore[import-not-found]
+                from oscura.loaders.binary import (
+                    load_binary,
                 )
 
                 return load_binary(str(path))
             elif ext in (".h5", ".hdf5"):
-                from oscura.loaders.hdf5 import (  # type: ignore[import-not-found]
-                    load_hdf5,  # type: ignore[import-not-found]
+                from oscura.loaders.hdf5 import (
+                    load_hdf5,
                 )
 
                 return load_hdf5(str(path))
@@ -152,7 +152,7 @@ class MultiTraceWorkflow:
                 raise OscuraError(f"Unsupported format: {ext}")
 
         except ImportError as e:
-            raise OscuraError(f"Loader not available for {ext}: {e}")  # noqa: B904
+            raise OscuraError(f"Loader not available for {ext}: {e}")
 
     def _iter_traces(self, lazy: bool = False) -> Iterator[tuple[str, Any]]:
         """Iterate over traces.
@@ -495,7 +495,7 @@ def load_all(pattern: str, lazy: bool = True) -> list[Any]:
     Raises:
         OscuraError: If no traces found
     """
-    paths = glob_func(pattern)  # noqa: PTH207
+    paths = glob_func(pattern)
     if not paths:
         raise OscuraError(f"No files match pattern: {pattern}")
 

@@ -70,6 +70,60 @@ class NumberFormatter:
         self.precision = self.sig_figs
         self.use_si = self.auto_scale
 
+    def _format_without_scaling(self, value: float, places: int, unit: str) -> str:
+        """Format value without SI scaling.
+
+        Args:
+            value: Value to format
+            places: Decimal places
+            unit: Unit string
+
+        Returns:
+            Formatted string
+        """
+        abs_val = abs(value)
+
+        if abs_val != 0 and abs_val < 1:
+            from math import floor, log10
+
+            order = floor(log10(abs_val))
+            decimal_places_needed = max(places, abs(order) + 1)
+            return f"{value:.{decimal_places_needed}f} {unit}".strip()
+
+        if abs_val >= 1e6:
+            return f"{value:.{places}e} {unit}".strip()
+
+        return f"{value:.{places}f} {unit}".strip()
+
+    def _get_si_scale(self, abs_val: float) -> tuple[float, int] | None:
+        """Get SI scale and exponent for value.
+
+        Args:
+            abs_val: Absolute value
+
+        Returns:
+            Tuple of (scale_factor, exponent) or None for extreme values
+        """
+        scale_map = [
+            (1e-15, 1e15, -15),
+            (1e-12, 1e12, -12),
+            (1e-9, 1e9, -9),
+            (1e-6, 1e6, -6),
+            (1e-3, 1e3, -3),
+            (1, 1, 0),
+            (1e3, 1e-3, 3),
+            (1e6, 1e-6, 6),
+            (1e9, 1e-9, 9),
+            (1e12, 1e-12, 12),
+            (1e15, 1e-15, 15),
+        ]
+
+        for threshold, scale, exp in scale_map:
+            if abs_val < threshold:
+                return (scale, exp)
+
+        return None
+
     def format(
         self,
         value: float,
@@ -93,64 +147,29 @@ class NumberFormatter:
             >>> fmt.format(1500000, "Hz")
             '1.500 MHz'
         """
-        # Handle special float values
         if math.isnan(value):
             return f"NaN {unit}".strip()
         if math.isinf(value):
             sign = "-" if value < 0 else ""
             return f"{sign}Inf {unit}".strip()
 
-        # Determine precision
         places = decimal_places if decimal_places is not None else self.sig_figs
 
         if not self.auto_scale:
-            # No scaling - show full value with appropriate precision
-            # Use more decimal places for small numbers to show actual value
-            if abs(value) != 0 and abs(value) < 1:
-                # Calculate needed decimal places to show significant figures
-                from math import floor, log10
+            return self._format_without_scaling(value, places, unit)
 
-                order = floor(log10(abs(value)))
-                # For value like 0.0023, order=-3, need at least 4 decimals
-                decimal_places_needed = max(places, abs(order) + 1)
-                return f"{value:.{decimal_places_needed}f} {unit}".strip()
-            elif abs(value) >= 1e6:
-                return f"{value:.{places}e} {unit}".strip()
-            return f"{value:.{places}f} {unit}".strip()
-
-        # Find appropriate SI prefix
         if value == 0:
             return f"0.{'0' * places} {unit}".strip()
 
         abs_val = abs(value)
+        scale_result = self._get_si_scale(abs_val)
 
-        # Determine the appropriate power of 10
-        if abs_val < 1e-15:
-            return f"{value:.{places}e} {unit}".strip()
-        elif abs_val < 1e-12:
-            scaled, exp = value * 1e15, -15
-        elif abs_val < 1e-9:
-            scaled, exp = value * 1e12, -12
-        elif abs_val < 1e-6:
-            scaled, exp = value * 1e9, -9
-        elif abs_val < 1e-3:
-            scaled, exp = value * 1e6, -6
-        elif abs_val < 1:
-            scaled, exp = value * 1e3, -3
-        elif abs_val < 1e3:
-            scaled, exp = value, 0
-        elif abs_val < 1e6:
-            scaled, exp = value / 1e3, 3
-        elif abs_val < 1e9:
-            scaled, exp = value / 1e6, 6
-        elif abs_val < 1e12:
-            scaled, exp = value / 1e9, 9
-        elif abs_val < 1e15:
-            scaled, exp = value / 1e12, 12
-        else:
+        if scale_result is None:
             return f"{value:.{places}e} {unit}".strip()
 
-        # Get prefix (unicode or ascii)
+        scale, exp = scale_result
+        scaled = value * scale
+
         prefix_idx = 0 if self.unicode_prefixes else 1
         prefix = self.SI_PREFIXES.get(exp, ("", ""))[prefix_idx]
 

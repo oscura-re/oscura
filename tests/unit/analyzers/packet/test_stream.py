@@ -552,13 +552,14 @@ class TestStreamEdgeCases:
             list(stream_file("/nonexistent/file.bin"))
 
     def test_stream_records_zero_size(self):
-        """Test streaming with zero record size."""
-        # Should not crash, but creates infinite loop
+        """Test streaming with zero record size rejects invalid input."""
+        from oscura.analyzers.packet.stream import stream_records
+
         data = b"test"
 
-        # Skip this test as it causes infinite loop
-        # The function should validate record_size > 0
-        pytest.skip("Zero record size causes infinite loop - needs input validation")
+        # Zero record size would cause infinite loop - function should validate
+        with pytest.raises(ValueError, match="record_size must be positive|must be greater than 0"):
+            list(stream_records(data, record_size=0))
 
     def test_pipeline_generator_exhaustion(self):
         """Test that pipeline doesn't re-iterate exhausted generator."""

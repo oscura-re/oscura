@@ -129,6 +129,97 @@ def cwt_chunked(
     return coefficients, freqs
 
 
+def _setup_dwt_parameters(
+    file_path: Path, wavelet: str, level: int | None, dtype: str
+) -> tuple[type, int, int, int, int]:
+    """Setup DWT parameters and calculate boundaries."""
+    try:
+        import pywt
+    except ImportError as e:
+        raise ImportError(
+            "pywt (PyWavelets) is required for wavelet transforms. "
+            "Install with: pip install PyWavelets"
+        ) from e
+
+    np_dtype = np.float32 if dtype == "float32" else np.float64
+    bytes_per_sample = 4 if dtype == "float32" else 8
+
+    wavelet_obj = pywt.Wavelet(wavelet)
+    filter_len = wavelet_obj.dec_len
+    boundary_overlap = filter_len * (2 ** (level or 1))
+
+    file_size_bytes = file_path.stat().st_size
+    total_samples = file_size_bytes // bytes_per_sample
+
+    return np_dtype, bytes_per_sample, boundary_overlap, total_samples, filter_len
+
+
+def _process_dwt_chunks(
+    file_path: Path,
+    total_samples: int,
+    chunk_size: int,
+    boundary_overlap: int,
+    np_dtype: type,
+    wavelet: str,
+    mode: str,
+    level: int | None,
+) -> list[list[NDArray[Any]]]:
+    """Process file chunks and compute DWT for each."""
+    try:
+        import pywt
+    except ImportError as e:
+        raise ImportError("pywt required") from e
+
+    coeffs_list: list[list[NDArray[Any]]] = []
+    chunks = _generate_chunks(file_path, total_samples, chunk_size, boundary_overlap, np_dtype)
+
+    for chunk_data in chunks:
+        coeffs_chunk = pywt.wavedec(chunk_data, wavelet, mode=mode, level=level)
+        coeffs_list.append(coeffs_chunk)
+
+    return coeffs_list
+
+
+def _merge_dwt_level_coeffs(
+    coeffs_list: list[list[NDArray[Any]]],
+    level_idx: int,
+    level_overlap: int,
+) -> NDArray[Any]:
+    """Merge coefficients for a single decomposition level."""
+    merged_level_coeffs = []
+
+    for chunk_idx, chunk_coeffs in enumerate(coeffs_list):
+        level_coeffs = chunk_coeffs[level_idx]
+
+        if chunk_idx == 0:
+            # First chunk - keep all except right overlap
+            if level_overlap > 0 and len(level_coeffs) > level_overlap:
+                merged_level_coeffs.append(level_coeffs[:-level_overlap])
+            else:
+                merged_level_coeffs.append(level_coeffs)
+        elif chunk_idx == len(coeffs_list) - 1:
+            # Last chunk - trim left overlap, keep rest
+            if level_overlap > 0 and len(level_coeffs) > level_overlap:
+                merged_level_coeffs.append(level_coeffs[level_overlap:])
+            else:
+                center_start = max(0, level_overlap // 2)
+                merged_level_coeffs.append(level_coeffs[center_start:])
+        else:
+            # Middle chunks - trim both sides
+            if level_overlap > 0 and len(level_coeffs) > 2 * level_overlap:
+                merged_level_coeffs.append(level_coeffs[level_overlap:-level_overlap])
+            else:
+                center_start = max(0, level_overlap // 2)
+                center_end = max(center_start + 1, len(level_coeffs) - level_overlap // 2)
+                merged_level_coeffs.append(level_coeffs[center_start:center_end])
+
+    if merged_level_coeffs:
+        return np.concatenate(merged_level_coeffs)
+    else:
+        level_coeffs_list = [chunk_coeffs[level_idx] for chunk_coeffs in coeffs_list]
+        return np.concatenate(level_coeffs_list)
+
+
 def dwt_chunked(
     file_path: str | Path,
     wavelet: str = "db4",
@@ -174,102 +265,31 @@ def dwt_chunked(
         MEM-007: Chunked Wavelet Transform
         Daubechies, I. (1992). "Ten Lectures on Wavelets"
     """
-    try:
-        import pywt
-    except ImportError as e:
-        raise ImportError(
-            "pywt (PyWavelets) is required for wavelet transforms. "
-            "Install with: pip install PyWavelets"
-        ) from e
-
     chunk_size = int(chunk_size)
-
-    # Determine dtype
-    np_dtype = np.float32 if dtype == "float32" else np.float64
-    bytes_per_sample = 4 if dtype == "float32" else 8
-
-    # Get wavelet filter length for overlap calculation
-    wavelet_obj = pywt.Wavelet(wavelet)
-    filter_len = wavelet_obj.dec_len
-    boundary_overlap = filter_len * (2 ** (level or 1))
-
-    # Open file and get total size
     file_path = Path(file_path)
-    file_size_bytes = file_path.stat().st_size
-    total_samples = file_size_bytes // bytes_per_sample
 
-    # Process chunks
-    coeffs_list: list[list[NDArray[Any]]] = []
-    chunk_starts: list[int] = []  # Track chunk start positions in original signal
-    chunks = _generate_chunks(file_path, total_samples, chunk_size, boundary_overlap, np_dtype)
+    np_dtype, bytes_per_sample, boundary_overlap, total_samples, filter_len = _setup_dwt_parameters(
+        file_path, wavelet, level, dtype
+    )
 
-    current_offset = 0
-    for chunk_data in chunks:
-        # Compute DWT for this chunk
-        coeffs_chunk = pywt.wavedec(chunk_data, wavelet, mode=mode, level=level)
-        coeffs_list.append(coeffs_chunk)
-        chunk_starts.append(current_offset)
-        # Move offset by chunk_size (not including overlap)
-        current_offset = min(current_offset + chunk_size, total_samples)
+    coeffs_list = _process_dwt_chunks(
+        file_path, total_samples, chunk_size, boundary_overlap, np_dtype, wavelet, mode, level
+    )
 
-    # Merge coefficients from all chunks
     if len(coeffs_list) == 0:
         raise ValueError(f"No chunks processed from {file_path}")
-
-    # For DWT, we need to handle overlaps properly at each decomposition level
-    # At each level j, the downsampling factor is 2^j
-    # We trim the overlap region at each level based on the decomposition level
 
     num_levels = len(coeffs_list[0])
     merged_coeffs = []
 
     for level_idx in range(num_levels):
-        # Calculate the effective overlap for this decomposition level
-        # Each level is downsampled by factor of 2 from previous level
         downsample_factor = 2**level_idx
         level_overlap = boundary_overlap // downsample_factor
 
         if len(coeffs_list) == 1:
-            # Only one chunk - no overlap to handle
             merged_coeffs.append(coeffs_list[0][level_idx])
         else:
-            # Multiple chunks - need to handle overlaps
-            merged_level_coeffs = []
-
-            for chunk_idx, chunk_coeffs in enumerate(coeffs_list):
-                level_coeffs = chunk_coeffs[level_idx]
-
-                if chunk_idx == 0:
-                    # First chunk - keep all except right overlap
-                    if level_overlap > 0 and len(level_coeffs) > level_overlap:
-                        merged_level_coeffs.append(level_coeffs[:-level_overlap])
-                    else:
-                        merged_level_coeffs.append(level_coeffs)
-                elif chunk_idx == len(coeffs_list) - 1:
-                    # Last chunk - trim left overlap, keep rest
-                    if level_overlap > 0 and len(level_coeffs) > level_overlap:
-                        merged_level_coeffs.append(level_coeffs[level_overlap:])
-                    else:
-                        # If overlap is too large, keep small center portion
-                        center_start = max(0, level_overlap // 2)
-                        merged_level_coeffs.append(level_coeffs[center_start:])
-                else:
-                    # Middle chunks - trim both sides
-                    if level_overlap > 0 and len(level_coeffs) > 2 * level_overlap:
-                        merged_level_coeffs.append(level_coeffs[level_overlap:-level_overlap])
-                    else:
-                        # If overlap is too large, keep small center portion
-                        center_start = max(0, level_overlap // 2)
-                        center_end = max(center_start + 1, len(level_coeffs) - level_overlap // 2)
-                        merged_level_coeffs.append(level_coeffs[center_start:center_end])
-
-            # Concatenate the trimmed coefficients
-            if merged_level_coeffs:
-                merged_coeffs.append(np.concatenate(merged_level_coeffs))
-            else:
-                # Fallback: concatenate all if trimming failed
-                level_coeffs_list = [chunk_coeffs[level_idx] for chunk_coeffs in coeffs_list]
-                merged_coeffs.append(np.concatenate(level_coeffs_list))
+            merged_coeffs.append(_merge_dwt_level_coeffs(coeffs_list, level_idx, level_overlap))
 
     return merged_coeffs
 
@@ -321,8 +341,8 @@ def cwt_chunked_generator(
     wavelet: str = "morl",
     *,
     chunk_size: int | float = 1e6,
-    **kwargs: Any,  # type: ignore[name-defined]
-) -> Iterator[tuple[NDArray[Any], NDArray[Any]]]:  # type: ignore[name-defined]
+    **kwargs: Any,
+) -> Iterator[tuple[NDArray[Any], NDArray[Any]]]:
     """Generator version that yields CWT chunks.
 
     Yields CWT coefficients for each chunk, useful for streaming processing.

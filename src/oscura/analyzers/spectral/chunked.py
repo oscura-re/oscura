@@ -49,10 +49,8 @@ def spectrogram_chunked(
 ) -> tuple[NDArray[Any], NDArray[Any], NDArray[Any]]:
     """Compute spectrogram for large files using chunked processing.
 
-
-    Processes file in chunks with `overlap_factor * nperseg` overlap on
-    boundaries to ensure continuity. Computes scipy.signal.stft per chunk
-    and stitches results.
+    Processes file in chunks with overlap to ensure continuity.
+    Computes scipy.signal.stft per chunk and stitches results.
 
     Args:
         file_path: Path to signal file (binary format).
@@ -65,33 +63,111 @@ def spectrogram_chunked(
         return_onesided: Return one-sided spectrum for real input.
         scaling: Scaling mode ('density' or 'spectrum').
         mode: Output mode ('psd', 'magnitude', 'angle', 'phase', 'complex').
-        overlap_factor: Factor for chunk boundary overlap (default: 2.0 = 2*nperseg).
-        dtype: Data type of input file ('float32' or 'float64').
-        **kwargs: Additional arguments passed to scipy.signal.stft.
+        overlap_factor: Overlap factor (default: 2.0 = 2*nperseg).
+        dtype: Data type ('float32' or 'float64').
+        **kwargs: Additional arguments for scipy.signal.stft.
 
     Returns:
-        Tuple of (frequencies, times, Sxx) where:
-        - frequencies: Array of frequency bins (Hz, requires sample_rate in kwargs).
-        - times: Array of time segments (seconds).
-        - Sxx: Spectrogram array (frequencies x time segments).
+        Tuple of (frequencies, times, Sxx) spectrogram arrays.
 
     Raises:
         ValueError: If chunk_size < nperseg or file cannot be read.
 
     Example:
-        >>> # Process 10 GB file in 100M sample chunks
-        >>> f, t, Sxx = spectrogram_chunked(
-        ...     'huge_trace.bin',
-        ...     chunk_size=100e6,
-        ...     nperseg=4096,
-        ...     noverlap=2048,
-        ...     sample_rate=1e9,  # 1 GSa/s
-        ...     dtype='float32'
-        ... )
-        >>> print(f"Spectrogram shape: {Sxx.shape}")
+        >>> f, t, Sxx = spectrogram_chunked('trace.bin', chunk_size=100e6)
 
     References:
         MEM-004: Chunked Spectrogram requirement
+    """
+    params = _prepare_spectrogram_params(chunk_size, nperseg, noverlap, nfft, overlap_factor, dtype)
+
+    file_path = Path(file_path)
+    file_size_bytes = file_path.stat().st_size
+    params["total_samples"] = file_size_bytes // params["bytes_per_sample"]
+
+    chunks = _generate_chunks(
+        file_path,
+        params["total_samples"],
+        params["chunk_size"],
+        params["boundary_overlap"],
+        params["np_dtype"],
+    )
+
+    spec_params = _build_spec_params(
+        nperseg, params, window, detrend, return_onesided, scaling, mode
+    )
+
+    f, Sxx_list, times_list = _process_chunks(
+        chunks,
+        spec_params,
+        params["boundary_overlap"],
+        kwargs,
+    )
+
+    Sxx = np.concatenate(Sxx_list, axis=1)
+    times = np.concatenate(times_list)
+
+    return f, times, Sxx
+
+
+def _build_spec_params(
+    nperseg: int,
+    params: dict[str, Any],
+    window: str | tuple | NDArray,  # type: ignore[type-arg]
+    detrend: str | bool,
+    return_onesided: bool,
+    scaling: str,
+    mode: str,
+) -> dict[str, Any]:
+    """Build spectrogram parameters dictionary.
+
+    Args:
+        nperseg: Segment length.
+        params: Prepared parameters dict.
+        window: Window function.
+        detrend: Detrend type.
+        return_onesided: One-sided flag.
+        scaling: Scaling mode.
+        mode: Output mode.
+
+    Returns:
+        Dictionary of spectrogram parameters.
+    """
+    return {
+        "nperseg": nperseg,
+        "noverlap": params["noverlap"],
+        "nfft": params["nfft"],
+        "window": window,
+        "detrend": detrend,
+        "return_onesided": return_onesided,
+        "scaling": scaling,
+        "mode": mode,
+    }
+
+
+def _prepare_spectrogram_params(
+    chunk_size: int | float,
+    nperseg: int,
+    noverlap: int | None,
+    nfft: int | None,
+    overlap_factor: float,
+    dtype: str,
+) -> dict[str, Any]:
+    """Prepare spectrogram parameters.
+
+    Args:
+        chunk_size: Chunk size in samples.
+        nperseg: Segment length.
+        noverlap: Overlap samples.
+        nfft: FFT length.
+        overlap_factor: Boundary overlap factor.
+        dtype: Data type string.
+
+    Returns:
+        Dictionary with prepared parameters.
+
+    Raises:
+        ValueError: If chunk_size < nperseg.
     """
     chunk_size = int(chunk_size)
     if noverlap is None:
@@ -106,65 +182,58 @@ def spectrogram_chunked(
     np_dtype = np.float32 if dtype == "float32" else np.float64
     bytes_per_sample = 4 if dtype == "float32" else 8
 
-    # Calculate boundary overlap (default: 2*nperseg for continuity)
+    # Calculate boundary overlap
     boundary_overlap = int(overlap_factor * nperseg)
 
-    # Open file and get total size
-    file_path = Path(file_path)
-    file_size_bytes = file_path.stat().st_size
-    total_samples = file_size_bytes // bytes_per_sample
+    return {
+        "chunk_size": chunk_size,
+        "noverlap": noverlap,
+        "nfft": nfft,
+        "np_dtype": np_dtype,
+        "bytes_per_sample": bytes_per_sample,
+        "boundary_overlap": boundary_overlap,
+        "total_samples": 0,  # Will be set by caller
+    }
 
-    # Prepare chunk generator
-    chunks = _generate_chunks(file_path, total_samples, chunk_size, boundary_overlap, np_dtype)
 
-    # Process first chunk to initialize arrays
+def _process_chunks(
+    chunks: Iterator[NDArray[Any]],
+    spec_params: dict[str, Any],
+    boundary_overlap: int,
+    kwargs: dict[str, Any],
+) -> tuple[NDArray[Any], list[NDArray[Any]], list[NDArray[Any]]]:
+    """Process all chunks and accumulate results.
+
+    Args:
+        chunks: Iterator of chunk arrays.
+        spec_params: Spectrogram parameters.
+        boundary_overlap: Overlap samples.
+        kwargs: Additional kwargs for scipy.
+
+    Returns:
+        Tuple of (frequencies, Sxx_list, times_list).
+    """
+    # Process first chunk
     first_chunk = next(chunks)
-    f, t_chunk, Sxx_chunk = signal.spectrogram(
-        first_chunk,
-        nperseg=nperseg,
-        noverlap=noverlap,
-        nfft=nfft,
-        window=window,
-        detrend=detrend,
-        return_onesided=return_onesided,
-        scaling=scaling,
-        mode=mode,
-        **kwargs,
-    )
+    f, t_chunk, Sxx_chunk = signal.spectrogram(first_chunk, **spec_params, **kwargs)
 
-    # Initialize result arrays
     Sxx_list = [Sxx_chunk]
     time_offset = 0.0
     times_list = [t_chunk + time_offset]
 
-    # Get sample rate for time calculation
+    # Get sample rate
     fs = kwargs.get("sample_rate", kwargs.get("fs", 1.0))
     time_offset += len(first_chunk) / fs
 
     # Process remaining chunks
     for chunk_data in chunks:
-        _, t_chunk, Sxx_chunk = signal.spectrogram(
-            chunk_data,
-            nperseg=nperseg,
-            noverlap=noverlap,
-            nfft=nfft,
-            window=window,
-            detrend=detrend,
-            return_onesided=return_onesided,
-            scaling=scaling,
-            mode=mode,
-            **kwargs,
-        )
+        _, t_chunk, Sxx_chunk = signal.spectrogram(chunk_data, **spec_params, **kwargs)
 
         Sxx_list.append(Sxx_chunk)
         times_list.append(t_chunk + time_offset)
         time_offset += (len(chunk_data) - boundary_overlap) / fs
 
-    # Concatenate all chunks
-    Sxx = np.concatenate(Sxx_list, axis=1)
-    times = np.concatenate(times_list)
-
-    return f, times, Sxx
+    return f, Sxx_list, times_list
 
 
 def _generate_chunks(

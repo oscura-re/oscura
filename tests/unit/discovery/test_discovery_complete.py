@@ -193,7 +193,7 @@ def test_disc006_interactive_wizard(sample_trace):
 
     Verifies step-by-step guided analysis workflow.
     """
-    from oscura.onboarding.wizard import AnalysisWizard
+    from oscura.cli.onboarding.wizard import AnalysisWizard
 
     # Create wizard (non-interactive mode for testing)
     wizard = AnalysisWizard(sample_trace)
@@ -279,7 +279,7 @@ def test_disc011_progressive_disclosure(sample_trace):
     Verifies hierarchical information display with multiple detail levels.
     """
     from oscura.discovery import characterize_signal
-    from oscura.ui import ProgressiveDisplay
+    from oscura.jupyter.ui import ProgressiveDisplay
 
     # Create display manager
     display = ProgressiveDisplay(
@@ -332,7 +332,7 @@ def test_disc012_plain_english_help():
 
     Verifies accessible documentation and help text.
     """
-    from oscura.onboarding import explain_result, get_help, suggest_commands
+    from oscura.cli.onboarding import explain_result, get_help, suggest_commands
 
     # Test help database
     help_topics = [
@@ -390,12 +390,12 @@ def test_all_requirements_integrated(sample_trace):
     This test verifies that all requirements work together in a complete
     analysis workflow.
     """
+    from oscura.cli.onboarding import get_help
     from oscura.discovery import characterize_signal
     from oscura.guidance import suggest_next_steps
-    from oscura.onboarding import get_help
+    from oscura.jupyter.ui import ProgressiveDisplay
     from oscura.reporting import generate_summary
     from oscura.reporting.auto_report import generate_report
-    from oscura.ui import ProgressiveDisplay
 
     # Step 1: Characterize signal (used by other requirements)
     char_result = characterize_signal(sample_trace)

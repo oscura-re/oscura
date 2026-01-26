@@ -80,9 +80,23 @@ def _generate_html_header(report: Report, dark_mode: bool, responsive: bool) -> 
 
 def _generate_html_styles(dark_mode: bool, responsive: bool) -> str:
     """Generate CSS styles for HTML report."""
-    styles = """
+    base_styles = _generate_base_styles()
+    typography_styles = _generate_typography_styles()
+    component_styles = _generate_component_styles()
+    media_query_styles = _generate_media_query_styles()
+
+    return f"""
 <style>
-/* Professional Formatting Standards */
+{base_styles}
+{typography_styles}
+{component_styles}
+{media_query_styles}
+</style>"""
+
+
+def _generate_base_styles() -> str:
+    """Generate base CSS variables and reset."""
+    return """/* Professional Formatting Standards */
 :root {
     --primary-color: #2c3e50;
     --secondary-color: #3498db;
@@ -96,7 +110,6 @@ def _generate_html_styles(dark_mode: bool, responsive: bool) -> str:
     --table-alt-row-bg: #f9f9f9;
 }
 
-/* Dark mode support */
 @media (prefers-color-scheme: dark) {
     body.dark-mode {
         --bg-color: #1e1e1e;
@@ -127,8 +140,12 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 1in;
-}
+}"""
 
+
+def _generate_typography_styles() -> str:
+    """Generate typography and text styling."""
+    return """
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
     font-family: Arial, Helvetica, sans-serif;
@@ -153,8 +170,23 @@ code, pre {
 pre {
     padding: 10px;
     overflow-x: auto;
-}
+}"""
 
+
+def _generate_component_styles() -> str:
+    """Generate component CSS (tables, severity, navigation, etc)."""
+    emphasis = _generate_emphasis_styles()
+    tables = _generate_table_styles()
+    collapsible = _generate_collapsible_styles()
+    metadata = _generate_metadata_styles()
+    navigation = _generate_navigation_styles()
+
+    return f"{emphasis}\n{tables}\n{collapsible}\n{metadata}\n{navigation}"
+
+
+def _generate_emphasis_styles() -> str:
+    """Generate visual emphasis and severity styles."""
+    return """
 /* Visual Emphasis */
 .pass {
     color: var(--success-color);
@@ -174,7 +206,6 @@ pre {
 .pass::before { content: '\\2713 '; }
 .fail::before { content: '\\2717 '; }
 
-/* Severity indicators */
 .severity-critical {
     background-color: rgba(231, 76, 60, 0.2);
     border-left: 4px solid var(--danger-color);
@@ -196,7 +227,6 @@ pre {
     margin: 10px 0;
 }
 
-/* Callout boxes */
 .callout {
     background-color: rgba(241, 196, 15, 0.15);
     border: 1px solid var(--warning-color);
@@ -208,8 +238,12 @@ pre {
 .callout-title {
     font-weight: bold;
     margin-bottom: 10px;
-}
+}"""
 
+
+def _generate_table_styles() -> str:
+    """Generate table CSS."""
+    return """
 /* Tables */
 table {
     border-collapse: collapse;
@@ -243,8 +277,12 @@ caption {
     font-style: italic;
     padding: 8px;
     text-align: left;
-}
+}"""
 
+
+def _generate_collapsible_styles() -> str:
+    """Generate collapsible section CSS."""
+    return """
 /* Collapsible sections */
 .collapsible {
     cursor: pointer;
@@ -272,8 +310,12 @@ caption {
 
 .collapsible-content.collapsed {
     max-height: 0;
-}
+}"""
 
+
+def _generate_metadata_styles() -> str:
+    """Generate metadata section CSS."""
+    return """
 /* Metadata section */
 .metadata {
     background-color: var(--table-alt-row-bg);
@@ -286,8 +328,12 @@ caption {
 .metadata-item {
     display: inline-block;
     margin-right: 20px;
-}
+}"""
 
+
+def _generate_navigation_styles() -> str:
+    """Generate navigation CSS."""
+    return """
 /* Navigation */
 nav {
     background-color: var(--primary-color);
@@ -312,8 +358,12 @@ nav a {
 
 nav a:hover {
     text-decoration: underline;
-}
+}"""
 
+
+def _generate_media_query_styles() -> str:
+    """Generate responsive and print media queries."""
+    return """
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
@@ -348,9 +398,7 @@ nav a:hover {
     .collapsible-content {
         max-height: none !important;
     }
-}
-</style>"""
-    return styles
+}"""
 
 
 def _generate_html_scripts() -> str:
@@ -458,48 +506,80 @@ def _generate_html_content(report: Report, collapsible: bool) -> str:
     content = []
 
     for section in report.sections:
-        if not section.visible:
-            continue
-
-        section_id = section.title.lower().replace(" ", "-")
-        content.append(f'<section id="{section_id}">')
-
-        # Section header
-        tag = f"h{min(section.level + 1, 6)}"
-        if collapsible and section.collapsible:
-            content.append(f'<{tag} class="collapsible">{section.title}</{tag}>')
-            content.append('<div class="collapsible-content">')
-        else:
-            content.append(f"<{tag}>{section.title}</{tag}>")
-
-        # Section content
-        if isinstance(section.content, str):
-            content.append(f"<p>{section.content}</p>")
-        elif isinstance(section.content, list):
-            for item in section.content:
-                if isinstance(item, dict):
-                    if item.get("type") == "table":
-                        content.append(_table_to_html(item))
-                    elif item.get("type") == "figure":
-                        content.append(_figure_to_html(item))
-                else:
-                    content.append(f"<p>{item}</p>")
-
-        # Subsections
-        for subsec in section.subsections:
-            if not subsec.visible:
-                continue
-            sub_tag = f"h{min(subsec.level + 1, 6)}"
-            content.append(f"<{sub_tag}>{subsec.title}</{sub_tag}>")
-            if isinstance(subsec.content, str):
-                content.append(f"<p>{subsec.content}</p>")
-
-        if collapsible and section.collapsible:
-            content.append("</div>")
-
-        content.append("</section>")
+        if section.visible:
+            section_html = _render_section(section, collapsible)
+            content.append(section_html)
 
     return "\n".join(content)
+
+
+def _render_section(section: Any, collapsible: bool) -> str:
+    """Render a single section with header and content."""
+    section_id = section.title.lower().replace(" ", "-")
+    parts = [f'<section id="{section_id}">']
+
+    # Add section header
+    parts.append(_render_section_header(section, collapsible))
+
+    # Add section content
+    parts.append(_render_section_content(section))
+
+    # Add subsections
+    parts.append(_render_subsections(section))
+
+    # Close collapsible wrapper if needed
+    if collapsible and section.collapsible:
+        parts.append("</div>")
+
+    parts.append("</section>")
+    return "\n".join(parts)
+
+
+def _render_section_header(section: Any, collapsible: bool) -> str:
+    """Render section header with optional collapsible class."""
+    tag = f"h{min(section.level + 1, 6)}"
+    if collapsible and section.collapsible:
+        return (
+            f'<{tag} class="collapsible">{section.title}</{tag}>\n<div class="collapsible-content">'
+        )
+    return f"<{tag}>{section.title}</{tag}>"
+
+
+def _render_section_content(section: Any) -> str:
+    """Render section content (text, tables, figures)."""
+    if isinstance(section.content, str):
+        return f"<p>{section.content}</p>"
+
+    if isinstance(section.content, list):
+        return _render_content_list(section.content)
+
+    return ""
+
+
+def _render_content_list(content_list: list[Any]) -> str:
+    """Render list of content items (tables, figures, text)."""
+    rendered = []
+    for item in content_list:
+        if isinstance(item, dict):
+            if item.get("type") == "table":
+                rendered.append(_table_to_html(item))
+            elif item.get("type") == "figure":
+                rendered.append(_figure_to_html(item))
+        else:
+            rendered.append(f"<p>{item}</p>")
+    return "\n".join(rendered)
+
+
+def _render_subsections(section: Any) -> str:
+    """Render all subsections."""
+    subsection_html = []
+    for subsec in section.subsections:
+        if subsec.visible:
+            sub_tag = f"h{min(subsec.level + 1, 6)}"
+            subsection_html.append(f"<{sub_tag}>{subsec.title}</{sub_tag}>")
+            if isinstance(subsec.content, str):
+                subsection_html.append(f"<p>{subsec.content}</p>")
+    return "\n".join(subsection_html)
 
 
 def _table_to_html(table: dict[str, Any]) -> str:
@@ -544,22 +624,23 @@ def _figure_to_html(figure: dict[str, Any]) -> str:
     width = figure.get("width", "100%")
     caption = figure.get("caption", "")
 
-    html = f'<figure style="max-width: {width}; margin: 20px auto;">'
+    # Use list + join for O(n) string building instead of O(n²) +=
+    html_parts = [f'<figure style="max-width: {width}; margin: 20px auto;">']
 
     # Handle different figure types
     fig_obj = figure.get("figure")
     if isinstance(fig_obj, str):
         # Assume it's a path to an image
-        html += f'<img src="{fig_obj}" alt="{caption}" style="width: 100%;">'
+        html_parts.append(f'<img src="{fig_obj}" alt="{caption}" style="width: 100%;">')
     else:
         # Placeholder for matplotlib figures
-        html += f'<div class="figure-placeholder">[Figure: {caption}]</div>'
+        html_parts.append(f'<div class="figure-placeholder">[Figure: {caption}]</div>')
 
     if caption:
-        html += f"<figcaption>{caption}</figcaption>"
+        html_parts.append(f"<figcaption>{caption}</figcaption>")
 
-    html += "</figure>"
-    return html
+    html_parts.append("</figure>")
+    return "".join(html_parts)
 
 
 def save_html_report(

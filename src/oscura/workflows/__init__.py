@@ -16,6 +16,7 @@ Example:
     >>> stats = osc.workflows.load_all(["trace1.wfm", "trace2.wfm"])
 """
 
+from oscura.workflows.complete_re import CompleteREResult, full_protocol_re
 from oscura.workflows.compliance import emc_compliance_test
 from oscura.workflows.digital import characterize_buffer
 from oscura.workflows.multi_trace import (
@@ -40,6 +41,7 @@ __all__ = [
     # Multi-trace
     "AlignmentMethod",
     # Reverse engineering
+    "CompleteREResult",
     "FieldSpec",
     "InferredFrame",
     "MultiTraceResults",
@@ -51,6 +53,7 @@ __all__ = [
     "characterize_buffer",
     "debug_protocol",
     "emc_compliance_test",
+    "full_protocol_re",
     "load_all",
     "power_analysis",
     "reverse_engineer_signal",

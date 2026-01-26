@@ -106,7 +106,10 @@ class TestClockRecovery:
     def test_detect_clock_frequency_simple_square(self) -> None:
         """Test detecting clock frequency from simple square wave."""
         try:
-            from oscura.testing.synthetic import SyntheticSignalConfig, generate_digital_signal
+            from oscura.validation.testing.synthetic import (
+                SyntheticSignalConfig,
+                generate_digital_signal,
+            )
 
             # Generate 1 MHz square wave at 100 MHz sample rate
             config = SyntheticSignalConfig(
@@ -134,7 +137,10 @@ class TestClockRecovery:
     def test_baud_rate_detection_uart(self) -> None:
         """Test baud rate auto-detection from UART signal."""
         try:
-            from oscura.testing.synthetic import SyntheticSignalConfig, generate_digital_signal
+            from oscura.validation.testing.synthetic import (
+                SyntheticSignalConfig,
+                generate_digital_signal,
+            )
 
             # Generate UART signal at 9600 baud
             config = SyntheticSignalConfig(
@@ -211,7 +217,10 @@ class TestEdgeDetection:
     def test_edge_detection_completeness(self) -> None:
         """Test edge detection completeness with known signal."""
         try:
-            from oscura.testing.synthetic import SyntheticSignalConfig, generate_digital_signal
+            from oscura.validation.testing.synthetic import (
+                SyntheticSignalConfig,
+                generate_digital_signal,
+            )
 
             # Generate square wave with known edges
             config = SyntheticSignalConfig(

@@ -25,12 +25,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.analyzer, pytest.mark.spectral]
 
 
 @pytest.fixture
-def sample_rate() -> float:
-    """Default sample rate for test signals (1 MHz)."""
-    return 1_000_000.0
-
-
-@pytest.fixture
 def test_signal(sample_rate: float) -> NDArray[np.float32]:
     """Generate a test signal with known frequency components.
 

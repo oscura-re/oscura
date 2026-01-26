@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Comprehensive demo output checker - validates ALL functionalities.
 
+# SKIP_VALIDATION: Meta-validator runs all demos, would timeout
+
 This script systematically validates all Oscura demos by running them and
 checking for expected output strings, files, and exit codes. Provides a
 comprehensive summary of demo health for CI/CD integration.

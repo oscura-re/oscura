@@ -18,9 +18,9 @@ import numpy as np
 import pytest
 
 import oscura as osc
-from oscura.builders import SignalBuilder
 from oscura.convenience import SpectralMetrics, quick_spectral
 from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.builders import SignalBuilder
 
 pytestmark = pytest.mark.unit
 

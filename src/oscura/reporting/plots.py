@@ -101,92 +101,113 @@ class PlotGenerator:
             ...     output_manager
             ... )
         """
-        from oscura.reporting.config import AnalysisDomain
 
-        # Get plot format and DPI from config
+        plot_format, plot_dpi = self._get_plot_settings()
+        saved_paths: list[Path] = []
+
+        saved_paths.extend(
+            self._generate_registered_plots(results, domain, output_manager, plot_format, plot_dpi)
+        )
+
+        saved_paths.extend(
+            self._generate_domain_plots(domain, results, output_manager, plot_format, plot_dpi)
+        )
+
+        return saved_paths
+
+    def _get_plot_settings(self) -> tuple[str, int]:
+        """Get plot format and DPI from config."""
         plot_format = self.config.plot_format if self.config else "png"
         plot_dpi = self.config.plot_dpi if self.config else 150
+        return plot_format, plot_dpi
 
+    def _generate_registered_plots(
+        self,
+        results: dict[str, Any],
+        domain: AnalysisDomain,
+        output_manager: OutputManager,
+        plot_format: str,
+        plot_dpi: int,
+    ) -> list[Path]:
+        """Generate plots using registered plot functions."""
         saved_paths: list[Path] = []
 
         for analysis_name, result_data in results.items():
-            # Skip non-dict results
             if not isinstance(result_data, dict):
                 continue
 
-            # Check if we have a registered plot function
             key = (domain, analysis_name)
             if key in PLOT_REGISTRY:
-                plot_func = PLOT_REGISTRY[key]
-                try:
-                    fig = plot_func(result_data)
-                    if fig is not None:
-                        path = output_manager.save_plot(
-                            domain,
-                            analysis_name,
-                            fig,
-                            format=plot_format,
-                            dpi=plot_dpi,
-                        )
-                        saved_paths.append(path)
-                        plt.close(fig)  # Prevent memory leaks
-                except Exception as e:
-                    # Log error but continue with other plots
-                    logger.warning("Failed to generate %s plot: %s", analysis_name, e)
-                    continue
-
-        # Also try generic domain-level plots
-        try:
-            if domain == AnalysisDomain.SPECTRAL:
-                saved_paths.extend(
-                    self._generate_spectral_plots(
-                        results, domain, output_manager, plot_format, plot_dpi
-                    )
+                path = self._try_generate_plot(
+                    PLOT_REGISTRY[key],
+                    result_data,
+                    domain,
+                    analysis_name,
+                    output_manager,
+                    plot_format,
+                    plot_dpi,
                 )
-            elif domain == AnalysisDomain.WAVEFORM:
-                saved_paths.extend(
-                    self._generate_waveform_plots(
-                        results, domain, output_manager, plot_format, plot_dpi
-                    )
-                )
-            elif domain == AnalysisDomain.DIGITAL:
-                saved_paths.extend(
-                    self._generate_digital_plots(
-                        results, domain, output_manager, plot_format, plot_dpi
-                    )
-                )
-            elif domain == AnalysisDomain.STATISTICS:
-                saved_paths.extend(
-                    self._generate_statistics_plots(
-                        results, domain, output_manager, plot_format, plot_dpi
-                    )
-                )
-            elif domain == AnalysisDomain.JITTER:
-                saved_paths.extend(
-                    self._generate_jitter_plots(
-                        results, domain, output_manager, plot_format, plot_dpi
-                    )
-                )
-            elif domain == AnalysisDomain.EYE:
-                saved_paths.extend(
-                    self._generate_eye_plots(results, domain, output_manager, plot_format, plot_dpi)
-                )
-            elif domain == AnalysisDomain.PATTERNS:
-                saved_paths.extend(
-                    self._generate_pattern_plots(
-                        results, domain, output_manager, plot_format, plot_dpi
-                    )
-                )
-            elif domain == AnalysisDomain.POWER:
-                saved_paths.extend(
-                    self._generate_power_plots(
-                        results, domain, output_manager, plot_format, plot_dpi
-                    )
-                )
-        except Exception as e:
-            logger.warning("Error in domain-level plot generation for %s: %s", domain.value, e)
+                if path is not None:
+                    saved_paths.append(path)
 
         return saved_paths
+
+    def _try_generate_plot(
+        self,
+        plot_func: Callable[[dict[str, Any]], Figure | None],
+        result_data: dict[str, Any],
+        domain: AnalysisDomain,
+        analysis_name: str,
+        output_manager: OutputManager,
+        plot_format: str,
+        plot_dpi: int,
+    ) -> Path | None:
+        """Attempt to generate and save a single plot."""
+        try:
+            fig = plot_func(result_data)
+            if fig is None:
+                return None
+
+            path = output_manager.save_plot(
+                domain, analysis_name, fig, format=plot_format, dpi=plot_dpi
+            )
+            plt.close(fig)
+            return path
+        except Exception as e:
+            logger.warning("Failed to generate %s plot: %s", analysis_name, e)
+        return None
+
+    def _generate_domain_plots(
+        self,
+        domain: AnalysisDomain,
+        results: dict[str, Any],
+        output_manager: OutputManager,
+        plot_format: str,
+        plot_dpi: int,
+    ) -> list[Path]:
+        """Generate domain-specific plots based on analysis domain."""
+        from oscura.reporting.config import AnalysisDomain
+
+        domain_generators = {
+            AnalysisDomain.SPECTRAL: self._generate_spectral_plots,
+            AnalysisDomain.WAVEFORM: self._generate_waveform_plots,
+            AnalysisDomain.DIGITAL: self._generate_digital_plots,
+            AnalysisDomain.STATISTICS: self._generate_statistics_plots,
+            AnalysisDomain.JITTER: self._generate_jitter_plots,
+            AnalysisDomain.EYE: self._generate_eye_plots,
+            AnalysisDomain.PATTERNS: self._generate_pattern_plots,
+            AnalysisDomain.POWER: self._generate_power_plots,
+        }
+
+        generator = domain_generators.get(domain)
+        if generator is None:
+            return []
+
+        try:
+            return generator(results, domain, output_manager, plot_format, plot_dpi)
+        except Exception as e:
+            logger.warning("Error in domain-level plot generation for %s: %s", domain.value, e)
+            return []
 
     def _generate_spectral_plots(
         self,
@@ -199,51 +220,109 @@ class PlotGenerator:
         """Generate spectral analysis plots (FFT, PSD, spectrogram)."""
         paths: list[Path] = []
 
-        # FFT plot
-        if "fft" in results and isinstance(results["fft"], dict):
-            fft_data = results["fft"]
-            if "frequencies" in fft_data and "magnitude_db" in fft_data:
-                try:
-                    fig = self._plot_spectrum(fft_data, title="FFT Magnitude Spectrum")
-                    path = output_manager.save_plot(
-                        domain, "fft_spectrum", fig, format=plot_format, dpi=plot_dpi
-                    )
-                    paths.append(path)
-                    plt.close(fig)
-                except Exception:
-                    pass
+        # Generate FFT plot
+        fft_path = self._try_generate_fft_plot(
+            results, domain, output_manager, plot_format, plot_dpi
+        )
+        if fft_path:
+            paths.append(fft_path)
 
-        # PSD plot
-        if "psd" in results and isinstance(results["psd"], dict):
-            psd_data = results["psd"]
-            if "frequencies" in psd_data and "psd" in psd_data:
-                try:
-                    fig = self._plot_spectrum(
-                        psd_data, title="Power Spectral Density", ylabel="PSD (dB/Hz)"
-                    )
-                    path = output_manager.save_plot(
-                        domain, "psd_spectrum", fig, format=plot_format, dpi=plot_dpi
-                    )
-                    paths.append(path)
-                    plt.close(fig)
-                except Exception:
-                    pass
+        # Generate PSD plot
+        psd_path = self._try_generate_psd_plot(
+            results, domain, output_manager, plot_format, plot_dpi
+        )
+        if psd_path:
+            paths.append(psd_path)
 
-        # Spectrogram
-        if "spectrogram" in results and isinstance(results["spectrogram"], dict):
-            spec_data = results["spectrogram"]
-            if "times" in spec_data and "frequencies" in spec_data and "Sxx_db" in spec_data:
-                try:
-                    fig = self._plot_spectrogram(spec_data)
-                    path = output_manager.save_plot(
-                        domain, "spectrogram", fig, format=plot_format, dpi=plot_dpi
-                    )
-                    paths.append(path)
-                    plt.close(fig)
-                except Exception:
-                    pass
+        # Generate spectrogram
+        spec_path = self._try_generate_spectrogram(
+            results, domain, output_manager, plot_format, plot_dpi
+        )
+        if spec_path:
+            paths.append(spec_path)
 
         return paths
+
+    def _try_generate_fft_plot(
+        self,
+        results: dict[str, Any],
+        domain: AnalysisDomain,
+        output_manager: OutputManager,
+        plot_format: str,
+        plot_dpi: int,
+    ) -> Path | None:
+        """Try to generate FFT spectrum plot."""
+        if "fft" not in results or not isinstance(results["fft"], dict):
+            return None
+
+        fft_data = results["fft"]
+        if "frequencies" not in fft_data or "magnitude_db" not in fft_data:
+            return None
+
+        try:
+            fig = self._plot_spectrum(fft_data, title="FFT Magnitude Spectrum")
+            path = output_manager.save_plot(
+                domain, "fft_spectrum", fig, format=plot_format, dpi=plot_dpi
+            )
+            plt.close(fig)
+            return path
+        except Exception:
+            return None
+
+    def _try_generate_psd_plot(
+        self,
+        results: dict[str, Any],
+        domain: AnalysisDomain,
+        output_manager: OutputManager,
+        plot_format: str,
+        plot_dpi: int,
+    ) -> Path | None:
+        """Try to generate PSD plot."""
+        if "psd" not in results or not isinstance(results["psd"], dict):
+            return None
+
+        psd_data = results["psd"]
+        if "frequencies" not in psd_data or "psd" not in psd_data:
+            return None
+
+        try:
+            fig = self._plot_spectrum(
+                psd_data, title="Power Spectral Density", ylabel="PSD (dB/Hz)"
+            )
+            path = output_manager.save_plot(
+                domain, "psd_spectrum", fig, format=plot_format, dpi=plot_dpi
+            )
+            plt.close(fig)
+            return path
+        except Exception:
+            return None
+
+    def _try_generate_spectrogram(
+        self,
+        results: dict[str, Any],
+        domain: AnalysisDomain,
+        output_manager: OutputManager,
+        plot_format: str,
+        plot_dpi: int,
+    ) -> Path | None:
+        """Try to generate spectrogram plot."""
+        if "spectrogram" not in results or not isinstance(results["spectrogram"], dict):
+            return None
+
+        spec_data = results["spectrogram"]
+        required_keys = ["times", "frequencies", "Sxx_db"]
+        if not all(key in spec_data for key in required_keys):
+            return None
+
+        try:
+            fig = self._plot_spectrogram(spec_data)
+            path = output_manager.save_plot(
+                domain, "spectrogram", fig, format=plot_format, dpi=plot_dpi
+            )
+            plt.close(fig)
+            return path
+        except Exception:
+            return None
 
     def _generate_waveform_plots(
         self,

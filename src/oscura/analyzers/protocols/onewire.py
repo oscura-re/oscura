@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import numpy as np
 
@@ -40,6 +40,17 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from numpy.typing import NDArray
+
+
+class _OneWireDecoderState(TypedDict):
+    """State dictionary for 1-Wire decoder."""
+
+    decoded_bytes: list[int]
+    current_bits: list[int]
+    rom_id: OneWireROMID | None
+    rom_command: int | None
+    errors: list[str]
+    transaction_start: float
 
 
 class OneWireMode(Enum):
@@ -203,13 +214,13 @@ class OneWireDecoder(AsyncDecoder):
     longname = "Dallas/Maxim 1-Wire Protocol"
     desc = "1-Wire bus decoder with ROM ID extraction"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("data", "DQ", "1-Wire data line", required=True),
     ]
 
-    optional_channels = []  # noqa: RUF012
+    optional_channels = []
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef(
             "mode",
             "Speed mode",
@@ -226,7 +237,7 @@ class OneWireDecoder(AsyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("reset", "Reset pulse"),
         ("presence", "Presence pulse"),
         ("bit", "Data bit"),
@@ -273,172 +284,265 @@ class OneWireDecoder(AsyncDecoder):
             >>> for packet in decoder.decode(trace):
             ...     print(f"Command: {packet.annotations.get('rom_command')}")
         """
-        # Convert to digital if needed
+        digital_trace = self._convert_to_digital(trace)
+        data, sample_rate = self._extract_trace_data(digital_trace)
+        us_to_samples = sample_rate / 1_000_000
+
+        falling, rising = self._find_edges(data)
+        if len(falling) == 0:
+            return
+
+        state = self._init_decoder_state(falling[0] / sample_rate)
+
+        for i in range(len(falling)):
+            result = self._process_edge(falling, rising, i, sample_rate, us_to_samples, state)
+
+            if result is not None:  # Reset pulse yielded packet
+                yield result
+
+        # Yield final transaction if any
+        if state["decoded_bytes"]:
+            yield self._create_packet(state)
+
+    def _convert_to_digital(self, trace: DigitalTrace | WaveformTrace) -> DigitalTrace:
+        """Convert trace to digital if needed."""
         if isinstance(trace, WaveformTrace):
             from oscura.analyzers.digital.extraction import to_digital
 
             threshold = self._threshold if self._threshold != "auto" else "auto"
-            digital_trace = to_digital(trace, threshold=threshold)  # type: ignore[arg-type]
-        else:
-            digital_trace = trace
+            return to_digital(trace, threshold=threshold)  # type: ignore[arg-type]
+        return trace
 
+    def _extract_trace_data(self, digital_trace: DigitalTrace) -> tuple[NDArray[np.bool_], float]:
+        """Extract data and sample rate from digital trace."""
         data = digital_trace.data.astype(bool)
         sample_rate = digital_trace.metadata.sample_rate
+        return data, sample_rate
 
-        # Convert timing specs to samples
-        us_to_samples = sample_rate / 1_000_000
-
-        # Find all falling and rising edges
+    def _find_edges(self, data: NDArray[np.bool_]) -> tuple[NDArray[np.intp], NDArray[np.intp]]:
+        """Find falling and rising edges in digital data."""
         falling = np.where((data[:-1]) & (~data[1:]))[0]
         rising = np.where((~data[:-1]) & (data[1:]))[0]
+        return falling, rising
 
-        if len(falling) == 0:
+    def _init_decoder_state(self, start_time: float) -> _OneWireDecoderState:
+        """Initialize decoder state machine."""
+        state: _OneWireDecoderState = {
+            "decoded_bytes": [],
+            "current_bits": [],
+            "rom_id": None,
+            "rom_command": None,
+            "errors": [],
+            "transaction_start": start_time,
+        }
+        return state
+
+    def _process_edge(
+        self,
+        falling: NDArray[np.intp],
+        rising: NDArray[np.intp],
+        i: int,
+        sample_rate: float,
+        us_to_samples: float,
+        state: _OneWireDecoderState,
+    ) -> ProtocolPacket | None:
+        """Process single edge, return packet if reset pulse detected."""
+        fall_idx = falling[i]
+        fall_time = fall_idx / sample_rate
+
+        rise_idx = self._find_rising_edge(rising, fall_idx)
+        if rise_idx is None:
+            return None
+
+        low_duration_us = (rise_idx - fall_idx) / us_to_samples
+
+        if self._is_reset_pulse(low_duration_us):
+            return self._handle_reset_pulse(
+                state, fall_time, rise_idx, sample_rate, falling, rising, us_to_samples
+            )
+
+        self._handle_data_bit(low_duration_us, fall_time, rise_idx, sample_rate, state)
+        return None
+
+    def _find_rising_edge(self, rising: NDArray[np.intp], fall_idx: int) -> int | None:
+        """Find rising edge corresponding to falling edge."""
+        rise_candidates = rising[rising > fall_idx]
+        if len(rise_candidates) == 0:
+            return None
+        return int(rise_candidates[0])
+
+    def _is_reset_pulse(self, low_duration_us: float) -> bool:
+        """Check if pulse duration indicates reset."""
+        return low_duration_us >= self._timings.reset_min * 0.8
+
+    def _handle_reset_pulse(
+        self,
+        state: _OneWireDecoderState,
+        fall_time: float,
+        rise_idx: int,
+        sample_rate: float,
+        falling: NDArray[np.intp],
+        rising: NDArray[np.intp],
+        us_to_samples: float,
+    ) -> ProtocolPacket | None:
+        """Handle reset pulse and look for presence."""
+        packet = None
+        if state["decoded_bytes"]:
+            packet = self._create_packet(state)
+
+        # Reset state
+        state["transaction_start"] = fall_time
+        state["decoded_bytes"] = []
+        state["current_bits"] = []
+        state["rom_id"] = None
+        state["rom_command"] = None
+        state["errors"] = []
+
+        self.put_annotation(fall_time, rise_idx / sample_rate, AnnotationLevel.BITS, "Reset")
+        self._check_presence_pulse(rise_idx, sample_rate, falling, rising, us_to_samples)
+
+        return packet
+
+    def _check_presence_pulse(
+        self,
+        rise_idx: int,
+        sample_rate: float,
+        falling: NDArray[np.intp],
+        rising: NDArray[np.intp],
+        us_to_samples: float,
+    ) -> None:
+        """Check for presence pulse after reset."""
+        next_falls = falling[falling > rise_idx]
+        if len(next_falls) == 0:
             return
 
-        # State machine for decoding
-        decoded_bytes: list[int] = []
-        current_bits: list[int] = []
-        rom_id: OneWireROMID | None = None
-        rom_command: int | None = None
-        errors: list[str] = []
-        transaction_start: float = falling[0] / sample_rate
+        next_fall = next_falls[0]
+        wait_time_us = (next_fall - rise_idx) / us_to_samples
+        if wait_time_us >= self._timings.presence_max * 2:
+            return
 
-        i = 0
-        while i < len(falling):
-            fall_idx = falling[i]
-            fall_time = fall_idx / sample_rate
+        next_rises = rising[rising > next_fall]
+        if len(next_rises) == 0:
+            return
 
-            # Find corresponding rising edge
-            rise_candidates = rising[rising > fall_idx]
-            if len(rise_candidates) == 0:
-                break
-
-            rise_idx = rise_candidates[0]
-            low_duration_us = (rise_idx - fall_idx) / us_to_samples
-
-            # Check for reset pulse
-            if low_duration_us >= self._timings.reset_min * 0.8:
-                # This is a reset pulse
-                if decoded_bytes:
-                    # Yield previous transaction
-                    annotations = self._build_annotations(decoded_bytes, rom_command, rom_id)
-                    yield ProtocolPacket(
-                        timestamp=transaction_start,
-                        protocol="1-wire",
-                        data=bytes(decoded_bytes),
-                        annotations=annotations,
-                        errors=errors.copy() if errors else None,  # type: ignore[arg-type]
-                    )
-
-                # Start new transaction
-                transaction_start = fall_time
-                decoded_bytes = []
-                current_bits = []
-                rom_id = None
-                rom_command = None
-                errors = []
-
-                self.put_annotation(
-                    fall_time,
-                    rise_idx / sample_rate,
-                    AnnotationLevel.BITS,
-                    "Reset",
-                )
-
-                # Look for presence pulse (pulled low by slave)
-                next_falls = falling[falling > rise_idx]
-                if len(next_falls) > 0:
-                    next_fall = next_falls[0]
-                    wait_time_us = (next_fall - rise_idx) / us_to_samples
-                    if wait_time_us < self._timings.presence_max * 2:
-                        # Found presence response
-                        next_rises = rising[rising > next_fall]
-                        if len(next_rises) > 0:
-                            presence_end = next_rises[0]
-                            presence_us = (presence_end - next_fall) / us_to_samples
-                            if (
-                                self._timings.presence_min * 0.5
-                                <= presence_us
-                                <= self._timings.presence_max * 1.5
-                            ):
-                                self.put_annotation(
-                                    next_fall / sample_rate,
-                                    presence_end / sample_rate,
-                                    AnnotationLevel.BITS,
-                                    "Presence",
-                                )
-                i += 1
-                continue
-
-            # Data bit - determine if 0 or 1
-            # Short low pulse = write 1 or read 1
-            # Long low pulse = write 0 or read 0
-            if low_duration_us < self._timings.write_1_low_max * 2:
-                bit = 1
-            elif low_duration_us >= self._timings.write_0_low_min * 0.5:
-                bit = 0
-            else:
-                # Ambiguous timing
-                bit = 1 if low_duration_us < self._timings.slot_min * 0.5 else 0
-
-            current_bits.append(bit)
-
-            # Assemble bytes (LSB first)
-            if len(current_bits) == 8:
-                byte_val = sum(b << i for i, b in enumerate(current_bits))
-                decoded_bytes.append(byte_val)
-                current_bits = []
-
-                # Check for ROM command (first byte after reset)
-                if len(decoded_bytes) == 1:
-                    rom_command = byte_val
-                    cmd_name = ROM_COMMAND_NAMES.get(byte_val, f"Unknown (0x{byte_val:02X})")
-                    self.put_annotation(
-                        fall_time,
-                        rise_idx / sample_rate,
-                        AnnotationLevel.BYTES,
-                        f"ROM Cmd: {cmd_name}",
-                    )
-
-                # Check for ROM ID (8 bytes after ROM command)
-                if len(decoded_bytes) == 9 and rom_command in (
-                    OneWireROMCommand.READ_ROM.value,
-                    OneWireROMCommand.MATCH_ROM.value,
-                ):
-                    try:
-                        rom_id = OneWireROMID.from_bytes(bytes(decoded_bytes[1:9]))
-                        if not rom_id.verify_crc():
-                            errors.append("ROM ID CRC error")
-                        self.put_annotation(
-                            transaction_start,
-                            rise_idx / sample_rate,
-                            AnnotationLevel.BYTES,
-                            f"ROM: {rom_id.to_hex()}",
-                        )
-                    except ValueError as e:
-                        errors.append(f"ROM parse error: {e}")
-
-            i += 1
-
-        # Yield final transaction if any
-        if decoded_bytes:
-            annotations = self._build_annotations(decoded_bytes, rom_command, rom_id)
-            yield ProtocolPacket(
-                timestamp=transaction_start,
-                protocol="1-wire",
-                data=bytes(decoded_bytes),
-                annotations=annotations,
-                errors=errors if errors else None,  # type: ignore[arg-type]
+        presence_end = next_rises[0]
+        presence_us = (presence_end - next_fall) / us_to_samples
+        if self._timings.presence_min * 0.5 <= presence_us <= self._timings.presence_max * 1.5:
+            self.put_annotation(
+                next_fall / sample_rate,
+                presence_end / sample_rate,
+                AnnotationLevel.BITS,
+                "Presence",
             )
+
+    def _handle_data_bit(
+        self,
+        low_duration_us: float,
+        fall_time: float,
+        rise_idx: int,
+        sample_rate: float,
+        state: _OneWireDecoderState,
+    ) -> None:
+        """Decode and process data bit."""
+        bit = self._decode_bit(low_duration_us)
+        state["current_bits"].append(bit)
+
+        if len(state["current_bits"]) == 8:
+            self._process_complete_byte(state, fall_time, rise_idx, sample_rate)
+
+    def _decode_bit(self, low_duration_us: float) -> int:
+        """Decode bit from pulse duration."""
+        if low_duration_us < self._timings.write_1_low_max * 2:
+            return 1
+        elif low_duration_us >= self._timings.write_0_low_min * 0.5:
+            return 0
+        else:
+            return 1 if low_duration_us < self._timings.slot_min * 0.5 else 0
+
+    def _process_complete_byte(
+        self,
+        state: _OneWireDecoderState,
+        fall_time: float,
+        rise_idx: int,
+        sample_rate: float,
+    ) -> None:
+        """Process complete 8-bit byte."""
+        byte_val = sum(b << i for i, b in enumerate(state["current_bits"]))
+        state["decoded_bytes"].append(byte_val)
+        state["current_bits"] = []
+
+        if len(state["decoded_bytes"]) == 1:
+            self._handle_rom_command(byte_val, fall_time, rise_idx, sample_rate, state)
+        elif len(state["decoded_bytes"]) == 9:
+            self._handle_rom_id(state, rise_idx, sample_rate)
+
+    def _handle_rom_command(
+        self,
+        byte_val: int,
+        fall_time: float,
+        rise_idx: int,
+        sample_rate: float,
+        state: _OneWireDecoderState,
+    ) -> None:
+        """Handle ROM command (first byte)."""
+        state["rom_command"] = byte_val
+        cmd_name = ROM_COMMAND_NAMES.get(byte_val, f"Unknown (0x{byte_val:02X})")
+        self.put_annotation(
+            fall_time,
+            rise_idx / sample_rate,
+            AnnotationLevel.BYTES,
+            f"ROM Cmd: {cmd_name}",
+        )
+
+    def _handle_rom_id(
+        self,
+        state: _OneWireDecoderState,
+        rise_idx: int,
+        sample_rate: float,
+    ) -> None:
+        """Handle ROM ID (8 bytes after ROM command)."""
+        rom_command = state["rom_command"]
+        if rom_command not in (
+            OneWireROMCommand.READ_ROM.value,
+            OneWireROMCommand.MATCH_ROM.value,
+        ):
+            return
+
+        try:
+            rom_id = OneWireROMID.from_bytes(bytes(state["decoded_bytes"][1:9]))
+            if not rom_id.verify_crc():
+                state["errors"].append("ROM ID CRC error")
+            state["rom_id"] = rom_id
+            self.put_annotation(
+                state["transaction_start"],
+                rise_idx / sample_rate,
+                AnnotationLevel.BYTES,
+                f"ROM: {rom_id.to_hex()}",
+            )
+        except ValueError as e:
+            state["errors"].append(f"ROM parse error: {e}")
+
+    def _create_packet(self, state: _OneWireDecoderState) -> ProtocolPacket:
+        """Create protocol packet from decoder state."""
+        annotations = self._build_annotations(
+            state["decoded_bytes"], state["rom_command"], state["rom_id"]
+        )
+        return ProtocolPacket(
+            timestamp=state["transaction_start"],
+            protocol="1-wire",
+            data=bytes(state["decoded_bytes"]),
+            annotations=annotations,
+            errors=state["errors"].copy() if state["errors"] else None,  # type: ignore[arg-type]
+        )
 
     def _build_annotations(
         self,
         decoded_bytes: list[int],
         rom_command: int | None,
         rom_id: OneWireROMID | None,
-    ) -> dict:  # type: ignore[type-arg]
+    ) -> dict[str, object]:
         """Build annotation dictionary for packet."""
-        annotations: dict = {  # type: ignore[type-arg]
+        annotations: dict[str, object] = {
             "mode": self._mode.value,
             "byte_count": len(decoded_bytes),
         }

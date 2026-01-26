@@ -105,7 +105,17 @@ if [[ -n "${config_file}" ]]; then
 fi
 
 # Common ignore patterns
-ignore_args=("--ignore" "node_modules" "--ignore" ".venv" "--ignore" ".git")
+ignore_args=(
+  "--ignore" "node_modules"
+  "--ignore" ".venv"
+  "--ignore" ".git"
+  "--ignore" ".claude"
+  "--ignore" "docs/audits"
+  "--ignore" ".pytest_cache"
+  "--ignore" "CHANGELOG.md"
+  "--ignore" "docs/changelog.md"
+  "--ignore" "docs/testing/coverage-audit-*.md"
+)
 
 # Run markdownlint
 case ${MODE} in

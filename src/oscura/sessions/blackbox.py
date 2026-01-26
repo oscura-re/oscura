@@ -6,7 +6,7 @@ field hypothesis generation.
 
 Example:
     >>> from oscura.sessions import BlackBoxSession
-    >>> from oscura.acquisition import FileSource
+    >>> from oscura.hardware.acquisition import FileSource
     >>>
     >>> # Create session for black-box protocol analysis
     >>> session = BlackBoxSession(name="IoT Device Protocol Analysis")
@@ -158,18 +158,29 @@ class BlackBoxSession(AnalysisSession):
         Architecture Plan Phase 1.1: BlackBoxSession
     """
 
-    def __init__(self, name: str = "Black-Box Analysis") -> None:
+    def __init__(
+        self,
+        name: str = "Black-Box Analysis",
+        auto_crc: bool = True,
+        crc_min_messages: int = 10,
+    ) -> None:
         """Initialize black-box analysis session.
 
         Args:
             name: Session name (default: "Black-Box Analysis").
+            auto_crc: Enable automatic CRC recovery (default: True).
+            crc_min_messages: Minimum messages required for CRC recovery (default: 10).
 
         Example:
             >>> session = BlackBoxSession(name="IoT Protocol RE")
+            >>> session = BlackBoxSession(name="RE", auto_crc=True, crc_min_messages=5)
         """
         super().__init__(name)
         self._field_hypotheses: list[FieldHypothesis] = []
         self._protocol_spec: ProtocolSpec | None = None
+        self.auto_crc = auto_crc
+        self.crc_min_messages = crc_min_messages
+        self._crc_params: Any = None  # CRCParameters from inference.crc_reverse
 
     def analyze(self) -> dict[str, Any]:
         """Perform comprehensive black-box protocol analysis.
@@ -218,10 +229,13 @@ class BlackBoxSession(AnalysisSession):
         # Generate field hypotheses
         self._field_hypotheses = self._generate_field_hypotheses(traces)
 
+        # Automatically recover CRC if enabled
+        self._auto_recover_crc(traces)
+
         # Infer state machine
         state_machine = self._infer_state_machine(traces)
 
-        # Detect CRC/checksums
+        # Detect CRC/checksums (includes auto-recovered params)
         crc_info = self._detect_crc(traces)
 
         # Build protocol specification
@@ -450,7 +464,7 @@ class BlackBoxSession(AnalysisSession):
             return result
 
         # For integer types, just convert
-        return data.astype(np.uint8)  # type: ignore[return-value]
+        return data.astype(np.uint8)
 
     def _find_changed_regions(self, diffs: NDArray[np.bool_]) -> list[tuple[int, int, str]]:
         """Find contiguous regions of changes."""
@@ -514,19 +528,87 @@ class BlackBoxSession(AnalysisSession):
             # Each trace becomes a sequence
             byte_arrays = [self._trace_to_bytes(t) for t in traces]
             # Convert to lists of strings for RPNI input format
-            # infer_rpni expects list[list[str]], not list[tuple]
+            # Cast: list[list[str]] is compatible with list[list[str | int]] at runtime
             sequences = [[str(b) for b in arr.tolist()] for arr in byte_arrays]
-            return infer_rpni(sequences)
+            sequences_union: list[list[str | int]] = sequences  # type: ignore[assignment]
+            return infer_rpni(sequences_union)
         except Exception:
             return None
 
+    def _auto_recover_crc(self, traces: list[Trace]) -> None:
+        """Automatically recover CRC parameters if enough messages.
+
+        Args:
+            traces: List of traces to analyze for CRC.
+
+        Note:
+            This method attempts automatic CRC recovery if:
+            - auto_crc is enabled
+            - Number of traces >= crc_min_messages
+            - CRC recovery succeeds with confidence > 0.8
+        """
+        if not self.auto_crc or len(traces) < self.crc_min_messages:
+            return
+
+        try:
+            from oscura.inference.crc_reverse import CRCReverser
+
+            # Convert traces to message-CRC pairs
+            # For black-box analysis, we assume each trace is a complete message
+            # and attempt to find CRC fields within each message
+            byte_arrays = [self._trace_to_bytes(t) for t in traces]
+
+            # Try to detect CRC location and extract message-CRC pairs
+            # This is a heuristic: assume CRC is at the end (last 1-4 bytes)
+            messages = []
+            for data in byte_arrays:
+                if len(data) >= 4:
+                    # Try 2-byte CRC at end (most common)
+                    messages.append((bytes(data[:-2]), bytes(data[-2:])))
+
+            if len(messages) >= 4:
+                reverser = CRCReverser(verbose=False)
+                params = reverser.reverse(messages)
+
+                if params is not None and params.confidence > 0.8:
+                    self._crc_params = params
+                    # Log successful recovery
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.info(
+                        f"Auto-recovered CRC: poly=0x{params.polynomial:04x}, "
+                        f"width={params.width}, confidence={params.confidence:.2f}"
+                    )
+        except Exception:
+            # CRC recovery is best-effort; don't fail if it doesn't work
+            pass
+
     def _detect_crc(self, traces: list[Trace]) -> dict[str, Any]:
-        """Detect CRC/checksums in traces."""
+        """Detect CRC/checksums in traces.
+
+        Args:
+            traces: List of traces to analyze.
+
+        Returns:
+            Dictionary with CRC information if found.
+        """
         if not traces:
             return {}
 
-        # For now, return empty dict - CRC reverse engineering is complex
-        # The verify_crc function checks CRC but doesn't reverse engineer it
+        # If CRC was auto-recovered, include in results
+        if self._crc_params is not None:
+            return {
+                "polynomial": f"0x{self._crc_params.polynomial:04x}",
+                "width": self._crc_params.width,
+                "init": f"0x{self._crc_params.init:04x}",
+                "xor_out": f"0x{self._crc_params.xor_out:04x}",
+                "reflect_in": self._crc_params.reflect_in,
+                "reflect_out": self._crc_params.reflect_out,
+                "confidence": self._crc_params.confidence,
+                "algorithm_name": self._crc_params.algorithm_name,
+            }
+
         return {}
 
     def _export_report(self, path: Path) -> None:

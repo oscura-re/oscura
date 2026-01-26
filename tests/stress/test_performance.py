@@ -273,7 +273,9 @@ class TestScalability:
         try:
             import yaml
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
         config_file = temp_perf_dir / "large_config.yaml"
 

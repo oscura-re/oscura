@@ -22,7 +22,7 @@ try:
         PacketFormatConfig,
     )
     from oscura.loaders.validation import PacketValidator
-    from oscura.testing.synthetic import SyntheticPacketConfig, generate_packets
+    from oscura.validation.testing.synthetic import SyntheticPacketConfig, generate_packets
 
     IMPORTS_AVAILABLE = True
 except ImportError as e:

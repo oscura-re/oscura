@@ -336,6 +336,187 @@ def _detect_pattern_differences(
     return differences
 
 
+def _compute_correlation(data1: NDArray[np.float64], data2: NDArray[np.float64]) -> float:
+    """Compute normalized correlation between two signals.
+
+    Args:
+        data1: First signal array.
+        data2: Second signal array.
+
+    Returns:
+        Correlation coefficient in range [-1, 1].
+    """
+    if len(data1) <= 1:
+        return 1.0 if len(data1) == 0 or data1[0] == data2[0] else 0.0
+
+    d1_norm = (data1 - np.mean(data1)) / (np.std(data1) + 1e-10)
+    d2_norm = (data2 - np.mean(data2)) / (np.std(data2) + 1e-10)
+    return float(np.corrcoef(d1_norm, d2_norm)[0, 1])
+
+
+def _try_alignment_method(
+    trace1: WaveformTrace, trace2: WaveformTrace, method: str
+) -> tuple[NDArray[np.float64], NDArray[np.float64], int, float]:
+    """Try single alignment method and return correlation.
+
+    Args:
+        trace1: First waveform trace.
+        trace2: Second waveform trace.
+        method: Alignment method ("time", "trigger", or "pattern").
+
+    Returns:
+        Tuple of (aligned_data1, aligned_data2, offset, correlation).
+    """
+    if method == "time":
+        d1, d2, offset = _align_time_based(trace1, trace2)
+    elif method == "trigger":
+        d1, d2, offset = _align_trigger_based(trace1, trace2)
+    else:  # pattern
+        d1, d2, offset = _align_pattern_based(trace1, trace2)
+
+    corr = _compute_correlation(d1, d2)
+    return d1, d2, offset, corr
+
+
+def _auto_align_traces(
+    trace1: WaveformTrace, trace2: WaveformTrace
+) -> tuple[NDArray[np.float64], NDArray[np.float64], int, str]:
+    """Automatically choose best alignment method.
+
+    Args:
+        trace1: First waveform trace.
+        trace2: Second waveform trace.
+
+    Returns:
+        Tuple of (aligned_data1, aligned_data2, offset, method_name).
+    """
+    methods = ["time", "trigger", "pattern"]
+    best_corr = -1.0
+    best_result = None
+    best_method = "time"
+
+    for method in methods:
+        d1, d2, offset, corr = _try_alignment_method(trace1, trace2, method)
+
+        if corr > best_corr:
+            best_corr = corr
+            best_method = method
+            best_result = (d1, d2, offset)
+
+    data1, data2, offset = best_result  # type: ignore[misc]
+    return data1, data2, offset, f"{best_method}-based"
+
+
+def _align_traces_by_method(
+    trace1: WaveformTrace, trace2: WaveformTrace, alignment: str
+) -> tuple[NDArray[np.float64], NDArray[np.float64], int, str]:
+    """Align traces using specified method.
+
+    Args:
+        trace1: First waveform trace.
+        trace2: Second waveform trace.
+        alignment: Alignment method name.
+
+    Returns:
+        Tuple of (aligned_data1, aligned_data2, offset, method_description).
+    """
+    if alignment == "auto":
+        return _auto_align_traces(trace1, trace2)
+
+    if alignment == "time":
+        data1, data2, offset = _align_time_based(trace1, trace2)
+    elif alignment == "trigger":
+        data1, data2, offset = _align_trigger_based(trace1, trace2)
+    else:  # pattern
+        data1, data2, offset = _align_pattern_based(trace1, trace2)
+
+    return data1, data2, offset, f"{alignment}-based"
+
+
+def _collect_differences(
+    data1: NDArray[np.float64],
+    data2: NDArray[np.float64],
+    sample_rate: float,
+    difference_types: list[str],
+) -> list[Difference]:
+    """Detect all requested difference types.
+
+    Args:
+        data1: First aligned signal.
+        data2: Second aligned signal.
+        sample_rate: Sample rate in Hz.
+        difference_types: Types to detect.
+
+    Returns:
+        List of detected differences sorted by impact.
+    """
+    all_differences = []
+
+    if "timing" in difference_types:
+        all_differences.extend(_detect_timing_differences(data1, data2, sample_rate))
+
+    if "amplitude" in difference_types:
+        all_differences.extend(_detect_amplitude_differences(data1, data2, sample_rate))
+
+    if "pattern" in difference_types:
+        all_differences.extend(_detect_pattern_differences(data1, data2, sample_rate))
+
+    # Sort by impact score (descending)
+    all_differences.sort(key=lambda d: d.impact_score, reverse=True)
+    return all_differences
+
+
+def _filter_by_severity(
+    differences: list[Difference], severity_threshold: str | None
+) -> list[Difference]:
+    """Filter differences by severity threshold.
+
+    Args:
+        differences: List of detected differences.
+        severity_threshold: Minimum severity level.
+
+    Returns:
+        Filtered list of differences.
+    """
+    if not severity_threshold:
+        return differences
+
+    severity_order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+    threshold_level = severity_order.get(severity_threshold, 0)
+
+    return [d for d in differences if severity_order.get(d.severity, 0) >= threshold_level]
+
+
+def _build_summary(similarity_score: float, differences: list[Difference]) -> str:
+    """Build human-readable summary of comparison.
+
+    Args:
+        similarity_score: Overall similarity score [0, 1].
+        differences: List of detected differences.
+
+    Returns:
+        Plain-language summary string.
+    """
+    if similarity_score > 0.95:
+        summary = "Signals are very similar"
+    elif similarity_score > 0.85:
+        summary = "Signals are similar with minor differences"
+    elif similarity_score > 0.70:
+        summary = "Signals show moderate differences"
+    else:
+        summary = "Signals are significantly different"
+
+    critical_count = sum(1 for d in differences if d.severity == "CRITICAL")
+    warning_count = sum(1 for d in differences if d.severity == "WARNING")
+
+    if critical_count > 0:
+        summary += f" ({critical_count} critical issue(s))"
+    elif warning_count > 0:
+        summary += f" ({warning_count} warning(s))"
+
+    return summary
+
+
 def compare_traces(
     trace1: WaveformTrace,
     trace2: WaveformTrace,
@@ -378,103 +559,27 @@ def compare_traces(
         "transitions",
     ]
 
-    # Try alignment methods
-    if alignment == "auto":
-        # Try all methods and pick best correlation
-        methods = ["time", "trigger", "pattern"]
-        best_corr = -1
-        best_method = "time"
-        best_aligned = None
-
-        for method in methods:
-            if method == "time":
-                d1, d2, offset = _align_time_based(trace1, trace2)
-            elif method == "trigger":
-                d1, d2, offset = _align_trigger_based(trace1, trace2)
-            else:  # pattern
-                d1, d2, offset = _align_pattern_based(trace1, trace2)
-
-            # Compute correlation
-            if len(d1) > 1:
-                d1_norm = (d1 - np.mean(d1)) / (np.std(d1) + 1e-10)
-                d2_norm = (d2 - np.mean(d2)) / (np.std(d2) + 1e-10)
-                corr = np.corrcoef(d1_norm, d2_norm)[0, 1]
-
-                if corr > best_corr:
-                    best_corr = corr
-                    best_method = method
-                    best_aligned = (d1, d2, offset)
-
-        data1, data2, offset = best_aligned  # type: ignore[misc]
-        alignment_method = f"{best_method}-based"
-    else:
-        # Use specified method
-        if alignment == "time":
-            data1, data2, offset = _align_time_based(trace1, trace2)
-        elif alignment == "trigger":
-            data1, data2, offset = _align_trigger_based(trace1, trace2)
-        else:  # pattern
-            data1, data2, offset = _align_pattern_based(trace1, trace2)
-
-        alignment_method = f"{alignment}-based"
+    # Align traces
+    data1, data2, offset, alignment_method = _align_traces_by_method(trace1, trace2, alignment)
 
     sample_rate = trace1.metadata.sample_rate
 
     # Detect differences
-    all_differences = []
+    all_differences = _collect_differences(data1, data2, sample_rate, difference_types)
 
-    if "timing" in difference_types:
-        all_differences.extend(_detect_timing_differences(data1, data2, sample_rate))
+    # Filter by severity
+    all_differences = _filter_by_severity(all_differences, severity_threshold)
 
-    if "amplitude" in difference_types:
-        all_differences.extend(_detect_amplitude_differences(data1, data2, sample_rate))
-
-    if "pattern" in difference_types:
-        all_differences.extend(_detect_pattern_differences(data1, data2, sample_rate))
-
-    # Sort by impact score (descending)
-    all_differences.sort(key=lambda d: d.impact_score, reverse=True)
-
-    # Filter by severity threshold
-    if severity_threshold:
-        severity_order = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
-        threshold_level = severity_order.get(severity_threshold, 0)
-
-        filtered = [
-            d for d in all_differences if severity_order.get(d.severity, 0) >= threshold_level
-        ]
-        all_differences = filtered
-
-    # Compute similarity score
-    if len(data1) > 1:
-        data1_norm = (data1 - np.mean(data1)) / (np.std(data1) + 1e-10)
-        data2_norm = (data2 - np.mean(data2)) / (np.std(data2) + 1e-10)
-        correlation = np.corrcoef(data1_norm, data2_norm)[0, 1]
-        similarity_score = float((correlation + 1) / 2)  # Map [-1,1] to [0,1]
-    else:
-        similarity_score = 1.0 if len(data1) == 0 or data1[0] == data2[0] else 0.0
+    # Compute similarity
+    correlation = _compute_correlation(data1, data2)
+    similarity_score = (correlation + 1) / 2  # Map [-1,1] to [0,1]
 
     # Build summary
-    if similarity_score > 0.95:
-        summary = "Signals are very similar"
-    elif similarity_score > 0.85:
-        summary = "Signals are similar with minor differences"
-    elif similarity_score > 0.70:
-        summary = "Signals show moderate differences"
-    else:
-        summary = "Signals are significantly different"
-
-    critical_count = sum(1 for d in all_differences if d.severity == "CRITICAL")
-    warning_count = sum(1 for d in all_differences if d.severity == "WARNING")
-
-    if critical_count > 0:
-        summary += f" ({critical_count} critical issue(s))"
-    elif warning_count > 0:
-        summary += f" ({warning_count} warning(s))"
+    summary = _build_summary(similarity_score, all_differences)
 
     # Statistics
     stats = {
-        "correlation": float(correlation) if len(data1) > 1 else 1.0,
+        "correlation": float(correlation),
         "rms_error": float(np.sqrt(np.mean((data1 - data2) ** 2))),
         "max_deviation": float(np.max(np.abs(data1 - data2))),
         "max_deviation_time": float(np.argmax(np.abs(data1 - data2)) / sample_rate),

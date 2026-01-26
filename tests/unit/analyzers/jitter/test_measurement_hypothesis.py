@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from tests.hypothesis_strategies import jitter_samples
@@ -25,8 +25,7 @@ class TestJitterMeasurementProperties:
     @settings(max_examples=50, deadline=None)
     def test_peak_to_peak_jitter_non_negative(self, jitter: np.ndarray) -> None:
         """Property: Peak-to-peak jitter is non-negative."""
-        if len(jitter) == 0:
-            pytest.skip("Empty jitter samples")
+        assume(len(jitter) > 0)
 
         pk_pk_jitter = np.max(jitter) - np.min(jitter)
 

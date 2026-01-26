@@ -316,25 +316,72 @@ class ArgumentPreparer:
         kwargs: dict[str, Any] = {}
         data_length = len(raw_data) if hasattr(raw_data, "__len__") else 0
 
+        # Add window_size if needed
+        kwargs.update(self._add_window_size_param(params, sig, data_length, kwargs))
+
+        # Add min_width if needed
+        kwargs.update(self._add_min_width_param(params, sig, sample_rate, kwargs))
+
+        # Add max_width if needed
+        kwargs.update(self._add_max_width_param(params, sig, data_length, sample_rate, kwargs))
+
+        # Add threshold if needed
+        kwargs.update(self._add_threshold_param(params, sig, raw_data, kwargs))
+
+        # Add window_duration if needed
+        kwargs.update(
+            self._add_window_duration_param(params, sig, data_length, sample_rate, kwargs)
+        )
+
+        return kwargs
+
+    def _add_window_size_param(
+        self, params: list[str], sig: inspect.Signature, data_length: int, kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Add window_size parameter."""
+        result = {}
         if "window_size" in params:
             if self._param_needs_value(sig, "window_size") and "window_size" not in kwargs:
                 window_size: Any = max(10, data_length // 10)
-                kwargs["window_size"] = window_size
-                logger.debug(f"Using auto-detected window_size: {kwargs['window_size']}")
+                result["window_size"] = window_size
+                logger.debug(f"Using auto-detected window_size: {window_size}")
+        return result
 
+    def _add_min_width_param(
+        self, params: list[str], sig: inspect.Signature, sample_rate: float, kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Add min_width parameter."""
+        result = {}
         if "min_width" in params:
             if self._param_needs_value(sig, "min_width") and "min_width" not in kwargs:
                 min_width: Any = max(1e-9, 10.0 / sample_rate)
-                kwargs["min_width"] = min_width
-                logger.debug(f"Using auto-detected min_width: {kwargs['min_width']:.2e}s")
+                result["min_width"] = min_width
+                logger.debug(f"Using auto-detected min_width: {min_width:.2e}s")
+        return result
 
+    def _add_max_width_param(
+        self,
+        params: list[str],
+        sig: inspect.Signature,
+        data_length: int,
+        sample_rate: float,
+        kwargs: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Add max_width parameter."""
+        result = {}
         if "max_width" in params:
             if self._param_needs_value(sig, "max_width") and "max_width" not in kwargs:
                 total_duration = data_length / sample_rate if data_length > 0 else 1e-3
                 max_width: Any = min(1e-3, total_duration)
-                kwargs["max_width"] = max_width
-                logger.debug(f"Using auto-detected max_width: {kwargs['max_width']:.2e}s")
+                result["max_width"] = max_width
+                logger.debug(f"Using auto-detected max_width: {max_width:.2e}s")
+        return result
 
+    def _add_threshold_param(
+        self, params: list[str], sig: inspect.Signature, raw_data: Any, kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Add threshold parameter."""
+        result = {}
         if "threshold" in params and "threshold" not in kwargs:
             param_info = sig.parameters.get("threshold")
             has_default = (
@@ -344,21 +391,29 @@ class ArgumentPreparer:
                 try:
                     if isinstance(raw_data, np.ndarray) and raw_data.size > 0:
                         threshold: Any = float(np.median(raw_data))
-                        kwargs["threshold"] = threshold
-                        logger.debug(f"Using auto-detected threshold: {kwargs['threshold']:.3f}")
+                        result["threshold"] = threshold
+                        logger.debug(f"Using auto-detected threshold: {threshold:.3f}")
                 except Exception as e:
                     logger.debug(f"Could not auto-detect threshold: {e}")
+        return result
 
+    def _add_window_duration_param(
+        self,
+        params: list[str],
+        sig: inspect.Signature,
+        data_length: int,
+        sample_rate: float,
+        kwargs: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Add window_duration parameter."""
+        result = {}
         if "window_duration" in params:
             if self._param_needs_value(sig, "window_duration") and "window_duration" not in kwargs:
                 total_duration = data_length / sample_rate if data_length > 0 else 1.0
                 window_duration: Any = min(1.0, total_duration / 10.0)
-                kwargs["window_duration"] = window_duration
-                logger.debug(
-                    f"Using auto-detected window_duration: {kwargs['window_duration']:.3f}s"
-                )
-
-        return kwargs
+                result["window_duration"] = window_duration
+                logger.debug(f"Using auto-detected window_duration: {window_duration:.3f}s")
+        return result
 
     def _param_needs_value(self, sig: inspect.Signature, param_name: str) -> bool:
         """Check if parameter needs a value (no default or default is None)."""

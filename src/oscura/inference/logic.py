@@ -18,7 +18,7 @@ References:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -167,7 +167,11 @@ def detect_logic_family(
         )
 
     # Sort by confidence
-    candidates.sort(key=lambda x: x["confidence"], reverse=True)  # type: ignore[arg-type, return-value, syntax]
+    # Type narrowing: x["confidence"] is object, but we know it's a float-like value
+    candidates.sort(
+        key=lambda x: float(cast("float", x["confidence"])) if x["confidence"] is not None else 0.0,
+        reverse=True,
+    )
 
     # Primary detection
     primary = candidates[0]

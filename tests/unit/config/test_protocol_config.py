@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from oscura.config.protocol import (
+from oscura.core.config.protocol import (
     ProtocolCapabilities,
     ProtocolDefinition,
     ProtocolRegistry,
@@ -23,7 +23,7 @@ from oscura.config.protocol import (
     migrate_protocol_schema,
     resolve_inheritance,
 )
-from oscura.config.schema import (
+from oscura.core.config.schema import (
     ValidationError,
     validate_against_schema,
 )

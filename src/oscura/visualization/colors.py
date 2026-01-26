@@ -256,7 +256,7 @@ def _adjust_for_contrast(
     b = int(color_val[4:6], 16)
 
     # Convert to HSL for easier lightness adjustment
-    h, s, l = _rgb_to_hsl(r, g, b)  # noqa: E741
+    h, s, l = _rgb_to_hsl(r, g, b)
 
     bg_lum = _relative_luminance(background)
 
@@ -280,18 +280,18 @@ def _adjust_for_contrast(
             if bg_lum > 0.5:
                 # Dark background - make lighter
                 l_min = l
-                l = (l + l_max) / 2  # noqa: E741
+                l = (l + l_max) / 2
             else:
                 # Light background - make darker
                 l_max = l
-                l = (l_min + l) / 2  # noqa: E741
+                l = (l_min + l) / 2
         # Too much contrast - move back
         elif bg_lum > 0.5:
             l_max = l
-            l = (l_min + l) / 2  # noqa: E741
+            l = (l_min + l) / 2
         else:
             l_min = l
-            l = (l + l_max) / 2  # noqa: E741
+            l = (l + l_max) / 2
 
         iterations += 1
 
@@ -319,7 +319,7 @@ def _rgb_to_hsl(r: int, g: int, b: int) -> tuple[float, float, float]:
     delta = max_c - min_c
 
     # Lightness
-    l = (max_c + min_c) / 2.0  # noqa: E741
+    l = (max_c + min_c) / 2.0
 
     if delta == 0:
         # Achromatic
@@ -341,7 +341,7 @@ def _rgb_to_hsl(r: int, g: int, b: int) -> tuple[float, float, float]:
     return (h, s, l)
 
 
-def _hsl_to_rgb(h: float, s: float, l: float) -> tuple[int, int, int]:  # noqa: E741
+def _hsl_to_rgb(h: float, s: float, l: float) -> tuple[int, int, int]:
     """Convert HSL to RGB color space.
 
     Args:

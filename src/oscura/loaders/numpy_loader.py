@@ -78,90 +78,104 @@ def load_npz(
         CSV, or HDF5.
     """
     path = Path(path)
+    _validate_npz_file_exists(path)
 
-    if not path.exists():
-        raise LoaderError(
-            "File not found",
-            file_path=str(path),
-        )
+    npz = _load_npz_archive(path, mmap)
 
     try:
-        npz = np.load(path, allow_pickle=True, mmap_mode="r" if mmap else None)
-    except Exception as e:
-        raise LoaderError(
-            "Failed to load NPZ file",
-            file_path=str(path),
-            details=str(e),
-        ) from e
-
-    try:
-        # Find waveform data array
-        data_array = _find_data_array(npz, channel)
-
-        if data_array is None:
-            available = list(npz.keys())
-            raise FormatError(
-                "No waveform data found in NPZ file",
-                file_path=str(path),
-                expected=f"Array named: {', '.join(DATA_ARRAY_NAMES)}",
-                got=f"Arrays: {', '.join(available)}",
-            )
-
-        # Convert to float64 (keep mmap if enabled)
-        if mmap and isinstance(data_array, np.memmap):
-            # Keep as memmap, just ensure float64 dtype
-            if data_array.dtype != np.float64:
-                # For memmap, we need to copy to convert dtype
-                try:
-                    data = data_array.astype(np.float64)
-                except (ValueError, TypeError) as e:
-                    raise FormatError(
-                        "Data array is not numeric",
-                        file_path=str(path),
-                        expected="Numeric dtype (int, float)",
-                        got=f"{data_array.dtype}",
-                    ) from e
-            else:
-                data = data_array
-        else:
-            try:
-                data = data_array.astype(np.float64)
-            except (ValueError, TypeError) as e:
-                raise FormatError(
-                    "Data array is not numeric",
-                    file_path=str(path),
-                    expected="Numeric dtype (int, float)",
-                    got=f"{data_array.dtype}",
-                ) from e
-
-        # Extract metadata
-        detected_sample_rate = _find_metadata_value(npz, SAMPLE_RATE_KEYS)
-        detected_vertical_scale = _find_metadata_value(npz, VERTICAL_SCALE_KEYS)
-        detected_vertical_offset = _find_metadata_value(npz, VERTICAL_OFFSET_KEYS)
-
-        # Use provided sample_rate if specified
-        if sample_rate is not None:
-            detected_sample_rate = sample_rate
-        elif detected_sample_rate is None:
-            detected_sample_rate = 1e6  # Default to 1 MSa/s
-
-        # Build metadata
-        metadata = TraceMetadata(
-            sample_rate=float(detected_sample_rate),
-            vertical_scale=float(detected_vertical_scale)
-            if detected_vertical_scale is not None
-            else None,
-            vertical_offset=float(detected_vertical_offset)
-            if detected_vertical_offset is not None
-            else None,
-            source_file=str(path),
-            channel_name=_get_channel_name(npz, channel),
-        )
-
+        data_array = _extract_data_array(npz, channel, path)
+        data = _convert_to_float64(data_array, mmap, path)
+        metadata = _build_npz_metadata(npz, sample_rate, channel, path)
         return WaveformTrace(data=data, metadata=metadata)
-
     finally:
         npz.close()
+
+
+def _validate_npz_file_exists(path: Path) -> None:
+    """Validate that NPZ file exists."""
+    if not path.exists():
+        raise LoaderError("File not found", file_path=str(path))
+
+
+def _load_npz_archive(path: Path, mmap: bool) -> Any:
+    """Load NPZ archive with optional memory mapping."""
+    try:
+        return np.load(path, allow_pickle=True, mmap_mode="r" if mmap else None)
+    except Exception as e:
+        raise LoaderError("Failed to load NPZ file", file_path=str(path), details=str(e)) from e
+
+
+def _extract_data_array(npz: Any, channel: str | int | None, path: Path) -> Any:
+    """Find and extract data array from NPZ file."""
+    data_array = _find_data_array(npz, channel)
+
+    if data_array is None:
+        available = list(npz.keys())
+        raise FormatError(
+            "No waveform data found in NPZ file",
+            file_path=str(path),
+            expected=f"Array named: {', '.join(DATA_ARRAY_NAMES)}",
+            got=f"Arrays: {', '.join(available)}",
+        )
+
+    return data_array
+
+
+def _convert_to_float64(data_array: Any, mmap: bool, path: Path) -> NDArray[np.float64]:
+    """Convert data array to float64, preserving memmap if enabled."""
+    if mmap and isinstance(data_array, np.memmap):
+        return _convert_memmap_to_float64(data_array, path)
+
+    return _convert_array_to_float64(data_array, path)
+
+
+def _convert_memmap_to_float64(data_array: np.memmap[Any, Any], path: Path) -> NDArray[np.float64]:
+    """Convert memmap array to float64."""
+    if data_array.dtype == np.float64:
+        return data_array
+
+    try:
+        return data_array.astype(np.float64)
+    except (ValueError, TypeError) as e:
+        raise FormatError(
+            "Data array is not numeric",
+            file_path=str(path),
+            expected="Numeric dtype (int, float)",
+            got=f"{data_array.dtype}",
+        ) from e
+
+
+def _convert_array_to_float64(data_array: Any, path: Path) -> NDArray[np.float64]:
+    """Convert regular array to float64."""
+    try:
+        converted: NDArray[np.float64] = np.asarray(data_array.astype(np.float64), dtype=np.float64)
+        return converted
+    except (ValueError, TypeError) as e:
+        raise FormatError(
+            "Data array is not numeric",
+            file_path=str(path),
+            expected="Numeric dtype (int, float)",
+            got=f"{data_array.dtype}",
+        ) from e
+
+
+def _build_npz_metadata(
+    npz: Any, sample_rate: float | None, channel: str | int | None, path: Path
+) -> TraceMetadata:
+    """Build metadata from NPZ file."""
+    detected_sample_rate = _find_metadata_value(npz, SAMPLE_RATE_KEYS)
+    detected_vertical_scale = _find_metadata_value(npz, VERTICAL_SCALE_KEYS)
+    detected_vertical_offset = _find_metadata_value(npz, VERTICAL_OFFSET_KEYS)
+
+    final_sample_rate = sample_rate if sample_rate is not None else detected_sample_rate or 1e6
+
+    return TraceMetadata(
+        sample_rate=float(final_sample_rate),
+        vertical_scale=float(detected_vertical_scale) if detected_vertical_scale else None,
+        vertical_offset=float(detected_vertical_offset) if detected_vertical_offset else None,
+        source_file=str(path),
+        channel_name=_get_channel_name(npz, channel),
+    )
 
 
 def _find_data_array(
@@ -181,28 +195,86 @@ def _find_data_array(
 
     # If channel specified by name
     if isinstance(channel, str):
-        if channel in keys:
-            return npz[channel]
-        # Try case-insensitive match
-        channel_lower = channel.lower()
-        for key in keys:
-            if key.lower() == channel_lower:
-                return npz[key]
-        return None
+        return _find_array_by_name(npz, keys, channel)
 
     # If channel specified by index
     if isinstance(channel, int):
-        # Find numeric-suffixed arrays (ch1, ch2, etc.)
-        channel_arrays = [k for k in keys if _is_channel_array(k)]
-        if channel_arrays and channel < len(channel_arrays):
-            return npz[sorted(channel_arrays)[channel]]
-        # Or use nth array
-        data_arrays = [k for k in keys if _is_data_array(k)]
-        if data_arrays and channel < len(data_arrays):
-            return npz[data_arrays[channel]]
-        return None
+        return _find_array_by_index(npz, keys, channel)
 
     # Auto-detect: look for common data array names
+    return _find_array_auto_detect(npz, keys)
+
+
+def _find_array_by_name(
+    npz: np.lib.npyio.NpzFile,
+    keys: list[str],
+    channel: str,
+) -> NDArray[np.float64] | None:
+    """Find array by exact or case-insensitive channel name.
+
+    Args:
+        npz: Loaded NPZ file.
+        keys: List of available keys.
+        channel: Channel name to find.
+
+    Returns:
+        Array if found, None otherwise.
+    """
+    # Exact match
+    if channel in keys:
+        return npz[channel]
+
+    # Case-insensitive match
+    channel_lower = channel.lower()
+    for key in keys:
+        if key.lower() == channel_lower:
+            return npz[key]
+
+    return None
+
+
+def _find_array_by_index(
+    npz: np.lib.npyio.NpzFile,
+    keys: list[str],
+    channel: int,
+) -> NDArray[np.float64] | None:
+    """Find array by channel index.
+
+    Args:
+        npz: Loaded NPZ file.
+        keys: List of available keys.
+        channel: Channel index.
+
+    Returns:
+        Array if found, None otherwise.
+    """
+    # Try numeric-suffixed arrays (ch1, ch2, etc.)
+    channel_arrays = [k for k in keys if _is_channel_array(k)]
+    if channel_arrays and channel < len(channel_arrays):
+        return npz[sorted(channel_arrays)[channel]]
+
+    # Fall back to nth data array
+    data_arrays = [k for k in keys if _is_data_array(k)]
+    if data_arrays and channel < len(data_arrays):
+        return npz[data_arrays[channel]]
+
+    return None
+
+
+def _find_array_auto_detect(
+    npz: np.lib.npyio.NpzFile,
+    keys: list[str],
+) -> NDArray[np.float64] | None:
+    """Auto-detect waveform data array from common names.
+
+    Args:
+        npz: Loaded NPZ file.
+        keys: List of available keys.
+
+    Returns:
+        Array if found, None otherwise.
+    """
+    # Look for common data array names
     for name in DATA_ARRAY_NAMES:
         if name in keys:
             return npz[name]
@@ -212,13 +284,11 @@ def _find_data_array(
             if key.lower() == name_lower:
                 return npz[key]
 
-    # Fall back to first 1D or 2D array
+    # Fall back to first 1D or 2D array (large enough to be data)
     for key in keys:
         arr = npz[key]
-        if isinstance(arr, np.ndarray) and arr.ndim in (1, 2):
-            # Skip metadata scalars
-            if arr.size > 10:  # Arbitrary threshold
-                return arr.ravel() if arr.ndim == 2 else arr
+        if isinstance(arr, np.ndarray) and arr.ndim in (1, 2) and arr.size > 10:
+            return arr.ravel() if arr.ndim == 2 else arr
 
     return None
 
@@ -254,37 +324,104 @@ def _find_metadata_value(
     """
     keys = list(npz.keys())
 
+    # Try exact and case-insensitive matches in keys
+    value = _find_value_in_keys(npz, keys, key_names)
+    if value is not None:
+        return value
+
+    # Check for metadata dict
+    return _find_value_in_metadata_dict(npz, keys, key_names)
+
+
+def _find_value_in_keys(
+    npz: np.lib.npyio.NpzFile,
+    keys: list[str],
+    key_names: list[str],
+) -> float | None:
+    """Find value by exact or case-insensitive match in keys.
+
+    Args:
+        npz: Loaded NPZ file.
+        keys: List of available keys.
+        key_names: List of possible key names to try.
+
+    Returns:
+        Metadata value or None if not found.
+    """
     for name in key_names:
         # Exact match
-        if name in keys:
-            value = npz[name]
-            if np.isscalar(value):
-                return float(value)  # type: ignore[arg-type]
-            elif isinstance(value, np.ndarray) and value.size == 1:
-                return float(value.item())  # type: ignore[arg-type]
+        value = _try_extract_float_from_key(npz, keys, name, name)
+        if value is not None:
+            return value
 
         # Case-insensitive match
         name_lower = name.lower()
         for key in keys:
             if key.lower() == name_lower:
-                value = npz[key]
-                if np.isscalar(value):
-                    return float(value)  # type: ignore[arg-type]
-                elif isinstance(value, np.ndarray) and value.size == 1:
-                    return float(value.item())  # type: ignore[arg-type]
+                value = _try_extract_float_from_key(npz, keys, key, name_lower)
+                if value is not None:
+                    return value
 
-    # Check for metadata dict
-    if "metadata" in keys:
-        metadata = npz["metadata"]
-        if isinstance(metadata, np.ndarray):
-            try:
-                meta_dict = metadata.item()
-                if isinstance(meta_dict, dict):
-                    for name in key_names:
-                        if name in meta_dict:
-                            return float(meta_dict[name])
-            except (ValueError, TypeError):
-                pass
+    return None
+
+
+def _try_extract_float_from_key(
+    npz: np.lib.npyio.NpzFile,
+    keys: list[str],
+    key: str,
+    _name: str,
+) -> float | None:
+    """Try to extract float value from NPZ key.
+
+    Args:
+        npz: Loaded NPZ file.
+        keys: List of available keys.
+        key: Key to check.
+        _name: Original name (for matching, unused).
+
+    Returns:
+        Float value or None.
+    """
+    if key not in keys:
+        return None
+
+    value = npz[key]
+    if np.isscalar(value):
+        return float(value)  # type: ignore[arg-type]
+    elif isinstance(value, np.ndarray) and value.size == 1:
+        return float(value.item())
+
+    return None
+
+
+def _find_value_in_metadata_dict(
+    npz: np.lib.npyio.NpzFile,
+    keys: list[str],
+    key_names: list[str],
+) -> float | None:
+    """Find value in metadata dictionary.
+
+    Args:
+        npz: Loaded NPZ file.
+        keys: List of available keys.
+        key_names: List of possible key names to try.
+
+    Returns:
+        Metadata value or None if not found.
+    """
+    if "metadata" not in keys:
+        return None
+
+    metadata = npz["metadata"]
+    # NPZ files always return np.ndarray for valid keys
+    try:
+        meta_dict = metadata.item()
+        if isinstance(meta_dict, dict):
+            for name in key_names:
+                if name in meta_dict:
+                    return float(meta_dict[name])
+    except (ValueError, TypeError):
+        pass
 
     return None
 

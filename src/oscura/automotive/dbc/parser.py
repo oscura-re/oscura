@@ -30,7 +30,7 @@ class DBCParser:
             FileNotFoundError: If DBC file doesn't exist.
         """
         try:
-            import cantools  # type: ignore[import-untyped]
+            import cantools
         except ImportError as e:
             raise ImportError(
                 "cantools is required for DBC file support. "
@@ -58,7 +58,7 @@ class DBCParser:
         """
         # Get message definition from DBC
         try:
-            msg_def = self.db.get_message_by_frame_id(message.arbitration_id)  # type: ignore[union-attr]
+            msg_def = self.db.get_message_by_frame_id(message.arbitration_id)
         except KeyError as e:
             raise KeyError(f"Message ID 0x{message.arbitration_id:03X} not found in DBC") from e
 
@@ -70,7 +70,7 @@ class DBCParser:
 
         # Convert to DecodedSignal objects
         signals = {}
-        for signal_name, value in decoded_data.items():  # type: ignore[union-attr]
+        for signal_name, value in decoded_data.items():
             # Get signal definition from DBC
             signal_def = msg_def.get_signal_by_name(signal_name)
 
@@ -94,7 +94,7 @@ class DBCParser:
             # Create DecodedSignal
             decoded_sig = DecodedSignal(
                 name=signal_name,
-                value=float(value),  # type: ignore[arg-type]
+                value=float(value),
                 unit=sig_def.unit,
                 timestamp=message.timestamp,
                 definition=sig_def,
@@ -110,7 +110,7 @@ class DBCParser:
         Returns:
             Set of CAN arbitration IDs.
         """
-        return {msg.frame_id for msg in self.db.messages}  # type: ignore[union-attr]
+        return {msg.frame_id for msg in self.db.messages}
 
     def get_message_name(self, arbitration_id: int) -> str | None:
         """Get message name from DBC.
@@ -122,7 +122,7 @@ class DBCParser:
             Message name or None if not found.
         """
         try:
-            msg = self.db.get_message_by_frame_id(arbitration_id)  # type: ignore[union-attr]
+            msg = self.db.get_message_by_frame_id(arbitration_id)
             return str(msg.name)  # Explicit cast to str
         except KeyError:
             return None

@@ -43,7 +43,7 @@ except (ImportError, AttributeError):
     HAS_GPU = False
 
 try:
-    import numba  # type: ignore[import-not-found]
+    import numba
 
     HAS_NUMBA = True
     del numba
@@ -51,10 +51,10 @@ except ImportError:
     HAS_NUMBA = False
 
 try:
-    import dask.array  # type: ignore[import-not-found, import-untyped]
+    import dask.array  # type: ignore[import-not-found]  # Optional dependency
 
     HAS_DASK = True
-    del dask  # type: ignore[name-defined]
+    del dask
 except ImportError:
     HAS_DASK = False
 

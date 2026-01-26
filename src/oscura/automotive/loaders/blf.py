@@ -32,7 +32,7 @@ def load_blf(file_path: Path | str) -> CANMessageList:
         >>> print(f"Unique IDs: {len(messages.unique_ids())}")
     """
     try:
-        import can  # type: ignore[import-untyped]
+        import can
     except ImportError as e:
         raise ImportError(
             "python-can is required for BLF file support. "
@@ -56,8 +56,19 @@ def load_blf(file_path: Path | str) -> CANMessageList:
                     ch = msg.channel
                     if isinstance(ch, int):
                         channel = ch
+                    elif isinstance(ch, str):
+                        channel = int(ch)
                     elif ch is not None:
-                        channel = int(ch)  # type: ignore[arg-type]
+                        # Handle other types (e.g., sequences), default to 0 if conversion fails
+                        try:
+                            # Convert sequences to single value
+                            from collections.abc import Sequence as ABCSequence
+
+                            if isinstance(ch, ABCSequence):
+                                channel = int(ch[0]) if ch else 0
+                            # Note: other cases caught by exception handler
+                        except (TypeError, ValueError, IndexError):
+                            channel = 0
 
                 can_msg = CANMessage(
                     arbitration_id=msg.arbitration_id,

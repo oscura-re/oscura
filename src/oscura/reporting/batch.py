@@ -114,8 +114,6 @@ def batch_report(
     References:
         RPT-003: Batch Report Generation
     """
-    import oscura as osc
-    from oscura.reporting.template_system import load_template
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -124,81 +122,156 @@ def batch_report(
     batch_results: list[dict[str, Any]] = []
 
     # Load template
-    try:
-        report_template = load_template(template)
-    except ValueError:
-        logger.warning(f"Template '{template}' not found, using 'default'")
-        report_template = load_template("default")
+    report_template = _load_report_template(template)
 
-    # Default DUT ID extractor
-    if dut_id_extractor is None:
-
-        def dut_id_extractor(p: Path) -> str:
-            return Path(p).stem
+    # Get DUT ID extractor
+    extractor = dut_id_extractor or _default_dut_id_extractor
 
     # Process each file
+    batch_results = _process_files(
+        files,
+        extractor,
+        analyzer,
+        result,
+        output_path,
+        report_template,
+        output_format,
+        file_pattern,
+        generate_individual,
+    )
+
+    # Generate summary report if requested
+    if generate_summary and batch_results:
+        _create_summary_report(batch_results, output_path, summary_filename, output_format, result)
+
+    return result
+
+
+def _load_report_template(template: str) -> Any:
+    """Load report template with fallback to default."""
+    from oscura.reporting.template_system import load_template
+
+    try:
+        return load_template(template)
+    except ValueError:
+        logger.warning(f"Template '{template}' not found, using 'default'")
+        return load_template("default")
+
+
+def _default_dut_id_extractor(path: Path) -> str:
+    """Extract DUT ID from file path (default: use stem)."""
+    return Path(path).stem
+
+
+def _process_files(
+    files: list[str | Path],
+    dut_id_extractor: Callable[[Path], str],
+    analyzer: Callable[[Any], dict[str, Any]] | None,
+    result: BatchReportResult,
+    output_path: Path,
+    report_template: Any,
+    output_format: str,
+    file_pattern: str,
+    generate_individual: bool,
+) -> list[dict[str, Any]]:
+    """Process all files and generate individual reports."""
+
+    batch_results: list[dict[str, Any]] = []
+
     for file_path in files:
         file_path = Path(file_path)
         dut_id = dut_id_extractor(file_path)
 
-        try:
-            # Load trace
-            trace = osc.load(str(file_path))
+        dut_result = _process_single_file(file_path, dut_id, analyzer, result)
 
-            # Run analysis
-            if analyzer is not None:
-                dut_result = analyzer(trace)
-            else:
-                # Default analysis
-                dut_result = _default_analysis(trace)
-
-            # Add DUT metadata
-            dut_result["dut_id"] = dut_id
-            dut_result["source_file"] = str(file_path)
-
+        if dut_result is not None:
             batch_results.append(dut_result)
 
-            # Check pass/fail
-            if dut_result.get("pass_count", 0) == dut_result.get("total_count", 0):
-                result.passed_duts += 1
-            else:
-                result.failed_duts += 1
-
-            result.total_duts += 1
-
-            # Generate individual report if requested
             if generate_individual:
-                ext = output_format.lower()
-                individual_filename = file_pattern.format(dut_id=dut_id, ext=ext)
-                individual_path = output_path / individual_filename
+                _save_individual_report(
+                    dut_result,
+                    dut_id,
+                    output_path,
+                    file_pattern,
+                    output_format,
+                    report_template,
+                    result,
+                )
 
-                try:
-                    _generate_individual_report(
-                        dut_result, individual_path, report_template, output_format
-                    )
-                    result.individual_report_paths.append(individual_path)
-                except Exception as e:
-                    logger.error(f"Failed to generate report for {dut_id}: {e}")
-                    result.errors.append((dut_id, str(e)))
+    return batch_results
 
-        except Exception as e:
-            logger.error(f"Failed to process {file_path}: {e}")
-            result.errors.append((str(file_path), str(e)))
 
-    # Generate summary report if requested
-    if generate_summary and batch_results:
-        ext = output_format.lower()
-        summary_path = output_path / summary_filename.format(ext=ext)
+def _process_single_file(
+    file_path: Path,
+    dut_id: str,
+    analyzer: Callable[[Any], dict[str, Any]] | None,
+    result: BatchReportResult,
+) -> dict[str, Any] | None:
+    """Process a single DUT file and update result statistics."""
+    import oscura as osc
 
-        try:
-            summary_report = generate_batch_report(batch_results)
-            _save_report(summary_report, summary_path, output_format)
-            result.summary_report_path = summary_path
-        except Exception as e:
-            logger.error(f"Failed to generate summary report: {e}")
-            result.errors.append(("summary", str(e)))
+    try:
+        trace = osc.load(str(file_path))
+        dut_result = analyzer(trace) if analyzer else _default_analysis(trace)
 
-    return result
+        dut_result["dut_id"] = dut_id
+        dut_result["source_file"] = str(file_path)
+
+        # Update pass/fail counts
+        if dut_result.get("pass_count", 0) == dut_result.get("total_count", 0):
+            result.passed_duts += 1
+        else:
+            result.failed_duts += 1
+
+        result.total_duts += 1
+        return dut_result
+
+    except Exception as e:
+        logger.error(f"Failed to process {file_path}: {e}")
+        result.errors.append((str(file_path), str(e)))
+        return None
+
+
+def _save_individual_report(
+    dut_result: dict[str, Any],
+    dut_id: str,
+    output_path: Path,
+    file_pattern: str,
+    output_format: str,
+    report_template: Any,
+    result: BatchReportResult,
+) -> None:
+    """Save individual DUT report."""
+    ext = output_format.lower()
+    individual_filename = file_pattern.format(dut_id=dut_id, ext=ext)
+    individual_path = output_path / individual_filename
+
+    try:
+        _generate_individual_report(dut_result, individual_path, report_template, output_format)
+        result.individual_report_paths.append(individual_path)
+    except Exception as e:
+        logger.error(f"Failed to generate report for {dut_id}: {e}")
+        result.errors.append((dut_id, str(e)))
+
+
+def _create_summary_report(
+    batch_results: list[dict[str, Any]],
+    output_path: Path,
+    summary_filename: str,
+    output_format: str,
+    result: BatchReportResult,
+) -> None:
+    """Create and save summary report."""
+    ext = output_format.lower()
+    summary_path = output_path / summary_filename.format(ext=ext)
+
+    try:
+        summary_report = generate_batch_report(batch_results)
+        _save_report(summary_report, summary_path, output_format)
+        result.summary_report_path = summary_path
+    except Exception as e:
+        logger.error(f"Failed to generate summary report: {e}")
+        result.errors.append(("summary", str(e)))
 
 
 def _default_analysis(trace: Any) -> dict[str, Any]:

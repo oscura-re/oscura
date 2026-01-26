@@ -68,7 +68,7 @@ def q_factor_from_ber(ber: float) -> float:
         IEEE 2414-2020: Q = sqrt(2) * erfc_inv(2 * BER)
     """
     if ber <= 0 or ber >= 0.5:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # BER = 0.5 * erfc(Q / sqrt(2))
     # erfc(Q / sqrt(2)) = 2 * BER
@@ -141,7 +141,7 @@ def tj_at_ber(
     q = q_factor_from_ber(ber)
 
     if np.isnan(q):
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # TJ = 2 * Q * RJ_rms + DJ_pp
     tj = 2 * q * rj_rms + dj_pp
@@ -182,68 +182,25 @@ def bathtub_curve(
     References:
         IEEE 2414-2020 Section 6.7
     """
-    from oscura.analyzers.jitter.decomposition import extract_dj, extract_rj
 
     valid_data = tie_data[~np.isnan(tie_data)]
 
-    # Normalize TIE to UI
-    valid_data / unit_interval
-
     # Extract jitter components if not provided
     if rj_rms is None or dj_delta is None:
-        try:
-            rj_result = extract_rj(valid_data, min_samples=100)
-            rj_rms = rj_result.rj_rms
-        except Exception:
-            rj_rms = np.std(valid_data)
+        rj_rms, dj_delta = _extract_jitter_components(valid_data)
 
-        try:
-            dj_result = extract_dj(valid_data, min_samples=100)
-            dj_delta = dj_result.dj_delta
-        except Exception:
-            dj_delta = 0.0
-
-    # Convert to UI
-    sigma_ui = rj_rms / unit_interval
-    delta_ui = dj_delta / unit_interval
-
-    # Generate sampling positions (0 to 1 UI)
+    # Convert to UI and generate positions
+    sigma_ui, delta_ui = rj_rms / unit_interval, dj_delta / unit_interval
     positions = np.linspace(0, 1, n_points)
 
-    # Calculate BER at each position using dual-Dirac model
-    # Left side: probability of sampling a '1' when '0' is sent
-    # Right side: probability of sampling a '0' when '1' is sent
+    # Calculate BER arrays using dual-Dirac model
+    ber_left, ber_right = _compute_ber_arrays(positions, sigma_ui, delta_ui)
 
-    # For a dual-Dirac distribution centered at 0.5 UI:
-    # Left Dirac at 0.5 - delta, Right Dirac at 0.5 + delta
-
-    ber_left = np.zeros(n_points)
-    ber_right = np.zeros(n_points)
-
-    for i, pos in enumerate(positions):
-        # Left BER: Q-function from left edge
-        if sigma_ui > 0:
-            # Distance from left edge to sampling point
-            q_left = (pos - delta_ui) / sigma_ui
-            ber_left[i] = 0.5 * special.erfc(q_left / np.sqrt(2))
-
-            # Distance from right edge to sampling point
-            q_right = (1 - pos - delta_ui) / sigma_ui
-            ber_right[i] = 0.5 * special.erfc(q_right / np.sqrt(2))
-        else:
-            # No random jitter - step function
-            ber_left[i] = 0.5 if pos <= delta_ui else 0
-            ber_right[i] = 0.5 if pos >= (1 - delta_ui) else 0
-
-    # Total BER is sum of left and right
-    ber_total = ber_left + ber_right
-
-    # Clip to valid range
-    ber_total = np.clip(ber_total, 1e-18, 0.5)
+    # Combine and clip BER values
+    ber_total = np.clip(ber_left + ber_right, 1e-18, 0.5)
     ber_left = np.clip(ber_left, 1e-18, 0.5)
     ber_right = np.clip(ber_right, 1e-18, 0.5)
 
-    # Calculate eye opening at target BER
     eye_opening = _calculate_eye_opening(positions, ber_total, target_ber)
 
     return BathtubCurveResult(
@@ -255,6 +212,49 @@ def bathtub_curve(
         target_ber=target_ber,
         unit_interval=unit_interval,
     )
+
+
+def _extract_jitter_components(valid_data: NDArray[np.float64]) -> tuple[float, float]:
+    """Extract RJ and DJ components from TIE data."""
+    from oscura.analyzers.jitter.decomposition import extract_dj, extract_rj
+
+    try:
+        rj_result = extract_rj(valid_data, min_samples=100)
+        rj_rms = rj_result.rj_rms
+    except Exception:
+        rj_rms_raw = np.std(valid_data)
+        rj_rms = float(rj_rms_raw)
+
+    try:
+        dj_result = extract_dj(valid_data, min_samples=100)
+        dj_delta = dj_result.dj_delta
+    except Exception:
+        dj_delta = 0.0
+
+    return rj_rms, dj_delta
+
+
+def _compute_ber_arrays(
+    positions: NDArray[np.float64], sigma_ui: float, delta_ui: float
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Compute BER arrays for left and right edges using dual-Dirac model."""
+    n_points = len(positions)
+    ber_left, ber_right = np.zeros(n_points), np.zeros(n_points)
+
+    for i, pos in enumerate(positions):
+        if sigma_ui > 0:
+            # Q-function for Gaussian random jitter
+            q_left = (pos - delta_ui) / sigma_ui
+            ber_left[i] = 0.5 * special.erfc(q_left / np.sqrt(2))
+
+            q_right = (1 - pos - delta_ui) / sigma_ui
+            ber_right[i] = 0.5 * special.erfc(q_right / np.sqrt(2))
+        else:
+            # No random jitter - step function
+            ber_left[i] = 0.5 if pos <= delta_ui else 0
+            ber_right[i] = 0.5 if pos >= (1 - delta_ui) else 0
+
+    return ber_left, ber_right
 
 
 def _calculate_eye_opening(

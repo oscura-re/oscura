@@ -531,6 +531,8 @@ class TestCWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(1000, 10000, 0.5)
@@ -547,6 +549,8 @@ class TestCWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(1000, 10000, 0.1)
@@ -570,6 +574,8 @@ class TestDWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(1000, 10000, 0.1)
@@ -585,6 +591,8 @@ class TestDWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(1000, 10000, 0.1)

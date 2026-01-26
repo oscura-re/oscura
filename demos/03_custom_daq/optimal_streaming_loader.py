@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Optimal memory-efficient custom DAQ loader using Oscura core streaming APIs.
 
+# SKIP_VALIDATION: Processes 2.9GB file, takes >30s
+
 This script demonstrates the OPTIMAL way to load large custom DAQ files
 using Oscura's core streaming infrastructure. All core functionality
 (packet streaming, channel extraction) is handled by Oscura's proven

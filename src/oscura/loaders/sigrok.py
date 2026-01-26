@@ -60,90 +60,23 @@ def load_sigrok(
         sigrok session file format specification
     """
     path = Path(path)
-
-    if not path.exists():
-        raise LoaderError(
-            "File not found",
-            file_path=str(path),
-        )
-
-    if not zipfile.is_zipfile(path):
-        raise FormatError(
-            "File is not a valid sigrok session (not a ZIP archive)",
-            file_path=str(path),
-            expected="ZIP archive",
-        )
+    _validate_sigrok_file(path)
 
     try:
         with zipfile.ZipFile(path, "r") as zf:
-            # Parse metadata
+            # Parse metadata and extract channel info
             metadata_dict = _parse_metadata(zf, path)
+            sample_rate, channels, total_channels = _extract_channel_info(metadata_dict)
 
-            # Get sample rate from metadata
-            sample_rate = metadata_dict.get("samplerate", 1_000_000)
+            # Read logic data
+            data = _load_logic_data(zf, path, total_channels)
 
-            # Get channel information
-            channels = metadata_dict.get("channels", [])
-            total_channels = metadata_dict.get("total probes", len(channels))
+            # Select channel and build trace
+            channel_data, channel_name = _select_channel_data(data, channel, channels, path)
 
-            # Find and read logic data files
-            logic_files = [name for name in zf.namelist() if name.startswith("logic-1")]
-
-            if not logic_files:
-                raise FormatError(
-                    "No logic data found in sigrok session",
-                    file_path=str(path),
-                    expected="logic-1-* data files",
-                )
-
-            # Read and combine logic data
-            data = _read_logic_data(zf, logic_files, total_channels)
-
-            # Select specific channel if requested
-            if channel is not None:
-                if isinstance(channel, int):
-                    if channel < 0 or channel >= data.shape[0]:
-                        raise LoaderError(
-                            f"Channel index {channel} out of range",
-                            file_path=str(path),
-                            details=f"Available channels: 0-{data.shape[0] - 1}",
-                        )
-                    channel_data = data[channel]
-                    channel_name = channels[channel] if channel < len(channels) else f"D{channel}"
-                elif isinstance(channel, str):
-                    if channel in channels:
-                        idx = channels.index(channel)
-                        channel_data = data[idx]
-                        channel_name = channel
-                    else:
-                        raise LoaderError(
-                            f"Channel '{channel}' not found",
-                            file_path=str(path),
-                            details=f"Available channels: {channels}",
-                        )
-                else:
-                    channel_data = data[0]  # type: ignore[unreachable]
-                    channel_name = channels[0] if channels else "D0"
-            else:
-                # Default to first channel
-                channel_data = data[0] if data.ndim > 1 else data
-                channel_name = channels[0] if channels else "D0"
-
-            # Compute edges
-            edges = _compute_edges(channel_data, sample_rate)
-
-            # Build metadata
-            trace_metadata = TraceMetadata(
-                sample_rate=float(sample_rate),
-                source_file=str(path),
-                channel_name=channel_name,
-                trigger_info=metadata_dict.get("trigger", None),
-            )
-
-            return DigitalTrace(
-                data=channel_data,
-                metadata=trace_metadata,
-                edges=edges,
+            # Compute edges and build trace
+            return _build_digital_trace(
+                channel_data, channel_name, sample_rate, metadata_dict, path
             )
 
     except zipfile.BadZipFile as e:
@@ -161,6 +94,196 @@ def load_sigrok(
             details=str(e),
             fix_hint="Ensure the file is a valid sigrok session (.sr) file.",
         ) from e
+
+
+def _validate_sigrok_file(path: Path) -> None:
+    """Validate that file exists and is a zip archive.
+
+    Args:
+        path: Path to sigrok file.
+
+    Raises:
+        LoaderError: If file not found.
+        FormatError: If not a valid ZIP file.
+    """
+    if not path.exists():
+        raise LoaderError("File not found", file_path=str(path))
+
+    if not zipfile.is_zipfile(path):
+        raise FormatError(
+            "File is not a valid sigrok session (not a ZIP archive)",
+            file_path=str(path),
+            expected="ZIP archive",
+        )
+
+
+def _extract_channel_info(metadata_dict: dict[str, Any]) -> tuple[float, list[str], int]:
+    """Extract channel information from metadata.
+
+    Args:
+        metadata_dict: Parsed metadata dictionary.
+
+    Returns:
+        Tuple of (sample_rate, channels, total_channels).
+    """
+    sample_rate = metadata_dict.get("samplerate", 1_000_000)
+    channels = metadata_dict.get("channels", [])
+    total_channels = metadata_dict.get("total probes", len(channels))
+    return float(sample_rate), channels, total_channels
+
+
+def _load_logic_data(zf: zipfile.ZipFile, path: Path, total_channels: int) -> NDArray[np.bool_]:
+    """Load logic data from sigrok session.
+
+    Args:
+        zf: Open ZipFile object.
+        path: Path to session file (for error messages).
+        total_channels: Total number of channels.
+
+    Returns:
+        Boolean array of shape (channels, samples).
+
+    Raises:
+        FormatError: If no logic data found.
+    """
+    logic_files = [name for name in zf.namelist() if name.startswith("logic-1")]
+
+    if not logic_files:
+        raise FormatError(
+            "No logic data found in sigrok session",
+            file_path=str(path),
+            expected="logic-1-* data files",
+        )
+
+    return _read_logic_data(zf, logic_files, total_channels)
+
+
+def _select_channel_data(
+    data: NDArray[np.bool_],
+    channel: str | int | None,
+    channels: list[str],
+    path: Path,
+) -> tuple[NDArray[np.bool_], str]:
+    """Select specific channel data or default to first channel.
+
+    Args:
+        data: Multi-channel data array.
+        channel: Channel selector (name, index, or None).
+        channels: List of channel names.
+        path: Path to file (for error messages).
+
+    Returns:
+        Tuple of (channel_data, channel_name).
+
+    Raises:
+        LoaderError: If channel not found or out of range.
+    """
+    if channel is None:
+        channel_data = data[0] if data.ndim > 1 else data
+        channel_name = channels[0] if channels else "D0"
+        return channel_data, channel_name
+
+    if isinstance(channel, int):
+        return _select_channel_by_index(data, channel, channels, path)
+    # isinstance(channel, str) must be true here
+    return _select_channel_by_name(data, channel, channels, path)
+
+
+def _select_channel_by_index(
+    data: NDArray[np.bool_],
+    channel: int,
+    channels: list[str],
+    path: Path,
+) -> tuple[NDArray[np.bool_], str]:
+    """Select channel by numeric index.
+
+    Args:
+        data: Multi-channel data array.
+        channel: Channel index.
+        channels: List of channel names.
+        path: Path to file (for error messages).
+
+    Returns:
+        Tuple of (channel_data, channel_name).
+
+    Raises:
+        LoaderError: If index out of range.
+    """
+    if channel < 0 or channel >= data.shape[0]:
+        raise LoaderError(
+            f"Channel index {channel} out of range",
+            file_path=str(path),
+            details=f"Available channels: 0-{data.shape[0] - 1}",
+        )
+    channel_data = data[channel]
+    channel_name = channels[channel] if channel < len(channels) else f"D{channel}"
+    return channel_data, channel_name
+
+
+def _select_channel_by_name(
+    data: NDArray[np.bool_],
+    channel: str,
+    channels: list[str],
+    path: Path,
+) -> tuple[NDArray[np.bool_], str]:
+    """Select channel by name.
+
+    Args:
+        data: Multi-channel data array.
+        channel: Channel name.
+        channels: List of channel names.
+        path: Path to file (for error messages).
+
+    Returns:
+        Tuple of (channel_data, channel_name).
+
+    Raises:
+        LoaderError: If channel name not found.
+    """
+    if channel in channels:
+        idx = channels.index(channel)
+        return data[idx], channel
+    else:
+        raise LoaderError(
+            f"Channel '{channel}' not found",
+            file_path=str(path),
+            details=f"Available channels: {channels}",
+        )
+
+
+def _build_digital_trace(
+    channel_data: NDArray[np.bool_],
+    channel_name: str,
+    sample_rate: float,
+    metadata_dict: dict[str, Any],
+    path: Path,
+) -> DigitalTrace:
+    """Build DigitalTrace object from channel data.
+
+    Args:
+        channel_data: Boolean array for selected channel.
+        channel_name: Name of the channel.
+        sample_rate: Sample rate in Hz.
+        metadata_dict: Metadata dictionary.
+        path: Path to source file.
+
+    Returns:
+        DigitalTrace object.
+    """
+    edges = _compute_edges(channel_data, sample_rate)
+
+    trace_metadata = TraceMetadata(
+        sample_rate=sample_rate,
+        source_file=str(path),
+        channel_name=channel_name,
+        trigger_info=metadata_dict.get("trigger"),
+    )
+
+    return DigitalTrace(
+        data=channel_data,
+        metadata=trace_metadata,
+        edges=edges,
+    )
 
 
 def _parse_metadata(zf: zipfile.ZipFile, path: Path) -> dict[str, Any]:

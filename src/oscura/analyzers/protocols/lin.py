@@ -63,13 +63,13 @@ class LINDecoder(AsyncDecoder):
     longname = "Local Interconnect Network"
     desc = "LIN automotive bus protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("bus", "BUS", "LIN bus signal", required=True),
     ]
 
-    optional_channels = []  # noqa: RUF012
+    optional_channels = []
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef(
             "baudrate",
             "Baud rate",
@@ -86,7 +86,7 @@ class LINDecoder(AsyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("sync", "Sync field"),
         ("pid", "Protected identifier"),
         ("data", "Data bytes"),
@@ -127,14 +127,7 @@ class LINDecoder(AsyncDecoder):
             >>> for packet in decoder.decode(trace):
             ...     print(f"Data: {packet.data.hex()}")
         """
-        # Convert to digital if needed
-        if isinstance(trace, WaveformTrace):
-            from oscura.analyzers.digital.extraction import to_digital
-
-            digital_trace = to_digital(trace, threshold="auto")
-        else:
-            digital_trace = trace
-
+        digital_trace = self._prepare_digital_trace(trace)
         data = digital_trace.data
         sample_rate = digital_trace.metadata.sample_rate
 
@@ -145,121 +138,233 @@ class LINDecoder(AsyncDecoder):
         frame_num = 0
 
         while idx < len(data):
-            # Look for break field (dominant for at least 13 bit times)
-            break_start = self._find_break_field(data, idx, bit_period)
-            if break_start is None:
-                break
-
-            # After break field, find the end of the dominant period (break)
-            # and skip the delimiter (recessive) to reach the sync byte
-            sync_start_idx = break_start
-            while sync_start_idx < len(data) and not data[sync_start_idx]:
-                sync_start_idx += 1
-
-            # Skip delimiter (recessive period) to reach sync byte start bit
-            # The delimiter is at least 1 bit time recessive
-            while sync_start_idx < len(data) and data[sync_start_idx]:
-                sync_start_idx += 1
-
-            if sync_start_idx >= len(data):
-                break
-
-            # Sync field is 0x55 (01010101)
-            sync_byte, sync_errors = self._decode_byte(data, sync_start_idx, bit_period, half_bit)
-
-            if sync_byte != 0x55:
-                sync_errors.append(f"Invalid sync field: 0x{sync_byte:02X} (expected 0x55)")
-
-            # Protected identifier (PID)
-            pid_start_idx = int(sync_start_idx + 10 * bit_period)
-            if pid_start_idx >= len(data):
-                break
-
-            pid_byte, pid_errors = self._decode_byte(data, pid_start_idx, bit_period, half_bit)
-
-            # Extract ID and parity
-            frame_id = pid_byte & 0x3F
-            parity = (pid_byte >> 6) & 0x03
-
-            # Validate parity
-            expected_parity = self._compute_parity(frame_id)
-            if parity != expected_parity:
-                pid_errors.append(f"Parity error: {parity} (expected {expected_parity})")
-
-            # Data length depends on frame ID
-            data_length = self._get_data_length(frame_id)
-
-            # Decode data bytes
-            data_bytes = []
-            data_errors = []
-            data_start_idx = int(pid_start_idx + 10 * bit_period)
-
-            for i in range(data_length):
-                byte_start_idx = int(data_start_idx + i * 10 * bit_period)
-                if byte_start_idx >= len(data):
-                    break
-
-                byte_val, byte_errors = self._decode_byte(
-                    data, byte_start_idx, bit_period, half_bit
-                )
-                data_bytes.append(byte_val)
-                data_errors.extend(byte_errors)
-
-            # Decode checksum
-            checksum_start_idx = int(data_start_idx + data_length * 10 * bit_period)
-            if checksum_start_idx < len(data):
-                checksum_byte, checksum_errors = self._decode_byte(
-                    data, checksum_start_idx, bit_period, half_bit
-                )
-
-                # Validate checksum
-                expected_checksum = self._compute_checksum(frame_id, data_bytes)
-                if checksum_byte != expected_checksum:
-                    checksum_errors.append(
-                        f"Checksum error: 0x{checksum_byte:02X} (expected 0x{expected_checksum:02X})"
-                    )
-            else:
-                checksum_byte = 0
-                checksum_errors = ["Missing checksum"]
-
-            # Calculate timestamps
-            start_time = break_start / sample_rate
-            end_time = (checksum_start_idx + 10 * bit_period) / sample_rate
-
-            # Collect all errors
-            errors = sync_errors + pid_errors + data_errors + checksum_errors
-
-            # Add annotations
-            self.put_annotation(
-                start_time,
-                end_time,
-                AnnotationLevel.PACKETS,
-                f"ID: 0x{frame_id:02X}",
-                data=bytes(data_bytes),
+            frame_result = self._try_decode_frame(
+                data, idx, bit_period, half_bit, sample_rate, frame_num
             )
 
-            # Create packet
-            annotations = {
-                "frame_num": frame_num,
-                "frame_id": frame_id,
-                "pid": pid_byte,
-                "data_length": data_length,
-                "checksum": checksum_byte,
-                "version": self._version.value,
-            }
+            if frame_result is None:
+                break
 
-            packet = ProtocolPacket(
-                timestamp=start_time,
-                protocol="lin",
-                data=bytes(data_bytes),
-                annotations=annotations,
-                errors=errors,
-            )
-
+            packet, next_idx = frame_result
             yield packet
 
             frame_num += 1
-            idx = int(checksum_start_idx + 10 * bit_period)
+            idx = next_idx
+
+    def _prepare_digital_trace(self, trace: DigitalTrace | WaveformTrace) -> DigitalTrace:
+        """Convert trace to digital format if needed."""
+        if isinstance(trace, WaveformTrace):
+            from oscura.analyzers.digital.extraction import to_digital
+
+            return to_digital(trace, threshold="auto")
+        return trace
+
+    def _try_decode_frame(
+        self,
+        data: NDArray[np.bool_],
+        idx: int,
+        bit_period: float,
+        half_bit: float,
+        sample_rate: float,
+        frame_num: int,
+    ) -> tuple[ProtocolPacket, int] | None:
+        """Attempt to decode a single LIN frame."""
+        break_start = self._find_break_field(data, idx, bit_period)
+        if break_start is None:
+            return None
+
+        sync_start_idx = self._find_sync_start(data, break_start)
+        if sync_start_idx >= len(data):
+            return None
+
+        sync_byte, sync_errors = self._decode_sync_field(data, sync_start_idx, bit_period, half_bit)
+        pid_byte, pid_errors, frame_id = self._decode_pid_field(
+            data, sync_start_idx, bit_period, half_bit
+        )
+
+        if pid_byte is None:
+            return None
+
+        data_length = self._get_data_length(frame_id)
+        data_bytes, data_errors = self._decode_data_fields(
+            data, sync_start_idx, bit_period, half_bit, data_length
+        )
+        checksum_byte, checksum_errors = self._decode_checksum_field(
+            data, sync_start_idx, bit_period, half_bit, data_length, frame_id, data_bytes
+        )
+
+        packet = self._create_lin_packet(
+            break_start,
+            sync_start_idx,
+            bit_period,
+            data_length,
+            sample_rate,
+            sync_errors,
+            pid_errors,
+            data_errors,
+            checksum_errors,
+            frame_num,
+            frame_id,
+            pid_byte,
+            checksum_byte,
+            data_bytes,
+        )
+
+        next_idx = int(sync_start_idx + (10 + 10 + data_length * 10 + 10) * bit_period)
+        return packet, next_idx
+
+    def _find_sync_start(self, data: NDArray[np.bool_], break_start: int) -> int:
+        """Find start of sync byte after break field."""
+        sync_start_idx = break_start
+        while sync_start_idx < len(data) and not data[sync_start_idx]:
+            sync_start_idx += 1
+
+        while sync_start_idx < len(data) and data[sync_start_idx]:
+            sync_start_idx += 1
+
+        return sync_start_idx
+
+    def _decode_sync_field(
+        self,
+        data: NDArray[np.bool_],
+        sync_start_idx: int,
+        bit_period: float,
+        half_bit: float,
+    ) -> tuple[int, list[str]]:
+        """Decode and validate sync field."""
+        sync_byte, sync_errors = self._decode_byte(data, sync_start_idx, bit_period, half_bit)
+
+        if sync_byte != 0x55:
+            sync_errors.append(f"Invalid sync field: 0x{sync_byte:02X} (expected 0x55)")
+
+        return sync_byte, sync_errors
+
+    def _decode_pid_field(
+        self,
+        data: NDArray[np.bool_],
+        sync_start_idx: int,
+        bit_period: float,
+        half_bit: float,
+    ) -> tuple[int | None, list[str], int]:
+        """Decode and validate PID field."""
+        pid_start_idx = int(sync_start_idx + 10 * bit_period)
+        if pid_start_idx >= len(data):
+            return None, [], 0
+
+        pid_byte, pid_errors = self._decode_byte(data, pid_start_idx, bit_period, half_bit)
+
+        frame_id = pid_byte & 0x3F
+        parity = (pid_byte >> 6) & 0x03
+        expected_parity = self._compute_parity(frame_id)
+
+        if parity != expected_parity:
+            pid_errors.append(f"Parity error: {parity} (expected {expected_parity})")
+
+        return pid_byte, pid_errors, frame_id
+
+    def _decode_data_fields(
+        self,
+        data: NDArray[np.bool_],
+        sync_start_idx: int,
+        bit_period: float,
+        half_bit: float,
+        data_length: int,
+    ) -> tuple[list[int], list[str]]:
+        """Decode all data bytes."""
+        data_bytes = []
+        data_errors = []
+        data_start_idx = int(sync_start_idx + 20 * bit_period)
+
+        for i in range(data_length):
+            byte_start_idx = int(data_start_idx + i * 10 * bit_period)
+            if byte_start_idx >= len(data):
+                break
+
+            byte_val, byte_errors = self._decode_byte(data, byte_start_idx, bit_period, half_bit)
+            data_bytes.append(byte_val)
+            data_errors.extend(byte_errors)
+
+        return data_bytes, data_errors
+
+    def _decode_checksum_field(
+        self,
+        data: NDArray[np.bool_],
+        sync_start_idx: int,
+        bit_period: float,
+        half_bit: float,
+        data_length: int,
+        frame_id: int,
+        data_bytes: list[int],
+    ) -> tuple[int, list[str]]:
+        """Decode and validate checksum field."""
+        data_start_idx = int(sync_start_idx + 20 * bit_period)
+        checksum_start_idx = int(data_start_idx + data_length * 10 * bit_period)
+
+        if checksum_start_idx >= len(data):
+            return 0, ["Missing checksum"]
+
+        checksum_byte, checksum_errors = self._decode_byte(
+            data, checksum_start_idx, bit_period, half_bit
+        )
+
+        expected_checksum = self._compute_checksum(frame_id, data_bytes)
+        if checksum_byte != expected_checksum:
+            checksum_errors.append(
+                f"Checksum error: 0x{checksum_byte:02X} (expected 0x{expected_checksum:02X})"
+            )
+
+        return checksum_byte, checksum_errors
+
+    def _create_lin_packet(
+        self,
+        break_start: int,
+        sync_start_idx: int,
+        bit_period: float,
+        data_length: int,
+        sample_rate: float,
+        sync_errors: list[str],
+        pid_errors: list[str],
+        data_errors: list[str],
+        checksum_errors: list[str],
+        frame_num: int,
+        frame_id: int,
+        pid_byte: int,
+        checksum_byte: int,
+        data_bytes: list[int],
+    ) -> ProtocolPacket:
+        """Create LIN protocol packet from decoded fields."""
+        data_start_idx = int(sync_start_idx + 20 * bit_period)
+        checksum_start_idx = int(data_start_idx + data_length * 10 * bit_period)
+
+        start_time = break_start / sample_rate
+        end_time = (checksum_start_idx + 10 * bit_period) / sample_rate
+
+        errors = sync_errors + pid_errors + data_errors + checksum_errors
+
+        self.put_annotation(
+            start_time,
+            end_time,
+            AnnotationLevel.PACKETS,
+            f"ID: 0x{frame_id:02X}",
+            data=bytes(data_bytes),
+        )
+
+        annotations = {
+            "frame_num": frame_num,
+            "frame_id": frame_id,
+            "pid": pid_byte,
+            "data_length": data_length,
+            "checksum": checksum_byte,
+            "version": self._version.value,
+        }
+
+        return ProtocolPacket(
+            timestamp=start_time,
+            protocol="lin",
+            data=bytes(data_bytes),
+            annotations=annotations,
+            errors=errors,
+        )
 
     def _find_break_field(
         self,

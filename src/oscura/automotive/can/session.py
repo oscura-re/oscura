@@ -51,7 +51,7 @@ class CANSession(AnalysisSession):
 
     Example - Basic usage:
         >>> from oscura.sessions import CANSession
-        >>> from oscura.acquisition import FileSource
+        >>> from oscura.hardware.acquisition import FileSource
         >>> session = CANSession(name="Vehicle Analysis")
         >>> session.add_recording("baseline", FileSource("idle.blf"))
         >>> inventory = session.inventory()
@@ -80,23 +80,38 @@ class CANSession(AnalysisSession):
         >>> print(f"Changed messages: {result.changed_bytes}")
     """
 
-    def __init__(self, name: str = "CAN Session"):
+    def __init__(
+        self,
+        name: str = "CAN Session",
+        auto_crc: bool = True,
+        crc_validate: bool = True,
+        crc_min_messages: int = 10,
+    ):
         """Initialize CAN session.
 
         Args:
             name: Session name (default: "CAN Session").
+            auto_crc: Enable automatic CRC recovery (default: True).
+            crc_validate: Validate CRCs on subsequent messages (default: True).
+            crc_min_messages: Minimum messages per ID for CRC recovery (default: 10).
 
         Example:
             >>> from oscura.sessions import CANSession
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session = CANSession(name="Vehicle Analysis")
             >>> session.add_recording("baseline", FileSource("idle.blf"))
             >>> session.add_recording("active", FileSource("running.blf"))
             >>> results = session.analyze()
+            >>> # CRC parameters automatically recovered during analysis
+            >>> print(session.crc_info)
         """
         super().__init__(name=name)
         self._messages = CANMessageList()
         self._analyses_cache: dict[int, MessageAnalysis] = {}
+        self.auto_crc = auto_crc
+        self.crc_validate = crc_validate
+        self.crc_min_messages = crc_min_messages
+        self._crc_params: dict[int, Any] = {}  # Map CAN ID to CRCParameters
 
     def inventory(self) -> pd.DataFrame:
         """Generate message inventory.
@@ -213,57 +228,138 @@ class CANSession(AnalysisSession):
             This creates a new session with filtered messages from the current
             internal message collection. This method is primarily for legacy
             workflows. For new code, use add_recording() with separate files.
+
+        Example:
+            >>> session.filter(min_frequency=10.0, arbitration_ids=[0x123, 0x456])
         """
-        filtered_messages = []
-
-        # First, filter by time range if specified
-        if time_range:
-            start_time, end_time = time_range
-            for msg in self._messages:
-                if start_time <= msg.timestamp <= end_time:
-                    filtered_messages.append(msg)
-        else:
-            filtered_messages = list(self._messages)
-
-        # Filter by CAN IDs if specified
-        if arbitration_ids:
-            filtered_messages = [
-                msg for msg in filtered_messages if msg.arbitration_id in arbitration_ids
-            ]
-
-        # Filter by frequency if specified
-        if min_frequency or max_frequency:
-            # Group by ID and calculate frequencies
-            from collections import defaultdict
-
-            id_messages: dict[int, list[CANMessage]] = defaultdict(list)
-            for msg in filtered_messages:
-                id_messages[msg.arbitration_id].append(msg)
-
-            # Filter IDs by frequency
-            valid_ids = set()
-            for arb_id, msgs in id_messages.items():
-                if len(msgs) > 1:
-                    timestamps = [m.timestamp for m in msgs]
-                    duration = max(timestamps) - min(timestamps)
-                    if duration > 0:
-                        freq = (len(msgs) - 1) / duration
-
-                        if min_frequency and freq < min_frequency:
-                            continue
-                        if max_frequency and freq > max_frequency:
-                            continue
-
-                valid_ids.add(arb_id)
-
-            filtered_messages = [
-                msg for msg in filtered_messages if msg.arbitration_id in valid_ids
-            ]
+        # Apply filters sequentially
+        filtered_messages = self._filter_by_time_range(time_range)
+        filtered_messages = self._filter_by_arbitration_ids(filtered_messages, arbitration_ids)
+        filtered_messages = self._filter_by_frequency(
+            filtered_messages, min_frequency, max_frequency
+        )
 
         # Create new session with filtered messages
         new_session = CANSession(name=f"{self.name} (filtered)")
         new_session._messages = CANMessageList(messages=filtered_messages)
         return new_session
+
+    def _filter_by_time_range(self, time_range: tuple[float, float] | None) -> list[CANMessage]:
+        """Filter messages by timestamp range.
+
+        Args:
+            time_range: Optional (start_time, end_time) in seconds.
+
+        Returns:
+            Filtered message list.
+        """
+        if time_range is None:
+            return list(self._messages)
+
+        start_time, end_time = time_range
+        return [msg for msg in self._messages if start_time <= msg.timestamp <= end_time]
+
+    def _filter_by_arbitration_ids(
+        self, messages: list[CANMessage], arbitration_ids: list[int] | None
+    ) -> list[CANMessage]:
+        """Filter messages by CAN arbitration IDs.
+
+        Args:
+            messages: Messages to filter.
+            arbitration_ids: Optional list of CAN IDs to include.
+
+        Returns:
+            Filtered message list.
+        """
+        if arbitration_ids is None:
+            return messages
+
+        id_set = set(arbitration_ids)
+        return [msg for msg in messages if msg.arbitration_id in id_set]
+
+    def _filter_by_frequency(
+        self,
+        messages: list[CANMessage],
+        min_frequency: float | None,
+        max_frequency: float | None,
+    ) -> list[CANMessage]:
+        """Filter messages by transmission frequency.
+
+        Args:
+            messages: Messages to filter.
+            min_frequency: Optional minimum frequency in Hz.
+            max_frequency: Optional maximum frequency in Hz.
+
+        Returns:
+            Filtered message list (only IDs with frequency in range).
+        """
+        if min_frequency is None and max_frequency is None:
+            return messages
+
+        # Calculate frequency for each CAN ID
+        valid_ids = self._find_ids_in_frequency_range(messages, min_frequency, max_frequency)
+
+        return [msg for msg in messages if msg.arbitration_id in valid_ids]
+
+    def _find_ids_in_frequency_range(
+        self,
+        messages: list[CANMessage],
+        min_frequency: float | None,
+        max_frequency: float | None,
+    ) -> set[int]:
+        """Find CAN IDs with transmission frequency in specified range.
+
+        Args:
+            messages: Messages to analyze.
+            min_frequency: Optional minimum frequency in Hz.
+            max_frequency: Optional maximum frequency in Hz.
+
+        Returns:
+            Set of CAN IDs meeting frequency criteria.
+        """
+        from collections import defaultdict
+
+        # Group messages by ID
+        id_messages: dict[int, list[CANMessage]] = defaultdict(list)
+        for msg in messages:
+            id_messages[msg.arbitration_id].append(msg)
+
+        # Check frequency for each ID
+        valid_ids = set()
+        for arb_id, msgs in id_messages.items():
+            freq = self._calculate_message_frequency(msgs)
+            if freq is None:
+                continue
+
+            # Check frequency bounds
+            if min_frequency is not None and freq < min_frequency:
+                continue
+            if max_frequency is not None and freq > max_frequency:
+                continue
+
+            valid_ids.add(arb_id)
+
+        return valid_ids
+
+    def _calculate_message_frequency(self, messages: list[CANMessage]) -> float | None:
+        """Calculate transmission frequency for a list of messages.
+
+        Args:
+            messages: Messages with same arbitration ID.
+
+        Returns:
+            Frequency in Hz, or None if cannot be calculated.
+        """
+        if len(messages) <= 1:
+            return None
+
+        timestamps = [m.timestamp for m in messages]
+        duration = max(timestamps) - min(timestamps)
+
+        if duration <= 0:
+            return None
+
+        return (len(messages) - 1) / duration
 
     def unique_ids(self) -> set[int]:
         """Get set of unique CAN IDs in this session.
@@ -302,7 +398,7 @@ class CANSession(AnalysisSession):
 
         Example:
             >>> from oscura.sessions import CANSession
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session = CANSession(name="Analysis")
             >>> session.add_recording("data", FileSource("capture.blf"))
             >>> results = session.analyze()
@@ -315,6 +411,10 @@ class CANSession(AnalysisSession):
         """
         # Generate inventory
         inventory = self.inventory()
+
+        # Automatically recover CRC parameters if enabled
+        if self.auto_crc:
+            self._auto_recover_crc()
 
         # Analyze all unique IDs
         message_analyses = {}
@@ -368,7 +468,7 @@ class CANSession(AnalysisSession):
             - details: CAN-specific details (changed_ids, byte_changes, etc.)
 
         Example:
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session = CANSession(name="Brake Analysis")
             >>> session.add_recording("no_brake", FileSource("idle.blf"))
             >>> session.add_recording("brake_pressed", FileSource("brake.blf"))
@@ -416,7 +516,7 @@ class CANSession(AnalysisSession):
             recording1=name1,
             recording2=name2,
             changed_bytes=total_byte_changes,
-            changed_regions=changed_regions,  # type: ignore[arg-type]
+            changed_regions=changed_regions,
             similarity_score=similarity,
             details={
                 "changed_message_ids": changed_message_ids,
@@ -520,7 +620,7 @@ class CANSession(AnalysisSession):
 
         Example:
             >>> from oscura.sessions import CANSession
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session = CANSession(name="Pattern Analysis")
             >>> session.add_recording("data", FileSource("capture.blf"))
             >>> pairs = session.find_message_pairs(time_window_ms=50)
@@ -554,7 +654,7 @@ class CANSession(AnalysisSession):
 
         Example:
             >>> from oscura.sessions import CANSession
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session = CANSession(name="Sequence Analysis")
             >>> session.add_recording("data", FileSource("startup.blf"))
             >>> sequences = session.find_message_sequences(
@@ -590,7 +690,7 @@ class CANSession(AnalysisSession):
 
         Example:
             >>> from oscura.sessions import CANSession
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session = CANSession(name="Correlation Analysis")
             >>> session.add_recording("data", FileSource("capture.blf"))
             >>> correlations = session.find_temporal_correlations(max_delay_ms=50)
@@ -618,7 +718,7 @@ class CANSession(AnalysisSession):
 
         Example:
             >>> from oscura.sessions import CANSession
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session = CANSession(name="State Machine Learning")
             >>> session.add_recording("data", FileSource("ignition_cycles.blf"))
             >>> automaton = session.learn_state_machine(
@@ -632,6 +732,123 @@ class CANSession(AnalysisSession):
         return learn_state_machine(
             session=self, trigger_ids=trigger_ids, context_window_ms=context_window_ms
         )
+
+    def _auto_recover_crc(self) -> None:
+        """Automatically recover CRC parameters for each message ID.
+
+        This method attempts to recover CRC parameters for each CAN ID that has
+        enough messages. Recovered parameters are stored in self._crc_params.
+
+        Note:
+            Only attempts recovery for IDs with >= crc_min_messages.
+            Requires confidence > 0.8 to accept recovered parameters.
+        """
+        import logging
+
+        from oscura.inference.crc_reverse import CRCReverser
+
+        logger = logging.getLogger(__name__)
+
+        for arb_id in self.unique_ids():
+            filtered = self._messages.filter_by_id(arb_id)
+            if len(filtered) < self.crc_min_messages:
+                continue
+
+            try:
+                # Prepare message-CRC pairs
+                # Heuristic: try last 1-4 bytes as potential CRC
+                messages = []
+                for msg in filtered.messages:
+                    if msg.dlc >= 3:
+                        # Try 1-byte CRC at end
+                        messages.append((bytes(msg.data[:-1]), bytes(msg.data[-1:])))
+
+                if len(messages) >= 4:
+                    reverser = CRCReverser(verbose=False)
+                    params = reverser.reverse(messages)
+
+                    if params is not None and params.confidence > 0.8:
+                        self._crc_params[arb_id] = params
+                        logger.info(
+                            f"Auto-recovered CRC for 0x{arb_id:03X}: "
+                            f"poly=0x{params.polynomial:04x}, "
+                            f"width={params.width}, confidence={params.confidence:.2f}"
+                        )
+
+            except Exception:
+                # CRC recovery is best-effort
+                pass
+
+    def _validate_crc(self, msg: CANMessage) -> bool:
+        """Validate CRC for a message if parameters are known.
+
+        Args:
+            msg: CAN message to validate.
+
+        Returns:
+            True if CRC is valid or no CRC params available, False if invalid.
+
+        Note:
+            Logs warning if CRC validation fails.
+        """
+        if not self.crc_validate or msg.arbitration_id not in self._crc_params:
+            return True
+
+        import logging
+
+        from oscura.inference.crc_reverse import verify_crc
+
+        logger = logging.getLogger(__name__)
+        params = self._crc_params[msg.arbitration_id]
+
+        try:
+            # Extract message data and CRC based on width
+            crc_bytes = params.width // 8
+            if msg.dlc < crc_bytes:
+                return True  # Message too short, skip validation
+
+            data = bytes(msg.data[:-crc_bytes])
+            crc = bytes(msg.data[-crc_bytes:])
+
+            if not verify_crc(data, crc, params):
+                logger.warning(
+                    f"CRC validation failed for 0x{msg.arbitration_id:03X} "
+                    f"at timestamp {msg.timestamp:.6f}"
+                )
+                return False
+
+        except Exception:
+            # Validation errors are non-fatal
+            pass
+
+        return True
+
+    @property
+    def crc_info(self) -> dict[int, dict[str, Any]]:
+        """Get recovered CRC information for all message IDs.
+
+        Returns:
+            Dictionary mapping CAN ID to CRC parameter dict.
+
+        Example:
+            >>> session = CANSession()
+            >>> # ... add recordings and analyze ...
+            >>> for can_id, params in session.crc_info.items():
+            ...     print(f"0x{can_id:03X}: {params['algorithm_name']}")
+        """
+        result = {}
+        for arb_id, params in self._crc_params.items():
+            result[arb_id] = {
+                "polynomial": f"0x{params.polynomial:04x}",
+                "width": params.width,
+                "init": f"0x{params.init:04x}",
+                "xor_out": f"0x{params.xor_out:04x}",
+                "reflect_in": params.reflect_in,
+                "reflect_out": params.reflect_out,
+                "confidence": params.confidence,
+                "algorithm_name": params.algorithm_name,
+            }
+        return result
 
     def __repr__(self) -> str:
         """Human-readable representation."""

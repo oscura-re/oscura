@@ -38,12 +38,7 @@ def power_analysis(
 ) -> dict[str, Any]:
     """Comprehensive power consumption analysis.
 
-    Analyzes power consumption from voltage and current measurements:
-    - Instantaneous power calculation
-    - Average, RMS, and peak power
-    - Energy consumption
-    - Efficiency (if input power provided)
-    - Power profile generation
+    Analyzes power consumption from voltage and current measurements.
 
     Args:
         voltage: Output voltage trace.
@@ -53,56 +48,47 @@ def power_analysis(
         report: Optional path to save HTML report.
 
     Returns:
-        Dictionary containing:
-        - power_trace: WaveformTrace of instantaneous power P(t)
-        - average_power: Mean power in watts
-        - output_power_avg: Average output power (same as average_power)
-        - output_power_rms: RMS output power in watts
-        - peak_power: Maximum power in watts
-        - min_power: Minimum power in watts
-        - energy: Total energy in joules
-        - duration: Measurement duration in seconds
-        - efficiency: Efficiency percentage (if input provided)
-        - power_loss: Power loss in watts (if input provided)
-        - input_power_avg: Average input power (if input provided)
+        Dictionary with power_trace, average_power, output_power_avg, output_power_rms,
+        peak_power, min_power, energy, duration, and optionally efficiency, power_loss, input_power_avg.
 
     Raises:
-        AnalysisError: If traces have incompatible sample rates or lengths.
+        AnalysisError: If traces have incompatible sample rates.
 
     Example:
-        >>> voltage = osc.load('vout.wfm')
-        >>> current = osc.load('iout.wfm')
-        >>> result = osc.power_analysis(voltage, current)
+        >>> result = osc.power_analysis(v_trace, i_trace)
         >>> print(f"Average: {result['average_power']*1e3:.2f} mW")
-        >>> print(f"Peak: {result['peak_power']*1e3:.2f} mW")
-        >>> print(f"Energy: {result['energy']*1e6:.2f} µJ")
 
     References:
-        IEC 61000-4-7: Harmonics and interharmonics measurement
-        IEEE 1459-2010: Definitions for measurement of electric power
+        IEC 61000-4-7, IEEE 1459-2010
     """
-    # Import power analysis functions
-    from oscura.analyzers.power.basic import (
-        instantaneous_power,
-        power_statistics,
-    )
+    from oscura.analyzers.power.basic import instantaneous_power, power_statistics
 
-    # Validate traces
-    if voltage.metadata.sample_rate != current.metadata.sample_rate:
-        # Would need interpolation in real implementation
-        raise AnalysisError(
-            "Voltage and current traces must have same sample rate. "
-            f"Got {voltage.metadata.sample_rate} and {current.metadata.sample_rate}"
-        )
-
-    # Calculate instantaneous power
+    _validate_sample_rates(voltage, current)
     power_trace = instantaneous_power(voltage, current)
-
-    # Calculate power statistics
     stats = power_statistics(power_trace)
 
-    # Build result with output power
-    result = {
+    result = _build_power_result(power_trace, stats)
+
+    if input_voltage is not None and input_current is not None:
+        result.update(_calculate_efficiency(input_voltage, input_current, stats["average"]))
+
+    if report is not None:
+        _generate_power_report(result, report)
+
+    return result
+
+
+def _validate_sample_rates(voltage: WaveformTrace, current: WaveformTrace) -> None:
+    """Validate that traces have matching sample rates."""
+    if voltage.metadata.sample_rate != current.metadata.sample_rate:
+        raise AnalysisError(
+            f"Sample rate mismatch: {voltage.metadata.sample_rate} vs {current.metadata.sample_rate}"
+        )
+
+
+def _build_power_result(power_trace: WaveformTrace, stats: dict[str, Any]) -> dict[str, Any]:
+    """Build power analysis result dictionary."""
+    return {
         "power_trace": power_trace,
         "average_power": stats["average"],
         "output_power_avg": stats["average"],
@@ -113,30 +99,24 @@ def power_analysis(
         "duration": stats["duration"],
     }
 
-    # Calculate efficiency if input provided
-    if input_voltage is not None and input_current is not None:
-        input_power_trace = instantaneous_power(input_voltage, input_current)
-        input_stats = power_statistics(input_power_trace)
 
-        input_power_avg = input_stats["average"]
-        output_power_avg = stats["average"]
+def _calculate_efficiency(
+    input_voltage: WaveformTrace, input_current: WaveformTrace, output_power_avg: float
+) -> dict[str, float]:
+    """Calculate power efficiency metrics."""
+    from oscura.analyzers.power.basic import instantaneous_power, power_statistics
 
-        if input_power_avg > 0:
-            efficiency = (output_power_avg / input_power_avg) * 100.0
-            power_loss = input_power_avg - output_power_avg
-        else:
-            efficiency = 0.0
-            power_loss = 0.0
+    input_power_trace = instantaneous_power(input_voltage, input_current)
+    input_stats = power_statistics(input_power_trace)
+    input_power_avg = input_stats["average"]
 
-        result["efficiency"] = efficiency
-        result["power_loss"] = power_loss
-        result["input_power_avg"] = input_power_avg
+    if input_power_avg > 0:
+        efficiency = (output_power_avg / input_power_avg) * 100.0
+        power_loss = input_power_avg - output_power_avg
+    else:
+        efficiency = power_loss = 0.0
 
-    # Generate report if requested
-    if report is not None:
-        _generate_power_report(result, report)
-
-    return result
+    return {"efficiency": efficiency, "power_loss": power_loss, "input_power_avg": input_power_avg}
 
 
 def _generate_power_report(result: dict[str, Any], output_path: str) -> None:

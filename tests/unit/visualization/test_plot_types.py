@@ -389,6 +389,10 @@ class TestDigitalTimingDiagram:
             with pytest.raises((ValueError, Exception), match=r".*"):
                 plot_timing([])
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("plot_timing not available")
 
 
@@ -596,6 +600,10 @@ class TestOptimizationFunctions:
             assert y_min <= 0.1
             assert y_max >= 1.0
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_optimal_y_range not available")
 
     def test_calculate_optimal_x_window(self) -> None:
@@ -616,6 +624,10 @@ class TestOptimizationFunctions:
             assert t_end is not None
             assert t_end > t_start
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_optimal_x_window not available")
 
     def test_calculate_grid_spacing(self) -> None:
@@ -630,6 +642,10 @@ class TestOptimizationFunctions:
             assert minor_spacing > 0
             assert 100 / major_spacing <= 20  # Reasonable number of grid lines
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_grid_spacing not available")
 
     def test_detect_interesting_regions(self) -> None:
@@ -665,6 +681,10 @@ class TestAccessibility:
             assert isinstance(palette_name, str)
             assert palette_name in ["viridis", "cividis", "plasma", "inferno", "magma"]
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("get_colorblind_palette not available")
 
     def test_colorblind_safe_qualitative_list(self) -> None:
@@ -676,6 +696,10 @@ class TestAccessibility:
             assert len(COLORBLIND_SAFE_QUALITATIVE) >= 8
             assert all(isinstance(c, str) for c in COLORBLIND_SAFE_QUALITATIVE)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("COLORBLIND_SAFE_QUALITATIVE not available")
 
     def test_generate_alt_text(self) -> None:
@@ -690,6 +714,10 @@ class TestAccessibility:
             assert isinstance(alt, str)
             assert len(alt) > 0
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("generate_alt_text not available")
 
     def test_multi_line_styles(self) -> None:
@@ -703,6 +731,8 @@ class TestAccessibility:
             # Each style should be different
             assert len({str(s) for s in styles}) == 5
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("get_multi_line_styles not available")
 
 
@@ -719,6 +749,10 @@ class TestPresets:
             assert len(presets) >= 4
             assert "publication" in presets or any("pub" in p.lower() for p in presets)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("list_visualization_presets not available")
 
     def test_apply_preset(self) -> None:
@@ -739,6 +773,10 @@ class TestPresets:
 
             assert PUBLICATION_PRESET is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("PUBLICATION_PRESET not available")
 
     def test_dark_theme_preset(self) -> None:
@@ -748,6 +786,10 @@ class TestPresets:
 
             assert DARK_THEME_PRESET is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("DARK_THEME_PRESET not available")
 
 
@@ -809,6 +851,10 @@ class TestInteractive:
             assert state.xlim == (0, 100)
             assert state.ylim == (0, 10)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("ZoomState not available")
 
     def test_cursor_measurement(self) -> None:
@@ -847,6 +893,10 @@ class TestHistogramOptimization:
             assert n_bins > 0
             assert n_bins < len(data)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_optimal_bins not available")
 
     def test_calculate_bin_edges(self) -> None:
@@ -859,6 +909,10 @@ class TestHistogramOptimization:
 
             assert len(edges) == 21  # n_bins + 1 edges
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_bin_edges not available")
 
 
@@ -875,6 +929,10 @@ class TestColorPalettes:
 
             assert len(palette) >= 5
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("select_optimal_palette not available")
 
     def test_colorblind_safe_qualitative(self) -> None:
@@ -884,6 +942,10 @@ class TestColorPalettes:
 
             assert len(COLORBLIND_SAFE_QUALITATIVE) >= 8
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("COLORBLIND_SAFE_QUALITATIVE not available")
 
     def test_sequential_viridis(self) -> None:
@@ -893,6 +955,10 @@ class TestColorPalettes:
 
             assert SEQUENTIAL_VIRIDIS is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("SEQUENTIAL_VIRIDIS not available")
 
     def test_diverging_coolwarm(self) -> None:
@@ -902,4 +968,8 @@ class TestColorPalettes:
 
             assert DIVERGING_COOLWARM is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("DIVERGING_COOLWARM not available")

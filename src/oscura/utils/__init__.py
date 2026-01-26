@@ -1,8 +1,11 @@
 """Oscura utilities package.
 
-Provides utility functions for memory management, windowing, and progressive analysis.
+Provides utility functions for memory management, windowing, progressive analysis,
+geometry, serial communication, validation, and bitwise operations.
 """
 
+from oscura.utils.bitwise import bits_to_byte, bits_to_value
+from oscura.utils.geometry import generate_leader_line
 from oscura.utils.memory import (
     MemoryCheck,
     MemoryCheckError,
@@ -50,6 +53,8 @@ from oscura.utils.progressive import (
     progressive_analysis,
     select_roi,
 )
+from oscura.utils.serial import connect_serial_port
+from oscura.utils.validation import validate_protocol_spec
 
 __all__ = [
     # Advanced memory management (MEM-014, 020, 023, 025, 028, 030-033)
@@ -75,13 +80,20 @@ __all__ = [
     "ROISelection",
     "WSLSwapChecker",
     "analyze_roi",
+    # Bitwise operations
+    "bits_to_byte",
+    "bits_to_value",
     "check_memory_available",
     "configure_memory",
+    # Serial communication
+    "connect_serial_port",
     "create_preview",
     "detect_wsl",
     "estimate_memory",
     "estimate_optimal_preview_factor",
     "gc_aggressive",
+    # Geometry
+    "generate_leader_line",
     "get_available_memory",
     "get_max_memory",
     "get_memory_config",
@@ -96,4 +108,6 @@ __all__ = [
     "select_roi",
     "set_max_memory",
     "suggest_downsampling",
+    # Validation
+    "validate_protocol_spec",
 ]

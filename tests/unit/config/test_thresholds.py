@@ -11,8 +11,8 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from oscura.config import thresholds as config_thresholds
-from oscura.config.thresholds import (
+from oscura.core.config import thresholds as config_thresholds
+from oscura.core.config.thresholds import (
     LogicFamily,
     ThresholdProfile,
     ThresholdRegistry,

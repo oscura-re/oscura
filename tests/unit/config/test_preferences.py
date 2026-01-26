@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from oscura.config.preferences import (
+from oscura.core.config.preferences import (
     DefaultsPreferences,
     EditorPreferences,
     ExportPreferences,

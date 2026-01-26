@@ -350,7 +350,7 @@ name: No Sections
     def test_load_template_file_not_found(self, tmp_path: Path) -> None:
         """Test loading non-existent template raises FileNotFoundError."""
         if not YAML_AVAILABLE:
-            pytest.skip("PyYAML not installed")
+            pytest.skip("PyYAML not available")
 
         nonexistent_path = tmp_path / "nonexistent.yaml"
 

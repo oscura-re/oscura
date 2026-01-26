@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from oscura.config.loader import (
+from oscura.core.config.loader import (
     _load_json,
     _load_yaml,
     get_config_value,

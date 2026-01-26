@@ -61,15 +61,15 @@ class UARTDecoder(AsyncDecoder):
     longname = "Universal Asynchronous Receiver/Transmitter"
     desc = "UART/RS-232 serial protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("rx", "RX", "Receive data line", required=True),
     ]
 
-    optional_channels = [  # noqa: RUF012
+    optional_channels = [
         ChannelDef("tx", "TX", "Transmit data line", required=False),
     ]
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef("baudrate", "Baud rate", "Bits per second", default=0, values=None),
         OptionDef(
             "data_bits",
@@ -102,7 +102,7 @@ class UARTDecoder(AsyncDecoder):
         OptionDef("idle_level", "Idle level", "Idle line level", default=1, values=[0, 1]),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("bit", "Bit value"),
         ("start", "Start bit"),
         ("data", "Data bits"),
@@ -164,155 +164,297 @@ class UARTDecoder(AsyncDecoder):
             >>> for packet in decoder.decode(trace):
             ...     print(f"Byte: {packet.data.hex()}")
         """
-        # Convert to digital if needed
-        if isinstance(trace, WaveformTrace):
-            from oscura.analyzers.digital.extraction import to_digital
-
-            digital_trace = to_digital(trace, threshold="auto")
-        else:
-            digital_trace = trace
-
+        digital_trace = self._convert_to_digital(trace)
         data = digital_trace.data
         sample_rate = digital_trace.metadata.sample_rate
 
-        # Auto-detect baud rate if not specified
-        if self._baudrate == 0:
-            from oscura.utils.autodetect import detect_baud_rate
-
-            self._baudrate = detect_baud_rate(digital_trace)  # type: ignore[assignment]
-            if self._baudrate == 0:
-                self._baudrate = 9600  # Fallback
-
+        self._auto_detect_baudrate(digital_trace)
         bit_period = sample_rate / self._baudrate
-        half_bit = bit_period / 2
-
-        # Frame structure
-        frame_bits = 1 + self._data_bits  # Start + data
-        if self._parity != "none":
-            frame_bits += 1
-        frame_bits += self._stop_bits  # type: ignore[assignment]
+        frame_bits = self._calculate_frame_bits()
 
         idx = 0
         frame_num = 0
 
         while idx < len(data) - int(frame_bits * bit_period):
-            # Look for start bit (transition from idle)
             start_idx = self._find_start_bit(data, idx)
             if start_idx is None:
                 break
 
-            # Sample at center of each bit
-            sample_points = []
-            for bit_num in range(int(frame_bits)):
-                sample_idx = int(start_idx + half_bit + bit_num * bit_period)
-                if sample_idx < len(data):
-                    sample_points.append(sample_idx)
-
+            sample_points = self._get_sample_points(start_idx, bit_period, frame_bits, len(data))
             if len(sample_points) < 1 + self._data_bits:
                 break
 
-            # Verify start bit (should be opposite of idle)
-            start_bit = data[sample_points[0]]
-            if (self._idle_level == 1 and start_bit) or (self._idle_level == 0 and not start_bit):
-                # Not a valid start bit
+            if not self._verify_start_bit(data, sample_points):
                 idx = start_idx + 1
                 continue
 
-            # Extract data bits
-            data_value = 0
-            data_bits = []
+            data_value, data_bits = self._extract_data_bits(data, sample_points)
+            errors = self._validate_frame(data, sample_points, data_bits)
 
-            for i in range(self._data_bits):
-                bit_idx = sample_points[1 + i]
-                bit_val = 1 if data[bit_idx] else 0
-                data_bits.append(bit_val)
-
-                if self._bit_order == "lsb":
-                    data_value |= bit_val << i
-                else:
-                    data_value |= bit_val << (self._data_bits - 1 - i)
-
-            # Check parity if enabled
-            errors = []
-            parity_idx = 1 + self._data_bits
-
-            if self._parity != "none" and parity_idx < len(sample_points):
-                parity_bit = 1 if data[sample_points[parity_idx]] else 0
-                ones_count = sum(data_bits)
-
-                if self._parity == "odd":
-                    expected = (ones_count + 1) % 2
-                elif self._parity == "even":
-                    expected = ones_count % 2
-                elif self._parity == "mark":
-                    expected = 1
-                else:  # space
-                    expected = 0
-
-                if parity_bit != expected:
-                    errors.append("Parity error")
-
-            # Verify stop bit(s)
-            stop_idx = parity_idx + (1 if self._parity != "none" else 0)
-            if stop_idx < len(sample_points):
-                stop_bit = data[sample_points[stop_idx]]
-                expected_stop = self._idle_level == 1
-
-                if stop_bit != expected_stop:
-                    errors.append("Framing error")
-
-            # Calculate timestamps
-            start_time = start_idx / sample_rate
-            end_time = (start_idx + frame_bits * bit_period) / sample_rate
-
-            # Add annotations
-            self.put_annotation(
-                start_time,
-                start_time + bit_period / sample_rate,
-                AnnotationLevel.BITS,
-                "START",
+            packet = self._build_packet(
+                start_idx,
+                sample_rate,
+                bit_period,
+                frame_bits,
+                data_value,
+                data_bits,
+                frame_num,
+                errors,
             )
-
-            for i, bit_val in enumerate(data_bits):
-                bit_start = start_time + (1 + i) * bit_period / sample_rate
-                bit_end = bit_start + bit_period / sample_rate
-                self.put_annotation(
-                    bit_start,
-                    bit_end,
-                    AnnotationLevel.BITS,
-                    str(bit_val),
-                )
-
-            self.put_annotation(
-                start_time,
-                end_time,
-                AnnotationLevel.BYTES,
-                f"0x{data_value:02X}",
-                data=bytes([data_value]),
-            )
-
-            # Create packet
-            packet = ProtocolPacket(
-                timestamp=start_time,
-                protocol="uart",
-                data=bytes([data_value]),
-                annotations={
-                    "frame_num": frame_num,
-                    "data_bits": data_bits,
-                    "baudrate": self._baudrate,
-                },
-                errors=errors,
-            )
-
-            self.put_packet(start_time, bytes([data_value]), packet.annotations, errors)
 
             yield packet
 
             frame_num += 1
-            # Advance to the end of the frame
-            # Use the last sample point + 1 to avoid re-detecting the same frame
             last_sample = sample_points[-1] if sample_points else start_idx
             idx = last_sample + 1
+
+    def _convert_to_digital(self, trace: DigitalTrace | WaveformTrace) -> DigitalTrace:
+        """Convert trace to digital format if needed.
+
+        Args:
+            trace: Input trace.
+
+        Returns:
+            Digital trace.
+        """
+        if isinstance(trace, WaveformTrace):
+            from oscura.analyzers.digital.extraction import to_digital
+
+            return to_digital(trace, threshold="auto")
+        return trace
+
+    def _auto_detect_baudrate(self, trace: DigitalTrace) -> None:
+        """Auto-detect baud rate if not specified.
+
+        Args:
+            trace: Digital trace for detection.
+        """
+        if self._baudrate == 0:
+            from oscura.utils.autodetect import detect_baud_rate
+
+            self._baudrate = detect_baud_rate(trace)  # type: ignore[assignment]
+            if self._baudrate == 0:
+                self._baudrate = 9600  # Fallback
+
+    def _calculate_frame_bits(self) -> float:
+        """Calculate total bits per frame.
+
+        Returns:
+            Number of bits in frame.
+        """
+        frame_bits = 1 + self._data_bits  # Start + data
+        if self._parity != "none":
+            frame_bits += 1
+        frame_bits += self._stop_bits  # type: ignore[assignment]
+        return frame_bits
+
+    def _get_sample_points(
+        self, start_idx: int, bit_period: float, frame_bits: float, data_len: int
+    ) -> list[int]:
+        """Get sample points for each bit in frame.
+
+        Args:
+            start_idx: Frame start index.
+            bit_period: Samples per bit.
+            frame_bits: Total bits in frame.
+            data_len: Length of data array.
+
+        Returns:
+            List of sample indices.
+        """
+        half_bit = bit_period / 2
+        sample_points = []
+        for bit_num in range(int(frame_bits)):
+            sample_idx = int(start_idx + half_bit + bit_num * bit_period)
+            if sample_idx < data_len:
+                sample_points.append(sample_idx)
+        return sample_points
+
+    def _verify_start_bit(self, data: NDArray[np.bool_], sample_points: list[int]) -> bool:
+        """Verify start bit is valid.
+
+        Args:
+            data: Digital data array.
+            sample_points: Sample point indices.
+
+        Returns:
+            True if start bit valid.
+        """
+        start_bit = data[sample_points[0]]
+        expected_start = self._idle_level == 0
+        return bool(start_bit == expected_start)
+
+    def _extract_data_bits(
+        self, data: NDArray[np.bool_], sample_points: list[int]
+    ) -> tuple[int, list[int]]:
+        """Extract data bits and convert to byte value.
+
+        Args:
+            data: Digital data array.
+            sample_points: Sample point indices.
+
+        Returns:
+            Tuple of (byte_value, bit_list).
+        """
+        data_value = 0
+        data_bits = []
+
+        for i in range(self._data_bits):
+            bit_idx = sample_points[1 + i]
+            bit_val = 1 if data[bit_idx] else 0
+            data_bits.append(bit_val)
+
+            if self._bit_order == "lsb":
+                data_value |= bit_val << i
+            else:
+                data_value |= bit_val << (self._data_bits - 1 - i)
+
+        return data_value, data_bits
+
+    def _validate_frame(
+        self, data: NDArray[np.bool_], sample_points: list[int], data_bits: list[int]
+    ) -> list[str]:
+        """Validate parity and stop bits.
+
+        Args:
+            data: Digital data array.
+            sample_points: Sample point indices.
+            data_bits: Extracted data bits.
+
+        Returns:
+            List of error messages.
+        """
+        errors = []
+        parity_idx = 1 + self._data_bits
+
+        # Check parity
+        if self._parity != "none" and parity_idx < len(sample_points):
+            parity_bit = 1 if data[sample_points[parity_idx]] else 0
+            expected_parity = self._calculate_parity(data_bits)
+            if parity_bit != expected_parity:
+                errors.append("Parity error")
+
+        # Verify stop bit
+        stop_idx = parity_idx + (1 if self._parity != "none" else 0)
+        if stop_idx < len(sample_points):
+            stop_bit = data[sample_points[stop_idx]]
+            expected_stop = self._idle_level == 1
+            if stop_bit != expected_stop:
+                errors.append("Framing error")
+
+        return errors
+
+    def _calculate_parity(self, data_bits: list[int]) -> int:
+        """Calculate expected parity bit.
+
+        Args:
+            data_bits: Data bit values.
+
+        Returns:
+            Expected parity bit (0 or 1).
+        """
+        ones_count = sum(data_bits)
+
+        if self._parity == "odd":
+            return (ones_count + 1) % 2
+        elif self._parity == "even":
+            return ones_count % 2
+        elif self._parity == "mark":
+            return 1
+        else:  # space
+            return 0
+
+    def _build_packet(
+        self,
+        start_idx: int,
+        sample_rate: float,
+        bit_period: float,
+        frame_bits: float,
+        data_value: int,
+        data_bits: list[int],
+        frame_num: int,
+        errors: list[str],
+    ) -> ProtocolPacket:
+        """Build protocol packet with annotations.
+
+        Args:
+            start_idx: Frame start index.
+            sample_rate: Sample rate in Hz.
+            bit_period: Samples per bit.
+            frame_bits: Total bits in frame.
+            data_value: Decoded byte value.
+            data_bits: Individual bit values.
+            frame_num: Frame number.
+            errors: List of errors.
+
+        Returns:
+            Protocol packet.
+        """
+        start_time = start_idx / sample_rate
+
+        # Add annotations
+        self._add_frame_annotations(start_time, bit_period, sample_rate, data_value, data_bits)
+
+        packet = ProtocolPacket(
+            timestamp=start_time,
+            protocol="uart",
+            data=bytes([data_value]),
+            annotations={
+                "frame_num": frame_num,
+                "data_bits": data_bits,
+                "baudrate": self._baudrate,
+            },
+            errors=errors,
+        )
+
+        self.put_packet(start_time, bytes([data_value]), packet.annotations, errors)
+        return packet
+
+    def _add_frame_annotations(
+        self,
+        start_time: float,
+        bit_period: float,
+        sample_rate: float,
+        data_value: int,
+        data_bits: list[int],
+    ) -> None:
+        """Add bit-level and byte-level annotations.
+
+        Args:
+            start_time: Frame start time.
+            bit_period: Samples per bit.
+            sample_rate: Sample rate in Hz.
+            data_value: Decoded byte value.
+            data_bits: Individual bit values.
+        """
+        # Start bit annotation
+        self.put_annotation(
+            start_time,
+            start_time + bit_period / sample_rate,
+            AnnotationLevel.BITS,
+            "START",
+        )
+
+        # Data bit annotations
+        for i, bit_val in enumerate(data_bits):
+            bit_start = start_time + (1 + i) * bit_period / sample_rate
+            bit_end = bit_start + bit_period / sample_rate
+            self.put_annotation(
+                bit_start,
+                bit_end,
+                AnnotationLevel.BITS,
+                str(bit_val),
+            )
+
+        # Byte annotation
+        end_time = start_time + (1 + len(data_bits)) * bit_period / sample_rate
+        self.put_annotation(
+            start_time,
+            end_time,
+            AnnotationLevel.BYTES,
+            f"0x{data_value:02X}",
+            data=bytes([data_value]),
+        )
 
     def _find_start_bit(
         self,

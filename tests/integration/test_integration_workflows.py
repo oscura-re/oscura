@@ -29,7 +29,7 @@ try:
     )
     from oscura.loaders.preprocessing import detect_idle_regions, trim_idle
     from oscura.loaders.validation import PacketValidator
-    from oscura.testing.synthetic import (
+    from oscura.validation.testing.synthetic import (
         SyntheticPacketConfig,
         SyntheticSignalConfig,
         generate_digital_signal,

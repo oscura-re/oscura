@@ -11,43 +11,34 @@ AnalysisSession and provide consistent interfaces for:
 - Domain-specific analysis methods
 
 Example - Generic Session:
+    >>> import oscura as osc
     >>> from oscura.sessions import GenericSession
-    >>> from oscura.acquisition import FileSource
     >>>
-    >>> session = GenericSession()
-    >>> session.add_recording("test", FileSource("capture.wfm"))
+    >>> session = GenericSession(name="Analysis")
+    >>> trace = osc.load("capture.wfm")
+    >>> session.add_recording("test", trace)
     >>> results = session.analyze()
     >>> print(results["summary"]["test"]["mean"])
 
-Example - Domain-Specific Session:
-    >>> from oscura.sessions import AnalysisSession
-    >>> from oscura.acquisition import FileSource
+Example - BlackBox Session (Protocol RE):
+    >>> from oscura.sessions import BlackBoxSession
     >>>
-    >>> class CANSession(AnalysisSession):
-    ...     def analyze(self):
-    ...         # CAN-specific signal discovery
-    ...         return self.discover_signals()
-    ...
-    ...     def discover_signals(self):
-    ...         # Extract CAN signals from recordings
-    ...         pass
-    >>>
-    >>> session = CANSession()
-    >>> session.add_recording("baseline", FileSource("idle.blf"))
-    >>> signals = session.analyze()
+    >>> session = BlackBoxSession(name="IoT Protocol RE")
+    >>> session.add_recording("baseline", osc.load("baseline.wfm"))
+    >>> session.add_recording("stimulus", osc.load("button.wfm"))
+    >>> diff = session.compare("baseline", "stimulus")
+    >>> print(f"Changed: {diff.changed_bytes} bytes")
 
 Pattern Decision Table:
     - Use GenericSession for general waveform analysis
-    - Extend AnalysisSession for domain-specific workflows
-    - Use existing session.Session for backward compatibility
+    - Use BlackBoxSession for unknown protocol reverse engineering
+    - Extend AnalysisSession for custom domain-specific workflows
 
 Architecture:
     Layer 3 (High-Level API) - User-Facing
     ├── AnalysisSession (ABC)
     │   ├── GenericSession
-    │   ├── CANSession (Phase 1)
-    │   ├── SerialSession (Phase 1)
-    │   ├── BlackBoxSession (Phase 1)
+    │   ├── BlackBoxSession
     │   └── [Future domain sessions]
     └── [Workflows wrapping sessions]
 

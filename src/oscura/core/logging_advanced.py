@@ -603,11 +603,11 @@ class CompressedLogHandler(logging.Handler):
 
     def _open_file(self) -> None:
         """Open current log file."""
-        self._current_file = gzip.open(  # noqa: SIM115
+        self._current_file = gzip.open(
             f"{self.filename}.gz", "ab", compresslevel=self.compression_level
         )
         try:
-            self._current_size = os.path.getsize(f"{self.filename}.gz")  # noqa: PTH202
+            self._current_size = os.path.getsize(f"{self.filename}.gz")
         except OSError:
             self._current_size = 0
 
@@ -621,11 +621,11 @@ class CompressedLogHandler(logging.Handler):
             src = f"{self.filename}.{i}.gz"
             dst = f"{self.filename}.{i + 1}.gz"
             if os.path.exists(src):
-                os.rename(src, dst)  # noqa: PTH104
+                os.rename(src, dst)
 
         # Move current to .1
         if os.path.exists(f"{self.filename}.gz"):
-            os.rename(f"{self.filename}.gz", f"{self.filename}.1.gz")  # noqa: PTH104
+            os.rename(f"{self.filename}.gz", f"{self.filename}.1.gz")
 
         self._open_file()
 
@@ -667,7 +667,7 @@ class EncryptedLogHandler(logging.Handler):
 
             with self._lock:
                 if self._file is None:
-                    self._file = open(self.filename, "ab")  # noqa: SIM115
+                    self._file = open(self.filename, "ab")
 
                 # Write length-prefixed encrypted message
                 length = len(encrypted).to_bytes(4, "big")

@@ -378,7 +378,7 @@ class TestPayloadComparison:
 
     def test_compute_similarity_levenshtein(self):
         """Test Levenshtein similarity."""
-        from oscura.analyzers.packet.payload import compute_similarity
+        from oscura.analyzers.packet.payload_analysis import compute_similarity
 
         a = b"ABCD"
         b = b"ABCE"
@@ -1035,7 +1035,7 @@ class TestREPipeline:
 
     def test_analyze_raw_data(self):
         """Test analyzing raw binary data."""
-        from oscura.pipeline.reverse_engineering import analyze
+        from oscura.utils.pipeline.reverse_engineering import analyze
 
         data = b"\xaa\x55\x00\x01\xde\xad" * 10
         results = analyze(data)
@@ -1044,7 +1044,7 @@ class TestREPipeline:
 
     def test_analyze_packet_list(self):
         """Test analyzing packet list."""
-        from oscura.pipeline.reverse_engineering import REPipeline
+        from oscura.utils.pipeline.reverse_engineering import REPipeline
 
         packets = [
             {"data": b"\x01\x03\x00\x00\x00\x0a", "protocol": "UDP", "src_port": 502},
@@ -1057,7 +1057,7 @@ class TestREPipeline:
 
     def test_pipeline_stages(self):
         """Test individual pipeline stages."""
-        from oscura.pipeline.reverse_engineering import REPipeline
+        from oscura.utils.pipeline.reverse_engineering import REPipeline
 
         pipeline = REPipeline(stages=["flow_extraction", "payload_analysis"])
         data = [b"MSG1", b"MSG2", b"MSG3"]
@@ -1067,7 +1067,7 @@ class TestREPipeline:
 
     def test_progress_callback(self):
         """Test progress reporting."""
-        from oscura.pipeline.reverse_engineering import REPipeline
+        from oscura.utils.pipeline.reverse_engineering import REPipeline
 
         progress_updates = []
 
@@ -1081,7 +1081,7 @@ class TestREPipeline:
 
     def test_generate_json_report(self, tmp_path):
         """Test JSON report generation."""
-        from oscura.pipeline.reverse_engineering import REPipeline
+        from oscura.utils.pipeline.reverse_engineering import REPipeline
 
         pipeline = REPipeline()
         results = pipeline.analyze(b"test_data")
@@ -1096,7 +1096,7 @@ class TestREPipeline:
 
     def test_generate_markdown_report(self, tmp_path):
         """Test Markdown report generation."""
-        from oscura.pipeline.reverse_engineering import REPipeline
+        from oscura.utils.pipeline.reverse_engineering import REPipeline
 
         pipeline = REPipeline()
         results = pipeline.analyze(b"test_data")
@@ -1108,7 +1108,7 @@ class TestREPipeline:
 
     def test_generate_html_report(self, tmp_path):
         """Test HTML report generation."""
-        from oscura.pipeline.reverse_engineering import REPipeline
+        from oscura.utils.pipeline.reverse_engineering import REPipeline
 
         pipeline = REPipeline()
         results = pipeline.analyze(b"test_data")
@@ -1508,7 +1508,7 @@ class TestFullWorkflowIntegration:
             cluster_payloads,
         )
         from oscura.analyzers.patterns.learning import learn_patterns_from_data
-        from oscura.pipeline.reverse_engineering import analyze
+        from oscura.utils.pipeline.reverse_engineering import analyze
 
         # Create unknown protocol messages
         messages = []

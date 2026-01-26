@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 from oscura.core.exceptions import FormatError, LoaderError
 from oscura.core.types import TraceMetadata, WaveformTrace
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 # Try to import RigolWFM for full Rigol support
 try:
-    import RigolWFM.wfm as rigol_wfm  # type: ignore[import-not-found, import-untyped]
+    import RigolWFM.wfm as rigol_wfm  # type: ignore[import-untyped]  # Optional third-party library
 
     RIGOL_WFM_AVAILABLE = True
 except ImportError:
@@ -100,49 +101,13 @@ def _load_with_rigolwfm(
         LoaderError: If the file cannot be loaded.
     """
     try:
-        # Try to auto-detect model from filename (e.g., DS1054Z)
-        model = None
-        filename_upper = path.name.upper()
-        if "DS1" in filename_upper or "MSO1" in filename_upper or "DHO" in filename_upper:
-            if "Z" in filename_upper or "MSO" in filename_upper or "DHO" in filename_upper:
-                model = "Z"
-            elif "E" in filename_upper:
-                model = "E"
+        # Auto-detect model and load waveform
+        wfm = _load_rigol_with_model_detection(path)
 
-        # Try model detection, fallback to trying both models
-        last_error = None
-        for try_model in [model] if model else ["Z", "E"]:
-            try:
-                wfm = rigol_wfm.Wfm.from_file(str(path), model=try_model)
-                break
-            except Exception as e:
-                last_error = e
-                continue
-        else:
-            # None of the models worked
-            raise last_error if last_error else RuntimeError("Failed to load WFM file")
-
-        # Get channel data
-        if hasattr(wfm, "channels") and len(wfm.channels) > channel:
-            ch = wfm.channels[channel]
-            data = np.array(ch.volts, dtype=np.float64)
-            sample_rate = wfm.sample_rate if hasattr(wfm, "sample_rate") else 1e6
-            vertical_scale = ch.volts_per_div if hasattr(ch, "volts_per_div") else None
-            vertical_offset = ch.volt_offset if hasattr(ch, "volt_offset") else None
-            channel_name = f"CH{channel + 1}"
-        elif hasattr(wfm, "volts"):
-            # Single channel format
-            data = np.array(wfm.volts, dtype=np.float64)
-            sample_rate = wfm.sample_rate if hasattr(wfm, "sample_rate") else 1e6
-            vertical_scale = wfm.volts_per_div if hasattr(wfm, "volts_per_div") else None
-            vertical_offset = wfm.volt_offset if hasattr(wfm, "volt_offset") else None
-            channel_name = "CH1"
-        else:
-            raise FormatError(
-                "No waveform data found in Rigol file",
-                file_path=str(path),
-                expected="Rigol channel data",
-            )
+        # Extract channel data
+        data, sample_rate, vertical_scale, vertical_offset, channel_name = (
+            _extract_rigol_channel_data(wfm, channel, str(path))
+        )
 
         # Build metadata
         metadata = TraceMetadata(
@@ -157,18 +122,114 @@ def _load_with_rigolwfm(
         return WaveformTrace(data=data, metadata=metadata)
 
     except Exception as e:
-        # Re-raise FormatError as-is for tests that expect it
-        # All other exceptions (including kaitaistruct errors) get wrapped
         if isinstance(e, FormatError):
             raise
-        # Wrap other exceptions in LoaderError
-        # The outer load_rigol_wfm() will catch LoaderError and fall back to basic loader
         raise LoaderError(
             "Failed to load Rigol WFM file with RigolWFM library",
             file_path=str(path),
             details=str(e),
             fix_hint="File may be malformed or incompatible with RigolWFM library.",
         ) from e
+
+
+def _detect_rigol_model_from_filename(path: Path) -> str | None:
+    """Auto-detect Rigol oscilloscope model from filename.
+
+    Args:
+        path: Path to WFM file.
+
+    Returns:
+        Model string ("Z" or "E") or None if detection fails.
+    """
+    filename_upper = path.name.upper()
+
+    # Check for Rigol model indicators in filename
+    if "DS1" not in filename_upper and "MSO1" not in filename_upper and "DHO" not in filename_upper:
+        return None
+
+    # Z-series (DS1000Z, MSO1000Z, DHO series)
+    if "Z" in filename_upper or "MSO" in filename_upper or "DHO" in filename_upper:
+        return "Z"
+
+    # E-series (DS1000E)
+    if "E" in filename_upper:
+        return "E"
+
+    return None
+
+
+def _load_rigol_with_model_detection(path: Path) -> Any:
+    """Load Rigol WFM file with automatic model detection.
+
+    Args:
+        path: Path to WFM file.
+
+    Returns:
+        Loaded waveform object from RigolWFM.
+
+    Raises:
+        RuntimeError: If loading fails with all models.
+    """
+    model = _detect_rigol_model_from_filename(path)
+
+    # Try detected model first, then fallback to both models
+    models_to_try = [model] if model else ["Z", "E"]
+
+    last_error = None
+    for try_model in models_to_try:
+        try:
+            return rigol_wfm.Wfm.from_file(str(path), model=try_model)
+        except Exception as e:
+            last_error = e
+            continue
+
+    # None of the models worked
+    raise last_error if last_error else RuntimeError("Failed to load WFM file")
+
+
+def _extract_rigol_channel_data(
+    wfm: Any,
+    channel: int,
+    file_path: str,
+) -> tuple[NDArray[np.float64], float, float | None, float | None, str]:
+    """Extract channel data from Rigol waveform object.
+
+    Args:
+        wfm: Rigol waveform object from RigolWFM.
+        channel: Channel index.
+        file_path: File path for error messages.
+
+    Returns:
+        Tuple of (data, sample_rate, vertical_scale, vertical_offset, channel_name).
+
+    Raises:
+        FormatError: If no waveform data found.
+    """
+    # Multi-channel format
+    if hasattr(wfm, "channels") and len(wfm.channels) > channel:
+        ch = wfm.channels[channel]
+        data = np.array(ch.volts, dtype=np.float64)
+        sample_rate = wfm.sample_rate if hasattr(wfm, "sample_rate") else 1e6
+        vertical_scale = ch.volts_per_div if hasattr(ch, "volts_per_div") else None
+        vertical_offset = ch.volt_offset if hasattr(ch, "volt_offset") else None
+        channel_name = f"CH{channel + 1}"
+        return data, sample_rate, vertical_scale, vertical_offset, channel_name
+
+    # Single channel format
+    if hasattr(wfm, "volts"):
+        data = np.array(wfm.volts, dtype=np.float64)
+        sample_rate = wfm.sample_rate if hasattr(wfm, "sample_rate") else 1e6
+        vertical_scale = wfm.volts_per_div if hasattr(wfm, "volts_per_div") else None
+        vertical_offset = wfm.volt_offset if hasattr(wfm, "volt_offset") else None
+        channel_name = "CH1"
+        return data, sample_rate, vertical_scale, vertical_offset, channel_name
+
+    # No recognized format
+    raise FormatError(
+        "No waveform data found in Rigol file",
+        file_path=file_path,
+        expected="Rigol channel data",
+    )
 
 
 def _load_basic(
@@ -193,7 +254,7 @@ def _load_basic(
         LoaderError: If the file cannot be read or parsed.
     """
     try:
-        with open(path, "rb") as f:
+        with open(path, "rb", buffering=65536) as f:
             # Read header
             header = f.read(256)
 

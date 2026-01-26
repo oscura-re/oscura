@@ -21,7 +21,10 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import hmac
+import logging
 import pickle
+import secrets
 import tempfile
 import threading
 import time
@@ -32,9 +35,13 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import numpy as np
 
+from oscura.exceptions import SecurityError
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -179,6 +186,9 @@ class OscuraCache:
         self._evictions = 0
         self._disk_spills = 0
         self._current_memory = 0
+
+        # Security: HMAC signing key for cache integrity (SEC-003 fix)
+        self._cache_key = self._load_or_create_cache_key()
 
     def __enter__(self) -> OscuraCache:
         """Enter context."""
@@ -441,8 +451,7 @@ class OscuraCache:
             self._evictions += 1
 
     def _spill_to_disk(self, key: str, value: Any) -> Path:
-        """Write value to disk.
-
+        """Write value to disk with HMAC signature.
 
         Args:
             key: Cache key.
@@ -450,29 +459,82 @@ class OscuraCache:
 
         Returns:
             Path to disk file.
+
+        Security:
+            SEC-003 fix: Writes HMAC-SHA256 signature + pickled data.
+            Format: [32 bytes signature][pickled data]
+            Signature computed over pickled data using self._cache_key.
+
+        References:
+            MEM-031: Persistent Cache (Disk-Based)
         """
         disk_path = self.cache_dir / f"{key}.pkl"
+
+        # Serialize data
+        data = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # Compute HMAC-SHA256 signature
+        signature = hmac.new(self._cache_key, data, hashlib.sha256).digest()
+
+        # Write signature + data
         with open(disk_path, "wb") as f:
-            pickle.dump(value, f, protocol=pickle.HIGHEST_PROTOCOL)
+            f.write(signature)  # First 32 bytes
+            f.write(data)  # Rest is pickled data
+
         return disk_path
 
     def _load_from_disk(self, disk_path: Path) -> Any:
-        """Load value from disk.
-
+        """Load value from disk with HMAC verification.
 
         Args:
             disk_path: Path to disk file.
 
         Returns:
             Loaded value.
+
+        Raises:
+            SecurityError: If HMAC verification fails (tampered cache file).
+
+        Security:
+            SEC-003 fix: Verifies HMAC-SHA256 signature before unpickling.
+            Prevents code execution from tampered cache files.
+            Uses constant-time comparison (hmac.compare_digest).
+
+        References:
+            MEM-031: Persistent Cache (Disk-Based)
         """
-        with open(disk_path, "rb") as f:
-            return pickle.load(f)
+        try:
+            with open(disk_path, "rb") as f:
+                signature = f.read(32)  # SHA256 = 32 bytes
+                data = f.read()
+
+            # Verify HMAC signature
+            expected_signature = hmac.new(self._cache_key, data, hashlib.sha256).digest()
+
+            if not hmac.compare_digest(signature, expected_signature):
+                logger.error(f"Cache integrity check failed for {disk_path.name}")
+                # Delete corrupted cache file
+                disk_path.unlink(missing_ok=True)
+                raise SecurityError(
+                    f"Cache file integrity verification failed: {disk_path.name}. "
+                    "File may have been tampered with and has been removed."
+                )
+
+            # Deserialize only after HMAC verification
+            return pickle.loads(data)
+
+        except SecurityError:
+            raise  # Re-raise security errors
+        except Exception as e:
+            logger.warning(f"Failed to load cache file {disk_path.name}: {e}")
+            # Clean up corrupted file
+            disk_path.unlink(missing_ok=True)
+            raise
 
     def _estimate_size(self, value: Any) -> int:
         """Estimate size of value in bytes."""
         if isinstance(value, np.ndarray):
-            return value.nbytes  # type: ignore[no-any-return]
+            return value.nbytes
         elif isinstance(value, list | tuple):
             return sum(self._estimate_size(item) for item in value)
         elif isinstance(value, dict):
@@ -488,7 +550,7 @@ class OscuraCache:
         """Convert object to hashable bytes."""
         if isinstance(obj, np.ndarray):
             # Use array bytes for hashing
-            return obj.tobytes()  # type: ignore[no-any-return]
+            return obj.tobytes()
         elif isinstance(obj, str | bytes):
             return obj.encode() if isinstance(obj, str) else obj
         elif isinstance(obj, int | float | bool):
@@ -511,6 +573,40 @@ class OscuraCache:
             return int(float(memory_str[:-2]) * 1e3)
         else:
             return int(memory_str)
+
+    def _load_or_create_cache_key(self) -> bytes:
+        """Load or create HMAC signing key for cache integrity.
+
+        Returns:
+            256-bit signing key.
+
+        Security:
+            SEC-003 fix: Protects cached pickle files from tampering.
+            Key is persistent per cache directory and stored with 0o600 permissions.
+            Each cache directory has its own unique key.
+
+        References:
+            https://owasp.org/www-project-top-ten/
+        """
+        key_file = self.cache_dir / ".cache_key"
+
+        # Load existing key
+        if key_file.exists():
+            with open(key_file, "rb") as f:
+                return f.read()
+
+        # Create new 256-bit key
+        key = secrets.token_bytes(32)
+
+        # Save with restrictive permissions
+        with open(key_file, "wb") as f:
+            f.write(key)
+
+        # Set owner read/write only (0o600)
+        key_file.chmod(0o600)
+
+        logger.info(f"Created new cache signing key: {key_file}")
+        return key
 
 
 # Global cache instance

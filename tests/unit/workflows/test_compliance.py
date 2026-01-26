@@ -610,8 +610,8 @@ class TestGenerateComplianceReport:
 
             # Check table headers
             assert "Frequency (MHz)" in html
-            assert True
-            assert True
+            assert "Limit" in html
+            assert "Measured" in html
             assert "Excess (dB)" in html
 
         finally:

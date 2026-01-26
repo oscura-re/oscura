@@ -20,7 +20,7 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -277,30 +277,13 @@ def _abcd_to_s_single(abcd: NDArray[np.complex128], z0: float) -> NDArray[np.com
     return np.array([[S11, S12], [S21, S22]], dtype=np.complex128)
 
 
-# Backward compatibility: load_touchstone moved to loaders module
-# Import with deprecation warning
-def __getattr__(name: str) -> Any:
-    """Provide backward compatibility for load_touchstone."""
-    if name == "load_touchstone":
-        import warnings
-
-        from oscura.loaders.touchstone import load_touchstone
-
-        warnings.warn(
-            "Importing load_touchstone from oscura.analyzers.signal_integrity.sparams "
-            "is deprecated. Use 'from oscura.loaders import load_touchstone' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return load_touchstone
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+# load_touchstone has been moved to oscura.loaders module
 
 
 __all__ = [
     "SParameterData",
     "abcd_to_s",
     "insertion_loss",
-    # Note: load_touchstone moved to oscura.loaders module (backward compat via __getattr__)
     "return_loss",
     "s_to_abcd",
 ]

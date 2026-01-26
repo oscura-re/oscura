@@ -94,7 +94,7 @@ class ArrayManager(ResourceManager):
     """
 
     def __init__(self, array: NDArray[Any]) -> None:
-        super().__init__(array, cleanup_func=lambda x: None)  # noqa: ARG005
+        super().__init__(array, cleanup_func=lambda x: None)
 
 
 # =============================================================================
@@ -252,7 +252,7 @@ def get_result_cache() -> LRUCache[Any]:
     global _result_cache
     if _result_cache is None:
         # Default: 2 GB cache
-        max_cache_size = int(os.environ.get("TK_CACHE_SIZE", 2 * 1024 * 1024 * 1024))  # noqa: PLW1508
+        max_cache_size = int(os.environ.get("TK_CACHE_SIZE", 2 * 1024 * 1024 * 1024))
         _result_cache = LRUCache(max_memory_bytes=max_cache_size)
     return _result_cache
 
@@ -286,6 +286,10 @@ def show_cache_stats() -> dict[str, int | float]:
 def cache_key(*args: Any, **kwargs: Any) -> str:
     """Generate cache key from arguments.
 
+    Note:
+        Uses MD5 for cache key generation only (not for security).
+        MD5 is appropriate here for non-cryptographic checksums.
+
     Args:
         *args: Positional arguments.
         **kwargs: Keyword arguments.
@@ -302,8 +306,8 @@ def cache_key(*args: Any, **kwargs: Any) -> str:
     parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
     key_str = "|".join(parts)
 
-    # Hash for consistent key
-    return hashlib.md5(key_str.encode()).hexdigest()
+    # Hash for consistent key (MD5 used for cache keys only, not security)
+    return hashlib.md5(key_str.encode(), usedforsecurity=False).hexdigest()
 
 
 # =============================================================================
@@ -344,9 +348,7 @@ def load_hdf5_lazy(
     try:
         import h5py
     except ImportError:
-        raise ImportError(  # noqa: B904
-            "h5py required for lazy HDF5 loading. Install with: pip install h5py"
-        )
+        raise ImportError("h5py required for lazy HDF5 loading. Install with: pip install h5py")
 
     from pathlib import Path
 
@@ -404,7 +406,7 @@ class LazyHDF5Array:
         try:
             import h5py
         except ImportError:
-            raise ImportError("h5py required. Install with: pip install h5py")  # noqa: B904
+            raise ImportError("h5py required. Install with: pip install h5py")
 
         self._file = h5py.File(self._file_path, "r")
         self._dataset = self._file[self._dataset_path]  # type: ignore[index]

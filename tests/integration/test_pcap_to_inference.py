@@ -101,6 +101,10 @@ class TestPCAPToInferencePipeline:
                     assert result.protocol is not None
 
             except ImportError:
+                # SKIP: Valid - Optional PCAP/network analysis dependencies
+                # Only skip if scapy not installed (pip install oscura[network])
+                # SKIP: Valid - Optional PCAP/network analysis dependencies
+                # Only skip if scapy not installed (pip install oscura[network])
                 pytest.skip("PCAP loader not available")
             except (OSError, ValueError, RuntimeError, AttributeError) as e:
                 # Skip files that fail to load or don't have expected attributes
@@ -147,6 +151,8 @@ class TestPCAPStateMachineInference:
     def test_request_response_correlation(self, http_pcap: Path | None) -> None:
         """Test correlating requests and responses in HTTP traffic."""
         if http_pcap is None or not http_pcap.exists():
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("HTTP PCAP not available")
 
         from oscura import load
@@ -212,6 +218,8 @@ class TestPCAPMessageFormatInference:
     def test_modbus_field_detection(self, modbus_pcap: Path | None) -> None:
         """Test detecting fields in Modbus messages."""
         if modbus_pcap is None or not modbus_pcap.exists():
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("Modbus PCAP not available")
 
         from oscura import load
@@ -273,6 +281,10 @@ class TestPCAPSequenceAlignment:
     def test_local_alignment(self, http_pcap: Path | None) -> None:
         """Test local sequence alignment for finding common regions."""
         if http_pcap is None or not http_pcap.exists():
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("HTTP PCAP not available")
 
         from oscura import load
@@ -324,6 +336,10 @@ class TestPCAPProtocolLibrary:
     def test_modbus_protocol_lookup(self, modbus_pcap: Path | None) -> None:
         """Test looking up Modbus protocol definition."""
         if modbus_pcap is None or not modbus_pcap.exists():
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("Modbus PCAP not available")
 
         try:
@@ -379,6 +395,10 @@ class TestPCAPBinaryFormatInference:
     def test_alignment_detection(self, modbus_pcap: Path | None) -> None:
         """Test detecting structure alignment in binary data."""
         if modbus_pcap is None or not modbus_pcap.exists():
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("Modbus PCAP not available")
 
         from oscura import load
@@ -424,6 +444,8 @@ class TestPCAPStreamReconstruction:
                 assert stream is not None
 
         except ImportError:
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: UDP stream reassembly not available
             pytest.skip("UDP stream reassembly not available")
         except (ValueError, RuntimeError, KeyError, AttributeError) as e:
             # Optional test - may fail if PCAP doesn't contain valid UDP streams
@@ -432,6 +454,8 @@ class TestPCAPStreamReconstruction:
     def test_message_extraction(self, http_pcap: Path | None) -> None:
         """Test extracting application-layer messages from stream."""
         if http_pcap is None or not http_pcap.exists():
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("HTTP PCAP not available")
 
         from oscura import load

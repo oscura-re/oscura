@@ -83,7 +83,23 @@ def detect_protocol(
     characteristics = _analyze_signal_characteristics(trace)
 
     # Define protocol detectors
-    protocol_detectors: list[tuple[str, Callable[[dict[str, Any]], float], dict[str, Any]]] = [
+    protocol_detectors = _build_protocol_detectors(characteristics)
+
+    # Score protocols
+    candidates = _score_protocols(protocol_detectors, characteristics, parallel)
+
+    # Validate and select primary
+    primary = _validate_detection(candidates, min_confidence)
+
+    # Build result
+    return _build_detection_result(primary, characteristics, candidates, return_candidates)
+
+
+def _build_protocol_detectors(
+    characteristics: dict[str, Any],
+) -> list[tuple[str, Callable[[dict[str, Any]], float], dict[str, Any]]]:
+    """Build list of protocol detectors with configurations."""
+    return [
         (
             "UART",
             _score_uart,
@@ -121,65 +137,100 @@ def detect_protocol(
         ),
     ]
 
-    # Score protocols (optionally in parallel)
+
+def _score_protocols(
+    protocol_detectors: list[tuple[str, Callable[[dict[str, Any]], float], dict[str, Any]]],
+    characteristics: dict[str, Any],
+    parallel: bool,
+) -> list[dict[str, Any]]:
+    """Score all protocol detectors."""
+    if parallel:
+        return _score_protocols_parallel(protocol_detectors, characteristics)
+    return _score_protocols_sequential(protocol_detectors, characteristics)
+
+
+def _score_protocols_parallel(
+    protocol_detectors: list[tuple[str, Callable[[dict[str, Any]], float], dict[str, Any]]],
+    characteristics: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Score protocols in parallel using ThreadPoolExecutor."""
     candidates = []
 
-    if parallel:
-        # Run scoring in parallel using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=len(protocol_detectors)) as executor:
-            # Submit all scoring tasks
-            future_to_protocol = {
-                executor.submit(scorer, characteristics): (name, config)
-                for name, scorer, config in protocol_detectors
-            }
+    with ThreadPoolExecutor(max_workers=len(protocol_detectors)) as executor:
+        future_to_protocol = {
+            executor.submit(scorer, characteristics): (name, config)
+            for name, scorer, config in protocol_detectors
+        }
 
-            # Collect results
-            for future in as_completed(future_to_protocol):
-                name, config = future_to_protocol[future]
-                try:
-                    score = future.result()
-                    if score > 0:
-                        candidates.append(
-                            {
-                                "protocol": name,
-                                "confidence": score,
-                                "config": config,
-                            }
-                        )
-                except Exception:
-                    # If a scorer fails, skip that protocol
-                    pass
-    else:
-        # Sequential scoring (original behavior)
-        for name, scorer, config in protocol_detectors:
-            score = scorer(characteristics)
-            if score > 0:
-                candidates.append(
-                    {
-                        "protocol": name,
-                        "confidence": score,
-                        "config": config,
-                    }
-                )
+        for future in as_completed(future_to_protocol):
+            name, config = future_to_protocol[future]
+            try:
+                score = future.result()
+                if score > 0:
+                    candidates.append(
+                        {
+                            "protocol": name,
+                            "confidence": score,
+                            "config": config,
+                        }
+                    )
+            except Exception:
+                pass
 
-    # Sort by confidence
     candidates.sort(key=lambda x: x["confidence"], reverse=True)  # type: ignore[arg-type, return-value]
+    return candidates
 
+
+def _score_protocols_sequential(
+    protocol_detectors: list[tuple[str, Callable[[dict[str, Any]], float], dict[str, Any]]],
+    characteristics: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Score protocols sequentially."""
+    candidates = []
+
+    for name, scorer, config in protocol_detectors:
+        score = scorer(characteristics)
+        if score > 0:
+            candidates.append(
+                {
+                    "protocol": name,
+                    "confidence": score,
+                    "config": config,
+                }
+            )
+
+    candidates.sort(key=lambda x: x["confidence"], reverse=True)  # type: ignore[arg-type, return-value]
+    return candidates
+
+
+def _validate_detection(
+    candidates: list[dict[str, Any]],
+    min_confidence: float,
+) -> dict[str, Any]:
+    """Validate that detection meets confidence threshold."""
     if not candidates:
         raise AnalysisError(
             "Could not detect protocol type. Signal may be analog or unsupported protocol."
         )
 
-    # Primary detection
     primary = candidates[0]
 
-    if primary["confidence"] < min_confidence:  # type: ignore[operator]
+    if float(primary["confidence"]) < min_confidence:
         raise AnalysisError(
             f"Protocol detection confidence too low: {primary['confidence']:.1%} "
             f"(minimum: {min_confidence:.1%}). Try specifying protocol manually."
         )
 
-    # Build result
+    return primary
+
+
+def _build_detection_result(
+    primary: dict[str, Any],
+    characteristics: dict[str, Any],
+    candidates: list[dict[str, Any]],
+    return_candidates: bool,
+) -> dict[str, Any]:
+    """Build detection result dictionary."""
     result = {
         "protocol": primary["protocol"],
         "confidence": primary["confidence"],

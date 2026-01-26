@@ -26,7 +26,7 @@ class TestPeriodicPatternDetection:
     def test_simple_period_detection(self) -> None:
         """Test detecting simple periodic pattern."""
         try:
-            from oscura.testing.synthetic import generate_digital_signal
+            from oscura.validation.testing.synthetic import generate_digital_signal
 
             # Generate signal with known period
             # 1 MHz at 100 MHz sample rate = period of 100 samples
@@ -72,7 +72,7 @@ class TestPeriodicPatternDetection:
     def test_fft_method(self) -> None:
         """Test period detection using FFT."""
         try:
-            from oscura.testing.synthetic import generate_digital_signal
+            from oscura.validation.testing.synthetic import generate_digital_signal
 
             signal, _truth = generate_digital_signal(
                 pattern="square", sample_rate=100e6, duration_samples=10000, frequency=1e6

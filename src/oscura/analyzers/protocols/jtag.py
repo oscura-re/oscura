@@ -90,19 +90,19 @@ class JTAGDecoder(SyncDecoder):
     longname = "Joint Test Action Group (IEEE 1149.1)"
     desc = "JTAG/Boundary-Scan protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("tck", "TCK", "Test Clock", required=True),
         ChannelDef("tms", "TMS", "Test Mode Select", required=True),
         ChannelDef("tdi", "TDI", "Test Data In", required=True),
     ]
 
-    optional_channels = [  # noqa: RUF012
+    optional_channels = [
         ChannelDef("tdo", "TDO", "Test Data Out", required=False),
     ]
 
-    options = []  # noqa: RUF012
+    options = []
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("state", "TAP state"),
         ("ir", "Instruction register"),
         ("dr", "Data register"),
@@ -147,17 +147,7 @@ class JTAGDecoder(SyncDecoder):
         if tck is None or tms is None or tdi is None:
             return
 
-        n_samples = min(len(tck), len(tms), len(tdi))
-        if tdo is not None:
-            n_samples = min(n_samples, len(tdo))
-
-        tck = tck[:n_samples]
-        tms = tms[:n_samples]
-        tdi = tdi[:n_samples]
-        if tdo is not None:
-            tdo = tdo[:n_samples]
-
-        # Find rising edges of TCK (state updates on rising edge)
+        tck, tms, tdi, tdo = self._align_signals(tck, tms, tdi, tdo)
         rising_edges = np.where(~tck[:-1] & tck[1:])[0] + 1
 
         if len(rising_edges) == 0:
@@ -167,95 +157,17 @@ class JTAGDecoder(SyncDecoder):
         trans_num = 0
 
         for edge_idx in rising_edges:
-            # Sample TMS at rising edge
             tms_val = bool(tms[edge_idx])
-
-            # Update TAP state
             new_state = self._next_state(self._tap_state, tms_val)
 
-            # Handle state-specific actions
+            # Handle data shifting in SHIFT states
             if self._tap_state in (TAPState.SHIFT_IR, TAPState.SHIFT_DR):
-                # Shift data
-                tdi_bit = 1 if tdi[edge_idx] else 0
-                self._shift_bits_tdi.append(tdi_bit)
+                self._shift_data_bit(edge_idx, tdi, tdo)
 
-                if tdo is not None:
-                    tdo_bit = 1 if tdo[edge_idx] else 0
-                    self._shift_bits_tdo.append(tdo_bit)
-
-            # Detect state transitions
+            # Handle state transitions and emit packets
             if new_state != self._tap_state:
-                # Emit packet on state change if we have shifted data
-                if self._tap_state == TAPState.SHIFT_IR and len(self._shift_bits_tdi) > 0:
-                    # Emit IR shift
-                    ir_value = self._bits_to_value(self._shift_bits_tdi)
-                    start_time = state_start_idx / sample_rate
-                    end_time = edge_idx / sample_rate
-
-                    instruction_name = JTAG_INSTRUCTIONS.get(ir_value, "UNKNOWN")
-
-                    self.put_annotation(
-                        start_time,
-                        end_time,
-                        AnnotationLevel.FIELDS,
-                        f"IR: 0x{ir_value:02X} ({instruction_name})",
-                    )
-
-                    annotations = {
-                        "transaction_num": trans_num,
-                        "tap_state": self._tap_state.value,
-                        "ir_value": ir_value,
-                        "ir_bits": len(self._shift_bits_tdi),
-                        "instruction": instruction_name,
-                    }
-
-                    packet = ProtocolPacket(
-                        timestamp=start_time,
-                        protocol="jtag",
-                        data=bytes([ir_value]),
-                        annotations=annotations,
-                        errors=[],
-                    )
-
-                    yield packet
-                    trans_num += 1
-
-                elif self._tap_state == TAPState.SHIFT_DR and len(self._shift_bits_tdi) > 0:
-                    # Emit DR shift
-                    dr_value_tdi = self._bits_to_value(self._shift_bits_tdi)
-                    start_time = state_start_idx / sample_rate
-                    end_time = edge_idx / sample_rate
-
-                    # Convert to bytes
-                    byte_count = (len(self._shift_bits_tdi) + 7) // 8
-                    dr_bytes = dr_value_tdi.to_bytes(byte_count, "little")
-
-                    self.put_annotation(
-                        start_time,
-                        end_time,
-                        AnnotationLevel.FIELDS,
-                        f"DR: 0x{dr_value_tdi:X} ({len(self._shift_bits_tdi)} bits)",
-                    )
-
-                    annotations = {
-                        "transaction_num": trans_num,
-                        "tap_state": self._tap_state.value,
-                        "dr_value_tdi": dr_value_tdi,
-                        "dr_bits": len(self._shift_bits_tdi),
-                    }
-
-                    if tdo is not None and len(self._shift_bits_tdo) > 0:
-                        dr_value_tdo = self._bits_to_value(self._shift_bits_tdo)
-                        annotations["dr_value_tdo"] = dr_value_tdo
-
-                    packet = ProtocolPacket(
-                        timestamp=start_time,
-                        protocol="jtag",
-                        data=dr_bytes,
-                        annotations=annotations,
-                        errors=[],
-                    )
-
+                packet = self._emit_state_packet(state_start_idx, edge_idx, sample_rate, trans_num)
+                if packet is not None:
                     yield packet
                     trans_num += 1
 
@@ -266,6 +178,176 @@ class JTAGDecoder(SyncDecoder):
 
                 self._tap_state = new_state
                 state_start_idx = edge_idx
+
+    def _align_signals(
+        self,
+        tck: NDArray[np.bool_],
+        tms: NDArray[np.bool_],
+        tdi: NDArray[np.bool_],
+        tdo: NDArray[np.bool_] | None,
+    ) -> tuple[NDArray[np.bool_], NDArray[np.bool_], NDArray[np.bool_], NDArray[np.bool_] | None]:
+        """Align all signals to the same length.
+
+        Args:
+            tck: Test Clock signal.
+            tms: Test Mode Select signal.
+            tdi: Test Data In signal.
+            tdo: Test Data Out signal (optional).
+
+        Returns:
+            Tuple of aligned signals (tck, tms, tdi, tdo).
+        """
+        n_samples = min(len(tck), len(tms), len(tdi))
+        if tdo is not None:
+            n_samples = min(n_samples, len(tdo))
+
+        return (
+            tck[:n_samples],
+            tms[:n_samples],
+            tdi[:n_samples],
+            tdo[:n_samples] if tdo is not None else None,
+        )
+
+    def _shift_data_bit(
+        self,
+        edge_idx: int,
+        tdi: NDArray[np.bool_],
+        tdo: NDArray[np.bool_] | None,
+    ) -> None:
+        """Shift a single bit of data on TDI/TDO.
+
+        Args:
+            edge_idx: Edge index where shift occurs.
+            tdi: Test Data In signal.
+            tdo: Test Data Out signal (optional).
+        """
+        tdi_bit = 1 if tdi[edge_idx] else 0
+        self._shift_bits_tdi.append(tdi_bit)
+
+        if tdo is not None:
+            tdo_bit = 1 if tdo[edge_idx] else 0
+            self._shift_bits_tdo.append(tdo_bit)
+
+    def _emit_state_packet(
+        self,
+        state_start_idx: int,
+        edge_idx: int,
+        sample_rate: float,
+        trans_num: int,
+    ) -> ProtocolPacket | None:
+        """Emit packet on state change if we have shifted data.
+
+        Args:
+            state_start_idx: Start index of current state.
+            edge_idx: Current edge index.
+            sample_rate: Sample rate in Hz.
+            trans_num: Transaction number.
+
+        Returns:
+            ProtocolPacket if data was shifted, None otherwise.
+        """
+        if self._tap_state == TAPState.SHIFT_IR and len(self._shift_bits_tdi) > 0:
+            return self._create_ir_packet(state_start_idx, edge_idx, sample_rate, trans_num)
+        elif self._tap_state == TAPState.SHIFT_DR and len(self._shift_bits_tdi) > 0:
+            return self._create_dr_packet(state_start_idx, edge_idx, sample_rate, trans_num)
+        return None
+
+    def _create_ir_packet(
+        self,
+        state_start_idx: int,
+        edge_idx: int,
+        sample_rate: float,
+        trans_num: int,
+    ) -> ProtocolPacket:
+        """Create IR shift packet.
+
+        Args:
+            state_start_idx: Start index of shift state.
+            edge_idx: End index of shift state.
+            sample_rate: Sample rate in Hz.
+            trans_num: Transaction number.
+
+        Returns:
+            ProtocolPacket for IR shift.
+        """
+        ir_value = self._bits_to_value(self._shift_bits_tdi)
+        start_time = state_start_idx / sample_rate
+        end_time = edge_idx / sample_rate
+        instruction_name = JTAG_INSTRUCTIONS.get(ir_value, "UNKNOWN")
+
+        self.put_annotation(
+            start_time,
+            end_time,
+            AnnotationLevel.FIELDS,
+            f"IR: 0x{ir_value:02X} ({instruction_name})",
+        )
+
+        annotations = {
+            "transaction_num": trans_num,
+            "tap_state": self._tap_state.value,
+            "ir_value": ir_value,
+            "ir_bits": len(self._shift_bits_tdi),
+            "instruction": instruction_name,
+        }
+
+        return ProtocolPacket(
+            timestamp=start_time,
+            protocol="jtag",
+            data=bytes([ir_value]),
+            annotations=annotations,
+            errors=[],
+        )
+
+    def _create_dr_packet(
+        self,
+        state_start_idx: int,
+        edge_idx: int,
+        sample_rate: float,
+        trans_num: int,
+    ) -> ProtocolPacket:
+        """Create DR shift packet.
+
+        Args:
+            state_start_idx: Start index of shift state.
+            edge_idx: End index of shift state.
+            sample_rate: Sample rate in Hz.
+            trans_num: Transaction number.
+
+        Returns:
+            ProtocolPacket for DR shift.
+        """
+        dr_value_tdi = self._bits_to_value(self._shift_bits_tdi)
+        start_time = state_start_idx / sample_rate
+        end_time = edge_idx / sample_rate
+
+        byte_count = (len(self._shift_bits_tdi) + 7) // 8
+        dr_bytes = dr_value_tdi.to_bytes(byte_count, "little")
+
+        self.put_annotation(
+            start_time,
+            end_time,
+            AnnotationLevel.FIELDS,
+            f"DR: 0x{dr_value_tdi:X} ({len(self._shift_bits_tdi)} bits)",
+        )
+
+        annotations = {
+            "transaction_num": trans_num,
+            "tap_state": self._tap_state.value,
+            "dr_value_tdi": dr_value_tdi,
+            "dr_bits": len(self._shift_bits_tdi),
+        }
+
+        if len(self._shift_bits_tdo) > 0:
+            dr_value_tdo = self._bits_to_value(self._shift_bits_tdo)
+            annotations["dr_value_tdo"] = dr_value_tdo
+
+        return ProtocolPacket(
+            timestamp=start_time,
+            protocol="jtag",
+            data=dr_bytes,
+            annotations=annotations,
+            errors=[],
+        )
 
     def _next_state(self, current: TAPState, tms: bool) -> TAPState:
         """Compute next TAP state based on TMS value.

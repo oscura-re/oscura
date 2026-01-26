@@ -274,9 +274,11 @@ def test_perform_characterization_with_reference(sample_trace, reference_trace):
         with patch("oscura.analyzers.waveform.measurements.fall_time", return_value=10e-9):
             with patch("oscura.analyzers.waveform.measurements.overshoot", return_value=5.0):
                 with patch("oscura.analyzers.waveform.measurements.undershoot", return_value=3.0):
-                    with patch("oscura.comparison.compare.similarity_score", return_value=0.95):
+                    with patch(
+                        "oscura.utils.comparison.compare.similarity_score", return_value=0.95
+                    ):
                         with patch(
-                            "oscura.comparison.compare.compare_traces",
+                            "oscura.utils.comparison.compare.compare_traces",
                             return_value=mock_comparison,
                         ):
                             results = _perform_characterization(
@@ -660,9 +662,11 @@ def test_characterize_end_to_end_with_comparison(
                     with patch(
                         "oscura.analyzers.waveform.measurements.undershoot", return_value=1.0
                     ):
-                        with patch("oscura.comparison.compare.similarity_score", return_value=0.9):
+                        with patch(
+                            "oscura.utils.comparison.compare.similarity_score", return_value=0.9
+                        ):
                             with patch(
-                                "oscura.comparison.compare.compare_traces",
+                                "oscura.utils.comparison.compare.compare_traces",
                                 return_value=mock_comparison,
                             ):
                                 result = cli_runner.invoke(

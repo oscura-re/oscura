@@ -63,8 +63,51 @@ def configure_dpi_rendering(
     References:
         VIS-017: DPI-Aware Rendering
     """
-    # Define preset configurations
-    presets = {
+    presets = _get_dpi_presets()
+
+    # Handle dpi alias and resolve preset
+    if dpi is not None and custom_dpi is None:
+        custom_dpi = dpi
+
+    if preset not in presets and custom_dpi is None:
+        raise ValueError(f"Invalid preset: {preset}. Must be one of {list(presets.keys())}")
+
+    # Get configuration and DPI
+    target_dpi, preset_config = _resolve_dpi_config(preset, custom_dpi, presets)
+
+    # Calculate scale factors
+    scale = target_dpi / baseline_dpi
+    font_scale = scale
+    line_scale = scale
+    marker_scale = scale
+
+    # Build style parameters
+    style_params = _build_style_params(
+        target_dpi, font_scale, line_scale, marker_scale, preset_config
+    )
+
+    _apply_antialias_settings(style_params, preset_config)
+
+    if preset == "publication":
+        _apply_publication_settings(style_params)
+
+    return {
+        "dpi": target_dpi,
+        "figsize": figsize,
+        "font_scale": font_scale,
+        "line_scale": line_scale,
+        "marker_scale": marker_scale,
+        "antialias": preset_config["antialias"],
+        "format": preset_config["format"],
+        "style_params": style_params,
+        "description": preset_config["description"],
+        "preset": preset if custom_dpi is None else "custom",
+    }
+
+
+def _get_dpi_presets() -> dict[str, dict[str, Any]]:
+    """Get DPI preset configurations."""
+    return {
         "screen": {
             "dpi": 96,
             "font_family": "sans-serif",
@@ -88,44 +131,32 @@ def configure_dpi_rendering(
         },
     }
 
-    # Handle dpi alias
-    if dpi is not None and custom_dpi is None:
-        custom_dpi = dpi
 
-    if preset not in presets and custom_dpi is None:
-        raise ValueError(f"Invalid preset: {preset}. Must be one of {list(presets.keys())}")
-
-    # Get preset configuration
+def _resolve_dpi_config(
+    preset: str, custom_dpi: int | None, presets: dict[str, dict[str, Any]]
+) -> tuple[int, dict[str, Any]]:
+    """Resolve target DPI and configuration from preset or custom value."""
     if custom_dpi is not None:
-        target_dpi = custom_dpi
-        preset_config = {
+        return custom_dpi, {
             "font_family": "sans-serif",
             "antialias": True,
-            "format": "png" if target_dpi <= 150 else "pdf",
-            "description": f"Custom ({target_dpi} DPI)",
+            "format": "png" if custom_dpi <= 150 else "pdf",
+            "description": f"Custom ({custom_dpi} DPI)",
         }
-    else:
-        preset_config = presets[preset]
-        target_dpi = preset_config["dpi"]  # type: ignore[assignment]
 
-    # Calculate scale factors based on DPI
-    # Scale factor = target_dpi / baseline_dpi
-    scale = target_dpi / baseline_dpi
+    preset_config = presets[preset]
+    return preset_config["dpi"], preset_config
 
-    # Font size scaling: proportional to DPI
-    # Baseline font sizes at 96 DPI: default 10pt
-    font_scale = scale
 
-    # Line width scaling: proportional to DPI
-    # Baseline line width at 96 DPI: 1.0 pt
-    line_scale = scale
-
-    # Marker size scaling: proportional to DPI
-    # Baseline marker size at 96 DPI: 6.0 pt
-    marker_scale = scale
-
-    # Build matplotlib rcParams for this preset
-    style_params = {
+def _build_style_params(
+    target_dpi: int,
+    font_scale: float,
+    line_scale: float,
+    marker_scale: float,
+    preset_config: dict[str, Any],
+) -> dict[str, Any]:
+    """Build matplotlib rcParams dictionary."""
+    return {
         "figure.dpi": target_dpi,
         "savefig.dpi": target_dpi,
         "font.family": preset_config["font_family"],
@@ -146,37 +177,22 @@ def configure_dpi_rendering(
         "ytick.minor.width": 0.6 * line_scale,
     }
 
-    # Anti-aliasing settings
-    if preset_config["antialias"]:
-        style_params["lines.antialiased"] = True
-        style_params["patch.antialiased"] = True
-        style_params["text.antialiased"] = True
-    else:
-        # Disable for high-DPI print (cleaner output)
-        style_params["lines.antialiased"] = False
-        style_params["patch.antialiased"] = False
-        style_params["text.antialiased"] = False
 
-    # Publication-specific settings
-    if preset == "publication":
-        style_params["font.family"] = "serif"
-        style_params["mathtext.fontset"] = "cm"  # Computer Modern for LaTeX
-        style_params["axes.grid"] = True
-        style_params["grid.alpha"] = 0.3
-        style_params["axes.axisbelow"] = True
+def _apply_antialias_settings(style_params: dict[str, Any], preset_config: dict[str, Any]) -> None:
+    """Apply anti-aliasing settings to style params (modifies in-place)."""
+    antialias = preset_config["antialias"]
+    style_params["lines.antialiased"] = antialias
+    style_params["patch.antialiased"] = antialias
+    style_params["text.antialiased"] = antialias
 
-    return {
-        "dpi": target_dpi,
-        "figsize": figsize,
-        "font_scale": font_scale,
-        "line_scale": line_scale,
-        "marker_scale": marker_scale,
-        "antialias": preset_config["antialias"],
-        "format": preset_config["format"],
-        "style_params": style_params,
-        "description": preset_config["description"],
-        "preset": preset if custom_dpi is None else "custom",
-    }
+
+def _apply_publication_settings(style_params: dict[str, Any]) -> None:
+    """Apply publication-specific settings to style params (modifies in-place)."""
+    style_params["font.family"] = "serif"
+    style_params["mathtext.fontset"] = "cm"  # Computer Modern for LaTeX
+    style_params["axes.grid"] = True
+    style_params["grid.alpha"] = 0.3
+    style_params["axes.axisbelow"] = True
 
 
 def apply_rendering_config(config: dict[str, Any]) -> None:
@@ -197,7 +213,7 @@ def apply_rendering_config(config: dict[str, Any]) -> None:
 
         plt.rcParams.update(config["style_params"])
     except ImportError:
-        raise ImportError("matplotlib is required for rendering configuration")  # noqa: B904
+        raise ImportError("matplotlib is required for rendering configuration")
 
 
 __all__ = [

@@ -11,16 +11,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oscura.core.types import TraceMetadata, WaveformTrace
+from tests.utils.factories import make_waveform_trace
 
 pytestmark = [pytest.mark.unit, pytest.mark.analyzer]
-
-
-# Helper functions
-def make_waveform_trace(data: np.ndarray, sample_rate: float = 1e9) -> WaveformTrace:
-    """Create a WaveformTrace from raw data for testing."""
-    metadata = TraceMetadata(sample_rate=sample_rate)
-    return WaveformTrace(data=data.astype(np.float64), metadata=metadata)
 
 
 # =============================================================================

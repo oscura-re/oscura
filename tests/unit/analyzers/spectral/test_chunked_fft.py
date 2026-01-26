@@ -21,12 +21,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.analyzer, pytest.mark.spectral]
 
 
 @pytest.fixture
-def sample_rate() -> float:
-    """Default sample rate for test signals (1 MHz)."""
-    return 1_000_000.0
-
-
-@pytest.fixture
 def test_signal(sample_rate: float) -> NDArray[np.float64]:
     """Generate a test signal with known frequency components.
 
@@ -469,10 +463,13 @@ class TestFFTChunkedEdgeCases:
 
     @pytest.mark.slow
     def test_fft_chunked_100_percent_overlap(self, binary_file: Path, sample_rate: float) -> None:
-        """Test FFT with 100% overlap (edge case)."""
-        # 100% overlap means hop=0, will process same segment repeatedly
-        # This creates an infinite loop - skip this pathological edge case
-        pytest.skip("100% overlap creates infinite loop - pathological edge case")
+        """Test FFT with 100% overlap rejects invalid input."""
+        from oscura.analyzers.spectral.chunked_fft import fft_chunked
+
+        # 100% overlap means hop=0, which would process same segment repeatedly
+        # Function should validate and reject this pathological edge case
+        with pytest.raises(ValueError, match="overlap|hop|must be less than"):
+            fft_chunked(binary_file, sample_rate=sample_rate, chunk_size=4096, overlap_pct=1.0)
 
 
 # =============================================================================
@@ -1184,3 +1181,193 @@ class TestModuleExports:
         assert callable(streaming_fft)
         assert callable(welch_psd_chunked)
         assert StreamingAnalyzer is not None
+
+
+# =============================================================================
+# Memory-Mapped I/O Tests
+# =============================================================================
+
+
+@pytest.mark.unit
+@pytest.mark.analyzer
+@pytest.mark.requirement("PERF-007")
+class TestMemoryMappedIO:
+    """Test memory-mapped I/O optimizations for large file processing."""
+
+    def test_mmap_generates_correct_segments(self, large_binary_file: Path) -> None:
+        """Test that memory-mapped segment generation produces correct data.
+
+        Validates:
+        - Segments match expected data from file
+        - No data corruption from memory mapping
+        - Segment boundaries are correct
+        """
+        from oscura.analyzers.spectral.chunked_fft import _generate_segments
+
+        # Read file conventionally for comparison
+        reference_data = np.fromfile(large_binary_file, dtype=np.float32)
+
+        # Generate segments using memory-mapped I/O
+        segment_size = 1024
+        noverlap = 512
+        segments = list(
+            _generate_segments(
+                large_binary_file, len(reference_data), segment_size, noverlap, np.float32
+            )
+        )
+
+        # Verify first segment matches reference
+        assert len(segments) > 0
+        first_segment = segments[0]
+        assert np.allclose(first_segment, reference_data[:segment_size])
+
+        # Verify segment overlap is correct
+        if len(segments) > 1:
+            second_segment = segments[1]
+            hop = segment_size - noverlap
+            assert np.allclose(second_segment, reference_data[hop : hop + segment_size])
+
+    def test_mmap_handles_partial_last_segment(self, tmp_path: Path) -> None:
+        """Test memory-mapped I/O correctly handles partial last segment.
+
+        Validates:
+        - Last segment can be shorter than segment_size
+        - No index out of bounds errors
+        - Data is correct for partial segment
+        """
+        from oscura.analyzers.spectral.chunked_fft import _generate_segments
+
+        # Create file with non-multiple-of-segment-size samples
+        sample_count = 2500  # Not evenly divisible by 1024
+        rng = np.random.default_rng(42)
+        signal = rng.standard_normal(sample_count).astype(np.float32)
+
+        file_path = tmp_path / "partial_segment.bin"
+        signal.tofile(file_path)
+
+        # Generate segments
+        segment_size = 1024
+        noverlap = 512
+        segments = list(
+            _generate_segments(file_path, sample_count, segment_size, noverlap, np.float32)
+        )
+
+        # Last segment should be partial
+        assert len(segments) > 0
+        last_segment = segments[-1]
+        assert len(last_segment) <= segment_size
+        assert len(last_segment) > 0
+
+    def test_mmap_large_file_efficiency(self, tmp_path: Path, sample_rate: float) -> None:
+        """Test memory-mapped I/O performance on larger file.
+
+        Validates:
+        - Can process multi-MB files efficiently
+        - No excessive memory usage
+        - Results are consistent with traditional I/O
+        """
+        from oscura.analyzers.spectral.chunked_fft import fft_chunked
+
+        # Create 5 MB file (~1.25M float32 samples)
+        rng = np.random.default_rng(42)
+        signal = rng.standard_normal(1_250_000).astype(np.float32)
+
+        file_path = tmp_path / "large_mmap.bin"
+        signal.tofile(file_path)
+
+        # Process with memory-mapped I/O (happens automatically in _generate_segments)
+        freqs, spectrum = fft_chunked(
+            file_path,
+            segment_size=4096,
+            overlap_pct=50.0,
+            sample_rate=sample_rate,
+            dtype="float32",
+        )
+
+        # Verify results
+        assert len(freqs) > 0
+        assert len(spectrum) > 0
+        assert not np.any(np.isnan(spectrum))
+        assert not np.any(np.isinf(spectrum))
+
+    def test_mmap_multiple_dtypes(self, tmp_path: Path) -> None:
+        """Test memory-mapped I/O with different data types.
+
+        Validates:
+        - Works with float32 and float64
+        - Correct byte offsets for different dtype sizes
+        - No type conversion errors
+        """
+        from oscura.analyzers.spectral.chunked_fft import _generate_segments
+
+        for dtype in [np.float32, np.float64]:
+            # Create test file
+            rng = np.random.default_rng(42)
+            signal = rng.standard_normal(10000).astype(dtype)
+
+            file_path = tmp_path / f"test_{dtype.__name__}.bin"
+            signal.tofile(file_path)
+
+            # Generate segments
+            segments = list(_generate_segments(file_path, len(signal), 1024, 512, dtype))
+
+            # Verify first segment data type and values
+            assert len(segments) > 0
+            assert segments[0].dtype == dtype
+            assert np.allclose(segments[0], signal[:1024])
+
+    def test_mmap_segment_boundaries(self, tmp_path: Path) -> None:
+        """Test memory-mapped I/O segment boundary calculations.
+
+        Validates:
+        - Correct byte offset calculations
+        - Proper handling of itemsize for different dtypes
+        - No off-by-one errors in segment extraction
+        """
+        from oscura.analyzers.spectral.chunked_fft import _generate_segments
+
+        # Create file with known pattern
+        pattern = np.arange(5000, dtype=np.float32)
+        file_path = tmp_path / "pattern.bin"
+        pattern.tofile(file_path)
+
+        # Generate segments with no overlap for easier validation
+        segment_size = 1000
+        noverlap = 0
+        segments = list(
+            _generate_segments(file_path, len(pattern), segment_size, noverlap, np.float32)
+        )
+
+        # Verify each segment contains correct sequential values
+        assert len(segments) == 5  # 5000 samples / 1000 segment size
+        for i, segment in enumerate(segments):
+            expected_start = i * segment_size
+            expected_end = expected_start + segment_size
+            assert np.allclose(segment, pattern[expected_start:expected_end])
+
+    def test_mmap_streaming_integration(self, large_binary_file: Path, sample_rate: float) -> None:
+        """Test memory-mapped I/O integration with streaming FFT.
+
+        Validates:
+        - Streaming FFT uses memory-mapped segments
+        - No memory leaks during iteration
+        - Results are consistent
+        """
+        from oscura.analyzers.spectral.chunked_fft import streaming_fft
+
+        segment_count = 0
+        for freqs, magnitude in streaming_fft(
+            large_binary_file,
+            segment_size=1024,
+            overlap_pct=50.0,
+            sample_rate=sample_rate,
+            dtype="float32",
+        ):
+            # Each iteration uses memory-mapped segment
+            assert len(freqs) > 0
+            assert len(magnitude) > 0
+            assert not np.any(np.isnan(magnitude))
+            segment_count += 1
+
+        # Verify we processed multiple segments
+        assert segment_count > 1

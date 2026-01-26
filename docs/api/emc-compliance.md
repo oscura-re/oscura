@@ -1,7 +1,7 @@
 # EMC Compliance Testing API Reference
 
-> **Version**: 0.5.1
-> **Last Updated**: 2026-01-19
+> **Version**: 0.6.0
+> **Last Updated**: 2026-01-25
 
 ## Overview
 
@@ -11,7 +11,7 @@ Oscura provides comprehensive EMC (Electromagnetic Compatibility) and EMI (Elect
 
 ```python
 import oscura as osc
-from oscura.compliance import (
+from oscura.validation.compliance import (
     load_limit_mask, check_compliance,
     create_custom_mask, generate_compliance_report
 )
@@ -37,7 +37,7 @@ generate_compliance_report(result, "emc_report.html")
 Test signal against EMC limit mask for regulatory compliance.
 
 ```python
-from oscura.compliance import check_compliance, load_limit_mask
+from oscura.validation.compliance import check_compliance, load_limit_mask
 
 # Load limit mask
 mask = load_limit_mask("FCC_Part15_ClassB")
@@ -111,7 +111,7 @@ if not result.passed:
 Load a built-in or custom EMC limit mask by name.
 
 ```python
-from oscura.compliance import load_limit_mask, AVAILABLE_MASKS
+from oscura.validation.compliance import load_limit_mask, AVAILABLE_MASKS
 
 # Show available masks
 print("Available masks:", AVAILABLE_MASKS)
@@ -170,7 +170,7 @@ mask = load_limit_mask("MyMask", custom_path="./masks")
 Create a custom EMC limit mask for specialized testing requirements.
 
 ```python
-from oscura.compliance import create_custom_mask
+from oscura.validation.compliance import create_custom_mask
 
 # Create automotive EMC mask (CISPR 25-style limits)
 mask = create_custom_mask(
@@ -225,7 +225,7 @@ mask = create_custom_mask(
 Generate formatted EMC compliance test report in HTML, PDF, Markdown, or JSON.
 
 ```python
-from oscura.compliance import generate_compliance_report, ComplianceReportFormat
+from oscura.validation.compliance import generate_compliance_report, ComplianceReportFormat
 
 # Generate HTML report with plot
 report_path = generate_compliance_report(
@@ -326,7 +326,7 @@ mask = LimitMask.from_dict(mask_dict)
 
 ```python
 import oscura as osc
-from oscura.compliance import create_custom_mask, check_compliance, generate_compliance_report
+from oscura.validation.compliance import create_custom_mask, check_compliance, generate_compliance_report
 import numpy as np
 
 # Create CISPR 25 Class B radiated emissions mask (automotive)
@@ -403,7 +403,7 @@ generate_compliance_report(
 
 ```python
 import oscura as osc
-from oscura.compliance import load_limit_mask, check_compliance
+from oscura.validation.compliance import load_limit_mask, check_compliance
 import matplotlib.pyplot as plt
 
 # Load radiated emissions measurement
@@ -487,7 +487,7 @@ generate_compliance_report(
 
 ```python
 import oscura as osc
-from oscura.compliance import create_custom_mask, check_compliance
+from oscura.validation.compliance import create_custom_mask, check_compliance
 import numpy as np
 
 # Create IEC 61000-4-2 ESD immunity mask (time-domain waveform envelope)
@@ -571,7 +571,7 @@ if spectrum_result.passed:
 ### Example 4: Creating Custom Compliance Masks
 
 ```python
-from oscura.compliance import create_custom_mask, LimitMask
+from oscura.validation.compliance import create_custom_mask, LimitMask
 import numpy as np
 import json
 
@@ -662,7 +662,7 @@ print(f"Frequency range: {loaded_mask.frequency_range[0] / 1e6:.3f} - "
 
 ```python
 import oscura as osc
-from oscura.compliance import load_limit_mask, check_compliance, generate_compliance_report
+from oscura.validation.compliance import load_limit_mask, check_compliance, generate_compliance_report
 from pathlib import Path
 
 # Test multiple devices and generate reports
@@ -760,7 +760,7 @@ For efficiency when testing multiple masks:
 ```python
 import oscura as osc
 from oscura.analyzers.spectral import fft
-from oscura.compliance import load_limit_mask, check_compliance
+from oscura.validation.compliance import load_limit_mask, check_compliance
 import numpy as np
 
 # Load trace once
@@ -793,7 +793,7 @@ for mask_name in masks:
 For specialized detector types:
 
 ```python
-from oscura.compliance import check_compliance, load_limit_mask
+from oscura.validation.compliance import check_compliance, load_limit_mask
 import numpy as np
 
 # Implement custom detector processing
@@ -827,7 +827,7 @@ Track compliance margins over time:
 
 ```python
 import oscura as osc
-from oscura.compliance import load_limit_mask, check_compliance
+from oscura.validation.compliance import load_limit_mask, check_compliance
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
@@ -904,7 +904,7 @@ if margins[-1] < margins[0] - 3:
 
 ```python
 # Example: Compare detector types
-from oscura.compliance import load_limit_mask, check_compliance
+from oscura.validation.compliance import load_limit_mask, check_compliance
 
 trace = osc.load("emissions.wfm")
 mask = load_limit_mask("FCC_Part15_ClassB")
@@ -955,7 +955,7 @@ generate_compliance_report(result, "report.html", dut_info=dut_info)
 ## Error Handling
 
 ```python
-from oscura.compliance import load_limit_mask, check_compliance
+from oscura.validation.compliance import load_limit_mask, check_compliance
 from oscura.core.exceptions import AnalysisError
 
 try:

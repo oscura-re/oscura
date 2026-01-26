@@ -20,14 +20,6 @@ import pytest
 # MIGRATION COMPLETE: All basic signal fixtures removed.
 # Tests should use SignalBuilder from tests/fixtures/signal_builders.py instead.
 #
-# For signal generation, use the signal_builder fixture:
-#   def test_something(signal_builder):
-#       signal = signal_builder.square_wave(frequency=1e3, sample_rate=10e3)
-#       signal = signal_builder.noisy_sine(snr_db=40)
-#       signal = signal_builder.triangle_wave()
-#       signal = signal_builder.sawtooth_wave()
-#
-# This eliminates duplication and provides consistent signal generation.
 # See tests/fixtures/signal_builders.py for 20+ signal generation methods.
 
 

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from oscura.config.schema import (
+from oscura.core.config.schema import (
     ConfigSchema,
     SchemaRegistry,
     ValidationError,

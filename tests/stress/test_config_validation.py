@@ -84,7 +84,9 @@ class TestYAMLParsing:
                 data = yaml.safe_load(f)
             assert data is None or data == {}
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_yaml_with_only_comments(self, temp_config_dir: Path) -> None:
         """Test YAML with only comments."""
@@ -98,7 +100,9 @@ class TestYAMLParsing:
                 data = yaml.safe_load(f)
             assert data is None
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_unicode_in_yaml(self, temp_config_dir: Path) -> None:
         """Test YAML with unicode characters."""
@@ -120,7 +124,9 @@ project:
             assert data["project"]["name"] == "测试项目"
             assert "🚀" in data["project"]["description"]
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_very_long_lines(self, temp_config_dir: Path) -> None:
         """Test YAML with very long lines."""
@@ -135,7 +141,9 @@ project:
                 data = yaml.safe_load(f)
             assert len(data["long_key"]) == 10000
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_deeply_nested_yaml(self, temp_config_dir: Path) -> None:
         """Test deeply nested YAML structure."""
@@ -160,7 +168,9 @@ project:
                 current = current[f"level{i}"]
             assert current["value"] == "deep"
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            pytest.skip("PyYAML not available")
+
+            pytest.skip("Module not available")
 
 
 # =============================================================================
@@ -190,7 +200,9 @@ project:
             # Should load but validation should catch missing fields
             assert "name" not in data.get("project", {})
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_invalid_types(self, temp_config_dir: Path) -> None:
         """Test config with wrong types."""
@@ -213,7 +225,9 @@ project:
             assert isinstance(data["project"]["name"], int)
             assert isinstance(data["project"]["hooks"]["pre_commit"], str)
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_duplicate_keys(self, temp_config_dir: Path) -> None:
         """Test YAML with duplicate keys."""
@@ -234,7 +248,13 @@ project:
             # YAML spec: last value wins
             assert data["project"]["name"] == "second"
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
+
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: Module not available
+            pytest.skip("Module not available")
 
 
 # =============================================================================
@@ -259,7 +279,9 @@ class TestLargeConfigurations:
                 data = yaml.safe_load(f)
             assert len(data["items"]) == 1000
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_1000_key_dict(self, temp_config_dir: Path) -> None:
         """Test YAML with 1000 keys."""
@@ -278,7 +300,9 @@ class TestLargeConfigurations:
                 data = yaml.safe_load(f)
             assert len(data["config"]) == 1000
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
 
     def test_1mb_yaml_file(self, temp_config_dir: Path) -> None:
         """Test parsing ~1MB YAML file."""
@@ -301,7 +325,13 @@ class TestLargeConfigurations:
                 data = yaml.safe_load(f)
             assert len(data["data"]) == 10000
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: PyYAML not available
+            pytest.skip("PyYAML not available")
+
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: Module not available
+            pytest.skip("Module not available")
 
 
 # =============================================================================
@@ -338,7 +368,7 @@ class TestCircularDependencies:
             has_self_dep = hook["name"] in hook.get("depends_on", [])
             assert has_self_dep, "Should detect self-dependency"
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            pytest.skip("PyYAML not available")
 
     def test_mutual_dependencies(self, temp_config_dir: Path) -> None:
         """Test hooks with mutual dependencies (A->B, B->A)."""
@@ -383,7 +413,9 @@ class TestCircularDependencies:
             has_circular = any(has_cycle(h) for h in hooks)
             assert has_circular, "Should detect circular dependency"
         except ImportError:
-            pytest.skip("PyYAML not installed")
+            pytest.skip("PyYAML not available")
+
+            pytest.skip("Module not available")
 
 
 # =============================================================================

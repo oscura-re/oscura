@@ -6,7 +6,7 @@
 
 [project]
 name = "oscura"
-version = "0.5.1"
+version = "0.6.0"
 description = "Unified hardware reverse engineering framework. Extract all information from any system through signals and data. Unknown protocol discovery, state machine extraction, CRC recovery, security analysis. 16+ protocols, IEEE-compliant measurements."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -84,6 +84,10 @@ dependencies = [
 
 [project.optional-dependencies]
 # Development and testing tools
+# SEC-005 note: "py" package (CVE-2022-42969) is a transitive dependency from
+# older pytest versions. Modern pytest (>=8.0) no longer requires it. The CVE
+# relates to ReDoS in SVN info parsing which Oscura doesn't use. Package will
+# be automatically removed when all dependencies update to pytest 8.x.
 dev = [
     "pytest>=8.0,<10.0.0",              # Testing framework
     "pytest-cov>=6.0,<8.0.0",           # Coverage reporting
@@ -113,13 +117,15 @@ routing = [
 ]
 
 # Jupyter notebook integration
-# NOTE: nbconvert CVE-2025-53000 affects <=7.16.6 (Windows-only code execution
-# via uncontrolled search path during PDF conversion with SVG). Constraint added
-# to avoid vulnerable versions. Risk limited to Windows PDF+SVG workflows.
+# SEC-005: nbconvert CVE-2025-53000 affects <=7.16.6 (Windows-only code execution
+# via uncontrolled search path during PDF conversion with SVG to PDF). Latest
+# version (7.16.6) is vulnerable; waiting for 7.17.0 release. Mitigation: Avoid
+# PDF export with SVG content on Windows, or use Linux/macOS (not affected).
+# TRACKED: https://github.com/jupyter/nbconvert/security/advisories
 jupyter = [
     "ipython>=8.0.0,<9.0.0",             # Enhanced Python shell
     "jupyter>=1.0.0,<2.0.0",             # Jupyter notebook support
-    "nbconvert>=7.0.0,<8.0.0",           # CVE-2025-53000 (<=7.16.6) tracked, fix pending release
+    "nbconvert>=7.0.0,!=7.16.6,<8.0.0",  # CVE-2025-53000: Exclude vulnerable 7.16.6, awaiting 7.17.0
 ]
 
 # Automotive protocol analysis (CAN, J1939, OBD-II, UDS)
@@ -141,6 +147,7 @@ analysis = [
     "openpyxl>=3.0.0,<4.0.0",            # Excel file reading/writing
     "networkx>=3.0,<4.0.0",              # Graph analysis for state machines
     "pywavelets>=1.0.0,<2.0.0",          # Wavelet analysis
+    "scikit-learn>=1.3.0,<2.0.0",        # Machine learning and clustering analysis
 ]
 
 # Hardware acquisition sources
@@ -154,9 +161,16 @@ fuzzy = [
     "rapidfuzz>=3.0.0,<4.0.0",           # Fuzzy keyword matching for routing
 ]
 
+# IoT protocol support (LoRaWAN, Zigbee, BLE, etc.)
+# SEC-005 fix: Updated cryptography to >=44.0.1 to address CVE-2024-12797
+# (OpenSSL vulnerability in static binary, MEDIUM severity)
+iot = [
+    "cryptography>=44.0.1,<47.0.0",      # Modern cryptography for LoRaWAN (replaces deprecated PyCrypto)
+]
+
 # Install all optional dependencies
 all = [
-    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis,hardware,fuzzy]",
+    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis,hardware,fuzzy,iot]",
 ]
 
 [project.scripts]
@@ -455,7 +469,213 @@ unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = [
-    "E402",     # Module level import not at top (organized imports intentional)
+    "E402",     # Module level import not at top (organized imports intentional),
+]
+"demonstrations/**/*.py" = [
+    "I001",     # Import ordering flexibility in demos,
+]
+"demos/**/*.py" = [
+    "ARG001",   # Unused function argument,
+    "F841",     # Local variable assigned but never used,
+    "S108",     # Hardcoded /tmp paths acceptable in demos,
+]
+"find_untested.py" = [
+    "ARG003",   # Callback signature from library,
+    "ARG004",   # Callback signature from library,
+]
+"scripts/**/*.py" = [
+    "PERF401",
+]
+"src/oscura/analyzers/jitter/*.py" = [
+    "RUF003",   # Greek symbols in mathematical comments (sigma, etc.),
+]
+"src/oscura/analyzers/packet/stream.py" = [
+    "SIM115",   # File handles managed by caller,
+    "SIM113",   # Counter semantics clearer without enumerate,
+]
+"src/oscura/analyzers/power/*.py" = [
+    "E741",     # Ambiguous variable name 'l' for limits (domain-specific),
+]
+"src/oscura/analyzers/protocols/*.py" = [
+    "RUF012",   # ClassVar annotations for protocol decoder metadata,
+]
+"src/oscura/analyzers/spectral/chunked_fft.py" = [
+    "SIM113",   # Segment counter semantics clearer without enumerate,
+]
+"src/oscura/analyzers/waveform/spectral.py" = [
+    "B904",     # Exception re-raising for validation errors,
+]
+"src/oscura/api/dsl.py" = [
+    "RUF012",   # ClassVar annotations for DSL metadata,
+]
+"src/oscura/api/dsl/__init__.py" = [
+    "E402",     # Import ordering for conditional imports,
+    "B904",     # Exception re-raising for operation errors,
+    "ARG005",   # Kwargs reserved for future use,
+    "RUF022",   # __all__ order matches logical grouping,
+    "F401",     # Numpy import for TYPE_CHECKING,
+]
+"src/oscura/api/dsl/commands.py" = [
+    "E402",     # Import ordering for conditional imports,
+    "PLW0602",  # Global usage for command registry,
+    "B904",     # Exception re-raising for command errors,
+    "PTH207",   # String paths acceptable for DSL commands,
+]
+"src/oscura/api/dsl/interpreter.py" = [
+    "E402",     # Import ordering for conditional imports,
+    "B904",     # Exception re-raising for DSL operations,
+    "PTH207",   # String glob acceptable for DSL,
+]
+"src/oscura/api/dsl/parser.py" = [
+    "RUF012",   # ClassVar annotations for parser metadata,
+]
+"src/oscura/api/integrations/llm.py" = [
+    "E402",     # Import ordering for conditional imports,
+    "B904",     # Exception re-raising for integration errors,
+    "B024",     # Abstract methods defined in subclasses,
+    "B027",     # Empty methods are intentional stubs,
+    "PTH207",   # String paths acceptable for API compatibility,
+]
+"src/oscura/api/operators.py" = [
+    "RUF012",   # ClassVar annotations for operator metadata,
+]
+"src/oscura/automotive/dbc/generator.py" = [
+    "ARG004",   # Reserved for future implementation,
+]
+"src/oscura/automotive/flexray/fibex.py" = [
+    "S314",     # FIBEX XML parsing from trusted sources,
+]
+"src/oscura/cli/batch.py" = [
+    "PTH207",   # String glob acceptable for batch processing,
+]
+"src/oscura/cli/main.py" = [
+    "E402",     # Import ordering for CLI setup,
+    "B027",     # Abstract base methods,
+    "PLW0602",  # Global state for CLI,
+    "PTH104",   # Path operations acceptable in CLI,
+    "PTH202",   # Path operations acceptable in CLI,
+]
+"src/oscura/core/cancellation.py" = [
+    "B904",     # Exception handling in cancellation logic,
+]
+"src/oscura/core/config/loader.py" = [
+    "B904",     # Exception handling in config loading,
+]
+"src/oscura/core/config/memory.py" = [
+    "S314",     # XML parsing with defusedxml,
+    "S305",     # ElementTree usage controlled,
+    "PLW0602",  # Global config state management,
+]
+"src/oscura/core/config/pipeline.py" = [
+    "B007",     # Loop variable for depth tracking,
+]
+"src/oscura/core/config/protocol.py" = [
+    "RUF012",   # ClassVar annotations for protocol config,
+    "PTH204",   # os.path acceptable for protocol config,
+]
+"src/oscura/core/extensibility/plugins.py" = [
+    "RUF012",   # ClassVar annotations for plugin metadata,
+]
+"src/oscura/core/logging.py" = [
+    "E402",     # Import ordering for logging setup,
+    "PLW0602",  # Global logging state management,
+    "ARG003",   # Reserved for future implementation,
+]
+"src/oscura/core/logging_advanced.py" = [
+    "E402",     # Import ordering for logging setup,
+    "B027",     # Abstract base methods,
+    "PTH204",   # String paths acceptable for logging,
+    "B904",     # Exception handling in logging infrastructure,
+    "SIM115",   # File handle management by caller,
+    "PTH202",   # os.path acceptable for log rotation,
+    "PTH104",   # os.rename acceptable for log rotation,
+]
+"src/oscura/core/plugins/base.py" = [
+    "B024",     # Abstract base class design,
+    "B027",     # Abstract base methods,
+    "PLW1508",  # Invalid environment defaults are caught,
+    "RUF012",   # ClassVar annotations for plugin metadata,
+]
+"src/oscura/dsl/interpreter.py" = [
+    "F401",     # Dynamic loading requires import presence,
+]
+"src/oscura/exploratory/*.py" = [
+    "RUF002",   # Mathematical symbols in docstrings,
+]
+"src/oscura/exporters/*.py" = [
+    "F401",     # Imports used in generated code/templates,
+]
+"src/oscura/integrations/llm.py" = [
+    "PLC0415",  # Conditional imports for optional dependencies,
+    "F401",     # Imports checked dynamically,
+]
+"src/oscura/iot/lorawan/crypto.py" = [
+    "S305",     # ECB mode documented limitation for LoRaWAN spec,
+]
+"src/oscura/jupyter/ui/formatters.py" = [
+    "RUF001",   # Unicode information symbol intentional,
+]
+"src/oscura/loaders/pcap.py" = [
+    "B904",     # Exception handling in packet parsing,
+]
+"src/oscura/reporting/export.py" = [
+    "B904",     # Exception handling in export operations,
+]
+"src/oscura/utils/memory_advanced.py" = [
+    "RUF012",   # ClassVar annotations for memory tracking,
+]
+"src/oscura/utils/comparison/*.py" = [
+    "B007",     # Loop variable intentional for comparison logic,
+]
+"src/oscura/utils/memory.py" = [
+    "B904",     # Exception handling in memory monitoring,
+    "PLW0602",  # Global memory state management,
+]
+"src/oscura/utils/memory_extensions.py" = [
+    "B027",     # Abstract base methods,
+    "PERF102",  # Dict iteration intentional for validation,
+    "TC001",    # Type checking imports,
+    "ARG005",   # Lambda signature compatibility,
+    "PLW1508",  # Environment variable handling,
+    "B904",     # Exception re-raising for import errors,
+]
+"src/oscura/validation/compliance/*.py" = [
+    "B904",     # Exception re-raising for validation errors,
+]
+"src/oscura/validation/compliance/advanced.py" = [
+    "RUF012",   # ClassVar annotations for compliance metadata,
+]
+"src/oscura/validation/compliance/reporting.py" = [
+    "E741",     # Variable 'l' for level acceptable in compliance,
+]
+"src/oscura/visualization/*.py" = [
+    "RUF002",   # Mathematical symbols in docstrings,
+    "E741",     # Variable 'l' for lightness acceptable in graphics,
+    "PTH104",   # String paths acceptable in visualization,
+]
+"src/oscura/visualization/colors.py" = [
+    "E741",     # Variable 'l' for lightness (HSL color model standard),
+    "RUF001",   # Unicode in color definitions,
+]
+"src/oscura/visualization/palettes.py" = [
+    "B904",     # Exception handling in color palette loading,
+]
+"src/oscura/visualization/render.py" = [
+    "B904",     # Exception handling in rendering,
+]
+"src/oscura/visualization/specialized.py" = [
+    "B007",     # Loop variable for iteration control,
+]
+"src/oscura/workflows/multi_trace.py" = [
+    "B904",     # Exception re-raising for workflow errors,
+    "RUF012",   # ClassVar annotations for workflow metadata,
+    "PTH207",   # String glob acceptable for pattern matching,
+]
+"src/oscura/workflows/signal_integrity.py" = [
+    "F401",     # Import used in conditional code path,
+]
+"test_data/**/*.py" = [
+    "E741",     # Ambiguous variable name (data generation scripts),
 ]
 "tests/**/*.py" = [
     "ARG001", "ARG002", "ARG004", "ARG005",
@@ -471,37 +691,34 @@ unfixable = []
     "SIM113",
     "PERF401",
 ]
-"scripts/**/*.py" = [
-    "PERF401",
+"tests/integration/test_export_roundtrips.py" = [
+    "ARG005",   # Kwargs for test fixtures,
 ]
-"src/oscura/exploratory/*.py" = [
-    "RUF002",   # Mathematical symbols in docstrings
+"tests/unit/automotive/can/test_checksum.py" = [
+    "F401",     # Import for optional dependency testing,
 ]
-"src/oscura/visualization/*.py" = [
-    "RUF002",   # Mathematical symbols in docstrings
+"tests/unit/core/test_cross_domain.py" = [
+    "PERF102",  # Dict iteration intentional for validation,
 ]
-"src/oscura/integrations/llm.py" = [
-    "PLC0415",  # Conditional imports for optional dependencies
-    "F401",     # Imports checked dynamically
+"tests/unit/loaders/test_csv.py" = [
+    "F403",     # Star import for API testing,
 ]
-"src/oscura/exporters/*.py" = [
-    "F401",     # Imports used in generated code/templates
+"tests/unit/performance/test_optimizations.py" = [
+    "B007",     # Loop variable intentional for benchmarking,
 ]
-"src/oscura/dsl/interpreter.py" = [
-    "F401",     # Dynamic loading requires import presence
+"tests/unit/test___main__.py" = [
+    "PERF102",  # Dict iteration intentional for testing,
+    "SIM118",   # Testing dict.keys() explicitly,
 ]
-"src/oscura/workflows/signal_integrity.py" = [
-    "F401",     # Import used in conditional code path
+"tests/unit/test_exceptions.py" = [
+    "B007",     # Loop variable intentional for testing,
 ]
-"demos/**/*.py" = [
-    "ARG001",   # Unused function argument
-    "F841",     # Local variable assigned but never used
-    "S108",     # Hardcoded /tmp paths acceptable in demos
+"tests/unit/visualization/test_jitter.py" = [
+    "RUF002",   # Greek symbols in mathematical docstrings,
 ]
-"test_data/**/*.py" = [
-    "E741",     # Ambiguous variable name (data generation scripts)
+"tests/unit/visualization/test_optimization.py" = [
+    "RUF002",   # Mathematical symbols in docstrings,
 ]
-
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
@@ -566,6 +783,8 @@ module = [
     "can", "can.*",
     "cantools", "cantools.*",
     "asammdf", "asammdf.*",
+    "Crypto", "Crypto.*",
+    "tqdm", "tqdm.*",
 ]
 ignore_missing_imports = true
 
@@ -598,7 +817,7 @@ disable_error_code = ["untyped-decorator"]
 
 # Modules with optional dependencies
 [[tool.mypy.overrides]]
-module = ["numba", "numba.*", "dpkt", "dpkt.*", "pyvisa", "pyvisa.*", "saleae", "saleae.*"]
+module = ["numba", "numba.*", "dpkt", "dpkt.*", "pyvisa", "pyvisa.*", "saleae", "saleae.*", "sklearn", "sklearn.*", "networkx", "networkx.*"]
 ignore_missing_imports = true
 
 # Hardware acquisition modules - optional dependencies
@@ -676,6 +895,7 @@ dev = [
     "bandit>=1.9.2",
     "darglint>=1.8.1",
     "diff-cover>=10.2.0",
+    "fastapi[all]>=0.128.0",
     "h5py>=3.15.1",
     "hypothesis>=6.148.8",
     "import-linter>=2.9",
@@ -694,6 +914,7 @@ dev = [
     "pydocstyle>=6.3.0",
     "pylint>=4.0.4",
     "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
     "pytest-benchmark>=5.2.3",
     "pytest-cov>=7.0.0",
     "pytest-deadfixtures>=3.0.0",
@@ -708,6 +929,7 @@ dev = [
     "radon>=6.0.1",
     "ruff>=0.14.0",
     "safety>=3.7.0",
+    "uvicorn>=0.40.0",
     "vulture>=2.14",
     "wily>=1.12.2",
 ]

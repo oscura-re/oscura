@@ -28,33 +28,33 @@ if TYPE_CHECKING:
 logger = logging.getLogger("oscura.cli.compare")
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("file1", type=click.Path(exists=True))  # type: ignore[misc]
-@click.argument("file2", type=click.Path(exists=True))  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+@click.command()
+@click.argument("file1", type=click.Path(exists=True))
+@click.argument("file2", type=click.Path(exists=True))
+@click.option(
     "--threshold",
     type=float,
     default=5.0,
     help="Report differences greater than this percentage (default: 5%).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--output",
     type=click.Choice(["json", "csv", "html", "table"], case_sensitive=False),
     default="table",
     help="Output format (default: table).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--save-report",
     type=click.Path(),
     default=None,
     help="Save detailed HTML comparison report.",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--align",
     is_flag=True,
     help="Align signals using cross-correlation before comparison.",
 )
-@click.pass_context  # type: ignore[misc]
+@click.pass_context
 def compare(
     ctx: click.Context,
     file1: str,
@@ -381,60 +381,84 @@ def _perform_comparison(
     sample_rate1 = trace1.metadata.sample_rate
     sample_rate2 = trace2.metadata.sample_rate
 
-    # Check sample rate compatibility
-    rate_mismatch = False
-    if sample_rate1 != sample_rate2:
-        logger.warning(f"Sample rates differ: {sample_rate1:.2e} vs {sample_rate2:.2e} Hz")
-        rate_mismatch = True
+    rate_mismatch = _check_sample_rate_mismatch(sample_rate1, sample_rate2)
 
-    # Initialize results
     results: dict[str, Any] = {
         "threshold_percent": threshold,
         "aligned": align_signals,
         "sample_rate_mismatch": rate_mismatch,
     }
 
-    # Basic statistics for each trace
-    results["trace1_stats"] = {
-        "samples": len(trace1.data),
-        "sample_rate": f"{sample_rate1 / 1e6:.2f} MHz",
-        "duration_ms": f"{len(trace1.data) / sample_rate1 * 1e3:.3f} ms",
-        "mean": f"{float(trace1.data.mean()):.6f} V",
-        "rms": f"{float(np.sqrt((trace1.data**2).mean())):.6f} V",
-        "peak_to_peak": f"{float(trace1.data.max() - trace1.data.min()):.6f} V",
-        "min": f"{float(trace1.data.min()):.6f} V",
-        "max": f"{float(trace1.data.max()):.6f} V",
+    # Add trace statistics
+    results["trace1_stats"] = _compute_trace_stats(trace1, sample_rate1)
+    results["trace2_stats"] = _compute_trace_stats(trace2, sample_rate2)
+
+    # Prepare and align data
+    data1, data2 = _prepare_comparison_data(trace1, trace2, sample_rate1, align_signals, results)
+
+    # Perform analyses
+    results["timing_drift"] = _compute_timing_drift(data1, data2, sample_rate1)
+    results["amplitude_difference"] = _compute_amplitude_difference(data1, data2, threshold)
+    results["noise_change"] = _compute_noise_change(data1, data2, sample_rate1, threshold)
+    results["correlation"] = _compute_correlation(data1, data2)
+    results["spectral_difference"] = _compute_spectral_difference(
+        data1, data2, sample_rate1, threshold
+    )
+
+    # Overall assessment
+    results["summary"] = _compute_summary(results)
+
+    return results
+
+
+def _check_sample_rate_mismatch(sample_rate1: float, sample_rate2: float) -> bool:
+    """Check if sample rates differ between traces."""
+    if sample_rate1 != sample_rate2:
+        logger.warning(f"Sample rates differ: {sample_rate1:.2e} vs {sample_rate2:.2e} Hz")
+        return True
+    return False
+
+
+def _compute_trace_stats(trace: WaveformTrace, sample_rate: float) -> dict[str, str | int]:
+    """Compute statistics for a single trace."""
+    return {
+        "samples": len(trace.data),
+        "sample_rate": f"{sample_rate / 1e6:.2f} MHz",
+        "duration_ms": f"{len(trace.data) / sample_rate * 1e3:.3f} ms",
+        "mean": f"{float(trace.data.mean()):.6f} V",
+        "rms": f"{float(np.sqrt((trace.data**2).mean())):.6f} V",
+        "peak_to_peak": f"{float(trace.data.max() - trace.data.min()):.6f} V",
+        "min": f"{float(trace.data.min()):.6f} V",
+        "max": f"{float(trace.data.max()):.6f} V",
     }
 
-    results["trace2_stats"] = {
-        "samples": len(trace2.data),
-        "sample_rate": f"{sample_rate2 / 1e6:.2f} MHz",
-        "duration_ms": f"{len(trace2.data) / sample_rate2 * 1e3:.3f} ms",
-        "mean": f"{float(trace2.data.mean()):.6f} V",
-        "rms": f"{float(np.sqrt((trace2.data**2).mean())):.6f} V",
-        "peak_to_peak": f"{float(trace2.data.max() - trace2.data.min()):.6f} V",
-        "min": f"{float(trace2.data.min()):.6f} V",
-        "max": f"{float(trace2.data.max()):.6f} V",
-    }
 
-    # Prepare data for comparison
+def _prepare_comparison_data(
+    trace1: WaveformTrace,
+    trace2: WaveformTrace,
+    sample_rate: float,
+    align_signals: bool,
+    results: dict[str, Any],
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Prepare data arrays for comparison, with optional alignment."""
     data1 = trace1.data.astype(np.float64)
     data2 = trace2.data.astype(np.float64)
 
-    # Signal alignment using cross-correlation
     if align_signals:
-        data1, data2, alignment_info = _align_signals(data1, data2, sample_rate1)
+        data1, data2, alignment_info = _align_signals(data1, data2, sample_rate)
         results["alignment"] = alignment_info
     else:
-        # Ensure equal length
         min_len = min(len(data1), len(data2))
         data1 = data1[:min_len]
         data2 = data2[:min_len]
 
-    # Timing drift analysis
-    results["timing_drift"] = _compute_timing_drift(data1, data2, sample_rate1)
+    return data1, data2
 
-    # Amplitude difference analysis
+
+def _compute_amplitude_difference(
+    data1: NDArray[np.float64], data2: NDArray[np.float64], threshold: float
+) -> dict[str, Any]:
+    """Compute amplitude differences between signals."""
     diff = data2 - data1
     abs_diff = np.abs(diff)
 
@@ -444,11 +468,10 @@ def _perform_comparison(
     max_diff = float(abs_diff.max())
     rms_diff = float(np.sqrt((diff**2).mean()))
 
-    # Compare to reference RMS
     rms1 = float(np.sqrt((data1**2).mean()))
     rms_diff_percent = rms_diff / rms1 * 100 if rms1 > 0 else 0
 
-    results["amplitude_difference"] = {
+    return {
         "mean_diff_v": f"{mean_diff:.6f}",
         "mean_diff_percent": f"{mean_diff_percent:.2f}%",
         "max_diff_v": f"{max_diff:.6f}",
@@ -457,10 +480,13 @@ def _perform_comparison(
         "significant": bool(mean_diff_percent > threshold),
     }
 
-    # Noise analysis
-    # Use high-pass filter to extract noise component
-    nyquist = sample_rate1 / 2
-    cutoff = min(1000, nyquist * 0.9)  # 1kHz or 90% of Nyquist
+
+def _compute_noise_change(
+    data1: NDArray[np.float64], data2: NDArray[np.float64], sample_rate: float, threshold: float
+) -> dict[str, Any]:
+    """Compute noise level changes between signals."""
+    nyquist = sample_rate / 2
+    cutoff = min(1000, nyquist * 0.9)
     b, a = signal.butter(4, cutoff / nyquist, btype="high")
 
     try:
@@ -469,40 +495,44 @@ def _perform_comparison(
         noise_std1 = float(np.std(noise1))
         noise_std2 = float(np.std(noise2))
     except Exception:
-        # Fallback to simple std if filter fails
         noise_std1 = float(np.std(data1))
         noise_std2 = float(np.std(data2))
 
     noise_change = ((noise_std2 - noise_std1) / noise_std1 * 100) if noise_std1 != 0 else 0
 
-    results["noise_change"] = {
+    return {
         "noise1_v": f"{noise_std1:.6f}",
         "noise2_v": f"{noise_std2:.6f}",
         "change_percent": f"{noise_change:.2f}%",
         "significant": bool(abs(noise_change) > threshold),
     }
 
-    # Correlation coefficient
+
+def _compute_correlation(data1: NDArray[np.float64], data2: NDArray[np.float64]) -> dict[str, str]:
+    """Compute correlation coefficient between signals."""
     if len(data1) > 1 and len(data2) > 1:
         with np.errstate(divide="ignore", invalid="ignore"):
             correlation = float(np.corrcoef(data1, data2)[0, 1])
-        results["correlation"] = {
+
+        if correlation > 0.99:
+            quality = "excellent"
+        elif correlation > 0.95:
+            quality = "good"
+        elif correlation > 0.8:
+            quality = "fair"
+        else:
+            quality = "poor"
+
+        return {
             "coefficient": f"{correlation:.6f}",
-            "quality": "excellent"
-            if correlation > 0.99
-            else "good"
-            if correlation > 0.95
-            else "fair"
-            if correlation > 0.8
-            else "poor",
+            "quality": quality,
         }
 
-    # Spectral differences
-    results["spectral_difference"] = _compute_spectral_difference(
-        data1, data2, sample_rate1, threshold
-    )
+    return {"coefficient": "N/A", "quality": "unknown"}
 
-    # Overall assessment
+
+def _compute_summary(results: dict[str, Any]) -> dict[str, Any]:
+    """Compute overall comparison summary."""
     significant_count = sum(
         [
             results.get("amplitude_difference", {}).get("significant", False),
@@ -521,7 +551,7 @@ def _perform_comparison(
     else:
         match_quality = "poor"
 
-    results["summary"] = {
+    return {
         "significant_differences": significant_count,
         "overall_match": match_quality,
         "categories_with_differences": [
@@ -535,8 +565,6 @@ def _perform_comparison(
             if results.get(cat, {}).get("significant", False)
         ],
     }
-
-    return results
 
 
 def _generate_html_report(
@@ -554,27 +582,49 @@ def _generate_html_report(
     Returns:
         HTML content as string.
     """
-    # Get summary info
     summary = results.get("summary", {})
     match_quality = summary.get("overall_match", "unknown")
     significant_diffs = summary.get("significant_differences", 0)
 
-    # Color based on quality
+    quality_color = _get_quality_color(match_quality)
+    css = _generate_comparison_report_css(quality_color)
+    header = _generate_report_header(file1, file2, match_quality, significant_diffs)
+    sections = _generate_report_sections(results)
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oscura Signal Comparison Report</title>
+    {css}
+</head>
+<body>
+    {header}
+    <div class="content">
+        {sections}
+        <footer style="margin-top: 30px; text-align: center; color: #6c757d;">
+            <p>Generated by Oscura - Signal Analysis Toolkit</p>
+        </footer>
+    </div>
+</body>
+</html>"""
+
+
+def _get_quality_color(match_quality: str) -> str:
+    """Get color code for match quality level."""
     quality_colors = {
         "excellent": "#28a745",
         "good": "#17a2b8",
         "fair": "#ffc107",
         "poor": "#dc3545",
     }
-    quality_color = quality_colors.get(match_quality, "#6c757d")
+    return quality_colors.get(match_quality, "#6c757d")
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oscura Signal Comparison Report</title>
-    <style>
+
+def _generate_comparison_report_css(quality_color: str) -> str:
+    """Generate CSS for comparison report."""
+    return f"""<style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             max-width: 1200px;
@@ -630,10 +680,14 @@ def _generate_html_report(
         .ok {{
             color: #28a745;
         }}
-    </style>
-</head>
-<body>
-    <div class="header">
+    </style>"""
+
+
+def _generate_report_header(
+    file1: str, file2: str, match_quality: str, significant_diffs: int
+) -> str:
+    """Generate report header with summary."""
+    return f"""<div class="header">
         <h1>Oscura Signal Comparison Report</h1>
         <p>File 1: {Path(file1).name}</p>
         <p>File 2: {Path(file2).name}</p>
@@ -643,9 +697,27 @@ def _generate_html_report(
         <div class="summary">
             <h2>Overall Match: {match_quality.upper()}</h2>
             <p>{significant_diffs} significant difference(s) detected</p>
-        </div>
+        </div>"""
 
-        <div class="section">
+
+def _generate_report_sections(results: dict[str, Any]) -> str:
+    """Generate all report sections."""
+    stats = _generate_trace_stats_section(results)
+    amplitude = _generate_amplitude_diff_section(results)
+    timing = _generate_timing_drift_section(results)
+    noise = _generate_noise_change_section(results)
+    spectral = _generate_spectral_diff_section(results)
+    correlation = _generate_correlation_section(results)
+
+    return f"{stats}\n{amplitude}\n{timing}\n{noise}\n{spectral}\n{correlation}"
+
+
+def _generate_trace_stats_section(results: dict[str, Any]) -> str:
+    """Generate trace statistics comparison table."""
+    t1 = results.get("trace1_stats", {})
+    t2 = results.get("trace2_stats", {})
+
+    return f"""<div class="section">
             <h3>Trace Statistics</h3>
             <table>
                 <tr>
@@ -655,121 +727,142 @@ def _generate_html_report(
                 </tr>
                 <tr>
                     <td>Samples</td>
-                    <td>{results.get("trace1_stats", {}).get("samples", "N/A")}</td>
-                    <td>{results.get("trace2_stats", {}).get("samples", "N/A")}</td>
+                    <td>{t1.get("samples", "N/A")}</td>
+                    <td>{t2.get("samples", "N/A")}</td>
                 </tr>
                 <tr>
                     <td>Sample Rate</td>
-                    <td>{results.get("trace1_stats", {}).get("sample_rate", "N/A")}</td>
-                    <td>{results.get("trace2_stats", {}).get("sample_rate", "N/A")}</td>
+                    <td>{t1.get("sample_rate", "N/A")}</td>
+                    <td>{t2.get("sample_rate", "N/A")}</td>
                 </tr>
                 <tr>
                     <td>Mean</td>
-                    <td>{results.get("trace1_stats", {}).get("mean", "N/A")}</td>
-                    <td>{results.get("trace2_stats", {}).get("mean", "N/A")}</td>
+                    <td>{t1.get("mean", "N/A")}</td>
+                    <td>{t2.get("mean", "N/A")}</td>
                 </tr>
                 <tr>
                     <td>RMS</td>
-                    <td>{results.get("trace1_stats", {}).get("rms", "N/A")}</td>
-                    <td>{results.get("trace2_stats", {}).get("rms", "N/A")}</td>
+                    <td>{t1.get("rms", "N/A")}</td>
+                    <td>{t2.get("rms", "N/A")}</td>
                 </tr>
                 <tr>
                     <td>Peak-to-Peak</td>
-                    <td>{results.get("trace1_stats", {}).get("peak_to_peak", "N/A")}</td>
-                    <td>{results.get("trace2_stats", {}).get("peak_to_peak", "N/A")}</td>
+                    <td>{t1.get("peak_to_peak", "N/A")}</td>
+                    <td>{t2.get("peak_to_peak", "N/A")}</td>
                 </tr>
             </table>
-        </div>
+        </div>"""
 
-        <div class="section">
+
+def _generate_amplitude_diff_section(results: dict[str, Any]) -> str:
+    """Generate amplitude difference section."""
+    amp = results.get("amplitude_difference", {})
+    sig_class = "significant" if amp.get("significant") else "ok"
+
+    return f"""<div class="section">
             <h3>Amplitude Difference</h3>
             <table>
                 <tr>
                     <td>Mean Difference</td>
-                    <td>{results.get("amplitude_difference", {}).get("mean_diff_v", "N/A")}</td>
-                    <td class="{"significant" if results.get("amplitude_difference", {}).get("significant") else "ok"}">
-                        {results.get("amplitude_difference", {}).get("mean_diff_percent", "N/A")}
+                    <td>{amp.get("mean_diff_v", "N/A")}</td>
+                    <td class="{sig_class}">
+                        {amp.get("mean_diff_percent", "N/A")}
                     </td>
                 </tr>
                 <tr>
                     <td>RMS Difference</td>
-                    <td>{results.get("amplitude_difference", {}).get("rms_diff_v", "N/A")}</td>
-                    <td>{results.get("amplitude_difference", {}).get("rms_diff_percent", "N/A")}</td>
+                    <td>{amp.get("rms_diff_v", "N/A")}</td>
+                    <td>{amp.get("rms_diff_percent", "N/A")}</td>
                 </tr>
                 <tr>
                     <td>Max Difference</td>
-                    <td colspan="2">{results.get("amplitude_difference", {}).get("max_diff_v", "N/A")}</td>
+                    <td colspan="2">{amp.get("max_diff_v", "N/A")}</td>
                 </tr>
             </table>
-        </div>
+        </div>"""
 
-        <div class="section">
+
+def _generate_timing_drift_section(results: dict[str, Any]) -> str:
+    """Generate timing drift section."""
+    drift = results.get("timing_drift", {})
+    sig_class = "significant" if drift.get("significant") else "ok"
+
+    return f"""<div class="section">
             <h3>Timing Drift</h3>
             <table>
                 <tr>
                     <td>Mean Drift</td>
-                    <td>{results.get("timing_drift", {}).get("value_ns", "N/A")} ns</td>
-                    <td class="{"significant" if results.get("timing_drift", {}).get("significant") else "ok"}">
-                        {results.get("timing_drift", {}).get("percentage", "N/A")}
+                    <td>{drift.get("value_ns", "N/A")} ns</td>
+                    <td class="{sig_class}">
+                        {drift.get("percentage", "N/A")}
                     </td>
                 </tr>
             </table>
-        </div>
+        </div>"""
 
-        <div class="section">
+
+def _generate_noise_change_section(results: dict[str, Any]) -> str:
+    """Generate noise change section."""
+    noise = results.get("noise_change", {})
+    sig_class = "significant" if noise.get("significant") else "ok"
+
+    return f"""<div class="section">
             <h3>Noise Change</h3>
             <table>
                 <tr>
                     <td>Trace 1 Noise</td>
-                    <td>{results.get("noise_change", {}).get("noise1_v", "N/A")}</td>
+                    <td>{noise.get("noise1_v", "N/A")}</td>
                 </tr>
                 <tr>
                     <td>Trace 2 Noise</td>
-                    <td>{results.get("noise_change", {}).get("noise2_v", "N/A")}</td>
+                    <td>{noise.get("noise2_v", "N/A")}</td>
                 </tr>
                 <tr>
                     <td>Change</td>
-                    <td class="{"significant" if results.get("noise_change", {}).get("significant") else "ok"}">
-                        {results.get("noise_change", {}).get("change_percent", "N/A")}
+                    <td class="{sig_class}">
+                        {noise.get("change_percent", "N/A")}
                     </td>
                 </tr>
             </table>
-        </div>
+        </div>"""
 
-        <div class="section">
+
+def _generate_spectral_diff_section(results: dict[str, Any]) -> str:
+    """Generate spectral difference section."""
+    spec = results.get("spectral_difference", {})
+    sig_class = "significant" if spec.get("significant") else "ok"
+
+    return f"""<div class="section">
             <h3>Spectral Difference</h3>
             <table>
                 <tr>
                     <td>Dominant Frequency 1</td>
-                    <td>{results.get("spectral_difference", {}).get("dominant_freq1_hz", "N/A")} Hz</td>
+                    <td>{spec.get("dominant_freq1_hz", "N/A")} Hz</td>
                 </tr>
                 <tr>
                     <td>Dominant Frequency 2</td>
-                    <td>{results.get("spectral_difference", {}).get("dominant_freq2_hz", "N/A")} Hz</td>
+                    <td>{spec.get("dominant_freq2_hz", "N/A")} Hz</td>
                 </tr>
                 <tr>
                     <td>Frequency Difference</td>
-                    <td class="{"significant" if results.get("spectral_difference", {}).get("significant") else "ok"}">
-                        {results.get("spectral_difference", {}).get("freq_diff_percent", "N/A")}
+                    <td class="{sig_class}">
+                        {spec.get("freq_diff_percent", "N/A")}
                     </td>
                 </tr>
                 <tr>
                     <td>Max Magnitude Difference</td>
-                    <td>{results.get("spectral_difference", {}).get("max_magnitude_diff_db", "N/A")} dB</td>
+                    <td>{spec.get("max_magnitude_diff_db", "N/A")} dB</td>
                 </tr>
             </table>
-        </div>
+        </div>"""
 
-        <div class="section">
+
+def _generate_correlation_section(results: dict[str, Any]) -> str:
+    """Generate correlation section."""
+    corr = results.get("correlation", {})
+
+    return f"""<div class="section">
             <h3>Correlation</h3>
-            <p>Coefficient: {results.get("correlation", {}).get("coefficient", "N/A")}</p>
-            <p>Quality: {results.get("correlation", {}).get("quality", "N/A")}</p>
-        </div>
-
-        <footer style="margin-top: 30px; text-align: center; color: #6c757d;">
-            <p>Generated by Oscura - Signal Analysis Toolkit</p>
-        </footer>
-    </div>
-</body>
-</html>"""
-    return html
+            <p>Coefficient: {corr.get("coefficient", "N/A")}</p>
+            <p>Quality: {corr.get("quality", "N/A")}</p>
+        </div>"""

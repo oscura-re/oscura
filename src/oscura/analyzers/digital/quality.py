@@ -273,98 +273,122 @@ def detect_glitches(
     References:
         Application note AN-905: Understanding Glitch Detection
     """
-    if isinstance(trace, DigitalTrace):
-        # Already digital - use directly
-        digital = trace.data
-        sample_rate = trace.metadata.sample_rate
-        threshold_used = 0.5  # Not used for amplitude calc on digital
-        data = trace.data.astype(np.float64)
-    else:
-        # Analog trace - need to threshold
-        data = trace.data
-        sample_rate = trace.metadata.sample_rate
-
-        if len(data) < 3:
-            return []
-
-        # Find threshold
-        low, high = _find_logic_levels(data)
-        threshold_used = (low + high) / 2 if threshold is None else threshold
-
-        amplitude = high - low
-        if amplitude <= 0:
-            return []
-
-        # Convert to binary
-        digital = data >= threshold_used
-
-    if len(digital) < 3:
+    digital, data, sample_rate, threshold_used = _prepare_glitch_detection_data(trace, threshold)
+    if digital is None or len(digital) < 3:
         return []
 
     sample_period = 1.0 / sample_rate
+    rising_edges, falling_edges = _find_pulse_edges(digital)
+    glitches = []
+    glitches.extend(
+        _detect_positive_glitches(
+            rising_edges, falling_edges, data, sample_period, min_width, threshold_used, trace
+        )
+    )
+    glitches.extend(
+        _detect_negative_glitches(
+            falling_edges, rising_edges, data, sample_period, min_width, threshold_used, trace
+        )
+    )
+    glitches.sort(key=lambda g: g.timestamp)
+    return glitches
 
-    glitches: list[Glitch] = []
 
-    # Find all pulse edges
+def _prepare_glitch_detection_data(
+    trace: WaveformTrace | DigitalTrace, threshold: float | None
+) -> tuple[NDArray[np.bool_] | None, NDArray[np.float64], float, float]:
+    """Prepare data for glitch detection."""
+    if isinstance(trace, DigitalTrace):
+        return trace.data, trace.data.astype(np.float64), trace.metadata.sample_rate, 0.5
+
+    data = trace.data
+    sample_rate = trace.metadata.sample_rate
+    if len(data) < 3:
+        return None, data, sample_rate, 0.0
+
+    low, high = _find_logic_levels(data)
+    threshold_used = (low + high) / 2 if threshold is None else threshold
+    if high - low <= 0:
+        return None, data, sample_rate, threshold_used
+
+    return data >= threshold_used, data, sample_rate, threshold_used
+
+
+def _find_pulse_edges(digital: NDArray[np.bool_]) -> tuple[NDArray[np.intp], NDArray[np.intp]]:
+    """Find rising and falling edges in digital signal."""
     transitions = np.diff(digital.astype(np.int8))
     rising_edges = np.where(transitions == 1)[0]
     falling_edges = np.where(transitions == -1)[0]
+    return rising_edges, falling_edges
 
-    # Check positive pulses (rising to falling)
+
+def _detect_positive_glitches(
+    rising_edges: NDArray[np.intp],
+    falling_edges: NDArray[np.intp],
+    data: NDArray[np.float64],
+    sample_period: float,
+    min_width: float,
+    threshold_used: float,
+    trace: WaveformTrace | DigitalTrace,
+) -> list[Glitch]:
+    """Detect positive (high) glitches."""
+    glitches = []
     for rising_idx in rising_edges:
-        # Find next falling edge
         subsequent_falling = falling_edges[falling_edges > rising_idx]
-        if len(subsequent_falling) > 0:
-            falling_idx = subsequent_falling[0]
-            width = (falling_idx - rising_idx) * sample_period
-
-            if width < min_width:
-                # Calculate amplitude within pulse
-                pulse_data = data[rising_idx : falling_idx + 1]
-                if isinstance(trace, DigitalTrace):
-                    # For digital trace, amplitude is just 1.0 (logic high)
-                    pulse_amplitude = 1.0
-                else:
-                    pulse_amplitude = float(np.max(pulse_data) - threshold_used)
-
-                glitches.append(
-                    Glitch(
-                        timestamp=rising_idx * sample_period,
-                        width=width,
-                        polarity="positive",
-                        amplitude=pulse_amplitude,
-                    )
+        if len(subsequent_falling) == 0:
+            continue
+        falling_idx = subsequent_falling[0]
+        width = (falling_idx - rising_idx) * sample_period
+        if width < min_width:
+            pulse_data = data[rising_idx : falling_idx + 1]
+            amplitude = (
+                1.0
+                if isinstance(trace, DigitalTrace)
+                else float(np.max(pulse_data) - threshold_used)
+            )
+            glitches.append(
+                Glitch(
+                    timestamp=rising_idx * sample_period,
+                    width=width,
+                    polarity="positive",
+                    amplitude=amplitude,
                 )
+            )
+    return glitches
 
-    # Check negative pulses (falling to rising)
+
+def _detect_negative_glitches(
+    falling_edges: NDArray[np.intp],
+    rising_edges: NDArray[np.intp],
+    data: NDArray[np.float64],
+    sample_period: float,
+    min_width: float,
+    threshold_used: float,
+    trace: WaveformTrace | DigitalTrace,
+) -> list[Glitch]:
+    """Detect negative (low) glitches."""
+    glitches = []
     for falling_idx in falling_edges:
-        # Find next rising edge
         subsequent_rising = rising_edges[rising_edges > falling_idx]
-        if len(subsequent_rising) > 0:
-            rising_idx = subsequent_rising[0]
-            width = (rising_idx - falling_idx) * sample_period
-
-            if width < min_width:
-                # Calculate amplitude within pulse
-                pulse_data = data[falling_idx : rising_idx + 1]
-                if isinstance(trace, DigitalTrace):
-                    # For digital trace, amplitude is just 1.0 (logic low)
-                    pulse_amplitude = 1.0
-                else:
-                    pulse_amplitude = float(threshold_used - np.min(pulse_data))
-
-                glitches.append(
-                    Glitch(
-                        timestamp=falling_idx * sample_period,
-                        width=width,
-                        polarity="negative",
-                        amplitude=pulse_amplitude,
-                    )
+        if len(subsequent_rising) == 0:
+            continue
+        rising_idx = subsequent_rising[0]
+        width = (rising_idx - falling_idx) * sample_period
+        if width < min_width:
+            pulse_data = data[falling_idx : rising_idx + 1]
+            amplitude = (
+                1.0
+                if isinstance(trace, DigitalTrace)
+                else float(threshold_used - np.min(pulse_data))
+            )
+            glitches.append(
+                Glitch(
+                    timestamp=falling_idx * sample_period,
+                    width=width,
+                    polarity="negative",
+                    amplitude=amplitude,
                 )
-
-    # Sort by timestamp
-    glitches.sort(key=lambda g: g.timestamp)
-
+            )
     return glitches
 
 
@@ -604,22 +628,74 @@ def mask_test(
     # Convert UI to sample indices
     samples_per_ui = bit_period * sample_rate
     time_samples = time_ui * samples_per_ui
-
-    # For simplicity, test over one or two bit periods
-    # Align signal to start of bit period
     n_ui = int(np.max(time_ui))  # 1 or 2 UI mask
+    n_periods = n_samples // int(samples_per_ui * n_ui)
 
+    # Detect violations
+    violations, hit_count = _detect_mask_violations(
+        data,
+        n_samples,
+        sample_rate,
+        n_periods,
+        samples_per_ui,
+        n_ui,
+        time_ui,
+        time_samples,
+        v_top,
+        v_bottom,
+    )
+
+    # Calculate margins
+    margin_top, margin_bottom = _calculate_mask_margins(
+        data, n_samples, n_periods, samples_per_ui, n_ui, time_ui, time_samples, v_top, v_bottom
+    )
+
+    return MaskTestResult(
+        pass_fail=(hit_count == 0),
+        hit_count=hit_count,
+        total_samples=n_periods * len(time_ui),
+        margin_top=margin_top if margin_top != np.inf else 0.0,
+        margin_bottom=margin_bottom if margin_bottom != np.inf else 0.0,
+        violations=violations,
+    )
+
+
+def _detect_mask_violations(
+    data: NDArray[np.float64],
+    n_samples: int,
+    sample_rate: float,
+    n_periods: int,
+    samples_per_ui: float,
+    n_ui: int,
+    time_ui: NDArray[np.float64],
+    time_samples: NDArray[np.float64],
+    v_top: NDArray[np.float64],
+    v_bottom: NDArray[np.float64],
+) -> tuple[list[tuple[float, float]], int]:
+    """Detect mask violations across all bit periods.
+
+    Args:
+        data: Signal voltage data.
+        n_samples: Total number of samples.
+        sample_rate: Sample rate in Hz.
+        n_periods: Number of complete bit periods to test.
+        samples_per_ui: Samples per unit interval.
+        n_ui: Number of UI in mask template.
+        time_ui: Mask time coordinates in UI.
+        time_samples: Mask time coordinates in samples.
+        v_top: Upper voltage boundary.
+        v_bottom: Lower voltage boundary.
+
+    Returns:
+        Tuple of (violations list, hit count).
+    """
     violations: list[tuple[float, float]] = []
     hit_count = 0
-
-    # Test all complete bit periods in the signal
-    n_periods = n_samples // int(samples_per_ui * n_ui)
 
     for period_idx in range(n_periods):
         period_start_sample = int(period_idx * samples_per_ui * n_ui)
 
-        # Extract samples for this period
-        for i, _t_ui in enumerate(time_ui):
+        for i in range(len(time_ui)):
             sample_idx = period_start_sample + int(time_samples[i])
 
             if sample_idx >= n_samples:
@@ -633,38 +709,53 @@ def mask_test(
                 violations.append((timestamp, voltage))
                 hit_count += 1
 
-    # Calculate margins (minimum distance to mask boundaries)
+    return violations, hit_count
+
+
+def _calculate_mask_margins(
+    data: NDArray[np.float64],
+    n_samples: int,
+    n_periods: int,
+    samples_per_ui: float,
+    n_ui: int,
+    time_ui: NDArray[np.float64],
+    time_samples: NDArray[np.float64],
+    v_top: NDArray[np.float64],
+    v_bottom: NDArray[np.float64],
+) -> tuple[float, float]:
+    """Calculate minimum margins to mask boundaries.
+
+    Args:
+        data: Signal voltage data.
+        n_samples: Total number of samples.
+        n_periods: Number of complete bit periods to test.
+        samples_per_ui: Samples per unit interval.
+        n_ui: Number of UI in mask template.
+        time_ui: Mask time coordinates in UI.
+        time_samples: Mask time coordinates in samples.
+        v_top: Upper voltage boundary.
+        v_bottom: Lower voltage boundary.
+
+    Returns:
+        Tuple of (margin_top, margin_bottom).
+    """
     margin_top = float(np.inf)
     margin_bottom = float(np.inf)
 
     for period_idx in range(n_periods):
         period_start_sample = int(period_idx * samples_per_ui * n_ui)
 
-        for i, _t_ui in enumerate(time_ui):
+        for i in range(len(time_ui)):
             sample_idx = period_start_sample + int(time_samples[i])
 
             if sample_idx >= n_samples:
                 break
 
             voltage = data[sample_idx]
-
-            # Margin to top
             margin_top = min(margin_top, v_top[i] - voltage)
-
-            # Margin to bottom
             margin_bottom = min(margin_bottom, voltage - v_bottom[i])
 
-    # Pass if no hits
-    pass_fail = hit_count == 0
-
-    return MaskTestResult(
-        pass_fail=pass_fail,
-        hit_count=hit_count,
-        total_samples=n_periods * len(time_ui),
-        margin_top=margin_top if margin_top != np.inf else 0.0,
-        margin_bottom=margin_bottom if margin_bottom != np.inf else 0.0,
-        violations=violations,
-    )
+    return margin_top, margin_bottom
 
 
 def _get_predefined_mask(mask_name: str) -> dict[str, NDArray[np.float64]]:
@@ -750,8 +841,37 @@ def pll_clock_recovery(
     References:
         Gardner, F. M. (2005). Phaselock Techniques, 3rd ed.
     """
-    data = trace.data.astype(np.float64) if isinstance(trace, DigitalTrace) else trace.data
+    data, sample_rate, n_samples = _prepare_pll_data(trace)
+    dt = 1.0 / sample_rate
 
+    K1, K2, K_vco = _calculate_pll_coefficients(loop_bandwidth, damping, vco_gain)
+    edges = _find_edges_for_phase_detection(data)
+    nominal_phase_inc = 2 * np.pi * nominal_frequency * dt
+
+    phase, vco_control = _run_pll_loop(
+        n_samples, edges, nominal_phase_inc, K1, K2, K_vco, nominal_frequency, dt
+    )
+
+    lock_status, lock_time = _analyze_lock_status(vco_control, n_samples, dt)
+    recovered_frequency, frequency_error = _calculate_recovered_frequency(
+        vco_control, nominal_frequency, K_vco, n_samples
+    )
+
+    return PLLRecoveryResult(
+        recovered_frequency=float(recovered_frequency),
+        recovered_phase=phase,
+        vco_control=vco_control,
+        lock_status=lock_status,
+        lock_time=lock_time,
+        frequency_error=float(frequency_error),
+    )
+
+
+def _prepare_pll_data(
+    trace: WaveformTrace | DigitalTrace,
+) -> tuple[NDArray[np.float64], float, int]:
+    """Prepare data for PLL processing."""
+    data = trace.data.astype(np.float64) if isinstance(trace, DigitalTrace) else trace.data
     sample_rate = trace.metadata.sample_rate
     n_samples = len(data)
 
@@ -763,104 +883,111 @@ def pll_clock_recovery(
             analysis_type="pll_clock_recovery",
         )
 
-    dt = 1.0 / sample_rate
+    return data, sample_rate, n_samples
 
-    # PLL parameters
-    omega_n = 2 * np.pi * loop_bandwidth  # Natural frequency
-    K_vco = 2 * np.pi * vco_gain  # VCO gain in rad/s/V
 
-    # Loop filter coefficients (2nd order)
-    # Transfer function: F(s) = K1 + K2/s
+def _calculate_pll_coefficients(
+    loop_bandwidth: float, damping: float, vco_gain: float
+) -> tuple[float, float, float]:
+    """Calculate PLL loop filter coefficients."""
+    omega_n = 2 * np.pi * loop_bandwidth
+    K_vco = 2 * np.pi * vco_gain
     K1 = (2 * damping * omega_n) / K_vco
     K2 = (omega_n**2) / K_vco
+    return K1, K2, K_vco
 
-    # Initialize PLL state
+
+def _find_edges_for_phase_detection(data: NDArray[np.float64]) -> NDArray[np.intp]:
+    """Find edges in data for phase detection."""
+    threshold = (np.max(data) + np.min(data)) / 2
+    return np.where(np.abs(np.diff(np.sign(data - threshold))) > 0)[0]
+
+
+def _run_pll_loop(
+    n_samples: int,
+    edges: NDArray[np.intp],
+    nominal_phase_inc: float,
+    K1: float,
+    K2: float,
+    K_vco: float,
+    nominal_frequency: float,
+    dt: float,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Run PLL loop simulation."""
     phase = np.zeros(n_samples)
     vco_control = np.zeros(n_samples)
     integrator = 0.0
     theta = 0.0
-
-    # Nominal phase increment per sample
-    nominal_phase_inc = 2 * np.pi * nominal_frequency * dt
-
-    # Find edges for phase detection (simplified)
-    threshold = (np.max(data) + np.min(data)) / 2
-    edges = np.where(np.abs(np.diff(np.sign(data - threshold))) > 0)[0]
-
     edge_idx = 0
 
-    # Run PLL loop
     for i in range(n_samples):
-        # Phase detector: compare VCO phase to input transitions
+        phase_error = _compute_phase_error(i, edge_idx, edges, nominal_phase_inc, theta)
         if edge_idx < len(edges) and i == edges[edge_idx]:
-            # Edge detected - compute phase error
-            # Phase error = expected phase - actual VCO phase
-            expected_phase = (edges[edge_idx] * nominal_phase_inc) % (2 * np.pi)
-            phase_error = expected_phase - (theta % (2 * np.pi))
-
-            # Wrap to [-pi, pi]
-            phase_error = (phase_error + np.pi) % (2 * np.pi) - np.pi
-
             edge_idx += 1
-        else:
-            phase_error = 0.0
 
-        # Loop filter (proportional + integral)
         integrator += K2 * phase_error * dt
         vco_input = K1 * phase_error + integrator
 
-        # VCO: frequency = nominal + K_vco * control voltage
         vco_freq = nominal_frequency + K_vco * vco_input / (2 * np.pi)
         phase_increment = 2 * np.pi * vco_freq * dt
-
-        # Update phase
         theta += phase_increment
 
-        # Store results
         phase[i] = theta
         vco_control[i] = vco_input
 
-    # Analyze lock status
-    # Consider locked if VCO control voltage is stable in last 20%
-    lock_threshold = 0.1  # 10% variation
+    return phase, vco_control
+
+
+def _compute_phase_error(
+    i: int, edge_idx: int, edges: NDArray[np.intp], nominal_phase_inc: float, theta: float
+) -> float:
+    """Compute phase error at sample i."""
+    if edge_idx < len(edges) and i == edges[edge_idx]:
+        expected_phase = (edges[edge_idx] * nominal_phase_inc) % (2 * np.pi)
+        phase_error = expected_phase - (theta % (2 * np.pi))
+        wrapped_error: float = float((phase_error + np.pi) % (2 * np.pi) - np.pi)
+        return wrapped_error
+    return 0.0
+
+
+def _analyze_lock_status(
+    vco_control: NDArray[np.float64], n_samples: int, dt: float
+) -> tuple[bool, float | None]:
+    """Analyze PLL lock status and find lock time."""
+    lock_threshold = 0.1
     last_20_percent = vco_control[int(0.8 * n_samples) :]
 
-    if len(last_20_percent) > 0:
-        vco_std = np.std(last_20_percent)
-        vco_mean = np.abs(np.mean(last_20_percent))
-        lock_status = vco_std < lock_threshold * max(vco_mean, 1.0)
+    if len(last_20_percent) == 0:
+        return False, None
 
-        # Find lock time (when variation drops below threshold)
-        if lock_status:
-            # Search for first point where subsequent variance is low
-            window = int(0.1 * n_samples)  # 10% window
-            for i in range(window, n_samples - window):
-                window_std = np.std(vco_control[i : i + window])
-                if window_std < lock_threshold:
-                    lock_time = i * dt
-                    break
-            else:
-                lock_time = None
-        else:
-            lock_time = None
-    else:
-        lock_status = False
-        lock_time = None
+    vco_std = np.std(last_20_percent)
+    vco_mean = np.abs(np.mean(last_20_percent))
+    lock_status = vco_std < lock_threshold * max(vco_mean, 1.0)
 
-    # Recovered frequency from final VCO state
+    lock_time = _find_lock_time(vco_control, n_samples, dt, lock_threshold) if lock_status else None
+    return lock_status, lock_time
+
+
+def _find_lock_time(
+    vco_control: NDArray[np.float64], n_samples: int, dt: float, lock_threshold: float
+) -> float | None:
+    """Find time when PLL achieved lock."""
+    window = int(0.1 * n_samples)
+    for i in range(window, n_samples - window):
+        window_std = np.std(vco_control[i : i + window])
+        if window_std < lock_threshold:
+            return i * dt
+    return None
+
+
+def _calculate_recovered_frequency(
+    vco_control: NDArray[np.float64], nominal_frequency: float, K_vco: float, n_samples: int
+) -> tuple[float, float]:
+    """Calculate recovered frequency and frequency error."""
     final_vco = np.mean(vco_control[-int(0.1 * n_samples) :])
     recovered_frequency = nominal_frequency + K_vco * final_vco / (2 * np.pi)
-
     frequency_error = recovered_frequency - nominal_frequency
-
-    return PLLRecoveryResult(
-        recovered_frequency=float(recovered_frequency),
-        recovered_phase=phase,
-        vco_control=vco_control,
-        lock_status=lock_status,
-        lock_time=lock_time,
-        frequency_error=float(frequency_error),
-    )
+    return recovered_frequency, frequency_error
 
 
 __all__ = [

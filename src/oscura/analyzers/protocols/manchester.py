@@ -66,13 +66,13 @@ class ManchesterDecoder(AsyncDecoder):
     longname = "Manchester Encoding"
     desc = "Manchester and Differential Manchester decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("data", "DATA", "Manchester encoded data", required=True),
     ]
 
-    optional_channels = []  # noqa: RUF012
+    optional_channels = []
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef("bit_rate", "Bit rate", "Bits per second", default=10000000, values=None),
         OptionDef(
             "mode",
@@ -83,7 +83,7 @@ class ManchesterDecoder(AsyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("bit", "Decoded bit"),
         ("clock", "Recovered clock"),
         ("violation", "Encoding violation"),

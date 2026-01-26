@@ -259,12 +259,16 @@ def validate_agent_references(file_path: Path, content: str) -> list[str]:
     # Get list of valid agents
     valid_agents = {f.stem for f in AGENTS_DIR.glob("*.md")}
 
-    # Find agent references (e.g., `code_assistant`, `technical_writer`)
-    # Match underscore_names in backticks or after keywords
+    # ONLY validate explicit agent references in structured contexts
+    # This prevents false positives on function names in technical documentation
     agent_ref_patterns = [
-        r"`([a-z_]+)`",  # Backtick references
         r"agent:\s*([a-z_]+)",  # agent: field in JSON/YAML
-        r"next_agent:\s*\"([a-z_]+)\"",  # next_agent field
+        r"next_agent:\s*\"([a-z_]+)\"",  # next_agent field in JSON
+        r"next_agent:\s*([a-z_]+)",  # next_agent field in YAML
+        r"Route to `([a-z_]+)` agent",  # Explicit routing text
+        r"spawn `([a-z_]+)` agent",  # Explicit spawn text
+        r"invoke `([a-z_]+)` agent",  # Explicit invoke text
+        r"\*\*Agent\*\*:\s*`([a-z_]+)`",  # Markdown bold Agent: field
     ]
 
     found_refs = set()
@@ -352,8 +356,8 @@ def validate_agent_references(file_path: Path, content: str) -> list[str]:
             continue
 
         # Check if it's a valid agent
-        if ref not in valid_agents and "_" in ref:
-            # Likely meant to be an agent reference
+        if ref not in valid_agents:
+            # This is an invalid agent reference in a structured context
             errors.append(f"Referenced agent '{ref}' not found in .claude/agents/")
 
     return errors

@@ -261,6 +261,119 @@ class CRCReverser:
         crc_bytes = len(messages[0][1])
         return crc_bytes * 8
 
+    def _generate_differentials(
+        self, messages: list[tuple[bytes, bytes]]
+    ) -> list[tuple[bytes, bytes]]:
+        """Generate XOR differentials from message pairs.
+
+        Args:
+            messages: List of (data, crc) tuples
+
+        Returns:
+            List of (data_xor, crc_xor) tuples
+        """
+        differentials = []
+        for i in range(len(messages)):
+            for j in range(i + 1, len(messages)):
+                data1, crc1 = messages[i]
+                data2, crc2 = messages[j]
+
+                if len(data1) == len(data2):
+                    data_xor = self._xor_bytes(data1, data2)
+                    crc_xor = self._xor_bytes(crc1, crc2)
+                    differentials.append((data_xor, crc_xor))
+
+        return differentials
+
+    def _test_poly_all_reflections(
+        self,
+        differentials: list[tuple[bytes, bytes]],
+        poly: int,
+        width: int,
+    ) -> bool:
+        """Test polynomial with all reflection combinations.
+
+        Args:
+            differentials: XOR differentials
+            poly: Polynomial to test
+            width: CRC width
+
+        Returns:
+            True if polynomial matches with any reflection combination
+        """
+        for refin in [False, True]:
+            for refout in [False, True]:
+                if self._test_polynomial(differentials, poly, width, refin, refout):
+                    return True
+        return False
+
+    def _try_differential_search(
+        self,
+        differentials: list[tuple[bytes, bytes]],
+        width: int,
+    ) -> int | None:
+        """Try polynomial search using differentials.
+
+        Args:
+            differentials: XOR differentials
+            width: CRC width
+
+        Returns:
+            Polynomial or None
+        """
+        common_polys = self._get_common_polynomials(width)
+
+        # Try common polynomials first
+        for poly in common_polys:
+            if self._test_poly_all_reflections(differentials, poly, width):
+                return poly
+
+        # For wide CRCs, only try common ones
+        if width >= 32:
+            return None
+
+        # Brute-force for smaller widths
+        max_poly = (1 << width) - 1
+        for poly in range(1, max_poly + 1):
+            if poly not in common_polys:
+                if self._test_poly_all_reflections(differentials, poly, width):
+                    return poly
+
+        return None
+
+    def _try_direct_matching(self, messages: list[tuple[bytes, bytes]], width: int) -> int | None:
+        """Try direct matching with common polynomials and parameters.
+
+        Args:
+            messages: List of (data, crc) tuples
+            width: CRC width
+
+        Returns:
+            Polynomial or None
+        """
+        common_polys = self._get_common_polynomials(width)
+        max_val = (1 << width) - 1
+        common_inits = [i for i in [0x0000, 0xFFFF, 0xFFFFFFFF] if i <= max_val]
+        common_xorouts = [x for x in [0x0000, 0xFFFF, 0xFFFFFFFF] if x <= max_val]
+
+        for poly in common_polys:
+            for refin in [False, True]:
+                for refout in [False, True]:
+                    for init in common_inits:
+                        for xor_out in common_xorouts:
+                            matches = sum(
+                                1
+                                for data, crc_bytes in messages
+                                if self._calculate_crc(
+                                    data, poly, width, init, xor_out, refin, refout
+                                )
+                                == int.from_bytes(crc_bytes, "big")
+                            )
+                            if matches == len(messages):
+                                return poly
+
+        return None
+
     def _find_polynomial(
         self,
         messages: list[tuple[bytes, bytes]],
@@ -275,81 +388,14 @@ class CRCReverser:
         Returns:
             Polynomial (without leading 1), or None if not found.
         """
-        # Generate differentials by XORing message pairs of SAME LENGTH
-        # The XOR differential technique only works when both messages have the same length
-        differentials = []
-        for i in range(len(messages)):
-            for j in range(i + 1, len(messages)):
-                data1, crc1 = messages[i]
-                data2, crc2 = messages[j]
+        differentials = self._generate_differentials(messages)
 
-                # Only use pairs with same message length
-                if len(data1) != len(data2):
-                    continue
-
-                # XOR data and CRC
-                data_xor = self._xor_bytes(data1, data2)
-                crc_xor = self._xor_bytes(crc1, crc2)
-
-                differentials.append((data_xor, crc_xor))
-
-        # If we have enough differentials, use the XOR differential technique
         if len(differentials) >= 2:
-            # Try common polynomials first with different reflection modes
-            common_polys = self._get_common_polynomials(width)
-            for poly in common_polys:
-                # Try all reflection combinations for polynomial testing
-                for refin in [False, True]:
-                    for refout in [False, True]:
-                        if self._test_polynomial(differentials, poly, width, refin, refout):
-                            return poly
+            result = self._try_differential_search(differentials, width)
+            if result is not None:
+                return result
 
-            # For 32-bit, only try common ones due to performance
-            if width >= 32:
-                return None
-
-            # Brute-force polynomial search for smaller widths only
-            max_poly = (1 << width) - 1
-            for poly in range(1, max_poly + 1):
-                if poly in common_polys:
-                    continue  # Already tested
-                # Try all reflection combinations
-                for refin in [False, True]:
-                    for refout in [False, True]:
-                        if self._test_polynomial(differentials, poly, width, refin, refout):
-                            return poly
-
-        # Fallback: Not enough differentials (e.g., all messages have different lengths)
-        # Try direct matching with common polynomials
-        common_polys = self._get_common_polynomials(width)
-        max_val = (1 << width) - 1
-        common_inits = [0x0000, 0xFFFF, 0xFFFFFFFF]
-        common_xorouts = [0x0000, 0xFFFF, 0xFFFFFFFF]
-
-        for poly in common_polys:
-            for refin in [False, True]:
-                for refout in [False, True]:
-                    for init in common_inits:
-                        if init > max_val:
-                            continue
-                        for xor_out in common_xorouts:
-                            if xor_out > max_val:
-                                continue
-
-                            # Check if this combination matches all messages
-                            matches = sum(
-                                1
-                                for data, crc_bytes in messages
-                                if self._calculate_crc(
-                                    data, poly, width, init, xor_out, refin, refout
-                                )
-                                == int.from_bytes(crc_bytes, "big")
-                            )
-
-                            if matches == len(messages):
-                                return poly
-
-        return None
+        return self._try_direct_matching(messages, width)
 
     def _get_common_polynomials(self, width: int) -> list[int]:
         """Get list of common CRC polynomials for a given width.

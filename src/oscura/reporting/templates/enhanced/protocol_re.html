@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --bg-color: {{ theme.background_color }};
+            --text-color: {{ theme.text_color }};
+            --primary-color: {{ theme.primary_color }};
+            --secondary-color: {{ theme.secondary_color }};
+            --border-color: {{ theme.border_color }};
+            --code-bg: {{ theme.code_background }};
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 60px 40px;
+            margin: -40px -20px 40px -20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header .meta {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--code-bg);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+
+        .toc h2 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .toc a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .toc a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        /* Sections */
+        .section {
+            margin: 50px 0;
+            scroll-margin-top: 20px;
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+        }
+
+        .section h3 {
+            color: var(--secondary-color);
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .card-header {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        th {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(0,0,0,0.02);
+        }
+
+        tr:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Warnings */
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .warning::before {
+            content: "⚠ ";
+            font-weight: bold;
+        }
+
+        /* Plots */
+        .plot-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .plot-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .plot-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Artifacts List */
+        .artifacts-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .artifacts-list li {
+            background: var(--code-bg);
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        .artifacts-list strong {
+            color: var(--primary-color);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        /* Code blocks */
+        code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 40px 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .section h2 {
+                font-size: 1.5rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .header {
+                background: white !important;
+                color: black !important;
+                box-shadow: none !important;
+            }
+
+            .toc {
+                display: none;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ title }}</h1>
+            <div class="meta">
+                {% if config.show_timestamps %}
+                <p>Generated: {{ generated_at|format_timestamp }}</p>
+                {% endif %}
+                <p>Author: {{ author }}</p>
+                <p>Report Type: Protocol Reverse Engineering</p>
+            </div>
+        </div>
+
+        {% if config.show_toc %}
+        <div class="toc">
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#executive-summary">Executive Summary</a></li>
+                <li><a href="#protocol-spec">Protocol Specification</a></li>
+                {% if plots %}<li><a href="#visualizations">Visualizations</a></li>{% endif %}
+                {% if artifacts %}<li><a href="#artifacts">Generated Artifacts</a></li>{% endif %}
+                {% if partial_results %}<li><a href="#analysis">Detailed Analysis</a></li>{% endif %}
+                {% if warnings %}<li><a href="#warnings">Warnings</a></li>{% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Executive Summary -->
+        <div class="section" id="executive-summary">
+            <h2>Executive Summary</h2>
+            <div class="card">
+                <p>This report presents the results of automated protocol reverse engineering
+                performed by the Oscura framework. The analysis identified protocol characteristics,
+                decoded message structures, and generated working dissectors for further analysis.</p>
+            </div>
+
+            {% if confidence_score %}
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Overall Confidence</div>
+                    <div class="metric-value">{{ (confidence_score * 100)|round(1) }}%</div>
+                    {% if confidence_score >= 0.8 %}
+                    <span class="badge badge-success">High</span>
+                    {% elif confidence_score >= 0.6 %}
+                    <span class="badge badge-warning">Medium</span>
+                    {% else %}
+                    <span class="badge badge-danger">Low</span>
+                    {% endif %}
+                </div>
+
+                {% if execution_time %}
+                <div class="metric-card">
+                    <div class="metric-label">Execution Time</div>
+                    <div class="metric-value">{{ execution_time|round(1) }}s</div>
+                </div>
+                {% endif %}
+
+                {% if protocol_spec %}
+                <div class="metric-card">
+                    <div class="metric-label">Fields Detected</div>
+                    <div class="metric-value">{{ protocol_spec.fields|length }}</div>
+                </div>
+                {% endif %}
+
+                {% if artifacts %}
+                <div class="metric-card">
+                    <div class="metric-label">Artifacts Generated</div>
+                    <div class="metric-value">{{ artifacts|length }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Protocol Specification -->
+        {% if protocol_spec %}
+        <div class="section" id="protocol-spec">
+            <h2>Protocol Specification</h2>
+
+            <div class="card">
+                <div class="card-header">Overview</div>
+                <table>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Protocol Name</strong></td>
+                        <td>{{ protocol_spec.name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Baud Rate</strong></td>
+                        <td>{{ protocol_spec.baud_rate|format_number }} bps</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frame Format</strong></td>
+                        <td><code>{{ protocol_spec.frame_format }}</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sync Pattern</strong></td>
+                        <td><code>{{ protocol_spec.sync_pattern }}</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frame Length</strong></td>
+                        <td>{{ protocol_spec.frame_length or "Variable" }} bytes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Checksum Type</strong></td>
+                        <td>{{ protocol_spec.checksum_type or "None detected" }}</td>
+                    </tr>
+                    {% if protocol_spec.checksum_position %}
+                    <tr>
+                        <td><strong>Checksum Position</strong></td>
+                        <td>Byte {{ protocol_spec.checksum_position }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td><strong>Detection Confidence</strong></td>
+                        <td>{{ (protocol_spec.confidence * 100)|round(1) }}%</td>
+                    </tr>
+                </table>
+            </div>
+
+            {% if protocol_spec.fields %}
+            <h3>Field Structure</h3>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Offset (bytes)</th>
+                            <th>Size (bytes)</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field in protocol_spec.fields %}
+                        <tr>
+                            <td><code>{{ field.name }}</code></td>
+                            <td>{{ field.offset }}</td>
+                            <td>{{ field.size }}</td>
+                            <td>{{ field.type }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Visualizations -->
+        {% if plots %}
+        <div class="section" id="visualizations">
+            <h2>Visualizations</h2>
+            {% for plot in plots %}
+            <div class="plot-container">
+                <div class="plot-title">{{ plot.title }}</div>
+                {% if plot.type == "embedded" %}
+                <img src="{{ plot.data }}" alt="{{ plot.title }}">
+                {% else %}
+                <img src="{{ plot.path }}" alt="{{ plot.title }}">
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Generated Artifacts -->
+        {% if artifacts %}
+        <div class="section" id="artifacts">
+            <h2>Generated Artifacts</h2>
+            <div class="card">
+                <p>The following artifacts were generated and can be used for further analysis:</p>
+                <ul class="artifacts-list">
+                    {% for artifact in artifacts %}
+                    <li>
+                        <strong>{{ artifact.name }}</strong><br>
+                        <code>{{ artifact.path }}</code>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Detailed Analysis -->
+        {% if partial_results %}
+        <div class="section" id="analysis">
+            <h2>Detailed Analysis Results</h2>
+            {% for key, value in partial_results.items() %}
+            {% if key not in ['traces'] %}
+            <div class="card">
+                <div class="card-header">{{ key|replace('_', ' ')|title }}</div>
+                <p>{{ value }}</p>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Warnings -->
+        {% if warnings %}
+        <div class="section" id="warnings">
+            <h2>Warnings and Notes</h2>
+            {% for warning in warnings %}
+            <div class="warning">{{ warning }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

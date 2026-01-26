@@ -34,7 +34,7 @@ try:
         SampleFormatDef,
     )
     from oscura.loaders.validation import PacketValidator
-    from oscura.testing.synthetic import SyntheticDataGenerator  # noqa: F401
+    from oscura.validation.testing.synthetic import SyntheticDataGenerator  # noqa: F401
 
     IMPORTS_AVAILABLE = True
 except ImportError as e:
@@ -50,7 +50,7 @@ class TestFullREPipeline:
     def test_full_pipeline_synthetic_data(self, tmp_path: Path) -> None:
         """Test complete workflow from binary data to protocol decode."""
         try:
-            from oscura.testing.synthetic import (
+            from oscura.validation.testing.synthetic import (
                 SyntheticMessageConfig,
                 SyntheticPacketConfig,
                 generate_packets,
@@ -178,7 +178,7 @@ class TestFullREPipeline:
     def test_pipeline_with_corrupted_data(self, tmp_path: Path) -> None:
         """Test pipeline with corrupted/noisy data."""
         try:
-            from oscura.testing.synthetic import SyntheticPacketConfig, generate_packets
+            from oscura.validation.testing.synthetic import SyntheticPacketConfig, generate_packets
 
             # Generate packets with 5% corruption
             config = SyntheticPacketConfig(
@@ -229,7 +229,10 @@ class TestFullREPipeline:
         """Test pipeline with multi-device packet stream."""
         try:
             from oscura.loaders.configurable import DeviceConfig, DeviceMapper
-            from oscura.testing.synthetic import SyntheticDataGenerator, SyntheticPacketConfig
+            from oscura.validation.testing.synthetic import (
+                SyntheticDataGenerator,
+                SyntheticPacketConfig,
+            )
 
             # Generate packets from multiple devices
             generator = SyntheticDataGenerator(seed=42)
@@ -282,7 +285,10 @@ class TestFullREPipeline:
             from oscura.analyzers.digital.clock import ClockRecovery
             from oscura.analyzers.digital.edges import EdgeDetector
             from oscura.core.types import DigitalTrace, TraceMetadata
-            from oscura.testing.synthetic import SyntheticSignalConfig, generate_digital_signal
+            from oscura.validation.testing.synthetic import (
+                SyntheticSignalConfig,
+                generate_digital_signal,
+            )
 
             # Generate UART signal
             config = SyntheticSignalConfig(
@@ -324,7 +330,7 @@ class TestFullREPipeline:
     def test_pipeline_pattern_clustering(self) -> None:
         """Test pipeline with pattern clustering."""
         try:
-            from oscura.testing.synthetic import generate_protocol_messages
+            from oscura.validation.testing.synthetic import generate_protocol_messages
 
             # Generate messages with distinct types
             _messages, _truth = generate_protocol_messages(count=1000, message_size=64)
@@ -385,7 +391,7 @@ class TestPipelinePerformance:
     def test_large_packet_file(self, tmp_path: Path) -> None:
         """Test pipeline with large packet file (10,000 packets)."""
         try:
-            from oscura.testing.synthetic import SyntheticPacketConfig, generate_packets
+            from oscura.validation.testing.synthetic import SyntheticPacketConfig, generate_packets
 
             config = SyntheticPacketConfig(packet_size=128)
             binary_data, _truth = generate_packets(count=10000, **config.__dict__)
@@ -427,7 +433,7 @@ class TestPipelinePerformance:
     def test_streaming_large_file(self, tmp_path: Path) -> None:
         """Test streaming mode for memory efficiency."""
         try:
-            from oscura.testing.synthetic import SyntheticPacketConfig, generate_packets
+            from oscura.validation.testing.synthetic import SyntheticPacketConfig, generate_packets
 
             # Generate large file
             config = SyntheticPacketConfig(packet_size=256)
@@ -501,7 +507,7 @@ class TestPipelineEdgeCases:
     def test_partial_packet(self, tmp_path: Path) -> None:
         """Test handling of partial packet at end of file."""
         try:
-            from oscura.testing.synthetic import generate_packets
+            from oscura.validation.testing.synthetic import generate_packets
 
             packets, _ = generate_packets(count=5, packet_size=64)
 

@@ -122,6 +122,44 @@ from oscura.loaders.preprocessing import (
     get_idle_statistics,
     trim_idle,
 )
+
+# LAZY IMPORT: load_touchstone is loaded on first use to avoid 14.5s import penalty
+# The touchstone loader imports signal_integrity which pulls in the entire analyzer chain
+# See .claude/PERFORMANCE_PROFILE_2026-01-25.md for performance analysis
+_load_touchstone_impl: Any = None
+
+
+def load_touchstone(path: str | Path) -> Any:
+    """Load S-parameter data from Touchstone file (lazy import).
+
+    This function uses lazy imports to avoid a 14.5 second import penalty
+    from the touchstone -> signal_integrity -> analyzer dependency chain.
+
+    Supports .s1p through .s8p formats and both Touchstone 1.0
+    and 2.0 file formats.
+
+    Args:
+        path: Path to Touchstone file.
+
+    Returns:
+        SParameterData with loaded S-parameters.
+
+    Raises:
+        LoaderError: If file cannot be read.
+        FormatError: If file format is invalid.
+
+    Example:
+        >>> s_params = load_touchstone("cable.s2p")
+        >>> print(f"Loaded {s_params.n_ports}-port, {len(s_params.frequencies)} points")
+    """
+    global _load_touchstone_impl
+    if _load_touchstone_impl is None:
+        from oscura.loaders.touchstone import load_touchstone as _impl
+
+        _load_touchstone_impl = _impl
+    return _load_touchstone_impl(path)
+
+
 from oscura.loaders.validation import (
     PacketValidator,
     SequenceGap,
@@ -377,80 +415,18 @@ def _load_all_channels_tektronix(
     Raises:
         LoaderError: If the file cannot be read or parsed.
     """
-    try:
-        import tm_data_types  # type: ignore[import-not-found, import-untyped]
-    except ImportError:
-        # Fall back to single channel loading
-        trace = load(path, format="tektronix")
-        channel_name = getattr(trace.metadata, "channel_name", None) or "ch1"
-        return {channel_name: trace}  # type: ignore[dict-item]
-
-    try:
-        wfm = tm_data_types.read_file(str(path))
-    except Exception as e:
-        raise LoaderError(
-            "Failed to read Tektronix WFM file",
-            file_path=str(path),
-            details=str(e),
-        ) from e
-
+    wfm = _read_tektronix_file(path)
     channels: dict[str, WaveformTrace | DigitalTrace] = {}
 
     # Extract analog waveforms
-    if hasattr(wfm, "analog_waveforms") and wfm.analog_waveforms:
-        import numpy as np
-
-        from oscura.loaders.tektronix import _build_waveform_trace
-
-        for i, awfm in enumerate(wfm.analog_waveforms):
-            try:
-                data = np.array(awfm.y_data, dtype=np.float64)
-                x_increment = getattr(awfm, "x_increment", 1e-6)
-                sample_rate = 1.0 / x_increment if x_increment > 0 else 1e6
-                vertical_scale = getattr(awfm, "y_scale", None)
-                vertical_offset = getattr(awfm, "y_offset", None)
-                channel_name = getattr(awfm, "name", f"CH{i + 1}")
-
-                trace = _build_waveform_trace(
-                    data=data,
-                    sample_rate=sample_rate,
-                    vertical_scale=vertical_scale,
-                    vertical_offset=vertical_offset,
-                    channel_name=channel_name,
-                    path=path,
-                    wfm=awfm,
-                )
-                channels[f"ch{i + 1}"] = trace
-            except Exception as e:
-                logger.warning("Failed to extract analog channel %d: %s", i + 1, e)
+    _extract_analog_waveforms(wfm, path, channels)
 
     # Extract digital waveforms
-    if hasattr(wfm, "digital_waveforms") and wfm.digital_waveforms:
-        from oscura.loaders.tektronix import _load_digital_waveform
-
-        for i, dwfm in enumerate(wfm.digital_waveforms):
-            try:
-                trace = _load_digital_waveform(dwfm, path, i)
-                channels[f"d{i + 1}"] = trace
-            except Exception as e:
-                logger.warning("Failed to extract digital channel %d: %s", i + 1, e)
+    _extract_digital_waveforms(wfm, path, channels)
 
     # Handle direct waveform formats (single file = single channel)
     if not channels:
-        wfm_type = type(wfm).__name__
-
-        if wfm_type == "DigitalWaveform" or hasattr(wfm, "y_axis_byte_values"):
-            from oscura.loaders.tektronix import _load_digital_waveform
-
-            trace = _load_digital_waveform(wfm, path, 0)
-            channel_name = trace.metadata.channel_name or "d1"
-            channels[channel_name.lower()] = trace
-
-        elif hasattr(wfm, "y_axis_values") or hasattr(wfm, "y_data"):
-            # Direct analog waveform
-            trace = load(path, format="tektronix")
-            channel_name = trace.metadata.channel_name or "ch1"
-            channels[channel_name.lower()] = trace  # type: ignore[assignment]
+        _extract_direct_waveform(wfm, path, channels)
 
     if not channels:
         raise LoaderError(
@@ -460,6 +436,130 @@ def _load_all_channels_tektronix(
         )
 
     return channels
+
+
+def _read_tektronix_file(path: Path) -> Any:
+    """Read Tektronix WFM file, falling back to single channel if tm_data_types unavailable.
+
+    Args:
+        path: Path to file.
+
+    Returns:
+        WFM file object.
+
+    Raises:
+        LoaderError: If file cannot be read.
+    """
+    try:
+        import tm_data_types  # type: ignore[import-untyped]
+    except ImportError:
+        # Fall back to single channel loading
+        trace = load(path, format="tektronix")
+        channel_name = getattr(trace.metadata, "channel_name", None) or "ch1"
+        # Return a dict-like object to maintain compatibility
+        return {"__fallback__": {channel_name: trace}}
+
+    try:
+        return tm_data_types.read_file(str(path))
+    except Exception as e:
+        raise LoaderError(
+            "Failed to read Tektronix WFM file",
+            file_path=str(path),
+            details=str(e),
+        ) from e
+
+
+def _extract_analog_waveforms(
+    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace]
+) -> None:
+    """Extract analog waveforms from WFM file.
+
+    Args:
+        wfm: WFM file object.
+        path: Path to file.
+        channels: Dictionary to populate with channels.
+    """
+    if not hasattr(wfm, "analog_waveforms") or not wfm.analog_waveforms:
+        return
+
+    import numpy as np
+
+    from oscura.loaders.tektronix import _build_waveform_trace
+
+    for i, awfm in enumerate(wfm.analog_waveforms):
+        try:
+            data = np.array(awfm.y_data, dtype=np.float64)
+            x_increment = getattr(awfm, "x_increment", 1e-6)
+            sample_rate = 1.0 / x_increment if x_increment > 0 else 1e6
+            vertical_scale = getattr(awfm, "y_scale", None)
+            vertical_offset = getattr(awfm, "y_offset", None)
+            channel_name = getattr(awfm, "name", f"CH{i + 1}")
+
+            trace = _build_waveform_trace(
+                data=data,
+                sample_rate=sample_rate,
+                vertical_scale=vertical_scale,
+                vertical_offset=vertical_offset,
+                channel_name=channel_name,
+                path=path,
+                wfm=awfm,
+            )
+            channels[f"ch{i + 1}"] = trace
+        except Exception as e:
+            logger.warning("Failed to extract analog channel %d: %s", i + 1, e)
+
+
+def _extract_digital_waveforms(
+    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace]
+) -> None:
+    """Extract digital waveforms from WFM file.
+
+    Args:
+        wfm: WFM file object.
+        path: Path to file.
+        channels: Dictionary to populate with channels.
+    """
+    if not hasattr(wfm, "digital_waveforms") or not wfm.digital_waveforms:
+        return
+
+    from oscura.loaders.tektronix import _load_digital_waveform
+
+    for i, dwfm in enumerate(wfm.digital_waveforms):
+        try:
+            trace = _load_digital_waveform(dwfm, path, i)
+            channels[f"d{i + 1}"] = trace
+        except Exception as e:
+            logger.warning("Failed to extract digital channel %d: %s", i + 1, e)
+
+
+def _extract_direct_waveform(
+    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace]
+) -> None:
+    """Extract single channel from direct waveform format.
+
+    Args:
+        wfm: WFM file object.
+        path: Path to file.
+        channels: Dictionary to populate with channels.
+    """
+    wfm_type = type(wfm).__name__
+
+    if wfm_type == "DigitalWaveform" or hasattr(wfm, "y_axis_byte_values"):
+        from oscura.loaders.tektronix import _load_digital_waveform
+
+        trace = _load_digital_waveform(wfm, path, 0)
+        channel_name = trace.metadata.channel_name or "d1"
+        channels[channel_name.lower()] = trace
+
+    elif hasattr(wfm, "y_axis_values") or hasattr(wfm, "y_data"):
+        # Direct analog waveform
+        loaded_trace = load(path, format="tektronix")
+        if isinstance(loaded_trace, DigitalTrace):
+            channel_name = loaded_trace.metadata.channel_name or "ch1"
+            channels[channel_name.lower()] = loaded_trace
+        else:
+            # Waveform or IQ trace - skip adding to digital channels
+            pass
 
 
 def get_supported_formats() -> list[str]:
@@ -538,6 +638,7 @@ __all__ = [
     "load_binary_packets",
     "load_lazy",
     "load_packets_streaming",
+    "load_touchstone",
     "load_trace_lazy",
     "trim_idle",
 ]

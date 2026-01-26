@@ -189,11 +189,12 @@ class TestVCDRealNumberSupport:
 
     def test_negative_real_values(self, vcd_with_real_values: str) -> None:
         """Negative real values should be supported."""
-        # Check pattern allows negative values
-        # r-3.14 should be valid
-        negative_pattern = r"r-[\d.]+"
-        # May or may not be present in fixture, but format should be valid
-        assert True  # Format validation passes
+        # Verify VCD content is valid and contains real value changes
+        # The fixture should contain at least one real value change
+        real_pattern = r"r-?[\d.]+\s+\S+"
+        assert re.search(real_pattern, vcd_with_real_values), (
+            "VCD should contain real value changes"
+        )
 
 
 @pytest.mark.compliance

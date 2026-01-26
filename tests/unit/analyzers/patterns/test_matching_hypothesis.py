@@ -43,8 +43,7 @@ class TestPatternMatchingProperties:
     @settings(max_examples=30, deadline=None)
     def test_repetitive_data_multiple_matches(self, data: bytes) -> None:
         """Property: Repetitive data has multiple pattern matches."""
-        if len(data) < 4:
-            pytest.skip("Data too short")
+        assume(len(data) >= 4)
 
         # Extract first repeated unit
         pattern = data[: len(data) // 10 or 2]

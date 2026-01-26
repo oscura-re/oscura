@@ -7,7 +7,7 @@ import warnings
 
 import pytest
 
-from oscura.config.memory import reset_to_defaults, set_memory_limit
+from oscura.core.config.memory import reset_to_defaults, set_memory_limit
 from oscura.core.memory_limits import (
     _find_max_nfft,
     _find_max_nperseg,

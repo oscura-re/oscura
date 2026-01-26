@@ -11,14 +11,14 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from oscura.comparison.compare import compare_traces
-from oscura.comparison.visualization import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.compare import compare_traces
+from oscura.utils.comparison.visualization import (
     plot_comparison_heatmap,
     plot_comparison_summary,
     plot_difference,
     plot_overlay,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

@@ -257,6 +257,10 @@ class TestRealUDPCaptures:
         try:
             from oscura.analyzers.statistical.entropy import calculate_entropy
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("Entropy analysis not available")
 
         for segment_name, path in real_udp_packets.items():

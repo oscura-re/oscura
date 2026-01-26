@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from oscura.config.pipeline import (
+from oscura.core.config.pipeline import (
     Pipeline,
     PipelineDefinition,
     PipelineExecutionError,

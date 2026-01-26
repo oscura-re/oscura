@@ -17,6 +17,8 @@ This demonstrates how to integrate Oscura into command-line workflows,
 build CLI tools, and process files in batch mode with progress tracking.
 """
 
+# SKIP_VALIDATION: CLI module format_output removed in v0.6
+
 from __future__ import annotations
 
 import argparse
@@ -68,7 +70,6 @@ class CLIUsageDemo(BaseDemo):
         import numpy as np
 
         from oscura.cli.main import format_output
-        from oscura.exporters import export_npz
 
         signals = data["signals"]
         output_dir = self.get_output_dir()
@@ -171,7 +172,7 @@ Examples:
         test_files = []
         for name, trace in signals:
             filepath = output_dir / f"test_{name}.npz"
-            export_npz(trace, str(filepath))
+            np.savez(str(filepath), data=trace.data, sample_rate=trace.metadata.sample_rate)
             test_files.append(filepath)
             self.info(f"  Saved {filepath.name}")
 

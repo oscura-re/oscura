@@ -39,8 +39,9 @@ from oscura.core.cross_domain import (
     correlate_results,
 )
 from oscura.core.debug import (
+    DebugContext,
     DebugLevel,
-    debug_context,
+    debug_context,  # Backward compatibility alias
     disable_debug,
     enable_debug,
     get_debug_level,
@@ -180,6 +181,7 @@ __all__ = [
     "CorrelationResult",
     "CrossDomainCorrelator",
     "CrossDomainInsight",
+    "DebugContext",
     "DebugLevel",
     "DigitalTrace",
     # Edge cases (EDGE-001, EDGE-002, EDGE-003)
@@ -251,7 +253,7 @@ __all__ = [
     "create_progress_tracker",
     "create_provenance",
     "create_simple_progress",
-    "debug_context",
+    "debug_context",  # Backward compatibility
     "disable_debug",
     # Debug (LOG-007)
     "enable_debug",

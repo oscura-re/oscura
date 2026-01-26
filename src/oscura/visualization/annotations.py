@@ -20,6 +20,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from oscura.utils.geometry import generate_leader_line
+
 
 @dataclass
 class Annotation:
@@ -106,57 +108,84 @@ def place_annotations(
     if len(annotations) == 0:
         return []
 
-    # Filter by viewport if specified
-    if viewport is not None:
-        x_min, x_max = viewport
-        visible_annots = [a for a in annotations if x_min <= a.x <= x_max]
-    else:
-        visible_annots = annotations
+    # Filter and limit annotations
+    visible_annots = _filter_by_viewport(annotations, viewport)
+    visible_annots = _apply_density_limit(visible_annots, density_limit)
 
-    # Apply density limiting - keep only top priority annotations
-    if len(visible_annots) > density_limit:
-        # Sort by priority (descending)
-        sorted_annots = sorted(
-            visible_annots,
-            key=lambda a: a.priority,
-            reverse=True,
+    # Initialize placement
+    placed = _initialize_placements(visible_annots)
+
+    # Resolve collisions
+    _resolve_collisions(placed, collision_threshold, max_iterations)
+
+    # Add leader lines where needed
+    _add_leader_lines(placed, leader_threshold=30.0)
+
+    return placed
+
+
+def _filter_by_viewport(
+    annotations: list[Annotation],
+    viewport: tuple[float, float] | None,
+) -> list[Annotation]:
+    """Filter annotations by viewport range."""
+    if viewport is None:
+        return annotations
+
+    x_min, x_max = viewport
+    return [a for a in annotations if x_min <= a.x <= x_max]
+
+
+def _apply_density_limit(
+    annotations: list[Annotation],
+    density_limit: int,
+) -> list[Annotation]:
+    """Apply density limiting by keeping top priority annotations."""
+    if len(annotations) <= density_limit:
+        return annotations
+
+    sorted_annots = sorted(annotations, key=lambda a: a.priority, reverse=True)
+    return sorted_annots[:density_limit]
+
+
+def _initialize_placements(annotations: list[Annotation]) -> list[PlacedAnnotation]:
+    """Initialize placed annotations at anchor points."""
+    return [
+        PlacedAnnotation(
+            annotation=annot,
+            display_x=annot.x,
+            display_y=annot.y,
+            visible=True,
+            needs_leader=False,
         )
-        visible_annots = sorted_annots[:density_limit]
+        for annot in annotations
+    ]
 
-    # Initialize placed annotations at anchor points
-    placed = []
-    for annot in visible_annots:
-        placed.append(
-            PlacedAnnotation(
-                annotation=annot,
-                display_x=annot.x,
-                display_y=annot.y,
-                visible=True,
-                needs_leader=False,
-            )
-        )
 
-    # Resolve collisions using iterative adjustment
+def _resolve_collisions(
+    placed: list[PlacedAnnotation],
+    collision_threshold: float,
+    max_iterations: int,
+) -> None:
+    """Resolve collisions using iterative adjustment."""
     for _iteration in range(max_iterations):
         moved = False
 
-        # Check all pairs for collisions
         for i in range(len(placed)):
             for j in range(i + 1, len(placed)):
                 if _check_collision(placed[i], placed[j], collision_threshold):
-                    # Resolve collision by moving lower-priority annotation
+                    # Move lower-priority annotation
                     if placed[i].annotation.priority >= placed[j].annotation.priority:
                         moved = _move_annotation(placed[j], placed[i], collision_threshold) or moved
                     else:
                         moved = _move_annotation(placed[i], placed[j], collision_threshold) or moved
 
-        # Converged if nothing moved
         if not moved:
             break
 
-    # Determine which annotations need leader lines
-    leader_threshold = 30.0  # pixels
 
+def _add_leader_lines(placed: list[PlacedAnnotation], leader_threshold: float) -> None:
+    """Add leader lines for displaced annotations."""
     for p in placed:
         dx = abs(p.display_x - p.annotation.x)
         dy = abs(p.display_y - p.annotation.y)
@@ -164,12 +193,10 @@ def place_annotations(
 
         if displacement > leader_threshold:
             p.needs_leader = True
-            p.leader_points = _generate_leader_line(
+            p.leader_points = generate_leader_line(
                 (p.annotation.x, p.annotation.y),
                 (p.display_x, p.display_y),
             )
-
-    return placed
 
 
 def _check_collision(
@@ -244,36 +271,6 @@ def _move_annotation(
         return True
 
     return False
-
-
-def _generate_leader_line(
-    anchor: tuple[float, float],
-    label: tuple[float, float],
-) -> list[tuple[float, float]]:
-    """Generate orthogonal leader line from anchor to label.
-
-    Args:
-        anchor: Anchor point (x, y)
-        label: Label position (x, y)
-
-    Returns:
-        List of points for leader line
-    """
-    ax, ay = anchor
-    lx, ly = label
-
-    # L-shaped leader line
-    dx = abs(lx - ax)
-    dy = abs(ly - ay)
-
-    if dx > dy:
-        # Horizontal-first
-        mid = (lx, ay)
-    else:
-        # Vertical-first
-        mid = (ax, ly)
-
-    return [anchor, mid, label]
 
 
 def filter_by_zoom_level(

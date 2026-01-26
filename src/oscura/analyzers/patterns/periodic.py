@@ -11,7 +11,7 @@ Author: Oscura Development Team
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
@@ -150,8 +150,6 @@ def detect_periods_fft(
 ) -> list[PeriodResult]:
     """Detect periods using FFT spectral analysis.
 
-    : Periodic Pattern Detection via FFT
-
     Uses power spectral density to identify dominant frequencies and their
     harmonics. More efficient than autocorrelation for long signals.
 
@@ -170,42 +168,94 @@ def detect_periods_fft(
         >>> periods = detect_periods_fft(signal, sample_rate=1000.0, num_peaks=3)
     """
     trace = np.asarray(trace).flatten()
-
     if trace.size == 0:
         return []
 
-    # Remove DC component
-    trace_centered = trace - np.mean(trace)
+    power, freqs = _compute_power_spectrum(trace, sample_rate)
+    peak_indices = _find_valid_peaks(power, freqs, min_freq, max_freq, num_peaks)
 
-    # Compute FFT
+    if len(peak_indices) == 0:
+        return []
+
+    return _build_period_results(peak_indices, freqs, power, sample_rate)
+
+
+def _compute_power_spectrum(
+    trace: NDArray[np.float64], sample_rate: float
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Compute power spectrum from FFT.
+
+    Args:
+        trace: Input signal array.
+        sample_rate: Sampling rate in Hz.
+
+    Returns:
+        Tuple of (power spectrum, frequencies).
+    """
+    trace_centered = trace - np.mean(trace)
     n = len(trace_centered)
     fft_result = np.fft.rfft(trace_centered)
     power = np.asarray(np.abs(fft_result) ** 2, dtype=np.float64)
     freqs = np.fft.rfftfreq(n, 1.0 / sample_rate)
+    return power, freqs
 
-    # Apply frequency range filtering
+
+def _find_valid_peaks(
+    power: NDArray[np.float64],
+    freqs: NDArray[np.float64],
+    min_freq: float | None,
+    max_freq: float | None,
+    num_peaks: int,
+) -> NDArray[np.intp]:
+    """Find valid spectral peaks within frequency range.
+
+    Args:
+        power: Power spectrum array.
+        freqs: Frequency array.
+        min_freq: Minimum frequency.
+        max_freq: Maximum frequency.
+        num_peaks: Maximum peaks to return.
+
+    Returns:
+        Array of peak indices sorted by power.
+    """
     valid_mask = np.ones(len(freqs), dtype=bool)
     if min_freq is not None:
         valid_mask &= freqs >= min_freq
     if max_freq is not None:
         valid_mask &= freqs <= max_freq
+    valid_mask[0] = False  # Exclude DC
 
-    # Exclude DC component
-    valid_mask[0] = False
-
-    # Find peaks in power spectrum
     peak_indices = _find_spectral_peaks(power, min_distance=1)
     peak_indices = peak_indices[valid_mask[peak_indices]]
 
     if len(peak_indices) == 0:
-        return []
+        empty_result: NDArray[np.signedinteger[Any]] = peak_indices
+        return empty_result
 
-    # Sort by power
     peak_powers = power[peak_indices]
     sorted_indices = np.argsort(peak_powers)[::-1][:num_peaks]
-    peak_indices = peak_indices[sorted_indices]
+    result: NDArray[np.signedinteger[Any]] = peak_indices[sorted_indices]
+    return result
 
-    # Build results
+
+def _build_period_results(
+    peak_indices: NDArray[np.intp],
+    freqs: NDArray[np.float64],
+    power: NDArray[np.float64],
+    sample_rate: float,
+) -> list[PeriodResult]:
+    """Build PeriodResult objects from spectral peaks.
+
+    Args:
+        peak_indices: Array of peak indices.
+        freqs: Frequency array.
+        power: Power spectrum array.
+        sample_rate: Sampling rate in Hz.
+
+    Returns:
+        List of PeriodResult objects.
+    """
     results = []
     max_power = np.max(power[peak_indices]) if len(peak_indices) > 0 else 1.0
 
@@ -214,34 +264,44 @@ def detect_periods_fft(
         if freq == 0:
             continue
 
-        period_seconds = 1.0 / freq
-        period_samples = sample_rate / freq
-
-        # Confidence based on relative power
-        confidence = float(power[idx] / max_power)
-
-        # Detect harmonics (simple approach: look for integer multiples)
-        harmonics = []
-        for mult in range(2, 6):
-            harmonic_freq = freq * mult
-            if harmonic_freq < freqs[-1]:
-                # Find closest frequency bin
-                harmonic_idx = np.argmin(np.abs(freqs - harmonic_freq))
-                if power[harmonic_idx] > 0.1 * power[idx]:
-                    harmonics.append(harmonic_freq)
+        harmonics = _detect_harmonics(freq, freqs, power, power[idx])
 
         results.append(
             PeriodResult(
-                period_samples=period_samples,
-                period_seconds=period_seconds,
+                period_samples=sample_rate / freq,
+                period_seconds=1.0 / freq,
                 frequency_hz=freq,
-                confidence=min(confidence, 1.0),
+                confidence=min(float(power[idx] / max_power), 1.0),
                 method="fft",
                 harmonics=harmonics if harmonics else None,
             )
         )
 
     return results
+
+
+def _detect_harmonics(
+    freq: float, freqs: NDArray[np.float64], power: NDArray[np.float64], base_power: float
+) -> list[float]:
+    """Detect harmonic frequencies.
+
+    Args:
+        freq: Base frequency.
+        freqs: Frequency array.
+        power: Power spectrum.
+        base_power: Power at base frequency.
+
+    Returns:
+        List of harmonic frequencies.
+    """
+    harmonics = []
+    for mult in range(2, 6):
+        harmonic_freq = freq * mult
+        if harmonic_freq < freqs[-1]:
+            harmonic_idx = np.argmin(np.abs(freqs - harmonic_freq))
+            if power[harmonic_idx] > 0.1 * base_power:
+                harmonics.append(harmonic_freq)
+    return harmonics
 
 
 def detect_periods_autocorr(
