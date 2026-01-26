@@ -299,6 +299,7 @@ class TestPlotBathtubFull:
             bathtub_data["ber_right"],
             show_eye_opening=True,
             target_ber=1e-6,
+            eye_opening=0.5,  # Explicit eye opening to ensure annotation is drawn
             show=False,
         )
 

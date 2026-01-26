@@ -74,6 +74,7 @@ class BaseDemo(ABC):
         self.end_time: float = 0.0
         self.results: dict[str, Any] = {}
         self.errors: list[str] = []
+        self.data_file: Path | None = None  # Optional CLI override for data file
 
     def execute(self) -> bool:
         """Execute the demonstration with full framework.

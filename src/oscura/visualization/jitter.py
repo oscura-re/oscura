@@ -577,6 +577,13 @@ def plot_ddj(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
+    # Validate input lengths match
+    if len(patterns) != len(jitter_values):
+        raise ValueError(
+            f"Mismatched lengths: patterns has {len(patterns)} elements "
+            f"but jitter_values has {len(jitter_values)} elements"
+        )
+
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
