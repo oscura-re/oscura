@@ -35,7 +35,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import numpy as np
 
-from oscura.exceptions import SecurityError
+from oscura.core.exceptions import SecurityError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -237,12 +237,21 @@ class OscuraCache:
 
             # Load from disk if needed
             if not entry.in_memory:
-                entry.value = self._load_from_disk(entry.disk_path)  # type: ignore[arg-type]
-                entry.in_memory = True
-                self._current_memory += entry.size_bytes
+                try:
+                    entry.value = self._load_from_disk(entry.disk_path)  # type: ignore[arg-type]
+                    entry.in_memory = True
+                    self._current_memory += entry.size_bytes
 
-                # Check if we need to spill to make room
-                self._ensure_memory_limit()
+                    # Check if we need to spill to make room
+                    self._ensure_memory_limit()
+                except SecurityError:
+                    # Re-raise security errors (tampered data)
+                    raise
+                except (OSError, pickle.UnpicklingError):
+                    # Remove corrupted entry from cache for non-security errors
+                    del self._cache[key]
+                    self._misses += 1
+                    return None
 
             return entry.value
 
@@ -507,6 +516,12 @@ class OscuraCache:
             with open(disk_path, "rb") as f:
                 signature = f.read(32)  # SHA256 = 32 bytes
                 data = f.read()
+
+            # Check if file is too short (corrupted, not tampered)
+            if len(signature) < 32:
+                logger.warning(f"Cache file too short (corrupted): {disk_path.name}")
+                disk_path.unlink(missing_ok=True)
+                raise OSError(f"Cache file corrupted (too short): {disk_path.name}")
 
             # Verify HMAC signature
             expected_signature = hmac.new(self._cache_key, data, hashlib.sha256).digest()

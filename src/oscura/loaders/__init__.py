@@ -340,7 +340,7 @@ def load_all_channels(
     path: str | PathLike[str],
     *,
     format: str | None = None,
-) -> dict[str, WaveformTrace | DigitalTrace]:
+) -> dict[str, WaveformTrace | DigitalTrace | IQTrace]:
     """Load all channels from a multi-channel waveform file.
 
     Reads the file once and extracts all available channels (both analog
@@ -398,12 +398,12 @@ def load_all_channels(
         # For other formats, try loading as single channel
         trace = load(path, format=format)
         channel_name = getattr(trace.metadata, "channel_name", None) or "ch1"
-        return {channel_name: trace}  # type: ignore[dict-item]
+        return {channel_name: trace}
 
 
 def _load_all_channels_tektronix(
     path: Path,
-) -> dict[str, WaveformTrace | DigitalTrace]:
+) -> dict[str, WaveformTrace | DigitalTrace | IQTrace]:
     """Load all channels from a Tektronix WFM file.
 
     Args:
@@ -416,7 +416,7 @@ def _load_all_channels_tektronix(
         LoaderError: If the file cannot be read or parsed.
     """
     wfm = _read_tektronix_file(path)
-    channels: dict[str, WaveformTrace | DigitalTrace] = {}
+    channels: dict[str, WaveformTrace | DigitalTrace | IQTrace] = {}
 
     # Extract analog waveforms
     _extract_analog_waveforms(wfm, path, channels)
@@ -470,7 +470,7 @@ def _read_tektronix_file(path: Path) -> Any:
 
 
 def _extract_analog_waveforms(
-    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace]
+    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace | IQTrace]
 ) -> None:
     """Extract analog waveforms from WFM file.
 
@@ -510,7 +510,7 @@ def _extract_analog_waveforms(
 
 
 def _extract_digital_waveforms(
-    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace]
+    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace | IQTrace]
 ) -> None:
     """Extract digital waveforms from WFM file.
 
@@ -533,7 +533,7 @@ def _extract_digital_waveforms(
 
 
 def _extract_direct_waveform(
-    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace]
+    wfm: Any, path: Path, channels: dict[str, WaveformTrace | DigitalTrace | IQTrace]
 ) -> None:
     """Extract single channel from direct waveform format.
 
@@ -551,15 +551,20 @@ def _extract_direct_waveform(
         channel_name = trace.metadata.channel_name or "d1"
         channels[channel_name.lower()] = trace
 
+    elif wfm_type == "IQWaveform" or (
+        hasattr(wfm, "i_axis_values") and hasattr(wfm, "q_axis_values")
+    ):
+        # IQWaveform format (RF/SDR data)
+        loaded_trace = load(path, format="tektronix")
+        channel_name = loaded_trace.metadata.channel_name or "iq1"
+        channels[channel_name.lower()] = loaded_trace
+
     elif hasattr(wfm, "y_axis_values") or hasattr(wfm, "y_data"):
         # Direct analog waveform
         loaded_trace = load(path, format="tektronix")
-        if isinstance(loaded_trace, DigitalTrace):
-            channel_name = loaded_trace.metadata.channel_name or "ch1"
-            channels[channel_name.lower()] = loaded_trace
-        else:
-            # Waveform or IQ trace - skip adding to digital channels
-            pass
+        # Add both analog and digital traces to channels
+        channel_name = loaded_trace.metadata.channel_name or "ch1"
+        channels[channel_name.lower()] = loaded_trace
 
 
 def get_supported_formats() -> list[str]:

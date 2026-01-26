@@ -296,7 +296,7 @@ jobs:
             $XDIST_ARGS \
             --hypothesis-profile=ci \
             -p no:benchmark \
-            --cov=src/oscura \
+            --cov=oscura \
             --cov-report=xml \
             --cov-report=term-missing \
             --cov-fail-under=0 \

@@ -46,28 +46,25 @@ class TestConfigurablePacketLoader:
         """Test creating a packet format configuration from dictionary."""
         try:
             from oscura.loaders import PacketFormatConfig
-
-            # Create config using from_dict (the actual API)
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            assert config.name == "test_format"
-            assert config.packet_size == 512
-
         except ImportError:
             pytest.skip("PacketFormatConfig not available")
-        except Exception as e:
-            pytest.skip(f"PacketFormatConfig creation failed: {e}")
+
+        # Create config using from_dict (the actual API)
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        assert config.name == "test_format"
+        assert config.packet_size == 512
 
     def test_load_fixed_length_packets(self, synthetic_packets: dict[str, Path]) -> None:
         """Test loading fixed-length packets from synthetic data."""
@@ -79,30 +76,27 @@ class TestConfigurablePacketLoader:
 
         try:
             from oscura.loaders import PacketFormatConfig, load_binary_packets
-
-            # Create proper config for 512-byte packets
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            packets = load_binary_packets(data_path, config)
-
-            assert packets is not None
-            assert len(packets) > 0
-
         except ImportError:
             pytest.skip("Configurable loader not available")
-        except Exception as e:
-            pytest.skip(f"Packet loading requires specific configuration: {e}")
+
+        # Create proper config for 512-byte packets
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        packets = load_binary_packets(data_path, config)
+
+        assert packets is not None
+        assert len(packets) > 0
 
 
 @pytest.mark.unit
@@ -115,7 +109,10 @@ class TestSampleFormatConfiguration:
         """Test creating sample format definitions."""
         try:
             from oscura.loaders import SampleFormatDef
+        except ImportError:
+            pytest.skip("SampleFormatDef not available")
 
+        try:
             # Define 16-bit little-endian samples
             sample_format = SampleFormatDef(
                 size=2,
@@ -126,9 +123,6 @@ class TestSampleFormatConfiguration:
             assert sample_format.type == "int16"
             assert sample_format.endian == "little"
             assert sample_format.size == 2
-
-        except ImportError:
-            pytest.skip("SampleFormatDef not available")
         except TypeError as e:
             pytest.skip(f"SampleFormatDef has different signature: {e}")
 
@@ -170,7 +164,10 @@ class TestHeaderFieldExtraction:
         """Test configuration with multiple header fields."""
         try:
             from oscura.loaders import HeaderFieldDef, PacketFormatConfig
+        except ImportError:
+            pytest.skip("Header field configuration not available")
 
+        try:
             fields = [
                 HeaderFieldDef(name="sync", offset=0, size=2, type="uint16"),
                 HeaderFieldDef(name="sequence", offset=2, size=4, type="uint32"),
@@ -198,9 +195,6 @@ class TestHeaderFieldExtraction:
             config = PacketFormatConfig.from_dict(config_dict)
 
             assert len(config.header_fields) == 3
-
-        except ImportError:
-            pytest.skip("Header field configuration not available")
         except TypeError as e:
             pytest.skip(f"API has different signature: {e}")
 
@@ -274,9 +268,11 @@ class TestDeviceMapping:
         """Test device configuration loading from YAML."""
         try:
             from oscura.loaders import DeviceConfig
+        except ImportError:
+            pytest.skip("DeviceConfig not available")
 
-            # Create test YAML config
-            yaml_content = """
+        # Create test YAML config
+        yaml_content = """
 devices:
   0x01:
     name: "Sensor A"
@@ -289,23 +285,14 @@ devices:
 unknown_device:
   policy: warn
 """
-            config_file = tmp_path / "device_config.yaml"
-            config_file.write_text(yaml_content)
+        config_file = tmp_path / "device_config.yaml"
+        config_file.write_text(yaml_content)
 
-            config = DeviceConfig.from_yaml(config_file)
+        config = DeviceConfig.from_yaml(config_file)
 
-            assert 0x01 in config.devices
-            assert config.devices[0x01]["name"] == "Sensor A"
-            assert config.unknown_policy == "warn"
-
-        except ImportError:
-            pytest.skip("DeviceConfig not available")
-        except Exception as e:
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            pytest.skip(f"DeviceConfig loading failed: {e}")
+        assert 0x01 in config.devices
+        assert config.devices[0x01]["name"] == "Sensor A"
+        assert config.unknown_policy == "warn"
 
     def test_device_mapper(self, tmp_path: Path) -> None:
         """Test device ID to configuration mapping."""
@@ -434,33 +421,30 @@ class TestStreamingLoader:
 
         try:
             from oscura.loaders import PacketFormatConfig, load_packets_streaming
-
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            # Streaming should yield packets one at a time
-            packet_count = 0
-            for _packet in load_packets_streaming(data_path, config):
-                packet_count += 1
-                if packet_count >= 10:  # Just test first few
-                    break
-
-            assert packet_count > 0
-
         except ImportError:
             pytest.skip("Streaming loader not available")
-        except Exception as e:
-            pytest.skip(f"Streaming load requires specific configuration: {e}")
+
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        # Streaming should yield packets one at a time
+        packet_count = 0
+        for _packet in load_packets_streaming(data_path, config):
+            packet_count += 1
+            if packet_count >= 10:  # Just test first few
+                break
+
+        assert packet_count > 0
 
 
 @pytest.mark.unit
@@ -481,34 +465,31 @@ class TestChannelExtraction:
                 extract_channels,
                 load_binary_packets,
             )
-
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            packets = load_binary_packets(data_path, config)
-
-            if packets:
-                channel_map = {"ch0": {"bits": (0, 7)}, "ch1": {"bits": (8, 15)}}
-                channels = extract_channels(packets, channel_map)
-
-                assert channels is not None
-                assert "ch0" in channels
-                assert "ch1" in channels
-
         except ImportError:
             pytest.skip("extract_channels not available")
-        except Exception as e:
-            pytest.skip(f"Channel extraction failed: {e}")
+
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        packets = load_binary_packets(data_path, config)
+
+        if packets:
+            channel_map = {"ch0": {"bits": (0, 7)}, "ch1": {"bits": (8, 15)}}
+            channels = extract_channels(packets, channel_map)
+
+            assert channels is not None
+            assert "ch0" in channels
+            assert "ch1" in channels
 
 
 @pytest.mark.unit
@@ -582,26 +563,19 @@ class TestPreprocessing:
         """Test idle region trimming."""
         try:
             from oscura.loaders import trim_idle
-
-            # Create test data with idle bytes at start and end
-            test_data = [False] * 100 + [True] * 50 + [False] * 100
-            trace = self._create_digital_trace(test_data)
-
-            trimmed = trim_idle(trace, pattern="zeros", min_duration=50)
-
-            # Should remove leading/trailing idle samples
-            assert len(trimmed.data) <= len(trace.data)
-            # The active portion (50 ones) should remain
-            assert len(trimmed.data) >= 50
-
         except ImportError:
             pytest.skip("trim_idle not available")
-        except Exception as e:
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            pytest.skip(f"trim_idle failed: {e}")
+
+        # Create test data with idle bytes at start and end
+        test_data = [False] * 100 + [True] * 50 + [False] * 100
+        trace = self._create_digital_trace(test_data)
+
+        trimmed = trim_idle(trace, pattern="zeros", min_duration=50)
+
+        # Should remove leading/trailing idle samples
+        assert len(trimmed.data) <= len(trace.data)
+        # The active portion (50 ones) should remain
+        assert len(trimmed.data) >= 50
 
     def test_idle_statistics(self) -> None:
         """Test idle region statistics calculation."""

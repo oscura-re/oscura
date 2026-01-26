@@ -78,8 +78,6 @@ class CorrelationResult:
         Returns:
             Coherence score based on agreement/conflict ratio.
         """
-        if not self.insights:
-            return 0.5
         total = self.agreements_detected + self.conflicts_detected
         if total == 0:
             return 0.5

@@ -62,6 +62,12 @@ class TestPlotEye:
 
         fig = plot_eye(sample_serial_signal, bit_rate=1e9)
         assert fig is not None
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Eye diagram should contain data"
+        # Verify axis labels
+        assert ax.get_xlabel(), "Should have x-label"
+        assert ax.get_ylabel(), "Should have y-label"
 
     @pytest.mark.flaky(reruns=3, reruns_delay=1)
     def test_auto_clock_recovery_fft(self):
@@ -93,6 +99,9 @@ class TestPlotEye:
 
         fig = plot_eye(trace, clock_recovery="fft")
         assert fig is not None
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Eye diagram should contain data"
 
     def test_auto_clock_recovery_edge(self, sample_serial_signal):
         """Test automatic clock recovery using edge method."""
@@ -100,6 +109,9 @@ class TestPlotEye:
 
         fig = plot_eye(sample_serial_signal, clock_recovery="edge")
         assert fig is not None
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Eye diagram should contain data"
 
     def test_different_colormaps(self, sample_serial_signal):
         """Test different colormaps."""
@@ -107,7 +119,10 @@ class TestPlotEye:
 
         for cmap in ["hot", "viridis", "Blues", "none"]:
             fig = plot_eye(sample_serial_signal, bit_rate=1e9, cmap=cmap)
-            assert fig is not None
+            assert fig is not None, f"Colormap {cmap} should produce a figure"
+            assert len(fig.axes) >= 1, f"Colormap {cmap} should have at least 1 axis"
+            ax = fig.axes[0]
+            assert ax.has_data(), f"Colormap {cmap} should contain data"
 
     def test_with_measurements(self, sample_serial_signal):
         """Test with eye opening measurements."""
@@ -115,6 +130,11 @@ class TestPlotEye:
 
         fig = plot_eye(sample_serial_signal, bit_rate=1e9, show_measurements=True)
         assert fig is not None
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Eye diagram should contain data"
+        # When measurements are shown, there may be text annotations
+        assert len(ax.texts) > 0 or ax.has_data(), "Should have measurements or data"
 
     def test_without_measurements(self, sample_serial_signal):
         """Test without measurements."""
@@ -122,6 +142,9 @@ class TestPlotEye:
 
         fig = plot_eye(sample_serial_signal, bit_rate=1e9, show_measurements=False)
         assert fig is not None
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Eye diagram should contain data"
 
     def test_custom_title(self, sample_serial_signal):
         """Test custom title."""
@@ -193,7 +216,8 @@ class TestPlotEye:
 
         for alpha in [0.1, 0.5, 0.9]:
             fig = plot_eye(sample_serial_signal, bit_rate=1e9, alpha=alpha, cmap="none")
-            assert fig is not None
+            assert fig is not None, f"Alpha {alpha} should produce a figure"
+            assert len(fig.axes) >= 1, f"Alpha {alpha} should have at least 1 axis"
 
 
 class TestPlotBathtub:
@@ -205,6 +229,11 @@ class TestPlotBathtub:
 
         fig = plot_bathtub(sample_serial_signal, bit_rate=1e9)
         assert fig is not None
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Bathtub plot should contain data"
+        assert ax.get_xlabel(), "Should have x-label"
+        assert ax.get_ylabel(), "Should have y-label"
 
     def test_custom_ber_target(self, sample_serial_signal):
         """Test with custom BER target."""
@@ -212,6 +241,9 @@ class TestPlotBathtub:
 
         fig = plot_bathtub(sample_serial_signal, bit_rate=1e9, ber_target=1e-15)
         assert fig is not None
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Bathtub plot should contain data"
 
     def test_custom_title(self, sample_serial_signal):
         """Test custom title."""

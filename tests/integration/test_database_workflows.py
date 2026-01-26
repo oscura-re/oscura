@@ -48,42 +48,38 @@ class TestSessionPersistence:
         4. Query stored data
         5. Verify data integrity
         """
+        # Try to import session management
         try:
-            # Try to import session management
-            try:
-                from oscura.sessions.legacy import Session
+            from oscura.sessions.legacy import Session
 
-                db_file = tmp_path / "session.db"
-                session = Session(db_file)
+            db_file = tmp_path / "session.db"
+            session = Session(db_file)
 
-                # Generate test data
-                binary_data, truth = generate_packets(count=50, packet_size=64)
+            # Generate test data
+            binary_data, truth = generate_packets(count=50, packet_size=64)
 
-                # Store raw data
-                session.store_raw_data("test_capture", binary_data)
+            # Store raw data
+            session.store_raw_data("test_capture", binary_data)
 
-                # Store metadata
-                session.store_metadata(
-                    "test_capture",
-                    {
-                        "packet_count": 50,
-                        "packet_size": 64,
-                        "capture_time": "2024-01-01T00:00:00",
-                    },
-                )
+            # Store metadata
+            session.store_metadata(
+                "test_capture",
+                {
+                    "packet_count": 50,
+                    "packet_size": 64,
+                    "capture_time": "2024-01-01T00:00:00",
+                },
+            )
 
-                # Retrieve and verify
-                retrieved = session.get_raw_data("test_capture")
-                assert retrieved == binary_data
+            # Retrieve and verify
+            retrieved = session.get_raw_data("test_capture")
+            assert retrieved == binary_data
 
-                metadata = session.get_metadata("test_capture")
-                assert metadata["packet_count"] == 50
+            metadata = session.get_metadata("test_capture")
+            assert metadata["packet_count"] == 50
 
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Session persistence test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
     def test_multi_capture_session(self, tmp_path: Path) -> None:
         """Test storing multiple captures in one session.
@@ -95,37 +91,33 @@ class TestSessionPersistence:
         4. Verify all captures retrievable
         """
         try:
-            try:
-                from oscura.sessions.legacy import Session
+            from oscura.sessions.legacy import Session
 
-                db_file = tmp_path / "multi_session.db"
-                session = Session(db_file)
+            db_file = tmp_path / "multi_session.db"
+            session = Session(db_file)
 
-                # Store multiple captures
-                captures = {
-                    "uart_capture": generate_packets(count=30, packet_size=32),
-                    "spi_capture": generate_packets(count=40, packet_size=16),
-                    "i2c_capture": generate_packets(count=20, packet_size=8),
-                }
+            # Store multiple captures
+            captures = {
+                "uart_capture": generate_packets(count=30, packet_size=32),
+                "spi_capture": generate_packets(count=40, packet_size=16),
+                "i2c_capture": generate_packets(count=20, packet_size=8),
+            }
 
-                for name, (data, _) in captures.items():
-                    session.store_raw_data(name, data)
-                    protocol = name.split("_")[0].upper()
-                    session.store_metadata(name, {"protocol": protocol})
+            for name, (data, _) in captures.items():
+                session.store_raw_data(name, data)
+                protocol = name.split("_")[0].upper()
+                session.store_metadata(name, {"protocol": protocol})
 
-                # Query by protocol
-                uart_captures = session.query_by_metadata({"protocol": "UART"})
-                assert len(uart_captures) == 1
+            # Query by protocol
+            uart_captures = session.query_by_metadata({"protocol": "UART"})
+            assert len(uart_captures) == 1
 
-                # List all captures
-                all_captures = session.list_captures()
-                assert len(all_captures) == 3
+            # List all captures
+            all_captures = session.list_captures()
+            assert len(all_captures) == 3
 
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Multi-capture session test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
 
 @pytest.mark.integration
@@ -142,51 +134,47 @@ class TestProtocolStorage:
         4. Query decoded data
         5. Verify frame integrity
         """
+        # Generate UART signal
         try:
-            # Generate UART signal
+            from oscura.validation.testing.synthetic import SyntheticSignalConfig
+
+            config = SyntheticSignalConfig(
+                pattern_type="uart",
+                sample_rate=1e6,
+                duration_samples=50000,
+            )
+
+            signal, truth = generate_digital_signal(pattern="uart", **config.__dict__)
+
+            metadata = TraceMetadata(sample_rate=1e6)
+            trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
+
+            # Try decoding
             try:
-                from oscura.validation.testing.synthetic import SyntheticSignalConfig
+                decoder = UARTDecoder()
+                frames = decoder.decode(trace)
 
-                config = SyntheticSignalConfig(
-                    pattern_type="uart",
-                    sample_rate=1e6,
-                    duration_samples=50000,
-                )
-
-                signal, truth = generate_digital_signal(pattern="uart", **config.__dict__)
-
-                metadata = TraceMetadata(sample_rate=1e6)
-                trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
-
-                # Try decoding
+                # Store frames in database
                 try:
-                    decoder = UARTDecoder()
-                    frames = decoder.decode(trace)
+                    from oscura.sessions.legacy import Session
 
-                    # Store frames in database
-                    try:
-                        from oscura.sessions.legacy import Session
+                    db_file = tmp_path / "protocol.db"
+                    session = Session(db_file)
 
-                        db_file = tmp_path / "protocol.db"
-                        session = Session(db_file)
+                    session.store_protocol_frames("uart_test", "UART", frames)
 
-                        session.store_protocol_frames("uart_test", "UART", frames)
-
-                        # Retrieve frames
-                        retrieved = session.get_protocol_frames("uart_test")
-                        assert retrieved is not None
-
-                    except (ImportError, AttributeError):
-                        pass
+                    # Retrieve frames
+                    retrieved = session.get_protocol_frames("uart_test")
+                    assert retrieved is not None
 
                 except (ImportError, AttributeError):
                     pass
 
             except (ImportError, AttributeError):
-                pytest.skip("Synthetic signal generation not available")
+                pass
 
-        except Exception as e:
-            pytest.skip(f"Protocol storage test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Synthetic signal generation not available")
 
     def test_store_analysis_results(self, tmp_path: Path) -> None:
         """Test storing analysis results with metrics.
@@ -198,32 +186,28 @@ class TestProtocolStorage:
         4. Verify metric accuracy
         """
         try:
-            try:
-                from oscura.sessions.legacy import Session
+            from oscura.sessions.legacy import Session
 
-                db_file = tmp_path / "analysis.db"
-                session = Session(db_file)
+            db_file = tmp_path / "analysis.db"
+            session = Session(db_file)
 
-                # Store analysis results
-                results = {
-                    "edge_count": 1024,
-                    "frequency": 115200,
-                    "snr_db": 35.5,
-                    "error_rate": 0.001,
-                }
+            # Store analysis results
+            results = {
+                "edge_count": 1024,
+                "frequency": 115200,
+                "snr_db": 35.5,
+                "error_rate": 0.001,
+            }
 
-                session.store_analysis("test_signal", "edge_detection", results)
+            session.store_analysis("test_signal", "edge_detection", results)
 
-                # Retrieve results
-                retrieved = session.get_analysis("test_signal", "edge_detection")
-                assert retrieved["edge_count"] == 1024
-                assert retrieved["frequency"] == 115200
+            # Retrieve results
+            retrieved = session.get_analysis("test_signal", "edge_detection")
+            assert retrieved["edge_count"] == 1024
+            assert retrieved["frequency"] == 115200
 
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Analysis storage test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
 
 @pytest.mark.integration
@@ -239,30 +223,26 @@ class TestDatabaseQueries:
         3. Verify correct captures returned
         """
         try:
-            try:
-                from oscura.sessions.legacy import Session
+            from oscura.sessions.legacy import Session
 
-                db_file = tmp_path / "time_query.db"
-                session = Session(db_file)
+            db_file = tmp_path / "time_query.db"
+            session = Session(db_file)
 
-                # Store captures with different timestamps
-                for i in range(5):
-                    data, _ = generate_packets(count=10, packet_size=32)
-                    capture_name = f"capture_{i}"
-                    session.store_raw_data(capture_name, data)
-                    session.store_metadata(capture_name, {"timestamp": f"2024-01-01T{i:02d}:00:00"})
+            # Store captures with different timestamps
+            for i in range(5):
+                data, _ = generate_packets(count=10, packet_size=32)
+                capture_name = f"capture_{i}"
+                session.store_raw_data(capture_name, data)
+                session.store_metadata(capture_name, {"timestamp": f"2024-01-01T{i:02d}:00:00"})
 
-                # Query time range
-                results = session.query_time_range("2024-01-01T01:00:00", "2024-01-01T03:00:00")
+            # Query time range
+            results = session.query_time_range("2024-01-01T01:00:00", "2024-01-01T03:00:00")
 
-                # Should return 3 captures (hours 1, 2, 3)
-                assert len(results) >= 0  # May vary by implementation
+            # Should return 3 captures (hours 1, 2, 3)
+            assert len(results) >= 0  # May vary by implementation
 
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Time range query test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
     def test_query_by_protocol_type(self, tmp_path: Path) -> None:
         """Test querying by protocol type.
@@ -273,32 +253,28 @@ class TestDatabaseQueries:
         3. Verify filtering works correctly
         """
         try:
-            try:
-                from oscura.sessions.legacy import Session
+            from oscura.sessions.legacy import Session
 
-                db_file = tmp_path / "protocol_query.db"
-                session = Session(db_file)
+            db_file = tmp_path / "protocol_query.db"
+            session = Session(db_file)
 
-                protocols = ["UART", "SPI", "I2C", "UART", "SPI"]
+            protocols = ["UART", "SPI", "I2C", "UART", "SPI"]
 
-                for i, proto in enumerate(protocols):
-                    data, _ = generate_packets(count=10, packet_size=16)
-                    session.store_raw_data(f"capture_{i}", data)
-                    session.store_metadata(f"capture_{i}", {"protocol": proto})
+            for i, proto in enumerate(protocols):
+                data, _ = generate_packets(count=10, packet_size=16)
+                session.store_raw_data(f"capture_{i}", data)
+                session.store_metadata(f"capture_{i}", {"protocol": proto})
 
-                # Query UART captures
-                uart_results = session.query_by_metadata({"protocol": "UART"})
-                assert len(uart_results) == 2
+            # Query UART captures
+            uart_results = session.query_by_metadata({"protocol": "UART"})
+            assert len(uart_results) == 2
 
-                # Query SPI captures
-                spi_results = session.query_by_metadata({"protocol": "SPI"})
-                assert len(spi_results) == 2
+            # Query SPI captures
+            spi_results = session.query_by_metadata({"protocol": "SPI"})
+            assert len(spi_results) == 2
 
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Protocol query test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
 
 @pytest.mark.integration
@@ -317,44 +293,40 @@ class TestDatabaseTransactions:
         6. Verify data persisted
         """
         try:
+            from oscura.sessions.legacy import Session
+
+            db_file = tmp_path / "transaction.db"
+            session = Session(db_file)
+
+            # Start transaction
+            session.begin_transaction()
+
+            # Store data
+            data, _ = generate_packets(count=10, packet_size=32)
+            session.store_raw_data("test_rollback", data)
+
+            # Rollback
+            session.rollback()
+
+            # Data should not exist
             try:
-                from oscura.sessions.legacy import Session
+                retrieved = session.get_raw_data("test_rollback")
+                # If no error, data exists (implementation may vary)
+            except (KeyError, ValueError):
+                # Expected - data was rolled back
+                pass
 
-                db_file = tmp_path / "transaction.db"
-                session = Session(db_file)
+            # Commit version
+            session.begin_transaction()
+            session.store_raw_data("test_commit", data)
+            session.commit()
 
-                # Start transaction
-                session.begin_transaction()
+            # Data should exist
+            retrieved = session.get_raw_data("test_commit")
+            assert retrieved == data
 
-                # Store data
-                data, _ = generate_packets(count=10, packet_size=32)
-                session.store_raw_data("test_rollback", data)
-
-                # Rollback
-                session.rollback()
-
-                # Data should not exist
-                try:
-                    retrieved = session.get_raw_data("test_rollback")
-                    # If no error, data exists (implementation may vary)
-                except (KeyError, ValueError):
-                    # Expected - data was rolled back
-                    pass
-
-                # Commit version
-                session.begin_transaction()
-                session.store_raw_data("test_commit", data)
-                session.commit()
-
-                # Data should exist
-                retrieved = session.get_raw_data("test_commit")
-                assert retrieved == data
-
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Transaction test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
 
 @pytest.mark.integration
@@ -372,39 +344,35 @@ class TestDatabaseMigration:
         5. Verify data preserved
         """
         try:
+            from oscura.sessions.legacy import Session
+
+            db_file = tmp_path / "migration.db"
+            session = Session(db_file)
+
+            # Store data with initial schema
+            data, _ = generate_packets(count=10, packet_size=32)
+            session.store_raw_data("pre_migration", data)
+
+            # Check schema version
+            version = session.get_schema_version()
+            assert version >= 1
+
+            # Simulate migration (if available)
             try:
-                from oscura.sessions.legacy import Session
+                session.migrate_schema()
+                new_version = session.get_schema_version()
+                assert new_version >= version
 
-                db_file = tmp_path / "migration.db"
-                session = Session(db_file)
+            except (AttributeError, NotImplementedError):
+                # Migration may not be implemented
+                pass
 
-                # Store data with initial schema
-                data, _ = generate_packets(count=10, packet_size=32)
-                session.store_raw_data("pre_migration", data)
+            # Verify data still accessible
+            retrieved = session.get_raw_data("pre_migration")
+            assert retrieved == data
 
-                # Check schema version
-                version = session.get_schema_version()
-                assert version >= 1
-
-                # Simulate migration (if available)
-                try:
-                    session.migrate_schema()
-                    new_version = session.get_schema_version()
-                    assert new_version >= version
-
-                except (AttributeError, NotImplementedError):
-                    # Migration may not be implemented
-                    pass
-
-                # Verify data still accessible
-                retrieved = session.get_raw_data("pre_migration")
-                assert retrieved == data
-
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Schema migration test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
 
 @pytest.mark.integration
@@ -422,27 +390,23 @@ class TestDatabasePerformance:
         4. Measure insert time
         """
         try:
-            try:
-                from oscura.sessions.legacy import Session
+            from oscura.sessions.legacy import Session
 
-                db_file = tmp_path / "bulk.db"
-                session = Session(db_file)
+            db_file = tmp_path / "bulk.db"
+            session = Session(db_file)
 
-                # Generate large dataset
-                large_data, _ = generate_packets(count=1000, packet_size=128)
+            # Generate large dataset
+            large_data, _ = generate_packets(count=1000, packet_size=128)
 
-                # Bulk insert
-                session.bulk_insert_packets("large_capture", large_data, packet_size=128)
+            # Bulk insert
+            session.bulk_insert_packets("large_capture", large_data, packet_size=128)
 
-                # Verify count
-                metadata = session.get_metadata("large_capture")
-                assert metadata is not None
+            # Verify count
+            metadata = session.get_metadata("large_capture")
+            assert metadata is not None
 
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Bulk insert test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")
 
     @pytest.mark.slow
     def test_query_performance_large_db(self, tmp_path: Path) -> None:
@@ -454,32 +418,28 @@ class TestDatabasePerformance:
         3. Verify query completes in reasonable time
         """
         try:
-            try:
-                from oscura.sessions.legacy import Session
+            from oscura.sessions.legacy import Session
 
-                db_file = tmp_path / "large_db.db"
-                session = Session(db_file)
+            db_file = tmp_path / "large_db.db"
+            session = Session(db_file)
 
-                # Store many captures
-                for i in range(100):
-                    data, _ = generate_packets(count=10, packet_size=64)
-                    session.store_raw_data(f"capture_{i}", data)
-                    session.store_metadata(
-                        f"capture_{i}",
-                        {
-                            "protocol": ["UART", "SPI", "I2C"][i % 3],
-                            "index": i,
-                        },
-                    )
+            # Store many captures
+            for i in range(100):
+                data, _ = generate_packets(count=10, packet_size=64)
+                session.store_raw_data(f"capture_{i}", data)
+                session.store_metadata(
+                    f"capture_{i}",
+                    {
+                        "protocol": ["UART", "SPI", "I2C"][i % 3],
+                        "index": i,
+                    },
+                )
 
-                # Complex query
-                results = session.query_by_metadata({"protocol": "UART"})
+            # Complex query
+            results = session.query_by_metadata({"protocol": "UART"})
 
-                # Should return ~33 results
-                assert len(results) >= 0
+            # Should return ~33 results
+            assert len(results) >= 0
 
-            except (ImportError, AttributeError):
-                pytest.skip("Session module not available")
-
-        except Exception as e:
-            pytest.skip(f"Query performance test skipped: {e}")
+        except (ImportError, AttributeError):
+            pytest.skip("Session module not available")

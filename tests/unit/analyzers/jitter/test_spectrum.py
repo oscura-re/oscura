@@ -905,9 +905,9 @@ class TestParameterValidation:
             result = jitter_spectrum(tie_data, sample_rate=-10e6)
             # If it doesn't raise, verify result is computed (even if frequencies are negative)
 
-            assert hasattr(result, "frequency"), "Expected result to have frequency attribute"
+            assert hasattr(result, "frequencies"), "Expected result to have frequencies attribute"
             assert hasattr(result, "magnitude"), "Expected result to have magnitude attribute"
-            assert len(result.frequency) > 0, "Expected non-empty frequency array"
+            assert len(result.frequencies) > 0, "Expected non-empty frequency array"
         except ValueError:
             # Expected behavior - exception raised for negative sample rate
             exception_raised = True

@@ -39,9 +39,12 @@ class TestGenerateComparisonReport:
 
         report = generate_comparison_report(baseline, current)
 
-        assert isinstance(report, Report)
-        assert report.config.title == "Comparison Report"
-        assert len(report.sections) >= 1
+        assert isinstance(report, Report), "Should return Report object"
+        assert report.config.title == "Comparison Report", "Should have correct title"
+        assert len(report.sections) >= 1, "Should have at least 1 section"
+        # Verify sections have content
+        for section in report.sections:
+            assert section.content, f"Section {section.title} should have content"
 
     def test_comparison_report_custom_title(self):
         """Test comparison report with custom title."""
@@ -59,7 +62,11 @@ class TestGenerateComparisonReport:
 
         report = generate_comparison_report(baseline, current, mode="side_by_side")
 
-        assert isinstance(report, Report)
+        assert isinstance(report, Report), "Should return Report object"
+        assert len(report.sections) >= 1, "Should have at least 1 section"
+        # Verify report has content
+        markdown = report.to_markdown()
+        assert "param" in markdown, "Report should contain parameter name"
 
     def test_comparison_report_inline_mode(self):
         """Test comparison report in inline mode."""
@@ -68,7 +75,11 @@ class TestGenerateComparisonReport:
 
         report = generate_comparison_report(baseline, current, mode="inline")
 
-        assert isinstance(report, Report)
+        assert isinstance(report, Report), "Should return Report object"
+        assert len(report.sections) >= 1, "Should have at least 1 section"
+        # Verify report has content
+        markdown = report.to_markdown()
+        assert "param" in markdown, "Report should contain parameter name"
 
     def test_comparison_report_with_violations(self):
         """Test comparison report when both have violations."""
@@ -104,7 +115,12 @@ class TestGenerateComparisonReport:
 
         report = generate_comparison_report(baseline, current, show_only_changes=True)
 
-        assert isinstance(report, Report)
+        assert isinstance(report, Report), "Should return Report object"
+        assert len(report.sections) >= 1, "Should have at least 1 section"
+        # Verify only changed parameters appear
+        markdown = report.to_markdown()
+        # param2 should be in report (changed), param1 may or may not be
+        assert "param2" in markdown, "Changed parameter should be in report"
 
     def test_comparison_report_no_measurements(self):
         """Test comparison report with no measurements."""
@@ -113,7 +129,12 @@ class TestGenerateComparisonReport:
 
         report = generate_comparison_report(baseline, current)
 
-        assert isinstance(report, Report)
+        assert isinstance(report, Report), "Should return Report object"
+        assert len(report.sections) >= 1, "Should have at least 1 section"
+        # Verify report handles empty case
+        markdown = report.to_markdown()
+        assert isinstance(markdown, str), "Should produce markdown output"
+        assert len(markdown) > 0, "Should have some content"
 
     def test_comparison_report_highlight_changes(self):
         """Test comparison report with highlight_changes flag."""
@@ -122,7 +143,10 @@ class TestGenerateComparisonReport:
 
         report = generate_comparison_report(baseline, current, highlight_changes=True)
 
-        assert isinstance(report, Report)
+        assert isinstance(report, Report), "Should return Report object"
+        assert len(report.sections) >= 1, "Should have at least 1 section"
+        markdown = report.to_markdown()
+        assert "param" in markdown, "Report should contain parameter name"
 
     def test_comparison_report_with_kwargs(self):
         """Test comparison report with additional kwargs."""
@@ -223,9 +247,11 @@ class TestCreateChangesSection:
 
         section = _create_changes_section(baseline, current)
 
-        assert isinstance(section, Section)
-        assert section.title == "Measurement Changes"
-        assert section.visible is True
+        assert isinstance(section, Section), "Should return Section object"
+        assert section.title == "Measurement Changes", "Should have correct title"
+        assert section.visible is True, "Section should be visible"
+        assert section.content, "Section should have content"
+        assert "param" in str(section.content), "Content should mention parameter name"
 
     def test_changes_section_show_only_changes_true(self):
         """Test changes section with show_only_changes=True."""
@@ -244,9 +270,11 @@ class TestCreateChangesSection:
 
         section = _create_changes_section(baseline, current, show_only_changes=True)
 
-        assert isinstance(section, Section)
+        assert isinstance(section, Section), "Should return Section object"
         # Content should be filtered
-        assert section.content is not None
+        assert section.content is not None, "Section should have content"
+        # Should show changed parameter
+        assert "param2" in str(section.content), "Should show changed parameter"
 
     def test_changes_section_empty_measurements(self):
         """Test changes section with no measurements."""
@@ -255,7 +283,8 @@ class TestCreateChangesSection:
 
         section = _create_changes_section(baseline, current)
 
-        assert isinstance(section, Section)
+        assert isinstance(section, Section), "Should return Section object"
+        assert section.content, "Section should have content even if empty"
 
     def test_changes_section_content_is_table(self):
         """Test that changes section contains a table."""
@@ -264,8 +293,10 @@ class TestCreateChangesSection:
 
         section = _create_changes_section(baseline, current)
 
-        assert isinstance(section.content, list)
-        assert len(section.content) > 0
+        assert isinstance(section.content, list), "Content should be a list (table)"
+        assert len(section.content) > 0, "Content list should not be empty"
+        # Verify table structure has content
+        assert any(section.content), "Content should have non-empty items"
 
 
 class TestCreateViolationsComparisonSection:

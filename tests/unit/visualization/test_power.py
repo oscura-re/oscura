@@ -110,7 +110,12 @@ class TestBasicPlotting:
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
         assert fig is not None
-        assert len(fig.axes) >= 1  # At least main power axis
+        assert len(fig.axes) >= 1, "Should have at least main power axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Power axis should contain data"
+        assert len(ax.lines) > 0, "Should have power line plot"
+        assert ax.get_xlabel(), "Should have x-label"
+        assert ax.get_ylabel(), "Should have y-label"
 
     def test_with_time_array(self, sample_power_trace, time_array):
         """Test plot with explicit time array."""
@@ -118,7 +123,10 @@ class TestBasicPlotting:
         fig = plot_power_profile(sample_power_trace, time_array=time_array, show=False)
 
         assert fig is not None
-        assert len(fig.axes) >= 1
+        assert len(fig.axes) >= 1, "Should have at least main power axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Power axis should contain data"
+        assert len(ax.lines) > 0, "Should have power line plot"
 
     def test_multi_channel_stacked(self, multi_channel_power):
         """Test multi-channel stacked layout."""
@@ -132,7 +140,11 @@ class TestBasicPlotting:
 
         assert fig is not None
         # Should have 3 channels + 1 energy plot (default show_energy=True)
-        assert len(fig.axes) == 4
+        assert len(fig.axes) == 4, "Should have 3 channel axes + 1 energy axis"
+        # Verify all axes have data
+        for i, ax in enumerate(fig.axes[:3]):  # First 3 are channel axes
+            assert ax.has_data(), f"Channel axis {i} should contain data"
+            assert len(ax.lines) > 0, f"Channel axis {i} should have line plot"
 
     def test_multi_channel_overlay(self, multi_channel_power):
         """Test multi-channel overlay layout."""
@@ -146,7 +158,11 @@ class TestBasicPlotting:
 
         assert fig is not None
         # Overlay mode should have fewer axes than stacked
-        assert len(fig.axes) >= 1
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Overlay axis should contain data"
+        # Should have multiple lines for multiple channels
+        assert len(ax.lines) >= 3, "Should have lines for all 3 channels"
 
 
 # =============================================================================
@@ -196,7 +212,8 @@ class TestAnnotations:
         assert fig is not None
         # Check that horizontal line was added
         ax = fig.axes[0]
-        assert len(ax.get_lines()) > 1  # Power line + average line
+        assert len(ax.get_lines()) > 1, "Should have power line + average line"
+        assert ax.has_data(), "Should contain data"
 
     def test_hide_average_line(self, sample_power_trace):
         """Test hiding average power line."""
@@ -206,6 +223,10 @@ class TestAnnotations:
         )
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should contain power data"
+        # Should only have main power line (no average line)
+        assert len(ax.get_lines()) >= 1, "Should have at least main power line"
 
     def test_show_peak_marker(self, sample_power_trace):
         """Test peak power marker annotation."""
@@ -215,7 +236,8 @@ class TestAnnotations:
         assert fig is not None
         ax = fig.axes[0]
         # Should have multiple plot elements (line + peak marker)
-        assert len(ax.get_lines()) >= 2
+        assert len(ax.get_lines()) >= 2, "Should have power line and peak marker"
+        assert ax.has_data(), "Should contain data"
 
     def test_hide_peak_marker(self, sample_power_trace):
         """Test hiding peak marker."""
@@ -223,6 +245,8 @@ class TestAnnotations:
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show_peak=False, show=False)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should contain power data"
 
     def test_show_energy_overlay(self, sample_power_trace):
         """Test cumulative energy overlay."""

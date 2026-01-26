@@ -120,109 +120,101 @@ class TestPacketFormatConfig:
 
         , CFG-001
         """
-        try:
-            # Create simplified config for loader
-            from oscura.loaders.configurable import SampleFormatDef
+        # Create simplified config for loader
+        from oscura.loaders.configurable import SampleFormatDef
 
-            packet_def = packet_format_config["packet"]
-            header_def = packet_format_config["header"]
-            samples_def = packet_format_config["samples"]
+        packet_def = packet_format_config["packet"]
+        header_def = packet_format_config["header"]
+        samples_def = packet_format_config["samples"]
 
-            loader_config = PacketFormatConfig(
-                name=packet_format_config["name"],
-                version=packet_format_config["version"],
-                packet_size=packet_def["size"],
-                byte_order=packet_def["byte_order"],
-                header_size=header_def["size"],
-                header_fields=[],  # Simplified for test
-                sample_offset=samples_def["offset"],
-                sample_count=samples_def["count"],
-                sample_format=SampleFormatDef(
-                    size=samples_def["format"]["size"],
-                    type=samples_def["format"]["type"],
-                    endian=samples_def["format"]["endian"],
-                ),
-            )
+        loader_config = PacketFormatConfig(
+            name=packet_format_config["name"],
+            version=packet_format_config["version"],
+            packet_size=packet_def["size"],
+            byte_order=packet_def["byte_order"],
+            header_size=header_def["size"],
+            header_fields=[],  # Simplified for test
+            sample_offset=samples_def["offset"],
+            sample_count=samples_def["count"],
+            sample_format=SampleFormatDef(
+                size=samples_def["format"]["size"],
+                type=samples_def["format"]["type"],
+                endian=samples_def["format"]["endian"],
+            ),
+        )
 
-            # Create loader
-            loader = ConfigurablePacketLoader(loader_config)
-            assert loader is not None
+        # Create loader
+        loader = ConfigurablePacketLoader(loader_config)
+        assert loader is not None
 
-            # Generate matching test data
-            synthetic_config = SyntheticPacketConfig(
-                packet_size=packet_def["size"],
-                header_size=header_def["size"],
-            )
-            binary_data, _ = generate_packets(count=10, **synthetic_config.__dict__)
+        # Generate matching test data
+        synthetic_config = SyntheticPacketConfig(
+            packet_size=packet_def["size"],
+            header_size=header_def["size"],
+        )
+        binary_data, _ = generate_packets(count=10, **synthetic_config.__dict__)
 
-            # Write test file
-            test_file = tmp_path / "config_test.bin"
-            test_file.write_bytes(binary_data)
+        # Write test file
+        test_file = tmp_path / "config_test.bin"
+        test_file.write_bytes(binary_data)
 
-            # Load using configured loader
-            result = loader.load(test_file)
+        # Load using configured loader
+        result = loader.load(test_file)
 
-            # Verify loaded packets
-            assert len(result.packets) == 10
-
-        except Exception as e:
-            pytest.skip(f"Config loader test skipped: {e}")
+        # Verify loaded packets
+        assert len(result.packets) == 10
 
     def test_validation_config_rules(self, packet_format_config: dict, tmp_path: Path) -> None:
         """Test validation rules from packet format config.
 
         , CFG-001
         """
-        try:
-            validation_def = packet_format_config.get("validation", {})
+        validation_def = packet_format_config.get("validation", {})
 
-            if "sync_check" in validation_def:
-                sync_def = validation_def["sync_check"]
+        if "sync_check" in validation_def:
+            sync_def = validation_def["sync_check"]
 
-                if sync_def.get("enabled"):
-                    # Create validator with sync check
-                    expected_sync = sync_def["expected"]
-                    validator = PacketValidator(
-                        sync_marker=expected_sync,
-                        strictness=sync_def.get("on_failure", "warn"),
-                    )
+            if sync_def.get("enabled"):
+                # Create validator with sync check
+                expected_sync = sync_def["expected"]
+                validator = PacketValidator(
+                    sync_marker=expected_sync,
+                    strictness=sync_def.get("on_failure", "warn"),
+                )
 
-                    # Generate test packet with known sync
-                    config = SyntheticPacketConfig(
-                        packet_size=1024,
-                        sync_pattern=b"\xfa",  # Match config
-                    )
-                    binary_data, _ = generate_packets(count=5, **config.__dict__)
+                # Generate test packet with known sync
+                config = SyntheticPacketConfig(
+                    packet_size=1024,
+                    sync_pattern=b"\xfa",  # Match config
+                )
+                binary_data, _ = generate_packets(count=5, **config.__dict__)
 
-                    test_file = tmp_path / "sync_test.bin"
-                    test_file.write_bytes(binary_data)
+                test_file = tmp_path / "sync_test.bin"
+                test_file.write_bytes(binary_data)
 
-                    # Load and validate
-                    from oscura.loaders.configurable import SampleFormatDef
+                # Load and validate
+                from oscura.loaders.configurable import SampleFormatDef
 
-                    loader_config = PacketFormatConfig(
-                        name="sync_test",
-                        version="1.0",
-                        packet_size=1024,
-                        byte_order="big",
-                        header_size=16,
-                        header_fields=[],
-                        sample_offset=16,
-                        sample_count=126,
-                        sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
-                    )
+                loader_config = PacketFormatConfig(
+                    name="sync_test",
+                    version="1.0",
+                    packet_size=1024,
+                    byte_order="big",
+                    header_size=16,
+                    header_fields=[],
+                    sample_offset=16,
+                    sample_count=126,
+                    sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
+                )
 
-                    loader = ConfigurablePacketLoader(loader_config)
-                    result = loader.load(test_file)
+                loader = ConfigurablePacketLoader(loader_config)
+                result = loader.load(test_file)
 
-                    # Validate packets
-                    for packet in result.packets:
-                        validation_result = validator.validate_packet(packet)
-                        # Validation should complete
-                        assert validation_result is not None
-
-        except Exception as e:
-            pytest.skip(f"Validation config test skipped: {e}")
+                # Validate packets
+                for packet in result.packets:
+                    validation_result = validator.validate_packet(packet)
+                    # Validation should complete
+                    assert validation_result is not None
 
     def test_timing_config(self, packet_format_config: dict) -> None:
         """Test timing configuration parsing."""
@@ -293,44 +285,40 @@ class TestDeviceMappingConfig:
 
         , CFG-001
         """
-        try:
-            # Extract device config
-            devices_dict = {}
-            for device_id, info in device_mapping_config["devices"].items():
-                # Handle hex device IDs
-                if isinstance(device_id, str) and device_id.startswith("0x"):
-                    device_id_int = int(device_id, 16)
-                else:
-                    device_id_int = int(device_id)
+        # Extract device config
+        devices_dict = {}
+        for device_id, info in device_mapping_config["devices"].items():
+            # Handle hex device IDs
+            if isinstance(device_id, str) and device_id.startswith("0x"):
+                device_id_int = int(device_id, 16)
+            else:
+                device_id_int = int(device_id)
 
-                devices_dict[device_id_int] = {
-                    "name": info["name"],
-                    "description": info["description"],
-                }
+            devices_dict[device_id_int] = {
+                "name": info["name"],
+                "description": info["description"],
+            }
 
-            # Create device config
-            device_config = DeviceConfig(
-                devices=devices_dict,
-                unknown_policy=device_mapping_config["unknown_device"]["policy"],
-            )
+        # Create device config
+        device_config = DeviceConfig(
+            devices=devices_dict,
+            unknown_policy=device_mapping_config["unknown_device"]["policy"],
+        )
 
-            # Create mapper
-            mapper = DeviceMapper(device_config)
-            assert mapper is not None
+        # Create mapper
+        mapper = DeviceMapper(device_config)
+        assert mapper is not None
 
-            # Test known device lookup
-            first_device_id = next(iter(devices_dict.keys()))
-            device_name = mapper.get_device_name(first_device_id)
-            assert device_name == devices_dict[first_device_id]["name"]
+        # Test known device lookup
+        first_device_id = next(iter(devices_dict.keys()))
+        device_name = mapper.get_device_name(first_device_id)
+        assert device_name == devices_dict[first_device_id]["name"]
 
-            # Test unknown device handling
-            unknown_name = mapper.get_device_name(0xFFFF)
-            assert unknown_name is not None
-            # Should contain "Unknown" or the hex ID
-            assert "Unknown" in unknown_name or "0x" in unknown_name.lower()
-
-        except Exception as e:
-            pytest.skip(f"Device mapper test skipped: {e}")
+        # Test unknown device handling
+        unknown_name = mapper.get_device_name(0xFFFF)
+        assert unknown_name is not None
+        # Should contain "Unknown" or the hex ID
+        assert "Unknown" in unknown_name or "0x" in unknown_name.lower()
 
     def test_device_categories(self, device_mapping_config: dict) -> None:
         """Test device category configuration."""
@@ -524,41 +512,37 @@ class TestConfigValidation:
 
     def test_invalid_packet_size_config(self, tmp_path: Path) -> None:
         """Test handling of invalid packet size in config."""
+        from oscura.loaders.configurable import SampleFormatDef
+
+        # Create config with invalid packet size
+        invalid_config = PacketFormatConfig(
+            name="invalid_test",
+            version="1.0",
+            packet_size=0,  # Invalid size
+            byte_order="little",
+            header_size=8,
+            header_fields=[],
+            sample_offset=8,
+            sample_count=1,
+            sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
+        )
+
+        loader = ConfigurablePacketLoader(invalid_config)
+
+        # Generate test data
+        test_file = tmp_path / "invalid.bin"
+        test_file.write_bytes(b"\x00" * 64)
+
+        # Load should fail or handle gracefully
         try:
-            from oscura.loaders.configurable import SampleFormatDef
-
-            # Create config with invalid packet size
-            invalid_config = PacketFormatConfig(
-                name="invalid_test",
-                version="1.0",
-                packet_size=0,  # Invalid size
-                byte_order="little",
-                header_size=8,
-                header_fields=[],
-                sample_offset=8,
-                sample_count=1,
-                sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
+            result = loader.load(test_file)
+            # If it succeeds, should have 0 packets due to invalid config
+            assert len(result.packets) == 0, (
+                f"Expected 0 packets for invalid config, got {len(result.packets)}"
             )
-
-            loader = ConfigurablePacketLoader(invalid_config)
-
-            # Generate test data
-            test_file = tmp_path / "invalid.bin"
-            test_file.write_bytes(b"\x00" * 64)
-
-            # Load should fail or handle gracefully
-            try:
-                result = loader.load(test_file)
-                # If it succeeds, should have 0 packets due to invalid config
-                assert len(result.packets) == 0, (
-                    f"Expected 0 packets for invalid config, got {len(result.packets)}"
-                )
-            except (ValueError, KeyError, AttributeError):
-                # Exception is acceptable for invalid config
-                pass
-
-        except Exception as e:
-            pytest.skip(f"Invalid config test skipped: {e}")
+        except (ValueError, KeyError, AttributeError):
+            # Exception is acceptable for invalid config
+            pass
 
     def test_config_schema_validation(self, packet_format_config: dict) -> None:
         """Test that config follows expected schema."""
@@ -591,66 +575,62 @@ class TestConfigInteraction:
         tmp_path: Path,
     ) -> None:
         """Test using packet format config with device mapping."""
-        try:
-            from oscura.loaders.configurable import SampleFormatDef
+        from oscura.loaders.configurable import SampleFormatDef
 
-            # Create loader from packet format
-            packet_def = packet_format_config["packet"]
-            header_def = packet_format_config["header"]
-            samples_def = packet_format_config["samples"]
+        # Create loader from packet format
+        packet_def = packet_format_config["packet"]
+        header_def = packet_format_config["header"]
+        samples_def = packet_format_config["samples"]
 
-            loader_config = PacketFormatConfig(
-                name=packet_format_config["name"],
-                version=packet_format_config["version"],
-                packet_size=packet_def["size"],
-                byte_order=packet_def["byte_order"],
-                header_size=header_def["size"],
-                header_fields=[],
-                sample_offset=samples_def["offset"],
-                sample_count=samples_def["count"],
-                sample_format=SampleFormatDef(
-                    size=samples_def["format"]["size"],
-                    type=samples_def["format"]["type"],
-                    endian=samples_def["format"]["endian"],
-                ),
-            )
+        loader_config = PacketFormatConfig(
+            name=packet_format_config["name"],
+            version=packet_format_config["version"],
+            packet_size=packet_def["size"],
+            byte_order=packet_def["byte_order"],
+            header_size=header_def["size"],
+            header_fields=[],
+            sample_offset=samples_def["offset"],
+            sample_count=samples_def["count"],
+            sample_format=SampleFormatDef(
+                size=samples_def["format"]["size"],
+                type=samples_def["format"]["type"],
+                endian=samples_def["format"]["endian"],
+            ),
+        )
 
-            loader = ConfigurablePacketLoader(loader_config)
+        loader = ConfigurablePacketLoader(loader_config)
 
-            # Create device mapper
-            devices_dict = {}
-            for device_id, info in device_mapping_config["devices"].items():
-                if isinstance(device_id, str) and device_id.startswith("0x"):
-                    device_id_int = int(device_id, 16)
-                else:
-                    device_id_int = int(device_id)
+        # Create device mapper
+        devices_dict = {}
+        for device_id, info in device_mapping_config["devices"].items():
+            if isinstance(device_id, str) and device_id.startswith("0x"):
+                device_id_int = int(device_id, 16)
+            else:
+                device_id_int = int(device_id)
 
-                devices_dict[device_id_int] = {
-                    "name": info["name"],
-                    "description": info["description"],
-                }
+            devices_dict[device_id_int] = {
+                "name": info["name"],
+                "description": info["description"],
+            }
 
-            device_config = DeviceConfig(
-                devices=devices_dict,
-                unknown_policy="warn",
-            )
+        device_config = DeviceConfig(
+            devices=devices_dict,
+            unknown_policy="warn",
+        )
 
-            mapper = DeviceMapper(device_config)
+        mapper = DeviceMapper(device_config)
 
-            # Generate test data
-            synthetic_config = SyntheticPacketConfig(packet_size=packet_def["size"])
-            binary_data, _ = generate_packets(count=5, **synthetic_config.__dict__)
+        # Generate test data
+        synthetic_config = SyntheticPacketConfig(packet_size=packet_def["size"])
+        binary_data, _ = generate_packets(count=5, **synthetic_config.__dict__)
 
-            test_file = tmp_path / "combined_test.bin"
-            test_file.write_bytes(binary_data)
+        test_file = tmp_path / "combined_test.bin"
+        test_file.write_bytes(binary_data)
 
-            # Load packets
-            result = loader.load(test_file)
+        # Load packets
+        result = loader.load(test_file)
 
-            # Map device IDs (simulated)
-            for device_id in devices_dict:
-                device_name = mapper.get_device_name(device_id)
-                assert device_name is not None
-
-        except Exception as e:
-            pytest.skip(f"Combined config test skipped: {e}")
+        # Map device IDs (simulated)
+        for device_id in devices_dict:
+            device_name = mapper.get_device_name(device_id)
+            assert device_name is not None

@@ -80,7 +80,7 @@ def signal_integrity_audit(
     time_interval_error, recover_clock_fft = _load_timing_analyzers()
 
     # Determine clock frequency
-    recovered_freq = _determine_clock_frequency(trace, bit_rate, recover_clock_fft)
+    recovered_freq = _determine_clock_frequency(trace, bit_rate, recover_clock_fft, clock_trace)
     ui = 1.0 / recovered_freq if recovered_freq else 1e-9
 
     # Analyze eye parameters
@@ -139,16 +139,40 @@ def _determine_clock_frequency(
     trace: WaveformTrace,
     bit_rate: float | None,
     recover_clock_fft: Any,
+    clock_trace: WaveformTrace | None,
 ) -> float:
-    """Determine clock frequency from trace or bit rate."""
-    if recover_clock_fft is not None:
+    """Determine clock frequency from trace or bit rate.
+
+    Priority order:
+    1. If bit_rate is explicitly specified, use it (user knows best)
+    2. If clock_trace is provided, try to recover frequency from it
+    3. Try to recover frequency from data trace
+    4. Fall back to default 1 GHz
+    """
+    # If bit_rate is explicitly specified, use it
+    if bit_rate is not None:
+        return bit_rate
+
+    # If clock_trace provided, try to recover from it
+    if clock_trace is not None and recover_clock_fft is not None:
         try:
-            clock_result = recover_clock_fft(trace)
+            clock_result = recover_clock_fft(clock_trace)
             freq: float = float(clock_result.frequency)
             return freq
         except Exception:
             pass
-    return bit_rate if bit_rate else 1e9
+
+    # Try to recover from data trace
+    if recover_clock_fft is not None:
+        try:
+            clock_result = recover_clock_fft(trace)
+            freq_trace: float = float(clock_result.frequency)
+            return freq_trace
+        except Exception:
+            pass
+
+    # Fall back to default
+    return 1e9
 
 
 def _analyze_eye_parameters(

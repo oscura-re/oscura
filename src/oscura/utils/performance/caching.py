@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 
 import numpy as np
 
-from oscura.exceptions import SecurityError
+from oscura.core.exceptions import SecurityError
 
 if TYPE_CHECKING:
     from collections.abc import Callable

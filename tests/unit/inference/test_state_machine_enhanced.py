@@ -33,7 +33,7 @@ class TestStateMachineEnhanced:
             ["A", "B", "C", "D", "E", "F", "I"],
         ]
 
-        pta = inferrer._build_pta(traces)
+        pta = inferrer._build_prefix_tree(traces)
 
         # Should share long prefix A->B->C->D->E->F
         # Then branch to G, H, I
@@ -49,7 +49,7 @@ class TestStateMachineEnhanced:
             ["G", "H", "I"],
         ]
 
-        pta = inferrer._build_pta(traces)
+        pta = inferrer._build_prefix_tree(traces)
 
         # No sharing, so tree structure
         assert len(pta.states) == 10  # initial + 9 states
@@ -138,7 +138,7 @@ class TestStateMachineEnhanced:
         )
 
         # With no negative traces, should be compatible
-        is_compat = inferrer._is_compatible(automaton, 1, 2, [])
+        is_compat = inferrer._is_merge_compatible(automaton, 1, 2, [])
         assert is_compat is True
 
     def test_rpni_all_same_trace(self) -> None:

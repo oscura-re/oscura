@@ -429,13 +429,14 @@ class TestNumbaIntegration:
     def test_find_and_interpolate(self) -> None:
         """Test using crossings to guide interpolation."""
         # Create signal with crossings
-        t = np.linspace(0, 1, 100)
-        data = np.sin(2 * np.pi * 2 * t)  # 2 Hz sine
+        # Start slightly before zero to ensure rising crossing at beginning
+        t = np.linspace(-0.1, 1.1, 120)
+        data = np.sin(2 * np.pi * 2 * t)  # 2 Hz sine over 1.2 seconds
 
         # Find zero crossings
         crossings = numba_backend.find_crossings_numba(data, 0.0, 1)  # Rising
 
-        # Should find 2 rising crossings
+        # Should find 2 rising crossings (at t≈0 and t≈0.5)
         assert len(crossings) >= 2
 
     def test_smooth_and_find_peaks(self) -> None:

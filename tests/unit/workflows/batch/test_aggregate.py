@@ -13,6 +13,7 @@ Coverage target: 90%+ of src/oscura/workflows/batch/aggregate.py
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -526,29 +527,32 @@ class TestPlotGeneration:
     tested by test_plots_optional_without_matplotlib.
     """
 
-    @patch("matplotlib.pyplot")
-    def test_generate_metric_plots(self, mock_plt):
-        """Test _generate_metric_plots calls matplotlib correctly."""
+    @patch("oscura.workflows.batch.aggregate._create_metric_plot")
+    def test_generate_metric_plots(self, mock_create_plot):
+        """Test _generate_metric_plots calls plot creation correctly."""
         results = pd.DataFrame({"metric": [1.0, 2.0, 3.0]})
         aggregated = {"metric": {"mean": 2.0, "median": 2.0, "outliers": [], "outlier_files": []}}
 
         _generate_metric_plots(results, aggregated, ["metric"], None)
 
-        assert mock_plt.close.called
+        # Verify plot creation was called for the metric
+        mock_create_plot.assert_called_once_with(results, aggregated, "metric", None)
 
-    @patch("matplotlib.pyplot")
-    def test_generate_metric_plots_skips_missing_metric(self, mock_plt):
+    @patch("oscura.workflows.batch.aggregate._create_metric_plot")
+    def test_generate_metric_plots_skips_missing_metric(self, mock_create_plot):
         """Test _generate_metric_plots skips metrics not in aggregated."""
         results = pd.DataFrame({"metric": [1.0, 2.0]})
-        aggregated = {}
+        aggregated: dict[str, dict[str, Any]] = {}
 
         _generate_metric_plots(results, aggregated, ["metric"], None)
 
-        # Should not crash, just skip
-        assert mock_plt.close.called
+        # Should not crash, should not call plot creation for missing metric
+        mock_create_plot.assert_not_called()
 
+    @patch("oscura.workflows.batch.aggregate._plot_boxplot")
+    @patch("oscura.workflows.batch.aggregate._plot_histogram")
     @patch("matplotlib.pyplot")
-    def test_create_metric_plot(self, mock_plt, tmp_path: Path):
+    def test_create_metric_plot(self, mock_plt, mock_hist, mock_box, tmp_path: Path):
         """Test _create_metric_plot creates subplots."""
         mock_fig = MagicMock()
         mock_ax1 = MagicMock()
@@ -563,17 +567,23 @@ class TestPlotGeneration:
 
         mock_plt.subplots.assert_called_once()
         assert mock_plt.tight_layout.called
+        mock_hist.assert_called_once()
+        mock_box.assert_called_once()
 
-    @patch("matplotlib.pyplot")
-    def test_plot_histogram(self, mock_plt):
+    def test_plot_histogram(self):
         """Test _plot_histogram creates histogram with mean/median lines."""
-        mock_ax = MagicMock()
+        import matplotlib.pyplot as plt
+
+        # Use real matplotlib with non-interactive backend
+        fig, ax = plt.subplots()
         results = pd.DataFrame({"metric": [1.0, 2.0, 3.0]})
         aggregated = {"metric": {"mean": 2.0, "median": 2.0}}
 
-        _plot_histogram(results, aggregated, "metric", mock_ax)
+        _plot_histogram(results, aggregated, "metric", ax)
 
-        assert mock_ax.axvline.call_count == 2  # Mean and median lines
+        # Verify plot was created by checking that lines were added (mean + median)
+        assert len(ax.lines) == 2  # Mean and median lines
+        plt.close(fig)
 
     @patch("matplotlib.pyplot")
     def test_plot_boxplot(self, mock_plt):

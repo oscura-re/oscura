@@ -16,7 +16,7 @@ References:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -109,12 +109,20 @@ def _apply_axis_limits(
     Args:
         ax: Matplotlib axes.
         divisor: Frequency divisor for unit conversion.
-        freq_range: Frequency range in Hz.
+        freq_range: Frequency range in Hz (will be converted to display units).
         xlim: X-axis limits in display units.
         ylim: Y-axis limits.
     """
-    if freq_range is not None:
-        ax.set_xlim(freq_range[0] / divisor, freq_range[1] / divisor)
+    if freq_range is not None and len(freq_range) == 2:
+        # freq_range is in Hz, convert to display units
+        freq_min = freq_range[0] / divisor
+        freq_max = freq_range[1] / divisor
+
+        # For log scale, ensure minimum is positive (avoid 0 on log axis)
+        if ax.get_xscale() == "log" and freq_min <= 0:
+            freq_min = freq_max / 1000  # Use a small positive value
+
+        ax.set_xlim(freq_min, freq_max)
     elif xlim is not None:
         ax.set_xlim(xlim)
 
@@ -191,7 +199,6 @@ def plot_spectrum(
     color: str = "C0",
     title: str | None = None,
     window: str = "hann",
-    xscale: Literal["linear", "log"] = "log",
     show: bool = True,
     save_path: str | None = None,
     figsize: tuple[float, float] = (10, 6),
@@ -199,7 +206,6 @@ def plot_spectrum(
     ylim: tuple[float, float] | None = None,
     fft_result: tuple[Any, Any] | None = None,
     log_scale: bool = True,
-    db_scale: bool | None = None,
 ) -> Figure:
     """Plot magnitude spectrum.
 
@@ -213,7 +219,6 @@ def plot_spectrum(
         color: Line color.
         title: Plot title.
         window: Window function for FFT.
-        xscale: X-axis scale ("linear" or "log"). Deprecated, use log_scale instead.
         show: If True, call plt.show() to display the plot.
         save_path: Path to save the figure. If None, figure is not saved.
         figsize: Figure size (width, height) in inches. Only used if ax is None.
@@ -221,7 +226,6 @@ def plot_spectrum(
         ylim: Y-axis limits (min, max) in dB.
         fft_result: Pre-computed FFT result (frequencies, magnitudes). If None, computes FFT.
         log_scale: Use logarithmic scale for frequency axis (default True).
-        db_scale: Deprecated alias for log_scale. If provided, overrides log_scale.
 
     Returns:
         Matplotlib Figure object.
@@ -242,10 +246,6 @@ def plot_spectrum(
     """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
-
-    # Handle deprecated parameter
-    if db_scale is not None:
-        log_scale = db_scale
 
     # Figure/axes creation
     if ax is None:
@@ -550,7 +550,7 @@ def plot_psd(
     color: str = "C0",
     title: str | None = None,
     window: str = "hann",
-    xscale: Literal["linear", "log"] = "log",
+    log_scale: bool = True,
 ) -> Figure:
     """Plot Power Spectral Density.
 
@@ -562,7 +562,7 @@ def plot_psd(
         color: Line color.
         title: Plot title.
         window: Window function.
-        xscale: X-axis scale.
+        log_scale: Use logarithmic scale for frequency axis (default True).
 
     Returns:
         Matplotlib Figure object.
@@ -612,7 +612,7 @@ def plot_psd(
 
     ax.set_xlabel(f"Frequency ({freq_unit})")
     ax.set_ylabel("PSD (dB/Hz)")
-    ax.set_xscale(xscale)
+    ax.set_xscale("log" if log_scale else "linear")
 
     if title:
         ax.set_title(title)
@@ -697,7 +697,6 @@ def plot_fft(
     fig, ax = _setup_plot_figure(ax, figsize)
 
     # Plot spectrum using main plotting function
-    xscale_value: Literal["linear", "log"] = "log" if log_scale else "linear"
     plot_spectrum(
         trace,
         ax=ax,
@@ -706,7 +705,7 @@ def plot_fft(
         color=color,
         title=title if title else "FFT Magnitude Spectrum",
         window=window,
-        xscale=xscale_value,
+        log_scale=log_scale,
     )
 
     # Apply custom labels and limits

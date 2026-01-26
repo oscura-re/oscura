@@ -63,6 +63,14 @@ def _get_safe_editor() -> str:
     """
     editor_env = os.environ.get("EDITOR", "nano")
 
+    # Check for command substitution and newlines before parsing
+    # These are shell injection attempts that shlex may not detect
+    if "`" in editor_env or "$(" in editor_env or "\n" in editor_env or "\r" in editor_env:
+        logger.warning(
+            "Command substitution or newline detected in EDITOR, falling back to nano for safety"
+        )
+        return "nano"
+
     # Extract base command (handle args like "code --wait")
     try:
         editor_parts = shlex.split(editor_env)
@@ -80,6 +88,16 @@ def _get_safe_editor() -> str:
         logger.warning(
             f"Untrusted editor '{editor_cmd}' not in allowlist, falling back to nano. "
             f"Allowed editors: {', '.join(sorted(ALLOWED_EDITORS))}"
+        )
+        return "nano"
+
+    # Check for shell metacharacters that indicate command injection attempts
+    # Shell metacharacters parsed as separate tokens by shlex indicate injection
+    shell_metacharacters = {"&&", "||", ";", "|", ">", "<", ">>", "<<", "&"}
+    if len(editor_parts) > 1 and any(part in shell_metacharacters for part in editor_parts[1:]):
+        logger.warning(
+            f"Shell metacharacters detected in EDITOR '{editor_env}', "
+            f"falling back to nano for safety"
         )
         return "nano"
 

@@ -58,49 +58,45 @@ class TestUARTAnalysisWorkflow:
         4. Decode UART frames
         5. Verify decoded data
         """
+        # Step 1: Generate UART signal encoding "Hello World"
+        config = SyntheticSignalConfig(
+            pattern_type="uart",
+            sample_rate=1e6,  # 1 MHz sampling
+            duration_samples=100000,
+            noise_snr_db=40,
+        )
+
+        signal, truth = generate_digital_signal(pattern="uart", **config.__dict__)
+
+        # Step 2: Convert to digital trace
+        metadata = TraceMetadata(sample_rate=1e6)
+        trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
+
+        # Step 3: Detect edges
+        detector = EdgeDetector()
+        rising, falling = detector.detect_all_edges(trace.data)
+
+        # Should detect edges (UART has transitions)
+        assert len(rising) + len(falling) > 0
+
+        # Step 4: Recover baud rate
+        recovery = ClockRecovery()
+        detected_freq = recovery.detect_frequency(trace)
+
+        # Should detect some frequency
+        assert detected_freq > 0
+
+        # Step 5: Decode UART (if decoder available)
         try:
-            # Step 1: Generate UART signal encoding "Hello World"
-            config = SyntheticSignalConfig(
-                pattern_type="uart",
-                sample_rate=1e6,  # 1 MHz sampling
-                duration_samples=100000,
-                noise_snr_db=40,
-            )
+            decoder = UARTDecoder()
+            frames = decoder.decode(trace)
 
-            signal, truth = generate_digital_signal(pattern="uart", **config.__dict__)
+            # Verify frames were decoded
+            assert frames is not None
 
-            # Step 2: Convert to digital trace
-            metadata = TraceMetadata(sample_rate=1e6)
-            trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
-
-            # Step 3: Detect edges
-            detector = EdgeDetector()
-            rising, falling = detector.detect_all_edges(trace.data)
-
-            # Should detect edges (UART has transitions)
-            assert len(rising) + len(falling) > 0
-
-            # Step 4: Recover baud rate
-            recovery = ClockRecovery()
-            detected_freq = recovery.detect_frequency(trace)
-
-            # Should detect some frequency
-            assert detected_freq > 0
-
-            # Step 5: Decode UART (if decoder available)
-            try:
-                decoder = UARTDecoder()
-                frames = decoder.decode(trace)
-
-                # Verify frames were decoded
-                assert frames is not None
-
-            except (ImportError, AttributeError):
-                # Decoder may not be fully implemented
-                pass
-
-        except Exception as e:
-            pytest.skip(f"UART workflow test skipped: {e}")
+        except (ImportError, AttributeError):
+            # Decoder may not be fully implemented
+            pass
 
     def test_uart_multi_baud_detection(self) -> None:
         """Test detecting UART signals at different baud rates.
@@ -110,29 +106,25 @@ class TestUARTAnalysisWorkflow:
         2. Detect clock frequency for each
         3. Verify frequency detection works across rates
         """
-        try:
-            baud_rates = [9600, 115200]
+        baud_rates = [9600, 115200]
 
-            for baud in baud_rates:
-                config = SyntheticSignalConfig(
-                    pattern_type="uart",
-                    sample_rate=10e6,  # Higher sample rate for 115200
-                    duration_samples=50000,
-                )
+        for baud in baud_rates:
+            config = SyntheticSignalConfig(
+                pattern_type="uart",
+                sample_rate=10e6,  # Higher sample rate for 115200
+                duration_samples=50000,
+            )
 
-                signal, _ = generate_digital_signal(pattern="uart", **config.__dict__)
+            signal, _ = generate_digital_signal(pattern="uart", **config.__dict__)
 
-                metadata = TraceMetadata(sample_rate=10e6)
-                trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
+            metadata = TraceMetadata(sample_rate=10e6)
+            trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
 
-                recovery = ClockRecovery()
-                freq = recovery.detect_frequency(trace)
+            recovery = ClockRecovery()
+            freq = recovery.detect_frequency(trace)
 
-                # Should detect non-zero frequency
-                assert freq > 0
-
-        except Exception as e:
-            pytest.skip(f"Multi-baud UART test skipped: {e}")
+            # Should detect non-zero frequency
+            assert freq > 0
 
 
 @pytest.mark.integration
@@ -246,54 +238,50 @@ class TestCANAnalysisWorkflow:
         4. Generate DBC file
         5. Verify DBC contents
         """
+        # Generate synthetic CAN-like packet data
+        binary_data, _ = generate_packets(count=100, packet_size=16)
+
+        can_file = tmp_path / "can_capture.bin"
+        can_file.write_bytes(binary_data)
+
+        # Load packets
+        loader_config = PacketFormatConfig(
+            name="can_capture",
+            version="1.0",
+            packet_size=16,
+            byte_order="little",
+            header_size=4,
+            header_fields=[],
+            sample_offset=4,
+            sample_count=1,
+            sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
+        )
+
+        loader = ConfigurablePacketLoader(loader_config)
+        loaded = loader.load(can_file)
+
+        # Should load packets
+        assert len(loaded.packets) > 0
+
+        # Try CAN decoding if available
         try:
-            # Generate synthetic CAN-like packet data
-            binary_data, _ = generate_packets(count=100, packet_size=16)
+            decoder = CANDecoder()
+            # Would decode CAN frames
+            assert decoder is not None
 
-            can_file = tmp_path / "can_capture.bin"
-            can_file.write_bytes(binary_data)
+        except (ImportError, AttributeError):
+            pass
 
-            # Load packets
-            loader_config = PacketFormatConfig(
-                name="can_capture",
-                version="1.0",
-                packet_size=16,
-                byte_order="little",
-                header_size=4,
-                header_fields=[],
-                sample_offset=4,
-                sample_count=1,
-                sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
-            )
+        # Try DBC export if available
+        try:
+            from oscura.export.legacy.dbc import export_dbc  # noqa: F401
 
-            loader = ConfigurablePacketLoader(loader_config)
-            loaded = loader.load(can_file)
+            dbc_file = tmp_path / "output.dbc"
+            # Would export to DBC format
+            # export_dbc(loaded.packets, dbc_file)
 
-            # Should load packets
-            assert len(loaded.packets) > 0
-
-            # Try CAN decoding if available
-            try:
-                decoder = CANDecoder()
-                # Would decode CAN frames
-                assert decoder is not None
-
-            except (ImportError, AttributeError):
-                pass
-
-            # Try DBC export if available
-            try:
-                from oscura.export.legacy.dbc import export_dbc  # noqa: F401
-
-                dbc_file = tmp_path / "output.dbc"
-                # Would export to DBC format
-                # export_dbc(loaded.packets, dbc_file)
-
-            except (ImportError, AttributeError):
-                pass
-
-        except Exception as e:
-            pytest.skip(f"CAN workflow test skipped: {e}")
+        except (ImportError, AttributeError):
+            pass
 
 
 @pytest.mark.integration
@@ -309,39 +297,35 @@ class TestMultiProtocolWorkflow:
         3. Decode each protocol independently
         4. Verify both decoders work
         """
-        try:
-            # Generate UART signal
-            uart_config = SyntheticSignalConfig(
-                pattern_type="uart",
-                sample_rate=1e6,
-                duration_samples=50000,
-            )
-            uart_signal, _ = generate_digital_signal(pattern="uart", **uart_config.__dict__)
+        # Generate UART signal
+        uart_config = SyntheticSignalConfig(
+            pattern_type="uart",
+            sample_rate=1e6,
+            duration_samples=50000,
+        )
+        uart_signal, _ = generate_digital_signal(pattern="uart", **uart_config.__dict__)
 
-            # Generate SPI clock signal
-            spi_config = SyntheticSignalConfig(
-                pattern_type="clock",
-                sample_rate=1e6,
-                duration_samples=50000,
-            )
-            spi_signal, _ = generate_digital_signal(pattern="clock", **spi_config.__dict__)
+        # Generate SPI clock signal
+        spi_config = SyntheticSignalConfig(
+            pattern_type="clock",
+            sample_rate=1e6,
+            duration_samples=50000,
+        )
+        spi_signal, _ = generate_digital_signal(pattern="clock", **spi_config.__dict__)
 
-            # Both should be processable
-            metadata = TraceMetadata(sample_rate=1e6)
-            uart_trace = DigitalTrace(data=uart_signal > 1.5, metadata=metadata)
-            spi_trace = DigitalTrace(data=spi_signal > 1.5, metadata=metadata)
+        # Both should be processable
+        metadata = TraceMetadata(sample_rate=1e6)
+        uart_trace = DigitalTrace(data=uart_signal > 1.5, metadata=metadata)
+        spi_trace = DigitalTrace(data=spi_signal > 1.5, metadata=metadata)
 
-            # Detect edges on both
-            detector = EdgeDetector()
-            uart_rising, uart_falling = detector.detect_all_edges(uart_trace.data)
-            spi_rising, spi_falling = detector.detect_all_edges(spi_trace.data)
+        # Detect edges on both
+        detector = EdgeDetector()
+        uart_rising, uart_falling = detector.detect_all_edges(uart_trace.data)
+        spi_rising, spi_falling = detector.detect_all_edges(spi_trace.data)
 
-            # Both should have edges
-            assert len(uart_rising) + len(uart_falling) >= 0
-            assert len(spi_rising) + len(spi_falling) >= 0
-
-        except Exception as e:
-            pytest.skip(f"Multi-protocol test skipped: {e}")
+        # Both should have edges
+        assert len(uart_rising) + len(uart_falling) >= 0
+        assert len(spi_rising) + len(spi_falling) >= 0
 
     def test_protocol_auto_detection(self) -> None:
         """Test automatic protocol detection from signal characteristics.
@@ -352,38 +336,34 @@ class TestMultiProtocolWorkflow:
         3. Classify likely protocol type
         4. Verify classification accuracy
         """
-        try:
-            protocols = ["uart", "clock", "i2c"]
+        protocols = ["uart", "clock", "i2c"]
 
-            for protocol in protocols:
-                config = SyntheticSignalConfig(
-                    pattern_type=protocol,
-                    sample_rate=10e6,
-                    duration_samples=20000,
-                )
+        for protocol in protocols:
+            config = SyntheticSignalConfig(
+                pattern_type=protocol,
+                sample_rate=10e6,
+                duration_samples=20000,
+            )
 
-                signal, _ = generate_digital_signal(pattern=protocol, **config.__dict__)
+            signal, _ = generate_digital_signal(pattern=protocol, **config.__dict__)
 
-                metadata = TraceMetadata(sample_rate=10e6)
-                trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
+            metadata = TraceMetadata(sample_rate=10e6)
+            trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
 
-                # Analyze characteristics
-                detector = EdgeDetector()
-                rising, falling = detector.detect_all_edges(trace.data)
+            # Analyze characteristics
+            detector = EdgeDetector()
+            rising, falling = detector.detect_all_edges(trace.data)
 
-                # Each protocol should have distinct characteristics
-                # UART: variable edge spacing (start/stop bits)
-                # Clock: regular edge spacing
-                # I2C: complex pattern with START/STOP
+            # Each protocol should have distinct characteristics
+            # UART: variable edge spacing (start/stop bits)
+            # Clock: regular edge spacing
+            # I2C: complex pattern with START/STOP
 
-                if len(rising) > 1:
-                    edge_spacings = np.diff(rising)
-                    # Different protocols have different spacing patterns
-                    spacing_std = np.std(edge_spacings) if len(edge_spacings) > 0 else 0
-                    assert spacing_std >= 0  # Some variation expected
-
-        except Exception as e:
-            pytest.skip(f"Auto-detection test skipped: {e}")
+            if len(rising) > 1:
+                edge_spacings = np.diff(rising)
+                # Different protocols have different spacing patterns
+                spacing_std = np.std(edge_spacings) if len(edge_spacings) > 0 else 0
+                assert spacing_std >= 0  # Some variation expected
 
 
 @pytest.mark.integration
@@ -399,44 +379,40 @@ class TestProtocolExportWorkflow:
         3. Export to PCAP
         4. Verify PCAP is valid
         """
+        # Generate packet data
+        binary_data, _ = generate_packets(count=50, packet_size=64)
+
+        data_file = tmp_path / "capture.bin"
+        data_file.write_bytes(binary_data)
+
+        # Load
+        loader_config = PacketFormatConfig(
+            name="test",
+            version="1.0",
+            packet_size=64,
+            byte_order="little",
+            header_size=8,
+            header_fields=[],
+            sample_offset=8,
+            sample_count=7,
+            sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
+        )
+
+        loader = ConfigurablePacketLoader(loader_config)
+        loaded = loader.load(data_file)
+
+        # Try PCAP export if available
         try:
-            # Generate packet data
-            binary_data, _ = generate_packets(count=50, packet_size=64)
+            from oscura.export.legacy.pcap import export_pcap  # noqa: F401
 
-            data_file = tmp_path / "capture.bin"
-            data_file.write_bytes(binary_data)
+            pcap_file = tmp_path / "output.pcap"
+            # export_pcap(loaded.packets, pcap_file)
 
-            # Load
-            loader_config = PacketFormatConfig(
-                name="test",
-                version="1.0",
-                packet_size=64,
-                byte_order="little",
-                header_size=8,
-                header_fields=[],
-                sample_offset=8,
-                sample_count=7,
-                sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
-            )
+            # If export succeeds, verify file exists
+            # assert pcap_file.exists()
 
-            loader = ConfigurablePacketLoader(loader_config)
-            loaded = loader.load(data_file)
-
-            # Try PCAP export if available
-            try:
-                from oscura.export.legacy.pcap import export_pcap  # noqa: F401
-
-                pcap_file = tmp_path / "output.pcap"
-                # export_pcap(loaded.packets, pcap_file)
-
-                # If export succeeds, verify file exists
-                # assert pcap_file.exists()
-
-            except (ImportError, AttributeError):
-                pass
-
-        except Exception as e:
-            pytest.skip(f"Wireshark export test skipped: {e}")
+        except (ImportError, AttributeError):
+            pass
 
     def test_vcd_export_workflow(self, tmp_path: Path) -> None:
         """Test exporting digital signals to VCD format.
@@ -447,34 +423,30 @@ class TestProtocolExportWorkflow:
         3. Re-import VCD
         4. Verify data integrity
         """
+        # Generate digital signal
+        config = SyntheticSignalConfig(
+            pattern_type="clock",
+            sample_rate=10e6,
+            duration_samples=10000,
+        )
+
+        signal, _ = generate_digital_signal(pattern="clock", **config.__dict__)
+
+        metadata = TraceMetadata(sample_rate=10e6)
+        trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
+
+        # Try VCD export if available
         try:
-            # Generate digital signal
-            config = SyntheticSignalConfig(
-                pattern_type="clock",
-                sample_rate=10e6,
-                duration_samples=10000,
-            )
+            from oscura.export.legacy.vcd import export_vcd  # noqa: F401
 
-            signal, _ = generate_digital_signal(pattern="clock", **config.__dict__)
+            vcd_file = tmp_path / "signal.vcd"
+            # export_vcd(trace, vcd_file)
 
-            metadata = TraceMetadata(sample_rate=10e6)
-            trace = DigitalTrace(data=signal > 1.5, metadata=metadata)
+            # If export succeeds, verify file
+            # assert vcd_file.exists()
 
-            # Try VCD export if available
-            try:
-                from oscura.export.legacy.vcd import export_vcd  # noqa: F401
-
-                vcd_file = tmp_path / "signal.vcd"
-                # export_vcd(trace, vcd_file)
-
-                # If export succeeds, verify file
-                # assert vcd_file.exists()
-
-            except (ImportError, AttributeError):
-                pass
-
-        except Exception as e:
-            pytest.skip(f"VCD export test skipped: {e}")
+        except (ImportError, AttributeError):
+            pass
 
 
 @pytest.mark.integration
@@ -490,40 +462,36 @@ class TestProtocolErrorRecovery:
         3. Decode with error detection
         4. Verify partial recovery
         """
+        # Generate UART signal
+        config = SyntheticSignalConfig(
+            pattern_type="uart",
+            sample_rate=1e6,
+            duration_samples=50000,
+            noise_snr_db=20,  # Lower SNR = more errors
+        )
+
+        signal, _ = generate_digital_signal(pattern="uart", **config.__dict__)
+
+        # Inject additional errors
+        rng = np.random.default_rng(42)
+        error_mask = rng.random(len(signal)) < 0.01  # 1% bit errors
+        corrupted = signal.copy()
+        corrupted[error_mask] = 1 - corrupted[error_mask]  # Flip bits
+
+        metadata = TraceMetadata(sample_rate=1e6)
+        trace = DigitalTrace(data=corrupted > 1.5, metadata=metadata)
+
+        # Try to decode - should handle errors gracefully
         try:
-            # Generate UART signal
-            config = SyntheticSignalConfig(
-                pattern_type="uart",
-                sample_rate=1e6,
-                duration_samples=50000,
-                noise_snr_db=20,  # Lower SNR = more errors
-            )
+            decoder = UARTDecoder()
+            frames = decoder.decode(trace)
 
-            signal, _ = generate_digital_signal(pattern="uart", **config.__dict__)
+            # May recover some frames despite errors
+            assert frames is not None
 
-            # Inject additional errors
-            rng = np.random.default_rng(42)
-            error_mask = rng.random(len(signal)) < 0.01  # 1% bit errors
-            corrupted = signal.copy()
-            corrupted[error_mask] = 1 - corrupted[error_mask]  # Flip bits
-
-            metadata = TraceMetadata(sample_rate=1e6)
-            trace = DigitalTrace(data=corrupted > 1.5, metadata=metadata)
-
-            # Try to decode - should handle errors gracefully
-            try:
-                decoder = UARTDecoder()
-                frames = decoder.decode(trace)
-
-                # May recover some frames despite errors
-                assert frames is not None
-
-            except (ImportError, AttributeError, ValueError, RuntimeError):
-                # Acceptable to fail with corrupted data
-                pass
-
-        except Exception as e:
-            pytest.skip(f"Error recovery test skipped: {e}")
+        except (ImportError, AttributeError, ValueError, RuntimeError):
+            # Acceptable to fail with corrupted data
+            pass
 
     def test_invalid_data_graceful_degradation(self, tmp_path: Path) -> None:
         """Test protocol analysis with invalid/malformed data.
@@ -534,41 +502,37 @@ class TestProtocolErrorRecovery:
         3. Verify graceful failure with error messages
         4. Ensure partial results are preserved
         """
+        # Create malformed data
+        invalid_data = b"\x00" * 100  # All zeros
+
+        data_file = tmp_path / "invalid.bin"
+        data_file.write_bytes(invalid_data)
+
+        loader_config = PacketFormatConfig(
+            name="test",
+            version="1.0",
+            packet_size=50,
+            byte_order="little",
+            header_size=4,
+            header_fields=[],
+            sample_offset=4,
+            sample_count=5,
+            sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
+        )
+
+        loader = ConfigurablePacketLoader(loader_config)
+
+        # Should either load or fail gracefully
         try:
-            # Create malformed data
-            invalid_data = b"\x00" * 100  # All zeros
+            loaded = loader.load(data_file)
+            # If loads, analyze should handle gracefully
+            if len(loaded.packets) > 0:
+                entropy_analyzer = EntropyAnalyzer()
+                for packet in loaded.packets[:5]:
+                    if hasattr(packet, "header"):
+                        entropy = entropy_analyzer.calculate_entropy(bytes(packet.header))
+                        assert 0 <= entropy <= 8.0
 
-            data_file = tmp_path / "invalid.bin"
-            data_file.write_bytes(invalid_data)
-
-            loader_config = PacketFormatConfig(
-                name="test",
-                version="1.0",
-                packet_size=50,
-                byte_order="little",
-                header_size=4,
-                header_fields=[],
-                sample_offset=4,
-                sample_count=5,
-                sample_format=SampleFormatDef(size=8, type="uint64", endian="little"),
-            )
-
-            loader = ConfigurablePacketLoader(loader_config)
-
-            # Should either load or fail gracefully
-            try:
-                loaded = loader.load(data_file)
-                # If loads, analyze should handle gracefully
-                if len(loaded.packets) > 0:
-                    entropy_analyzer = EntropyAnalyzer()
-                    for packet in loaded.packets[:5]:
-                        if hasattr(packet, "header"):
-                            entropy = entropy_analyzer.calculate_entropy(bytes(packet.header))
-                            assert 0 <= entropy <= 8.0
-
-            except (ValueError, RuntimeError, OSError):
-                # Acceptable to fail with invalid data
-                pass
-
-        except Exception as e:
-            pytest.skip(f"Invalid data test skipped: {e}")
+        except (ValueError, RuntimeError, OSError):
+            # Acceptable to fail with invalid data
+            pass

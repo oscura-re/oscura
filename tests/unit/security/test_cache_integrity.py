@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from oscura.core.cache import OscuraCache
-from oscura.exceptions import SecurityError
+from oscura.core.exceptions import SecurityError
 from oscura.utils.memory_advanced import DiskCache
 from oscura.utils.performance.caching import CacheBackend, CacheManager
 
@@ -54,23 +54,24 @@ class TestOscuraCacheHMAC:
 
     def test_cache_accepts_valid_signed_data(self, tmp_path: Path) -> None:
         """Verify cache loads correctly signed data."""
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Store data (forces disk spill due to small memory limit)
         test_data = {"value": "test" * 1000}  # Large enough to spill
         cache.put("test_key", test_data)
 
-        # Clear memory cache to force disk load
-        cache._cache.clear()
-        cache._current_memory = 0
+        # Entry should be on disk (not in memory)
+        assert "test_key" in cache._cache
+        assert not cache._cache["test_key"].in_memory
+        assert cache._cache["test_key"].disk_path is not None
 
-        # Load should succeed with valid HMAC
+        # Load should succeed with valid HMAC (loads from disk)
         loaded = cache.get("test_key")
         assert loaded == test_data
 
     def test_cache_rejects_tampered_data(self, tmp_path: Path) -> None:
         """Verify cache detects and rejects tampered cache files."""
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Store data
         test_data = {"value": "test" * 1000}
@@ -92,8 +93,6 @@ class TestOscuraCacheHMAC:
             f.write(corrupted_data)  # Modified data
 
         # Clear memory cache to force disk load
-        cache._cache.clear()
-        cache._current_memory = 0
 
         # Load should raise SecurityError
         with pytest.raises(SecurityError, match="integrity verification failed"):
@@ -104,7 +103,7 @@ class TestOscuraCacheHMAC:
 
     def test_cache_rejects_tampered_signature(self, tmp_path: Path) -> None:
         """Verify cache detects tampered HMAC signatures."""
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Store data
         test_data = {"value": "test" * 1000}
@@ -128,8 +127,6 @@ class TestOscuraCacheHMAC:
             f.write(data)
 
         # Clear memory cache
-        cache._cache.clear()
-        cache._current_memory = 0
 
         # Should raise SecurityError
         with pytest.raises(SecurityError, match="integrity verification failed"):
@@ -147,7 +144,7 @@ class TestOscuraCacheHMAC:
 
     def test_cache_file_format_correct(self, tmp_path: Path) -> None:
         """Verify cache file format: [32-byte signature][pickled data]."""
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Store data
         test_data = {"value": "test" * 1000}
@@ -259,7 +256,7 @@ class TestDiskCacheHMAC:
 
     def test_disk_cache_accepts_valid_data(self, tmp_path: Path) -> None:
         """Verify disk cache loads correctly signed data."""
-        cache = DiskCache(cache_dir=tmp_path, max_memory_mb=1)
+        cache = DiskCache(cache_dir=tmp_path, max_memory_mb=0.001)  # 1KB to force disk spill
 
         # Store data (small memory forces disk spill)
         test_data = {"value": "test" * 10000}
@@ -276,7 +273,7 @@ class TestDiskCacheHMAC:
 
     def test_disk_cache_rejects_tampered_data(self, tmp_path: Path) -> None:
         """Verify disk cache detects tampered files."""
-        cache = DiskCache(cache_dir=tmp_path, max_memory_mb=1)
+        cache = DiskCache(cache_dir=tmp_path, max_memory_mb=0.001)  # 1KB to force disk spill
 
         # Store data
         test_data = {"value": "test" * 10000}
@@ -316,8 +313,8 @@ class TestCacheCompatibility:
         dir1 = tmp_path / "cache1"
         dir2 = tmp_path / "cache2"
 
-        cache1 = OscuraCache(max_memory="100MB", cache_dir=dir1)
-        cache2 = OscuraCache(max_memory="100MB", cache_dir=dir2)
+        cache1 = OscuraCache(max_memory="100", cache_dir=dir1)  # Small memory to force disk spill
+        cache2 = OscuraCache(max_memory="100", cache_dir=dir2)
 
         # Keys should be different
         assert cache1._cache_key != cache2._cache_key
@@ -325,20 +322,29 @@ class TestCacheCompatibility:
         # Files can't be shared between caches
         cache1.put("key", {"data": "test" * 1000})
 
-        # Get cache file from cache1
+        # Get cache file from cache1 (should be on disk due to small memory limit)
         cache1_file = next(dir1.glob("*.pkl"))
 
         # Copy to cache2 directory
         cache2_file = dir2 / cache1_file.name
         cache2_file.write_bytes(cache1_file.read_bytes())
 
-        # Clear cache1 memory
-        cache1._cache.clear()
-        cache1._current_memory = 0
+        # Get cache entry before clearing
+        from oscura.core.cache import CacheEntry
 
-        # Update cache2 index to point to copied file
-        cache2._cache["key"] = cache1._cache[cache1.compute_key("key")]
-        cache2._cache["key"].disk_path = cache2_file
+        cache1_entry = cache1._cache["key"]
+
+        # Create entry in cache2 pointing to copied file
+        cache2._cache["key"] = CacheEntry(
+            key="key",
+            value=None,
+            disk_path=cache2_file,
+            size_bytes=cache1_entry.size_bytes,
+            created_at=cache1_entry.created_at,
+            last_accessed=cache1_entry.last_accessed,
+            access_count=0,
+            in_memory=False,
+        )
 
         # cache2 should reject file (different HMAC key)
         with pytest.raises(SecurityError):
@@ -355,7 +361,7 @@ class TestCacheMigration:
 
     def test_legacy_cache_files_rejected(self, tmp_path: Path) -> None:
         """Verify legacy cache files (no HMAC) are rejected."""
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Create legacy cache file (direct pickle, no HMAC)
         legacy_file = tmp_path / "legacy_key.pkl"
@@ -399,8 +405,6 @@ class TestCacheMigration:
         cache.put("new_key", {"value": "new_data" * 1000})
 
         # New data should load fine
-        cache._cache.clear()
-        cache._current_memory = 0
         loaded = cache.get("new_key")
         assert loaded == {"value": "new_data" * 1000}
 
@@ -417,7 +421,7 @@ class TestHMACPerformance:
         """Verify HMAC adds <10% overhead to cache operations."""
         import time
 
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Store 10 items (forces disk spill)
         test_data = {"value": "x" * 1000}
@@ -425,8 +429,6 @@ class TestHMACPerformance:
             cache.put(f"key_{i}", test_data)
 
         # Clear memory
-        cache._cache.clear()
-        cache._current_memory = 0
 
         # Measure load time
         start = time.perf_counter()
@@ -441,7 +443,7 @@ class TestHMACPerformance:
         """Verify HMAC validation is thread-safe."""
         import threading
 
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Store data
         for i in range(20):
@@ -456,8 +458,6 @@ class TestHMACPerformance:
                 errors.append(e)
 
         # Clear memory to force disk loads
-        cache._cache.clear()
-        cache._current_memory = 0
 
         # Concurrent access
         threads = [
@@ -487,7 +487,7 @@ class TestCacheSecurityProperties:
         # by checking that the code raises SecurityError regardless of how
         # much of the signature matches
 
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
         cache.put("key", {"data": "test" * 1000})
 
         cache_file = next(tmp_path.glob("*.pkl"))
@@ -502,9 +502,6 @@ class TestCacheSecurityProperties:
             f.write(wrong_sig)
             f.write(data)
 
-        cache._cache.clear()
-        cache._current_memory = 0
-
         with pytest.raises(SecurityError):
             cache.get("key")
 
@@ -513,9 +510,6 @@ class TestCacheSecurityProperties:
         with open(cache_file, "wb") as f:
             f.write(partial_sig)
             f.write(data)
-
-        cache._cache.clear()
-        cache._current_memory = 0
 
         with pytest.raises(SecurityError):
             cache.get("key")
@@ -553,7 +547,7 @@ class TestCacheErrorHandling:
 
     def test_short_cache_file_rejected(self, tmp_path: Path) -> None:
         """Verify cache files shorter than 32 bytes are rejected."""
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Create invalid cache file (too short)
         cache_file = tmp_path / "short_file.pkl"
@@ -579,7 +573,7 @@ class TestCacheErrorHandling:
 
     def test_missing_cache_file_handled(self, tmp_path: Path) -> None:
         """Verify missing cache files are handled gracefully."""
-        cache = OscuraCache(max_memory="10KB", cache_dir=tmp_path)
+        cache = OscuraCache(max_memory="100", cache_dir=tmp_path)
 
         # Store data
         cache.put("key", {"data": "test" * 1000})
@@ -589,8 +583,6 @@ class TestCacheErrorHandling:
         cache_file.unlink()
 
         # Clear memory
-        cache._cache.clear()
-        cache._current_memory = 0
 
         # Should return None (not raise exception)
         result = cache.get("key")

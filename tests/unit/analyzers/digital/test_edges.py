@@ -1051,38 +1051,30 @@ class TestEdgeDetectionOnSyntheticData:
 
         data = np.load(path, allow_pickle=True)
 
-        try:
-            trace = self.make_waveform_trace(data, sample_rate=100e6)
-            threshold = (data.max() + data.min()) / 2
-            edges = detect_edges(trace, edge_type="both", threshold=threshold)
+        trace = self.make_waveform_trace(data, sample_rate=100e6)
+        threshold = (data.max() + data.min()) / 2
+        edges = detect_edges(trace, edge_type="both", threshold=threshold)
 
-            assert len(edges) > 0, f"No edges detected at {freq}"
-
-        except Exception as e:
-            pytest.skip(f"Edge detection at {freq} skipped: {e}")
+        assert len(edges) > 0, f"No edges detected at {freq}"
 
     def test_edge_count_consistency(self, square_wave_files: dict) -> None:
         """Test that edge count matches expected for known signals."""
         expected_order = []
 
-        try:
-            for freq in ["1MHz", "10MHz", "100MHz"]:
-                path = square_wave_files.get(freq)
-                if path is None or not path.exists():
-                    continue
+        for freq in ["1MHz", "10MHz", "100MHz"]:
+            path = square_wave_files.get(freq)
+            if path is None or not path.exists():
+                continue
 
-                data = np.load(path, allow_pickle=True)
-                trace = self.make_waveform_trace(data, sample_rate=100e6)
-                threshold = (data.max() + data.min()) / 2
-                edges = detect_edges(trace, edge_type="both", threshold=threshold)
+            data = np.load(path, allow_pickle=True)
+            trace = self.make_waveform_trace(data, sample_rate=100e6)
+            threshold = (data.max() + data.min()) / 2
+            edges = detect_edges(trace, edge_type="both", threshold=threshold)
 
-                expected_order.append((freq, len(edges)))
+            expected_order.append((freq, len(edges)))
 
-            if len(expected_order) == 0:
-                pytest.skip("No square wave files available")
-
-        except Exception as e:
-            pytest.skip(f"Edge count test skipped: {e}")
+        if len(expected_order) == 0:
+            pytest.skip("No square wave files available")
 
 
 # =============================================================================

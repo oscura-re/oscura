@@ -813,7 +813,7 @@ class ComplianceTestGenerator:
                 ")",
                 "def test_compliance(test_case):",
                 f'    """Test compliance with {suite.standard}."""',
-                "    # TODO: Implement compliance validation",
+                "    # TODO: Implement compliance validation (user should replace with actual validator)",
                 '    assert test_case["name"]',
                 '    assert test_case["standard_reference"]',
                 "",

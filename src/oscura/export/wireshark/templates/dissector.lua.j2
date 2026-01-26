@@ -42,7 +42,7 @@ function {{ proto_var }}.dissector(buffer, pinfo, tree)
 {% for field in fields %}
     {% if field.condition %}
     -- Conditional field: {{ field.name }} ({{ field.condition }})
-    -- TODO: Implement condition evaluation
+    -- TODO: Implement condition evaluation (user should add Lua condition logic)
     {% endif %}
     {% if field.is_variable_length %}
     -- Variable-length field: {{ field.name }}
@@ -85,7 +85,7 @@ local udp_table = DissectorTable.get("udp.port")
 udp_table:add({{ port }}, {{ proto_var }})
 {% elif pattern %}
 -- Register on pattern match
--- TODO: Implement heuristic dissector for pattern "{{ pattern }}"
+-- TODO: Implement heuristic dissector for pattern "{{ pattern }}" (user should add Lua heuristic code)
 {% else %}
 -- No automatic registration - manually register as needed
 -- Example: DissectorTable.get("tcp.port"):add(PORT, {{ proto_var }})

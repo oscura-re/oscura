@@ -587,7 +587,7 @@ class GrammarTestGenerator:
                 ")",
                 "def test_protocol_parsing(message, expected_valid):",
                 '    """Test protocol message parsing."""',
-                "    # TODO: Implement parser validation",
+                "    # TODO: Implement parser validation (user should replace with actual parser)",
                 "    assert isinstance(message, bytes)",
                 "    assert len(message) > 0",
             ]

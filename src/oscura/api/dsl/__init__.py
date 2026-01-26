@@ -189,7 +189,7 @@ class DSLParser:
         while True:
             self._skip_whitespace()
 
-            # Try to parse keyword argument
+            # Try to parse keyword argument (identifier=value)
             saved_pos = self._pos
             identifier = self._parse_identifier()
             self._skip_whitespace()
@@ -200,7 +200,7 @@ class DSLParser:
                 value = self._parse_value()
                 kwargs[identifier] = value
             else:
-                # It's a positional argument
+                # It's a positional argument - restore position and parse value
                 self._pos = saved_pos
                 value = self._parse_value()
                 args.append(value)
@@ -208,6 +208,10 @@ class DSLParser:
             self._skip_whitespace()
             if self._peek() == ",":
                 self._advance()
+                self._skip_whitespace()
+                # Check for trailing comma before closing paren
+                if self._peek() == ")":
+                    break
                 continue
             break
 
@@ -396,42 +400,12 @@ def analyze(data: Any, expression_str: str) -> Any:
     """
     import numpy as np
 
-    # Simple built-in operations
-    if expression_str == "mean":
-        return float(np.mean(data))
-    elif expression_str == "std":
-        return float(np.std(data))
-    elif expression_str == "min":
-        return float(np.min(data))
-    elif expression_str == "max":
-        return float(np.max(data))
-    elif expression_str == "rms":
-        return float(np.sqrt(np.mean(data**2)))
-    elif expression_str.startswith("normalize"):
-        # Simple normalize
-        data_min = np.min(data)
-        data_max = np.max(data)
-        if data_max == data_min:
-            return data
-        return (data - data_min) / (data_max - data_min)
-    elif expression_str.startswith("fft"):
-        return np.fft.fft(data)
-    elif "|" in expression_str:
-        # Handle chains
-        parts = expression_str.split("|")
-        result = data
-        for part in parts:
-            result = analyze(result, part.strip())
-        return result
-    else:
-        # Fallback: try to use interpreter
-        try:
-            interpreter = Interpreter()
-            interpreter.variables["$data"] = data
-            interpreter.execute_source(f"$result = $data | {expression_str}")
-            return interpreter.variables.get("$result", None)
-        except Exception:
-            raise ValueError(f"Unknown operation: {expression_str}")
+    # Parse expression using legacy parser
+    expr = parse_expression(expression_str)
+
+    # Execute using legacy executor
+    executor = DSLExecutor()
+    return executor.execute(expr, data)
 
 
 # DSLExecutor class for backwards compatibility
@@ -482,7 +456,18 @@ class DSLExecutor:
         if expr.operation not in self._operations:
             raise ValueError(f"Unknown operation: {expr.operation}")
 
-        result = self._operations[expr.operation](data, **expr.kwargs)
+        # Call operation with positional args and keyword args
+        # Convert positional args to operation-specific kwargs for known operations
+        kwargs = dict(expr.kwargs)
+
+        # Handle slice operation with positional args: slice(start, end)
+        if expr.operation == "slice" and expr.args:
+            if len(expr.args) >= 1 and "start" not in kwargs:
+                kwargs["start"] = expr.args[0]
+            if len(expr.args) >= 2 and "end" not in kwargs:
+                kwargs["end"] = expr.args[1]
+
+        result = self._operations[expr.operation](data, **kwargs)
 
         # Execute chain if present
         if expr.chain is not None:

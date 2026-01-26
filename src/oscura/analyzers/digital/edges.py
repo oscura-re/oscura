@@ -158,49 +158,59 @@ def detect_edges(
     if len(trace) < 2:
         return []
 
-    trace = np.asarray(trace, dtype=np.float64)
-    thresh_val = _compute_threshold(trace, threshold)
+    # Handle WaveformTrace objects by extracting data
+    if hasattr(trace, "data"):
+        trace_data: NDArray[np.float64] = np.asarray(trace.data, dtype=np.float64)
+    else:
+        trace_data = np.asarray(trace, dtype=np.float64)
+    thresh_val = _compute_threshold(trace_data, threshold)
     thresh_high, thresh_low = _apply_hysteresis(thresh_val, hysteresis)
     time_base = 1.0 / sample_rate
 
     # Use Numba for large signals to achieve 15-30x speedup
-    if use_numba and len(trace) >= 1000:
+    if use_numba and len(trace_data) >= 1000:
         detect_rising = edge_type in ["rising", "both"]
         detect_falling = edge_type in ["falling", "both"]
 
         edge_indices, edge_types = _find_edges_numba(
-            trace, thresh_high, thresh_low, detect_rising, detect_falling
+            trace_data, thresh_high, thresh_low, detect_rising, detect_falling
         )
 
         # Build Edge objects from Numba results
         edges: list[Edge] = []
         for idx, is_rising in zip(edge_indices, edge_types, strict=True):
             i = int(idx)
-            prev_val = trace[i - 1] if i > 0 else trace[i]
-            curr_val = trace[i]
+            prev_val = trace_data[i - 1] if i > 0 else trace_data[i]
+            curr_val = trace_data[i]
             edge_type_str: Literal["rising", "falling"] = "rising" if is_rising else "falling"
 
-            edge = _create_edge(trace, i, edge_type_str, prev_val, curr_val, time_base, sample_rate)
+            edge = _create_edge(
+                trace_data, i, edge_type_str, prev_val, curr_val, time_base, sample_rate
+            )
             edges.append(edge)
 
         return edges
 
     # Fallback to pure Python for small signals or when Numba disabled
     edges = []
-    state = trace[0] > thresh_val
+    state = trace_data[0] > thresh_val
 
-    for i in range(1, len(trace)):
-        prev_val, curr_val = trace[i - 1], trace[i]
+    for i in range(1, len(trace_data)):
+        prev_val, curr_val = trace_data[i - 1], trace_data[i]
 
         if not state and curr_val > thresh_high:
             if edge_type in ["rising", "both"]:
-                edge = _create_edge(trace, i, "rising", prev_val, curr_val, time_base, sample_rate)
+                edge = _create_edge(
+                    trace_data, i, "rising", prev_val, curr_val, time_base, sample_rate
+                )
                 edges.append(edge)
             state = True
 
         elif state and curr_val < thresh_low:
             if edge_type in ["falling", "both"]:
-                edge = _create_edge(trace, i, "falling", prev_val, curr_val, time_base, sample_rate)
+                edge = _create_edge(
+                    trace_data, i, "falling", prev_val, curr_val, time_base, sample_rate
+                )
                 edges.append(edge)
             state = False
 

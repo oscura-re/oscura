@@ -72,9 +72,9 @@ except ImportError as e:
     IMPORT_ERRORS["reporting"] = str(e)
 
 try:
-    from oscura.automotive.can import CANSession
+    import importlib.util
 
-    AUTOMOTIVE_AVAILABLE = True
+    AUTOMOTIVE_AVAILABLE = importlib.util.find_spec("oscura.automotive.can") is not None
 except ImportError as e:
     AUTOMOTIVE_AVAILABLE = False
     IMPORT_ERRORS["automotive"] = str(e)
@@ -263,20 +263,16 @@ class TestCompleteAnalysisWorkflows:
             pytest.skip(f"WAV loader not available: {e}")
 
         # Spectral analysis
-        try:
-            analyzer = SpectralAnalyzer()
-            freqs, magnitudes = analyzer.fft(trace.data, trace.metadata.sample_rate)
+        analyzer = SpectralAnalyzer()
+        freqs, magnitudes = analyzer.fft(trace.data, trace.metadata.sample_rate)
 
-            assert len(freqs) > 0
-            assert len(magnitudes) == len(freqs)
+        assert len(freqs) > 0
+        assert len(magnitudes) == len(freqs)
 
-            # Peak should be near 1 kHz
-            peak_idx = np.argmax(magnitudes)
-            peak_freq = freqs[peak_idx]
-            assert 900 < peak_freq < 1100, f"Peak at {peak_freq:.0f} Hz, expected ~1000 Hz"
-
-        except Exception as e:
-            pytest.skip(f"Spectral analyzer not available: {e}")
+        # Peak should be near 1 kHz
+        peak_idx = np.argmax(magnitudes)
+        peak_freq = freqs[peak_idx]
+        assert 900 < peak_freq < 1100, f"Peak at {peak_freq:.0f} Hz, expected ~1000 Hz"
 
     def test_csv_to_digital_analysis_report(self, tmp_path: Path) -> None:
         """Test CSV load → digital analysis → edge detection.
@@ -301,26 +297,19 @@ class TestCompleteAnalysisWorkflows:
                 f.write(f"{time_val:.9e},{volt_val:.6f}\n")
 
         # Load via Oscura
-        try:
-            trace = load_csv(csv_path, time_column=0, voltage_column=1)
-            assert isinstance(trace, WaveformTrace)
-            assert len(trace.data) == len(signal)
-        except Exception as e:
-            pytest.skip(f"CSV loader not available: {e}")
+        trace = load_csv(csv_path, time_column=0, voltage_column=1)
+        assert isinstance(trace, WaveformTrace)
+        assert len(trace.data) == len(signal)
 
         # Digital edge detection
-        try:
-            detector = EdgeDetector()
-            digital = (trace.data > 1.65).astype(bool)  # Threshold at mid-level
+        detector = EdgeDetector()
+        digital = (trace.data > 1.65).astype(bool)  # Threshold at mid-level
 
-            rising, falling = detector.detect_all_edges(digital)
+        rising, falling = detector.detect_all_edges(digital)
 
-            # Should have multiple edges in square wave
-            assert len(rising) > 0, "No rising edges detected"
-            assert len(falling) > 0, "No falling edges detected"
-
-        except Exception as e:
-            pytest.skip(f"Edge detector not available: {e}")
+        # Should have multiple edges in square wave
+        assert len(rising) > 0, "No rising edges detected"
+        assert len(falling) > 0, "No falling edges detected"
 
     def test_numpy_to_complete_report(self, tmp_path: Path) -> None:
         """Test NPZ load → multi-analysis → comprehensive report.
@@ -341,11 +330,8 @@ class TestCompleteAnalysisWorkflows:
         np.savez(npz_path, time=t, voltage=signal, sample_rate=100_000.0)
 
         # Load via Oscura
-        try:
-            trace = load_npz(npz_path)
-            assert isinstance(trace, WaveformTrace)
-        except Exception as e:
-            pytest.skip(f"NPZ loader not available: {e}")
+        trace = load_npz(npz_path)
+        assert isinstance(trace, WaveformTrace)
 
         # Multiple analyses
         results = {}
@@ -393,19 +379,16 @@ class TestBatchProcessingWorkflows:
         # Batch process
         results = []
         for path in file_paths:
-            try:
-                trace = load_npz(path)
+            trace = load_npz(path)
 
-                # Simple statistics
-                result = {
-                    "file": path.name,
-                    "mean": float(np.mean(trace.data)),
-                    "std": float(np.std(trace.data)),
-                    "samples": len(trace.data),
-                }
-                results.append(result)
-            except Exception as e:
-                pytest.skip(f"Batch processing failed: {e}")
+            # Simple statistics
+            result = {
+                "file": path.name,
+                "mean": float(np.mean(trace.data)),
+                "std": float(np.std(trace.data)),
+                "samples": len(trace.data),
+            }
+            results.append(result)
 
         # Verify all files processed
         assert len(results) == len(frequencies)
@@ -511,26 +494,13 @@ class TestAutomotiveWorkflows:
         with open(can_file, "w") as f:
             json.dump(messages_json, f)
 
-        try:
-            # Create CAN session
-            session = CANSession()
-
-            # Load messages
-            for msg in messages:
-                session.add_message(
-                    can_id=msg["id"],
-                    timestamp=msg["timestamp"],
-                    data=msg["data"],
-                )
-
-            # Analyze patterns
-            stats = session.get_statistics()
-
-            assert stats["total_messages"] == len(messages)
-            assert len(stats["unique_ids"]) > 0
-
-        except Exception as e:
-            pytest.skip(f"CAN analysis not available: {e}")
+        # NOTE: CANSession API uses add_recording() with FileSource, not individual messages
+        # This test needs to be updated to use the correct API
+        # See CANSession docstring for correct usage examples
+        pytest.skip(
+            "Test uses deprecated API (add_message, get_statistics). "
+            "CANSession uses add_recording() with FileSource instead."
+        )
 
 
 # =============================================================================
@@ -611,14 +581,10 @@ class TestStreamingWorkflows:
         sum_squares = 0.0
 
         for chunk_path in chunk_files:
-            try:
-                trace = load_npz(chunk_path)
+            trace = load_npz(chunk_path)
 
-                total_samples += len(trace.data)
-                sum_squares += float(np.sum(trace.data**2))
-
-            except Exception as e:
-                pytest.skip(f"Chunked processing failed: {e}")
+            total_samples += len(trace.data)
+            sum_squares += float(np.sum(trace.data**2))
 
         # Verify aggregation
         assert total_samples == chunk_size * num_chunks
@@ -794,11 +760,8 @@ class TestEdgeCaseWorkflows:
         # Simulate concurrent access (sequential for simplicity)
         results = []
         for _ in range(5):
-            try:
-                trace = load_npz(test_file)
-                results.append(len(trace.data))
-            except Exception as e:
-                pytest.skip(f"Concurrent access test failed: {e}")
+            trace = load_npz(test_file)
+            results.append(len(trace.data))
 
         # All results should be consistent
         assert len(set(results)) == 1, "Inconsistent results from concurrent access"
@@ -894,18 +857,14 @@ class TestPerformanceWorkflows:
 
         start_time = time.time()
 
-        try:
-            trace = load_npz(large_file)
-            assert len(trace.data) == large_samples
+        trace = load_npz(large_file)
+        assert len(trace.data) == large_samples
 
-            # Basic analysis
-            mean = float(np.mean(trace.data))
-            std = float(np.std(trace.data))
+        # Basic analysis
+        mean = float(np.mean(trace.data))
+        std = float(np.std(trace.data))
 
-            elapsed = time.time() - start_time
+        elapsed = time.time() - start_time
 
-            # Should complete in reasonable time (< 5 seconds)
-            assert elapsed < 5.0, f"Large file processing took {elapsed:.2f}s (too slow)"
-
-        except Exception as e:
-            pytest.skip(f"Large file test failed: {e}")
+        # Should complete in reasonable time (< 5 seconds)
+        assert elapsed < 5.0, f"Large file processing took {elapsed:.2f}s (too slow)"

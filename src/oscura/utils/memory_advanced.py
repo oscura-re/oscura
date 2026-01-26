@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import numpy as np
 
-from oscura.exceptions import SecurityError
+from oscura.core.exceptions import SecurityError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

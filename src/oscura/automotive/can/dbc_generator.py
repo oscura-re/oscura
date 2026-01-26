@@ -395,11 +395,9 @@ BS_:"""
         # Determine byte order indicator (1 = Intel/little, 0 = Motorola/big)
         byte_order_indicator = "1" if signal.byte_order == "little_endian" else "0"
 
-        # For Motorola (big-endian), convert start bit to MSB position
-        if signal.byte_order == "big_endian":
-            start_bit = self._calculate_motorola_start_bit(signal.start_bit, signal.bit_length)
-        else:
-            start_bit = signal.start_bit
+        # start_bit should already be in DBC format (MSB for Motorola, LSB for Intel)
+        # No conversion needed - use as provided
+        start_bit = signal.start_bit
 
         # Determine value type (+ = unsigned, - = signed)
         value_type_indicator = "+" if signal.value_type == "unsigned" else "-"

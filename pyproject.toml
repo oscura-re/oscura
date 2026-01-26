@@ -330,7 +330,7 @@ norecursedirs = [".*", "build", "dist", "*.egg", "node_modules", "__pycache__", 
 # =============================================================================
 
 [tool.coverage.run]
-source = ["src/oscura"]
+source = ["oscura"]
 branch = true
 parallel = true
 data_file = ".coverage"

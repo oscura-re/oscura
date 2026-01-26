@@ -25,27 +25,24 @@ class TestPeriodicPatternDetection:
 
     def test_simple_period_detection(self) -> None:
         """Test detecting simple periodic pattern."""
-        try:
-            from oscura.validation.testing.synthetic import generate_digital_signal
+        from oscura.validation.testing.synthetic import generate_digital_signal
 
-            # Generate signal with known period
-            # 1 MHz at 100 MHz sample rate = period of 100 samples
-            signal, _truth = generate_digital_signal(
-                pattern="square",
-                sample_rate=100e6,
-                duration_samples=10000,
-                frequency=1e6,
-            )
+        # Generate signal with known period
+        # 1 MHz at 100 MHz sample rate = period of 100 samples
+        signal, _truth = generate_digital_signal(
+            pattern="square",
+            sample_rate=100e6,
+            duration_samples=10000,
+            frequency=1e6,
+        )
 
-            detector = PeriodicPatternDetector()
-            result = detector.detect_period(signal > 1.5)
+        detector = PeriodicPatternDetector()
+        result = detector.detect_period(signal > 1.5)
 
-            # Should detect period of ~100 samples (1 MHz at 100 MHz sample rate)
-            # Relaxed tolerance: 15 samples
-            assert result.period == pytest.approx(100, abs=15)
-            assert result.confidence > 0.6  # Relaxed from 0.8
-        except Exception as e:
-            pytest.skip(f"Test skipped: {e}")
+        # Should detect period of ~100 samples (1 MHz at 100 MHz sample rate)
+        # Relaxed tolerance: 15 samples
+        assert result.period == pytest.approx(100, abs=15)
+        assert result.confidence > 0.6  # Relaxed from 0.8
 
     def test_complex_pattern_period(self) -> None:
         """Test detecting period of complex pattern."""
@@ -71,20 +68,17 @@ class TestPeriodicPatternDetection:
 
     def test_fft_method(self) -> None:
         """Test period detection using FFT."""
-        try:
-            from oscura.validation.testing.synthetic import generate_digital_signal
+        from oscura.validation.testing.synthetic import generate_digital_signal
 
-            signal, _truth = generate_digital_signal(
-                pattern="square", sample_rate=100e6, duration_samples=10000, frequency=1e6
-            )
+        signal, _truth = generate_digital_signal(
+            pattern="square", sample_rate=100e6, duration_samples=10000, frequency=1e6
+        )
 
-            detector = PeriodicPatternDetector(method="fft")
-            result = detector.detect_period(signal > 1.5)
+        detector = PeriodicPatternDetector(method="fft")
+        result = detector.detect_period(signal > 1.5)
 
-            # Relaxed tolerance
-            assert result.period == pytest.approx(100, abs=15)
-        except Exception as e:
-            pytest.skip(f"FFT period detection skipped: {e}")
+        # Relaxed tolerance
+        assert result.period == pytest.approx(100, abs=15)
 
     def test_no_period_random_data(self) -> None:
         """Test that random data returns low confidence."""

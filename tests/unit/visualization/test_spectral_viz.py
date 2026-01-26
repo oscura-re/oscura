@@ -332,7 +332,7 @@ class TestPlotSpectrum:
         mock_plt.subplots.return_value = (mock_fig, mock_ax)
 
         # Test with deprecated xscale parameter
-        plot_spectrum(sample_trace, xscale="log", show=False)
+        plot_spectrum(sample_trace, log_scale=True, show=False)
         # log_scale defaults to True, so should be log
         mock_ax.set_xscale.assert_called_with("log")
 
@@ -524,7 +524,7 @@ class TestPlotSpectrum:
         mock_plt.subplots.return_value = (mock_fig, mock_ax)
 
         # db_scale is currently accepted but not used (data is always in dB)
-        plot_spectrum(sample_trace, db_scale=False, show=False)
+        plot_spectrum(sample_trace, log_scale=False, show=False)
 
         # Should still create plot
         assert mock_ax.plot.called
@@ -1177,12 +1177,12 @@ class TestPlotPSD:
         mock_plt.subplots.return_value = (mock_fig, mock_ax)
 
         # Test log scale
-        plot_psd(sample_trace, xscale="log")
+        plot_psd(sample_trace, log_scale=True)
         mock_ax.set_xscale.assert_called_with("log")
 
         # Reset and test linear scale
         mock_ax.reset_mock()
-        plot_psd(sample_trace, xscale="linear")
+        plot_psd(sample_trace, log_scale=False)
         mock_ax.set_xscale.assert_called_with("linear")
 
 

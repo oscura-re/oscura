@@ -531,6 +531,7 @@ def plot_bode(
     *,
     magnitude_db: bool = True,
     phase_degrees: bool = True,
+    show_margins: bool = False,
     fig: Figure | None = None,
     **plot_kwargs: Any,
 ) -> Figure:
@@ -546,6 +547,7 @@ def plot_bode(
         phase: Phase array in radians (optional). Ignored if magnitude is complex.
         magnitude_db: If True, magnitude is already in dB. Ignored if complex input.
         phase_degrees: If True, convert phase to degrees.
+        show_margins: If True, annotate stability margins (currently unused, reserved for future).
         fig: Existing figure to plot on.
         **plot_kwargs: Additional arguments to plot().
 

@@ -181,14 +181,14 @@ class TestDetectCryptoRegions:
 
     def test_high_entropy_frames(self) -> None:
         """Test with high-entropy frames (crypto detected)."""
-        # Create frames with random high-entropy data
+        # Create frames with random high-entropy data (1000 bytes for proper entropy)
         np.random.seed(42)
         frames = [
             InferredFrame(
                 start_bit=0,
                 end_bit=80,
                 raw_bits="0" * 80,
-                raw_bytes=bytes(np.random.randint(0, 256, 100, dtype=np.uint8)),
+                raw_bytes=bytes(np.random.randint(0, 256, 1000, dtype=np.uint8)),
             )
             for _ in range(3)
         ]
@@ -535,14 +535,14 @@ class TestFullProtocolRE:
         """Test that warnings are collected from all steps."""
         mock_load.return_value = {"capture": mock_trace}
 
-        # Create frames with high entropy to trigger crypto warning
+        # Create frames with high entropy to trigger crypto warning (1000 bytes for proper entropy)
         np.random.seed(42)
         crypto_frames = [
             InferredFrame(
                 start_bit=0,
                 end_bit=80,
                 raw_bits="0" * 80,
-                raw_bytes=bytes(np.random.randint(0, 256, 100, dtype=np.uint8)),
+                raw_bytes=bytes(np.random.randint(0, 256, 1000, dtype=np.uint8)),
             )
             for _ in range(3)
         ]

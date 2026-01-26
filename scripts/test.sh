@@ -180,7 +180,7 @@ PYTEST_ARGS+=(--maxfail="${MAXFAIL}")
 # Add coverage options
 if [[ "${MODE}" == "coverage" ]]; then
   PYTEST_ARGS+=(
-    --cov=src/oscura
+    --cov=oscura
     --cov-report=term-missing
     --cov-report=html
     --cov-report=xml # For diff-cover tool

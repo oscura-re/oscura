@@ -327,8 +327,9 @@ def _step_3_decode_messages(
         results.warnings.append(msg)
         logger.exception(msg)
         # Create minimal protocol spec for graceful degradation
+        # Use "Unknown" since we couldn't decode despite detection
         protocol_spec = ProtocolSpec(
-            name=detected_protocol or "Unknown",
+            name="Unknown",
             baud_rate=0.0,
             frame_format="unknown",
             sync_pattern="",

@@ -656,7 +656,7 @@ class BlackBoxSession(AnalysisSession):
                     f"-- {field_hyp.name} (offset={field_hyp.offset}, length={field_hyp.length})\n"
                 )
 
-        dissector += "\n-- TODO: Implement dissector logic\n"
+        dissector += "\n-- TODO: Implement dissector logic (user should add Lua dissector code)\n"
 
         path.write_text(dissector)
 

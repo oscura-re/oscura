@@ -35,7 +35,10 @@ class TestPeriodicPatternDetection:
 
         try:
             from oscura.analyzers.patterns import detect_period
+        except ImportError:
+            pytest.skip("detect_period not available")
 
+        try:
             period = detect_period(data)
 
             assert period is not None
@@ -43,9 +46,6 @@ class TestPeriodicPatternDetection:
                 assert period.period > 0, "Period should be positive"
             else:
                 assert period > 0, "Period should be positive"
-
-        except ImportError:
-            pytest.skip("detect_period not available")
         except (ValueError, RuntimeError, NotImplementedError) as e:
             pytest.skip(f"Period detection skipped: {e}")
 
@@ -56,7 +56,10 @@ class TestPeriodicPatternDetection:
         """
         try:
             from oscura.analyzers.patterns import detect_period_autocorr
+        except ImportError:
+            pytest.skip("detect_period_autocorr not available")
 
+        try:
             period = detect_period_autocorr(sine_wave)
 
             # 1 kHz sine at 1 MHz = 1000 samples per period
@@ -72,9 +75,6 @@ class TestPeriodicPatternDetection:
                 assert abs(period.period - expected) < tolerance
             else:
                 assert abs(period - expected) < tolerance
-
-        except ImportError:
-            pytest.skip("detect_period_autocorr not available")
         except (ValueError, RuntimeError, NotImplementedError) as e:
             pytest.skip(f"Autocorrelation test skipped: {e}")
 
@@ -85,7 +85,10 @@ class TestPeriodicPatternDetection:
         """
         try:
             from oscura.analyzers.patterns import detect_period_fft
+        except ImportError:
+            pytest.skip("detect_period_fft not available")
 
+        try:
             sample_rate = 1e6
             period = detect_period_fft(sine_wave, sample_rate)
 
@@ -106,9 +109,6 @@ class TestPeriodicPatternDetection:
                 pass  # Skip exact check
             else:
                 assert abs(period - expected) < tolerance
-
-        except ImportError:
-            pytest.skip("detect_period_fft not available")
         except (ValueError, RuntimeError, NotImplementedError) as e:
             pytest.skip(f"FFT period test skipped: {e}")
 
@@ -135,19 +135,16 @@ class TestSequencePatternDetection:
 
         try:
             from oscura.analyzers.patterns import find_motifs
-
-            motifs = find_motifs(data)
-
-            assert motifs is not None
-            # May or may not find motifs depending on data
-            # Just check it doesn't crash
-
         except ImportError:
             # SKIP: Valid - Optional motif discovery (requires advanced algorithms)
             # Only skip if motif detection not available
             pytest.skip("find_motifs not available")
-        except Exception as e:
-            pytest.skip(f"Motif detection skipped: {e}")
+
+        motifs = find_motifs(data)
+
+        assert motifs is not None
+        # May or may not find motifs depending on data
+        # Just check it doesn't crash
 
     def test_motif_extraction(self, digital_signal: np.ndarray) -> None:
         """Test motif extraction from digital signal.
@@ -156,18 +153,15 @@ class TestSequencePatternDetection:
         """
         try:
             from oscura.analyzers.patterns import extract_motif
-
-            motif = extract_motif(digital_signal)
-
-            # Should extract the repeating pattern
-            assert motif is not None
-
         except ImportError:
             # SKIP: Valid - Optional motif discovery (requires advanced algorithms)
             # Only skip if motif detection not available
             pytest.skip("extract_motif not available")
-        except Exception as e:
-            pytest.skip(f"Motif extraction skipped: {e}")
+
+        motif = extract_motif(digital_signal)
+
+        # Should extract the repeating pattern
+        assert motif is not None
 
 
 @pytest.mark.unit
@@ -192,19 +186,16 @@ class TestAnomalyDetection:
 
         try:
             from oscura.analyzers.patterns import detect_anomalies
-
-            anomalies = detect_anomalies(data)
-
-            # File should contain some anomalies
-            assert anomalies is not None
-            # May or may not detect anomalies depending on data
-
         except ImportError:
             # SKIP: Valid - Optional pattern detection algorithms
             # Only skip if pattern detection module not available
             pytest.skip("detect_anomalies not available")
-        except Exception as e:
-            pytest.skip(f"Anomaly detection skipped: {e}")
+
+        anomalies = detect_anomalies(data)
+
+        # File should contain some anomalies
+        assert anomalies is not None
+        # May or may not detect anomalies depending on data
 
     def test_anomaly_in_periodic(self, sine_wave: np.ndarray) -> None:
         """Test anomaly detection in periodic signal.
@@ -213,50 +204,40 @@ class TestAnomalyDetection:
         """
         try:
             from oscura.analyzers.patterns import detect_anomalies
-
-            # Create copy with anomaly
-            data = sine_wave.copy()
-            data[500] = 10.0  # Spike anomaly
-
-            anomalies = detect_anomalies(data)
-
-            # Should detect the injected anomaly
-            assert len(anomalies) > 0
-
-            # Anomaly should be near index 500
-            if len(anomalies) > 0:
-                if hasattr(anomalies[0], "index"):
-                    anomaly_indices = [a.index for a in anomalies]
-                else:
-                    anomaly_indices = list(anomalies)
-                assert any(abs(idx - 500) < 50 for idx in anomaly_indices)
-
         except ImportError:
             pytest.skip("detect_anomalies not available")
-        except Exception as e:
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            pytest.skip(f"Anomaly in periodic test skipped: {e}")
+
+        # Create copy with anomaly
+        data = sine_wave.copy()
+        data[500] = 10.0  # Spike anomaly
+
+        anomalies = detect_anomalies(data)
+
+        # Should detect the injected anomaly
+        assert len(anomalies) > 0
+
+        # Anomaly should be near index 500
+        if len(anomalies) > 0:
+            if hasattr(anomalies[0], "index"):
+                anomaly_indices = [a.index for a in anomalies]
+            else:
+                anomaly_indices = list(anomalies)
+            assert any(abs(idx - 500) < 50 for idx in anomaly_indices)
 
     def test_no_anomaly_in_clean_signal(self, sine_wave: np.ndarray) -> None:
         """Test that clean signal has no anomalies."""
         try:
             from oscura.analyzers.patterns import detect_anomalies
-
-            anomalies = detect_anomalies(sine_wave)
-
-            # Clean sine wave should have no (or very few) anomalies
-            # Relaxed: allow up to 5 false positives
-            assert len(anomalies) <= 5
-
         except ImportError:
             # SKIP: Valid - Optional pattern detection algorithms
             # Only skip if pattern detection module not available
             pytest.skip("detect_anomalies not available")
-        except Exception as e:
-            pytest.skip(f"Clean signal anomaly test skipped: {e}")
+
+        anomalies = detect_anomalies(sine_wave)
+
+        # Clean sine wave should have no (or very few) anomalies
+        # Relaxed: allow up to 5 false positives
+        assert len(anomalies) <= 5
 
 
 @pytest.mark.unit
@@ -269,44 +250,34 @@ class TestPatternClustering:
         """Test clustering of similar patterns."""
         try:
             from oscura.analyzers.patterns import cluster_patterns
-
-            # Create test patterns
-            pattern1 = np.sin(np.linspace(0, 2 * np.pi, 100))
-            pattern2 = np.sin(np.linspace(0, 2 * np.pi, 100)) + 0.1  # Similar
-            pattern3 = np.cos(np.linspace(0, 2 * np.pi, 100))  # Different
-
-            patterns = [pattern1, pattern2, pattern3]
-            clusters = cluster_patterns(patterns)
-
-            # pattern1 and pattern2 should be in same cluster
-            assert clusters is not None
-
         except ImportError:
             pytest.skip("cluster_patterns not available")
-        except Exception as e:
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            # SKIP: Valid - Conditional import dependency
-            # Only skip if required module not available
-            pytest.skip(f"Clustering test skipped: {e}")
+
+        # Create test patterns
+        pattern1 = np.sin(np.linspace(0, 2 * np.pi, 100))
+        pattern2 = np.sin(np.linspace(0, 2 * np.pi, 100)) + 0.1  # Similar
+        pattern3 = np.cos(np.linspace(0, 2 * np.pi, 100))  # Different
+
+        patterns = [pattern1, pattern2, pattern3]
+        clusters = cluster_patterns(patterns)
+
+        # pattern1 and pattern2 should be in same cluster
+        assert clusters is not None
 
     def test_pattern_similarity(self) -> None:
         """Test pattern similarity calculation."""
         try:
             from oscura.analyzers.patterns import pattern_similarity
-
-            pattern1 = np.sin(np.linspace(0, 2 * np.pi, 100))
-            pattern2 = np.sin(np.linspace(0, 2 * np.pi, 100))  # Identical
-
-            similarity = pattern_similarity(pattern1, pattern2)
-
-            # Identical patterns should have similarity close to 1
-            assert similarity > 0.95
-
         except ImportError:
             pytest.skip("pattern_similarity not available")
-        except Exception as e:
-            pytest.skip(f"Similarity test skipped: {e}")
+
+        pattern1 = np.sin(np.linspace(0, 2 * np.pi, 100))
+        pattern2 = np.sin(np.linspace(0, 2 * np.pi, 100))  # Identical
+
+        similarity = pattern_similarity(pattern1, pattern2)
+
+        # Identical patterns should have similarity close to 1
+        assert similarity > 0.95
 
 
 @pytest.mark.unit
@@ -452,23 +423,20 @@ class TestPatternDetectionEdgeCases:
         """Test pattern detection on noisy periodic signal."""
         try:
             from oscura.analyzers.patterns import detect_period
-
-            period = detect_period(noisy_sine)
-
-            # Should still detect period despite noise
-            if period is not None:
-                expected = 1000  # 1 kHz at 1 MHz
-                tolerance = expected * 0.20  # 20% tolerance for noise (relaxed from 10%)
-
-                if hasattr(period, "period"):
-                    assert abs(period.period - expected) < tolerance
-                else:
-                    assert abs(period - expected) < tolerance
-
         except ImportError:
             pytest.skip("detect_period not available")
-        except Exception as e:
-            pytest.skip(f"Noisy periodic test skipped: {e}")
+
+        period = detect_period(noisy_sine)
+
+        # Should still detect period despite noise
+        if period is not None:
+            expected = 1000  # 1 kHz at 1 MHz
+            tolerance = expected * 0.20  # 20% tolerance for noise (relaxed from 10%)
+
+            if hasattr(period, "period"):
+                assert abs(period.period - expected) < tolerance
+            else:
+                assert abs(period - expected) < tolerance
 
 
 @pytest.mark.unit
@@ -495,16 +463,13 @@ class TestSequencePatternModule:
         """Test sequence pattern detection function."""
         try:
             from oscura.inference import detect_sequence_patterns
-
-            # Create data with repeating sequence
-            sequence = bytes([0x01, 0x02, 0x03, 0x04])
-            data = sequence * 100
-
-            patterns = detect_sequence_patterns(data)
-
-            assert patterns is not None
-
         except ImportError:
             pytest.skip("detect_sequence_patterns not available")
-        except Exception as e:
-            pytest.skip(f"Sequence pattern test skipped: {e}")
+
+        # Create data with repeating sequence
+        sequence = bytes([0x01, 0x02, 0x03, 0x04])
+        data = sequence * 100
+
+        patterns = detect_sequence_patterns(data)
+
+        assert patterns is not None

@@ -194,7 +194,12 @@ def _compute_power_spectrum(
     """
     trace_centered = trace - np.mean(trace)
     n = len(trace_centered)
-    fft_result = np.fft.rfft(trace_centered)
+
+    # Apply Hanning window to reduce spectral leakage (improves noise robustness)
+    window = np.hanning(n)
+    trace_windowed = trace_centered * window
+
+    fft_result = np.fft.rfft(trace_windowed)
     power = np.asarray(np.abs(fft_result) ** 2, dtype=np.float64)
     freqs = np.fft.rfftfreq(n, 1.0 / sample_rate)
     return power, freqs
@@ -489,6 +494,8 @@ def _find_spectral_peaks(data: NDArray[np.float64], min_distance: int = 1) -> ND
     """Find peaks in 1D array.
 
     Simple peak detection: point is peak if higher than neighbors.
+    Includes noise threshold to filter out spurious peaks.
+    Handles boundary conditions at edges of the array.
 
     Args:
         data: 1D array
@@ -497,14 +504,30 @@ def _find_spectral_peaks(data: NDArray[np.float64], min_distance: int = 1) -> ND
     Returns:
         Array of peak indices
     """
-    if len(data) < 3:
+    if len(data) < 2:
         return np.array([], dtype=np.intp)
 
-    # Find local maxima
+    # Calculate noise threshold (5% of max value to filter noise peaks)
+    threshold = 0.05 * np.max(data)
+
+    # Find local maxima above threshold
     peaks_list: list[int] = []
+
+    # Check interior points (only elements with both neighbors)
     for i in range(1, len(data) - 1):
-        if data[i] > data[i - 1] and data[i] > data[i + 1]:
+        if data[i] > data[i - 1] and data[i] > data[i + 1] and data[i] > threshold:
             peaks_list.append(i)
+
+    # Check boundary elements (for Nyquist frequency peaks)
+    # Only consider boundary as peak if it's a TRUE local maximum (not just monotonic increase)
+    # Require it to be significantly higher than neighbor (at least 2x threshold)
+    if len(data) >= 3:
+        # Check first element
+        if data[0] > data[1] and data[0] > max(threshold * 2, data[1] * 1.5):
+            peaks_list.insert(0, 0)
+        # Check last element (important for Nyquist frequency in FFT)
+        if data[-1] > data[-2] and data[-1] > max(threshold * 2, data[-2] * 1.5):
+            peaks_list.append(len(data) - 1)
 
     peaks: NDArray[np.intp] = np.array(peaks_list, dtype=np.intp)
 
