@@ -312,11 +312,12 @@ class StateMachineLearningDemo(BaseDemo):
         # Export DOT format
         print_subheader("DOT Export")
         dot_output = self.learned_automaton.to_dot()
-        dot_file = self.data_dir / "learned_automaton.dot"
+        dot_file = self.get_output_dir() / "learned_automaton.dot"
         dot_file.write_text(dot_output)
         print_info(f"DOT file saved to: {dot_file}")
         print_info("Visualize with: dot -Tpng learned_automaton.dot -o automaton.png")
 
+        self.results["dot_file"] = str(dot_file)
         self.results["dot_exported"] = True
 
         # Show DOT preview

@@ -357,7 +357,7 @@ class WiresharkDissectorDemo(BaseDemo):
                 self.generated_code[name] = lua_code
 
                 # Save to file
-                output_path = self.data_dir / filename
+                output_path = self.get_output_dir() / filename
                 output_path.write_text(lua_code)
 
                 self.dissector_files.append(output_path)

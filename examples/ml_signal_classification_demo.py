@@ -39,7 +39,7 @@ def main() -> None:
 
     # Create training dataset with synthetic signals
     print("\n1. Generating training dataset...")
-    n_samples_per_class = 50
+    n_samples_per_class = 10  # Reduced from 50 for faster execution in tests
     sample_rate = 10000.0
 
     signals = []

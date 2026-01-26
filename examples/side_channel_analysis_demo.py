@@ -95,8 +95,8 @@ def main() -> None:
     # Step 1: Generate simulated traces
     true_key = b"\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c"
     traces = generate_simulated_aes_traces(
-        num_traces=200,
-        num_samples=1000,
+        num_traces=50,  # Reduced from 200 for faster execution in tests
+        num_samples=500,  # Reduced from 1000 for faster execution in tests
         true_key=true_key,
         noise_level=0.3,  # Low noise for good attack success
     )

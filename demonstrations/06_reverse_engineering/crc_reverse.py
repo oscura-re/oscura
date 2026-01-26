@@ -327,8 +327,8 @@ class CRCReverseDemo(BaseDemo):
         # Check at least some algorithms were recovered
         suite.add_check(
             "Successful recoveries",
-            self.results.get("successful_recoveries" > 0),
-            0,
+            self.results.get("successful_recoveries", 0) > 0,
+            f"Got {self.results.get('successful_recoveries', 0)} successful recoveries",
         )
 
         # We expect at least 50% success rate

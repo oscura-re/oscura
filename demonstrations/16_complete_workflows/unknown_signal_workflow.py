@@ -523,29 +523,29 @@ class UnknownSignalWorkflow(BaseDemo):
         # Check signal characterized
         suite.add_check(
             "High level voltage",
-            self.results.get("high_level_v" > 0),
-            0,
+            self.results.get("high_level_v", 0) > 0,
+            f"Got {self.results.get('high_level_v', 0):.2f}V",
         )
 
         # Check baud detected
         suite.add_check(
             "Detected baud rate",
-            self.results.get("detected_baud" == 0),
-            self._true_baud,
+            self.results.get("detected_baud", 0) == self._true_baud,
+            f"Got {self.results.get('detected_baud', 0)} (expected {self._true_baud})",
         )
 
         # Check bits extracted
         suite.add_check(
             "Bits extracted",
-            self.results.get("bit_count" > 0),
-            100,
+            self.results.get("bit_count", 0) > 0,
+            f"Got {self.results.get('bit_count', 0)} bits",
         )
 
         # Check frames decoded
         suite.add_check(
             "Frames decoded",
-            self.results.get("frames_decoded" > 0),
-            0,
+            self.results.get("frames_decoded", 0) > 0,
+            f"Got {self.results.get('frames_decoded', 0)} frames",
         )
 
         # Check protocol spec generated
