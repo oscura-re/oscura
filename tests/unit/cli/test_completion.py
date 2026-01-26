@@ -127,7 +127,8 @@ def test_bash_completion_file_extensions():
     """Test bash completion includes file extension patterns."""
     script = _get_bash_completion()
 
-    extensions = [".wfm", ".vcd", ".csv", ".pcap", ".wav"]
+    # Check for extensions in glob pattern format
+    extensions = ["wfm", "vcd", "csv", "pcap", "wav"]
 
     for ext in extensions:
         assert ext in script

@@ -16,6 +16,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+# Skip all tests if pyserial not installed
+pytest.importorskip("serial")
+
 from oscura.validation.replay import (
     ProtocolSpec,
     ReplayConfig,

@@ -85,9 +85,12 @@ _oscura_completion() {
     # Main commands
     local commands="analyze decode export visualize benchmark validate config plugins characterize batch compare shell tutorial"
 
-    # If we're on the first argument, complete commands
+    # Global options
+    local global_opts="--help --version --verbose --quiet --config --json"
+
+    # If we're on the first argument, complete commands or global options
     if [[ ${COMP_CWORD} -eq 1 ]]; then
-        COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
+        COMPREPLY=( $(compgen -W "${commands} ${global_opts}" -- ${cur}) )
         return 0
     fi
 
@@ -97,17 +100,27 @@ _oscura_completion() {
     # Command-specific completions
     case "${cmd}" in
         analyze|decode|export|visualize)
-            # Complete file paths
-            COMPREPLY=( $(compgen -f -X '!*.@(wfm|vcd|csv|pcap|wav)' -- ${cur}) )
+            # Complete file paths and help
+            if [[ ${cur} == -* ]]; then
+                COMPREPLY=( $(compgen -W "--help" -- ${cur}) )
+            else
+                COMPREPLY=( $(compgen -f -X '!*.@(wfm|vcd|csv|pcap|wav)' -- ${cur}) )
+            fi
             ;;
         config)
-            local config_opts="--show --set --edit --init --path"
+            local config_opts="--show --set --edit --init --path --help"
             COMPREPLY=( $(compgen -W "${config_opts}" -- ${cur}) )
             ;;
         plugins)
             local plugin_cmds="list info install remove update"
             if [[ ${COMP_CWORD} -eq 2 ]]; then
                 COMPREPLY=( $(compgen -W "${plugin_cmds}" -- ${cur}) )
+            fi
+            ;;
+        *)
+            # Default to --help for other commands
+            if [[ ${cur} == -* ]]; then
+                COMPREPLY=( $(compgen -W "--help" -- ${cur}) )
             fi
             ;;
     esac

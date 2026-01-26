@@ -98,6 +98,8 @@ def mock_mpl():
         mock_ax = MagicMock()
         mock_ax.get_figure.return_value = mock_fig
         mock_plt.subplots.return_value = (mock_fig, mock_ax)
+        # Configure hist() to return expected 3-tuple (counts, bin_edges, patches)
+        mock_ax.hist.return_value = (np.array([1, 2, 3]), np.array([0, 1, 2, 3]), [])
         yield {"plt": mock_plt, "fig": mock_fig, "ax": mock_ax}
 
 

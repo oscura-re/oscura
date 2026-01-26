@@ -1309,11 +1309,11 @@ class TestPlotFFT:
 
         # Test log scale
         plot_fft(sample_trace, log_scale=True, show=False)
-        assert mock_plot_spectrum.call_args[1]["xscale"] == "log"
+        assert mock_plot_spectrum.call_args[1]["log_scale"] is True
 
         # Test linear scale
         plot_fft(sample_trace, log_scale=False, show=False)
-        assert mock_plot_spectrum.call_args[1]["xscale"] == "linear"
+        assert mock_plot_spectrum.call_args[1]["log_scale"] is False
 
     @patch("oscura.visualization.spectral.plt")
     @patch("oscura.visualization.spectral.plot_spectrum")
