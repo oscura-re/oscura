@@ -206,7 +206,7 @@ class SignalReverseEngineeringDemo(BaseDemo):
         total_power = float(np.sum(mag**2))
         low_power = float(np.sum(mag[freq < 1000] ** 2))
         mid_power = float(np.sum(mag[(freq >= 1000) & (freq < 100000)] ** 2))
-        high_power = float(np.sum(mag[freq >= 100000] ** 2))
+        float(np.sum(mag[freq >= 100000] ** 2))
 
         print_result("Total power", f"{total_power:.2e}")
         print_result("Power <1kHz", f"{100 * low_power / total_power:.1f}%")

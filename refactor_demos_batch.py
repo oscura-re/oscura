@@ -39,10 +39,10 @@ def refactor_demo_file(file_path: Path) -> tuple[bool, str]:
         )
 
         if class_match:
-            class_name = class_match.group(1)
+            class_match.group(1)
             name_val = class_match.group(2)
             desc_val = class_match.group(3)
-            category_val = class_match.group(4)
+            class_match.group(4)
 
             # Find __init__ method
             init_match = re.search(
@@ -53,7 +53,7 @@ def refactor_demo_file(file_path: Path) -> tuple[bool, str]:
             )
 
             if init_match and name_val:
-                indent = init_match.group(1)
+                init_match.group(1)
                 super_indent = init_match.group(2)
                 existing_args = init_match.group(3)
 

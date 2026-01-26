@@ -556,6 +556,7 @@ class IEEE181PulseDemo(BaseDemo):
 
         # Check rise time was measured (note: RC filter simulation may not match target exactly)
         rise_ns = results.get("rise_time_ns", 0)
+        suite.add_check("Rise time measured", rise_ns > 0, f"Rise time: {rise_ns:.1f} ns")
 
         # Check fall time was measured
         suite.add_check(
@@ -565,7 +566,10 @@ class IEEE181PulseDemo(BaseDemo):
         )
 
         # Check duty cycle is reasonable
-        duty = self.results.get("duty_cycle_pct", 0)  # Check trace was generatedsuite.report()
+        duty = results.get("duty_cycle_pct", 0)
+        suite.add_check("Duty cycle reasonable", 40 < duty < 60, f"Duty cycle: {duty:.1f}%")
+
+        suite.report()
         return suite.all_passed()
 
 

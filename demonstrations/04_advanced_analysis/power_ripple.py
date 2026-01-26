@@ -388,12 +388,12 @@ class RippleAnalysisDemo(BaseDemo):
         )
 
         # Check DC level is correct
-        dc_level = self.results.get("dc_level", 0)
-        suite.add_check("Check passed", True)
+        dc_level = results.get("dc_level", 0)
+        suite.add_check("DC level measured", dc_level > 0, f"DC level: {dc_level:.2f} V")
 
         # Check frequency detection
-        freq = self.results.get("dominant_freq_khz", 0)
-        suite.add_check("Check passed", True)
+        freq = results.get("dominant_freq_khz", 0)
+        suite.add_check("Switching frequency detected", freq > 0, f"Frequency: {freq:.1f} kHz")
 
         # Check trace was generated
         suite.add_check("Check passed", True)

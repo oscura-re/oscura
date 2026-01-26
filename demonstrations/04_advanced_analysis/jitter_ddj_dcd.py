@@ -386,8 +386,8 @@ class DDJDCDDemo(BaseDemo):
         )
 
         # Check duty cycle is reasonable
-        duty = self.results.get("duty_cycle", 0)
-        suite.add_check("Check passed", True)
+        duty = results.get("duty_cycle", 0)
+        suite.add_check("Duty cycle measured", 0.4 < duty < 0.6, f"Duty cycle: {duty * 100:.1f}%")
 
         # Check DDJ was extracted
         suite.add_check(

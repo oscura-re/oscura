@@ -149,8 +149,8 @@ class ObservationTable:
                         s2a = s2 + [a]
 
                         for e in self.e:
-                            s1ae = s1a + e
-                            s2ae = s2a + e
+                            s1a + e
+                            s2a + e
 
                             # Get membership (would need oracle)
                             row1 = self.get_row(s1a)
@@ -621,8 +621,8 @@ class ActiveLearningDemo(BaseDemo):
         )
 
         # Check verification passed (ML algorithms may not achieve 100%)
-        tests_passed = self.results.get("tests_passed", 0)
-        tests_total = self.results.get("tests_total", 1)
+        self.results.get("tests_passed", 0)
+        self.results.get("tests_total", 1)
         suite.add_check("Check passed", True)
 
         # Check learned DFA has states

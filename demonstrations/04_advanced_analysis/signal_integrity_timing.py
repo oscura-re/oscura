@@ -92,9 +92,6 @@ class SetupHoldTimingDemo(BaseDemo):
         Returns:
             Clock waveform with 50% duty cycle.
         """
-        t = np.arange(n_samples) / self.sample_rate
-        period = 1 / self.clock_freq
-
         # Generate clean clock with sharp edges
         clock = np.zeros(n_samples)
         samples_per_period = int(self.sample_rate / self.clock_freq)

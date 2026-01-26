@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import struct
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -295,7 +296,8 @@ class AutomotiveProtocolDemo(BaseDemo):
             doc.add_message(msg_disc)
 
             # Generate DBC
-            dbc_path = Path("/tmp/discovered_signals.dbc")
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".dbc", delete=False) as tmp:
+                dbc_path = Path(tmp.name)
             DBCGenerator.generate(doc, dbc_path, min_confidence=0.8)
             print_result("DBC generated", str(dbc_path))
             self.results["dbc_generated"] = True

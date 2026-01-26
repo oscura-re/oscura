@@ -296,7 +296,6 @@ class OneWireDemo(BaseDemo):
             # Each transaction starts with a reset pulse
             rom_cmd = pkt.annotations.get("rom_command")
             rom_cmd_code = pkt.annotations.get("rom_command_code")
-            byte_count = pkt.annotations.get("byte_count", 0)
 
             print_info(f"  Transaction #{i + 1} @ {timestamp:.3f} ms")
 

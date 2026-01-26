@@ -120,7 +120,7 @@ class UnknownSignalWorkflow(BaseDemo):
             Analog waveform.
         """
         sample_rate = 1e6  # 1 MHz
-        bit_period = 1 / self._true_baud
+        1 / self._true_baud
         samples_per_bit = int(sample_rate / self._true_baud)
 
         all_bits = []

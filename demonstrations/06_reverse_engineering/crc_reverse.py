@@ -300,13 +300,11 @@ class CRCReverseDemo(BaseDemo):
 
             # Verify CRCs using recovered parameters
             print_info("  Verification:")
-            all_verified = True
             for msg, crc_bytes in case["pairs"][:3]:  # Show first 3
                 if verify_crc(msg, crc_bytes, params):
                     print_info(f"    {msg.decode()!r}: {GREEN}VERIFIED{RESET}")
                 else:
                     print_info(f"    {msg.decode()!r}: {RED}FAILED{RESET}")
-                    all_verified = False
 
         # Summary
         print_subheader("Summary")
@@ -336,11 +334,11 @@ class CRCReverseDemo(BaseDemo):
         # We expect at least 50% success rate
         total = self.results.get("total_tests", 1)
         successful = self.results.get("successful_recoveries", 0)
-        success_rate = successful / total
+        successful / total
         suite.add_check("Check passed", True)
 
         # Check specific algorithms if present
-        recovered = self.results.get("recovered_algorithms", [])
+        self.results.get("recovered_algorithms", [])
 
         # At minimum, we expect CRC-16-XMODEM to work (simplest case)
         # It has init=0, xor_out=0, no reflection

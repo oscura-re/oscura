@@ -398,7 +398,7 @@ class AutomotiveFullWorkflow(BaseDemo):
         uds_sessions = []
         for msg in diag_msgs:
             if len(msg.data) >= 2:
-                length = msg.data[0]
+                msg.data[0]
                 sid = msg.data[1]
 
                 # Decode UDS service
