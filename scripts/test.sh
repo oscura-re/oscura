@@ -200,10 +200,34 @@ fi
 # No exclusions - all tests enabled (EXCLUDE_MODULES array kept for future use)
 
 # =============================================================================
+# Ensure all dependencies are installed
+# =============================================================================
+
+ensure_dependencies() {
+  print_section "Dependency Check"
+
+  # Check if all optional dependencies are installed
+  # Use pyserial as a marker since it's from hardware extras and often missing
+  if ! uv run python -c "import serial" &> /dev/null; then
+    print_info "Installing all dependencies (including optional extras)..."
+    if ! uv sync --all-extras --group dev; then
+      print_fail "Failed to install dependencies"
+      exit 1
+    fi
+    print_pass "All dependencies installed successfully"
+  else
+    print_info "All dependencies already installed"
+  fi
+}
+
+# =============================================================================
 # Run tests
 # =============================================================================
 
 print_header "Oscura Test Suite"
+
+# Ensure dependencies before running tests
+ensure_dependencies
 
 if [[ "${QUIET}" == "false" ]]; then
   print_section "Configuration"

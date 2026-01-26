@@ -154,6 +154,7 @@ analysis = [
 hardware = [
     "pyvisa>=1.13.0,<2.0.0",             # VISA instrument control (oscilloscopes, etc.)
     "pyvisa-py>=0.7.0,<1.0.0",           # Pure Python VISA backend
+    "pyserial>=3.5,<4.0.0",              # Serial port communication (validation/replay tests)
 ]
 
 # Fuzzy routing enhancements

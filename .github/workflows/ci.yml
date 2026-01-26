@@ -186,7 +186,7 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python-version }}
-          install-optional: true
+          dev-group: true
 
       - name: Cache pytest
         uses: actions/cache@v5
