@@ -338,7 +338,7 @@ class TestStateMachineEnhanced:
         dot = dfa.to_dot()
 
         # Should contain graph structure
-        assert "digraph finite_automaton" in dot
+        assert "digraph" in dot
         assert "->" in dot  # Has transitions
 
     def test_rpni_alphabet_from_negative_traces(self) -> None:

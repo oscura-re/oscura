@@ -18,10 +18,11 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from oscura.core.numba_backend import njit
 
 if TYPE_CHECKING:
-    import numpy as np
     from numpy.typing import NDArray
 
 
@@ -1232,8 +1233,6 @@ def _banded_edit_distance_numba(
     Returns:
         Edit distance as integer.
     """
-    import numpy as np
-
     m, n = len(seq1), len(seq2)
     INF = max_dist + 100
     band_width = 2 * max_dist + 1
