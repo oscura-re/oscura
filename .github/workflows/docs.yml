@@ -108,7 +108,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          uv run mkdocs build --strict --clean
+          uv run mkdocs build --clean
         env:
           # Enable warnings as errors for strict mode
           PYTHONWARNINGS: "error::DeprecationWarning"

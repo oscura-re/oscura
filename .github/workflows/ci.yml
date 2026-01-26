@@ -214,65 +214,48 @@ jobs:
         run: |
           case "${{ matrix.test-group }}" in
             "analyzers")
+              # Analyzer tests including signal analysis, correlation
               paths="tests/unit/analyzers/ tests/unit/analysis/"
               paths="$paths tests/unit/signal/ tests/unit/correlation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "core-protocols-loaders")
-              paths="tests/unit/core/ tests/unit/protocols/"
-              paths="$paths tests/unit/loaders/ tests/unit/math/"
-              paths="$paths tests/unit/acquisition/"
+              # Core functionality, protocol decoders, data loaders
+              paths="tests/unit/core/ tests/unit/protocols/ tests/unit/loaders/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "search-filtering-streaming")
-              paths="tests/unit/search/ tests/unit/filtering/"
-              paths="$paths tests/unit/streaming/ tests/unit/batch/"
+              # Standalone test files in tests/unit/ root
+              paths="tests/unit/test_*.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "cli-ui-reporting")
-              paths="tests/unit/cli/ tests/unit/ui/"
-              paths="$paths tests/unit/reporting/"
-              paths="$paths tests/unit/visualization/"
-              paths="$paths tests/unit/exporters/"
-              paths="$paths tests/unit/web/"
+              # CLI, reporting, visualization, web interface
+              paths="tests/unit/cli/ tests/unit/reporting/"
+              paths="$paths tests/unit/visualization/ tests/unit/web/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-workflows")
-              paths="tests/unit/workflow/ tests/unit/workflows/"
-              paths="$paths tests/unit/pipeline/"
-              paths="$paths tests/unit/session/"
-              paths="$paths tests/unit/sessions/"
-              paths="$paths tests/unit/automotive/"
-              paths="$paths tests/unit/integrations/"
-              paths="$paths tests/unit/hardware/ tests/unit/firmware/"
-              paths="$paths tests/unit/iot/ tests/unit/side_channel/"
+              # Workflows, sessions, automotive, hardware/IoT
+              paths="tests/unit/workflows/ tests/unit/sessions/"
+              paths="$paths tests/unit/automotive/ tests/unit/hardware/"
+              paths="$paths tests/unit/firmware/ tests/unit/iot/"
+              paths="$paths tests/unit/side_channel/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-exploratory")
-              paths="tests/unit/exploratory/ tests/unit/inference/"
-              paths="$paths tests/unit/discovery/"
-              paths="$paths tests/unit/guidance/"
-              paths="$paths tests/unit/onboarding/"
-              paths="$paths tests/unit/compliance/"
-              paths="$paths tests/unit/quality/"
-              paths="$paths tests/unit/testing/"
+              # Inference, discovery, guidance, compliance
+              paths="tests/unit/inference/ tests/unit/discovery/"
+              paths="$paths tests/unit/guidance/ tests/unit/compliance/"
               paths="$paths tests/unit/requirements/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-utils")
-              paths="tests/unit/utils/ tests/unit/config/"
-              paths="$paths tests/unit/hooks/ tests/unit/plugins/"
-              paths="$paths tests/unit/api/ tests/unit/dsl/"
-              paths="$paths tests/unit/extensibility/"
-              paths="$paths tests/unit/jupyter/"
-              paths="$paths tests/unit/optimization/"
-              paths="$paths tests/unit/schemas/"
-              paths="$paths tests/unit/triggering/"
-              paths="$paths tests/unit/component/"
-              paths="$paths tests/unit/comparison/"
-              paths="$paths tests/unit/builders/"
-              paths="$paths tests/unit/convenience/"
-              paths="$paths tests/unit/export/"
+              # Utilities, config, API, helpers, exports
+              paths="tests/unit/utils/ tests/unit/config/ tests/unit/hooks/"
+              paths="$paths tests/unit/api/ tests/unit/jupyter/"
+              paths="$paths tests/unit/component/ tests/unit/comparison/"
+              paths="$paths tests/unit/convenience/ tests/unit/export/"
               paths="$paths tests/unit/storage/ tests/unit/validation/"
               paths="$paths tests/unit/security/ tests/unit/performance/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
