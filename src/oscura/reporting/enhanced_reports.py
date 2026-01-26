@@ -305,6 +305,14 @@ class EnhancedReportGenerator:
         if config is None:
             config = ReportConfig(title="Protocol Analysis Report")
 
+        # Validate format
+        valid_formats = {"html", "pdf", "both"}
+        if config.format not in valid_formats:
+            raise ValueError(
+                f"Unsupported format: {config.format}. "
+                f"Valid formats: {', '.join(sorted(valid_formats))}"
+            )
+
         output_path = Path(output_path)
 
         # Convert dict to object-like structure if needed
