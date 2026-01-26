@@ -48,11 +48,13 @@ class UDPPacketAnalysisDemo(BaseDemo):
     Demonstrates Oscura's packet analysis capabilities including
     traffic metrics, payload analysis, and protocol fingerprinting.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="Comprehensive UDP Packet Analysis",
-            description="Demonstrates UDP packet reverse engineering capabilities",            **kwargs,
+            description="Demonstrates UDP packet reverse engineering capabilities",
+            **kwargs,
         )
         self.packets = []
         self.payloads = []
@@ -120,7 +122,6 @@ class UDPPacketAnalysisDemo(BaseDemo):
         print_result("Packets generated", len(self.packets))
         print_result("Payload size", len(self.payloads[0]), "bytes")
 
-
         return {}
 
     def run_demonstration(self, data: dict) -> dict:
@@ -144,7 +145,6 @@ class UDPPacketAnalysisDemo(BaseDemo):
         # === Section 5: Clustering ===
         print_subheader("Clustering Analysis")
         self._analyze_clustering()
-
 
         return self.results
 
@@ -251,30 +251,47 @@ class UDPPacketAnalysisDemo(BaseDemo):
         suite = ValidationSuite()
 
         # Traffic metrics
-        suite.add_check("Throughput measured", results.get("throughput_bps", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Throughput measured",
+            results.get("throughput_bps", 0) > 0,
+            0,
+        )
 
-        suite.add_check("Packets/sec > 0", results.get("packets_per_sec", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Packets/sec > 0",
+            results.get("packets_per_sec", 0) > 0,
+            0,
+        )
 
         # Payload analysis
-        suite.add_check("All payloads processed", self.results.get("total_payloads", 0) == 0,
-            len(self.payloads),        )
+        suite.add_check(
+            "All payloads processed",
+            self.results.get("total_payloads", 0) == 0,
+            len(self.payloads),
+        )
 
-        suite.add_check("Entropy calculated", results.get("entropy_bits", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Entropy calculated",
+            results.get("entropy_bits", 0) > 0,
+            0,
+        )
 
         # Field inference
-        suite.add_check("Fields inferred", results.get("inferred_fields", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Fields inferred",
+            results.get("inferred_fields", 0) > 0,
+            0,
+        )
 
         # Clustering
-        suite.add_check("Clustering completed", results.get("clusters", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Clustering completed",
+            results.get("clusters", 0) > 0,
+            0,
+        )
 
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

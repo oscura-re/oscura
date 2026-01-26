@@ -65,11 +65,13 @@ class LINDemo(BaseDemo):
     This demo generates LIN bus signals with various frame types,
     then decodes them to demonstrate Oscura's LIN analysis capabilities.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="LIN Protocol Demo",
-            description="Demonstrates LIN 1.x/2.x automotive protocol decoding",            **kwargs,
+            description="Demonstrates LIN 1.x/2.x automotive protocol decoding",
+            **kwargs,
         )
         self.sample_rate = 1e6  # 1 MHz sampling
         self.baudrate = 19200  # 19200 bps (LIN 2.0)
@@ -303,7 +305,6 @@ class LINDemo(BaseDemo):
         print_result("Sample rate", f"{self.sample_rate / 1e6:.1f} MHz")
         print_result("Samples per bit", samples_per_bit)
 
-
         return {}
 
     def run_demonstration(self, data: dict) -> dict:
@@ -399,7 +400,6 @@ class LINDemo(BaseDemo):
 
             self.results["avg_gap_ms"] = np.mean(inter_frame_gaps) * 1e3
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -408,43 +408,29 @@ class LINDemo(BaseDemo):
 
         # Check total frames
         frame_count = results.get("frame_count", 0)
-        suite.add_check(
-            "Total frames decoded",
-            frame_count > 0,
-            f"Got {frame_count} frames"
-        )
+        suite.add_check("Total frames decoded", frame_count > 0, f"Got {frame_count} frames")
 
         # Check for expected frame IDs
         frame_ids = results.get("frame_ids", [])
         suite.add_check(
-            "Frame ID 0x10 found",
-            0x10 in frame_ids,
-            f"IDs: {[hex(id) for id in frame_ids]}"
+            "Frame ID 0x10 found", 0x10 in frame_ids, f"IDs: {[hex(id) for id in frame_ids]}"
         )
         suite.add_check(
-            "Frame ID 0x21 found",
-            0x21 in frame_ids,
-            f"IDs: {[hex(id) for id in frame_ids]}"
+            "Frame ID 0x21 found", 0x21 in frame_ids, f"IDs: {[hex(id) for id in frame_ids]}"
         )
         suite.add_check(
-            "Frame ID 0x3C found",
-            0x3C in frame_ids,
-            f"IDs: {[hex(id) for id in frame_ids]}"
+            "Frame ID 0x3C found", 0x3C in frame_ids, f"IDs: {[hex(id) for id in frame_ids]}"
         )
 
         # Check data integrity
         total_data_bytes = results.get("total_data_bytes", 0)
-        suite.add_check(
-            "Total data bytes",
-            total_data_bytes > 0,
-            f"Got {total_data_bytes} bytes"
-        )
+        suite.add_check("Total data bytes", total_data_bytes > 0, f"Got {total_data_bytes} bytes")
 
         # Verify signal integrity
         suite.add_check(
             "Bus signal generated",
             self.bus_signal is not None and len(self.bus_signal) > 0,
-            f"Got {len(self.bus_signal) if self.bus_signal is not None else 0} samples"
+            f"Got {len(self.bus_signal) if self.bus_signal is not None else 0} samples",
         )
 
         suite.report()

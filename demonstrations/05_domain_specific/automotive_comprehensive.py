@@ -62,11 +62,13 @@ class AutomotiveProtocolDemo(BaseDemo):
     Demonstrates Oscura's comprehensive automotive reverse engineering
     capabilities across CAN, OBD-II, UDS, J1939, LIN, and FlexRay.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="Comprehensive Automotive Protocol Analysis",
-            description="Demonstrates automotive protocol reverse engineering",            **kwargs,
+            description="Demonstrates automotive protocol reverse engineering",
+            **kwargs,
         )
         self.messages = []
         self.session = None
@@ -123,7 +125,6 @@ class AutomotiveProtocolDemo(BaseDemo):
 
         print_result("Messages generated", len(self.messages))
         print_result("Unique IDs", len(self.session.unique_ids()))
-
 
         return {}
 
@@ -203,7 +204,6 @@ class AutomotiveProtocolDemo(BaseDemo):
         # === Section 6: Protocol Summary ===
         print_subheader("Protocol Summary")
         self._print_protocol_summary()
-
 
         return self.results
 
@@ -424,35 +424,48 @@ class AutomotiveProtocolDemo(BaseDemo):
         """Validate automotive analysis results."""
         suite = ValidationSuite()
 
-        if not HAS_AUTOMOTIVE:return
+        if not HAS_AUTOMOTIVE:
+            return
 
         # CAN analysis
-        suite.add_check("CAN messages generated", results.get("can_messages", 0) > 0,
-            0,        )
+        suite.add_check(
+            "CAN messages generated",
+            results.get("can_messages", 0) > 0,
+            0,
+        )
 
-        suite.add_check("Unique CAN IDs", results.get("can_unique_ids", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Unique CAN IDs",
+            results.get("can_unique_ids", 0) > 0,
+            0,
+        )
 
         # Reverse engineering
 
-
-        suite.add_check("Hypothesis confidence", results.get("hypothesis_confidence", 0) > 0,
-            0.5,        )
+        suite.add_check(
+            "Hypothesis confidence",
+            results.get("hypothesis_confidence", 0) > 0,
+            0.5,
+        )
 
         # OBD-II
-        suite.add_check("OBD-II RPM decoded", results.get("obd2_rpm", 0) > 0,
-            0,        )
+        suite.add_check(
+            "OBD-II RPM decoded",
+            results.get("obd2_rpm", 0) > 0,
+            0,
+        )
 
         # UDS
-        suite.add_check("UDS services decoded", results.get("uds_services_decoded", 0) > 0,
-            0,        )
+        suite.add_check(
+            "UDS services decoded",
+            results.get("uds_services_decoded", 0) > 0,
+            0,
+        )
 
         # J1939
 
-
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

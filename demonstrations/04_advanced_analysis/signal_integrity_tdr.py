@@ -70,11 +70,13 @@ class TDRImpedanceDemo(BaseDemo):
     This demo generates simularun_demoted TDR waveforms with various impedance
     discontinuities and performs comprehensive TDR analysis.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="TDR Impedance Demo",
-            description="Demonstrates Time Domain Reflectometry for transmission line analysis",            **kwargs,
+            description="Demonstrates Time Domain Reflectometry for transmission line analysis",
+            **kwargs,
         )
         self.sample_rate = 50e9  # 50 GHz (20 ps resolution)
         self.duration = 20e-9  # 20 ns capture
@@ -252,7 +254,6 @@ class TDRImpedanceDemo(BaseDemo):
         print_result("Duration", f"{self.duration * 1e9:.0f} ns")
         print_result("Total samples", n_samples)
 
-
         return {}
 
     def run_demonstration(self, data: dict) -> dict:
@@ -425,7 +426,6 @@ class TDRImpedanceDemo(BaseDemo):
         else:
             print_info(f"{RED}Some discontinuities not detected{RESET}")
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -434,18 +434,14 @@ class TDRImpedanceDemo(BaseDemo):
 
         # Check TDR analysis was performed
         tdr_length = results.get("tdr_length_m", 0)
-        suite.add_check(
-            "TDR length measured",
-            tdr_length > 0,
-            f"Got {tdr_length:.3f} m"
-        )
+        suite.add_check("TDR length measured", tdr_length > 0, f"Got {tdr_length:.3f} m")
 
         # Check impedance was measured
         z0_measured = results.get("z0_measured_ohms", 0)
         suite.add_check(
             "Impedance measured",
             40 < z0_measured < 60,
-            f"Got {z0_measured:.1f} Ohms (expected ~50)"
+            f"Got {z0_measured:.1f} Ohms (expected ~50)",
         )
 
         # Check for discontinuities
@@ -453,23 +449,19 @@ class TDRImpedanceDemo(BaseDemo):
         suite.add_check(
             "Discontinuities detected",
             discontinuities > 0,
-            f"Got {discontinuities} discontinuities"
+            f"Got {discontinuities} discontinuities",
         )
 
         # Check reflection coefficient
         if "reflection_coefficient" in results:
             rho = results["reflection_coefficient"]
-            suite.add_check(
-                "Reflection coefficient reasonable",
-                abs(rho) < 0.5,
-                f"Got {rho:.3f}"
-            )
+            suite.add_check("Reflection coefficient reasonable", abs(rho) < 0.5, f"Got {rho:.3f}")
 
         # Check signals were generated
         suite.add_check(
             "TDR trace generated",
             self.tdr_trace is not None and len(self.tdr_trace.data) > 0,
-            f"Got {len(self.tdr_trace.data) if self.tdr_trace is not None else 0} samples"
+            f"Got {len(self.tdr_trace.data) if self.tdr_trace is not None else 0} samples",
         )
 
         suite.report()

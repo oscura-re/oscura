@@ -83,11 +83,13 @@ class UnknownSignalWorkflow(BaseDemo):
     This demo generates an unknown protocol signal and walks through
     the complete reverse engineering process step by step.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="Unknown Signal RE Workflow",
-            description="Complete workflow for reverse engineering unknown digital signals",            **kwargs,
+            description="Complete workflow for reverse engineering unknown digital signals",
+            **kwargs,
         )
 
         # Hidden protocol parameters (to be discovered)
@@ -251,7 +253,6 @@ class UnknownSignalWorkflow(BaseDemo):
         print_result("Sample rate", "1 MHz")
         print_result("Total samples", len(waveform))
         print_result("Duration", f"{len(waveform) / 1e6 * 1000:.1f} ms")
-
 
         return {}
 
@@ -513,7 +514,6 @@ class UnknownSignalWorkflow(BaseDemo):
         else:
             print_info(f"  {RED}Baud rate mismatch{RESET}")
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -521,27 +521,38 @@ class UnknownSignalWorkflow(BaseDemo):
         suite = ValidationSuite()
 
         # Check signal characterized
-        suite.add_check("High level voltage", self.results.get("high_level_v" > 0),
-            0,        )
+        suite.add_check(
+            "High level voltage",
+            self.results.get("high_level_v" > 0),
+            0,
+        )
 
         # Check baud detected
-        suite.add_check("Detected baud rate", self.results.get("detected_baud" == 0),
-            self._true_baud,        )
+        suite.add_check(
+            "Detected baud rate",
+            self.results.get("detected_baud" == 0),
+            self._true_baud,
+        )
 
         # Check bits extracted
-        suite.add_check("Bits extracted", self.results.get("bit_count" > 0),
-            100,        )
+        suite.add_check(
+            "Bits extracted",
+            self.results.get("bit_count" > 0),
+            100,
+        )
 
         # Check frames decoded
-        suite.add_check("Frames decoded", self.results.get("frames_decoded" > 0),
-            0,        )
+        suite.add_check(
+            "Frames decoded",
+            self.results.get("frames_decoded" > 0),
+            0,
+        )
 
         # Check protocol spec generated
         suite.add_check("Check passed", True)
 
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

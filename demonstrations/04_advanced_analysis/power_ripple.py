@@ -65,11 +65,13 @@ class RippleAnalysisDemo(BaseDemo):
     This demo generates simulated power supply waveforms with various
     ripple components and performs comprehensive ripple analysis.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="Power Supply Ripple Demo",
-            description="Demonstrates DC power supply ripple measurement and analysis",            **kwargs,
+            description="Demonstrates DC power supply ripple measurement and analysis",
+            **kwargs,
         )
         self.sample_rate = 10e6  # 10 MHz
         self.duration = 1e-3  # 1 ms
@@ -207,7 +209,6 @@ class RippleAnalysisDemo(BaseDemo):
             print_result("Sample rate", f"{self.sample_rate / 1e6:.1f} MHz")
             print_result("Duration", f"{self.duration * 1e3:.1f} ms")
             print_result("Total samples", n_samples)
-
 
         return {}
 
@@ -367,7 +368,6 @@ class RippleAnalysisDemo(BaseDemo):
         print_result("Ripple %", f"{r_pp_pct:.3f}%")
         print_result("Dominant frequency", f"{f_ripple / 1e3:.1f} kHz")
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -375,11 +375,17 @@ class RippleAnalysisDemo(BaseDemo):
         suite = ValidationSuite()
 
         # Check ripple was measured
-        suite.add_check("Ripple pk-pk", results.get("ripple_pp_mv", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Ripple pk-pk",
+            results.get("ripple_pp_mv", 0) > 0,
+            0,
+        )
 
-        suite.add_check("Ripple RMS", results.get("ripple_rms_mv", 0) > 0,
-            0,        )
+        suite.add_check(
+            "Ripple RMS",
+            results.get("ripple_rms_mv", 0) > 0,
+            0,
+        )
 
         # Check DC level is correct
         dc_level = self.results.get("dc_level", 0)
@@ -394,7 +400,6 @@ class RippleAnalysisDemo(BaseDemo):
 
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ import numpy as np
 # Add parent for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from demonstrations.common import BaseDemo, ValidationSuite, print_info, print_result
+from demonstrations.common import BaseDemo, print_info, print_result
 from demonstrations.common.base_demo import run_demo_main
 from demonstrations.common.formatting import GREEN, RESET, print_subheader
 

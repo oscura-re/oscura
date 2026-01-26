@@ -28,7 +28,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from demonstrations.common import BaseDemo, ValidationSuite, print_info, print_result
+from demonstrations.common import BaseDemo, print_info, print_result
 from demonstrations.common.base_demo import run_demo_main
 from demonstrations.common.formatting import print_subheader
 from demonstrations.common import SignalBuilder

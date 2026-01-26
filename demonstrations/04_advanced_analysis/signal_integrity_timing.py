@@ -63,11 +63,13 @@ class SetupHoldTimingDemo(BaseDemo):
     relationships, then measures setup and hold times to demonstrate
     Oscura's timing analysis capabilities.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="Setup/Hold Timing Demo",
-            description="Demonstrates JEDEC JESD65B compliant timing analysis",            **kwargs,
+            description="Demonstrates JEDEC JESD65B compliant timing analysis",
+            **kwargs,
         )
         self.sample_rate = 1e9  # 1 GHz (1 ns resolution)
         self.clock_freq = 100e6  # 100 MHz clock
@@ -311,7 +313,6 @@ class SetupHoldTimingDemo(BaseDemo):
         print_result("Signal duration", f"{duration * 1e6:.1f} us")
         print_result("Total samples", n_samples)
 
-
         return {}
 
     def run_demonstration(self, data: dict) -> dict:
@@ -465,7 +466,6 @@ class SetupHoldTimingDemo(BaseDemo):
         print_result("Setup spec", f">= {self.spec_setup_min:.1f} ns")
         print_result("Hold spec", f">= {self.spec_hold_min:.1f} ns")
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -474,49 +474,35 @@ class SetupHoldTimingDemo(BaseDemo):
 
         # Check rise time
         rise_time_ns = results.get("rise_time_ns", 0)
-        suite.add_check(
-            "Rise time measured",
-            rise_time_ns > 0,
-            f"Got {rise_time_ns:.2f} ns"
-        )
+        suite.add_check("Rise time measured", rise_time_ns > 0, f"Got {rise_time_ns:.2f} ns")
 
         # Check fall time
         fall_time_ns = results.get("fall_time_ns", 0)
-        suite.add_check(
-            "Fall time measured",
-            fall_time_ns > 0,
-            f"Got {fall_time_ns:.2f} ns"
-        )
+        suite.add_check("Fall time measured", fall_time_ns > 0, f"Got {fall_time_ns:.2f} ns")
 
         # Check propagation delay
         if "prop_delay_ns" in results:
             prop_delay = results["prop_delay_ns"]
             suite.add_check(
-                "Propagation delay measured",
-                prop_delay > 0,
-                f"Got {prop_delay:.2f} ns"
+                "Propagation delay measured", prop_delay > 0, f"Got {prop_delay:.2f} ns"
             )
 
         # Check setup/hold times
         if "setup_time_ns" in results:
             setup_time = results["setup_time_ns"]
-            suite.add_check(
-                "Setup time measured",
-                setup_time > 0,
-                f"Got {setup_time:.2f} ns"
-            )
+            suite.add_check("Setup time measured", setup_time > 0, f"Got {setup_time:.2f} ns")
 
         # Check signals were generated
         suite.add_check(
             "Clock trace generated",
             self.clk_trace is not None and len(self.clk_trace.data) > 0,
-            f"Got {len(self.clk_trace.data) if self.clk_trace is not None else 0} samples"
+            f"Got {len(self.clk_trace.data) if self.clk_trace is not None else 0} samples",
         )
 
         suite.add_check(
             "Data trace generated",
             self.data_trace is not None and len(self.data_trace.data) > 0,
-            f"Got {len(self.data_trace.data) if self.data_trace is not None else 0} samples"
+            f"Got {len(self.data_trace.data) if self.data_trace is not None else 0} samples",
         )
 
         suite.report()

@@ -68,11 +68,13 @@ class DDJDCDDemo(BaseDemo):
     This demo generates signals with known DDJ and DCD characteristics
     and uses Oscura to extract and quantify these jitter components.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="DDJ/DCD Jitter Demo",
-            description="Demonstrates data-dependent jitter and duty cycle distortion analysis",            **kwargs,
+            description="Demonstrates data-dependent jitter and duty cycle distortion analysis",
+            **kwargs,
         )
         self.sample_rate = 10e9  # 10 GHz
         self.data_rate = 1e9  # 1 Gbps
@@ -235,7 +237,6 @@ class DDJDCDDemo(BaseDemo):
         print_result("Total samples", len(waveform))
         print_result("Bit pattern length", len(self.bit_pattern))
 
-
         return {}
 
     def run_demonstration(self, data: dict) -> dict:
@@ -371,7 +372,6 @@ class DDJDCDDemo(BaseDemo):
         total_dj = self.results.get("dcd_ps", 0) + self.results.get("ddj_pp_ps", 0)
         print_info(f"Total DJ (estimated): {total_dj:.2f} ps")
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -379,20 +379,29 @@ class DDJDCDDemo(BaseDemo):
         suite = ValidationSuite()
 
         # Check DCD was measured
-        suite.add_check("DCD measured", results.get("dcd_ps", 0) > 0,
-            0,        )
+        suite.add_check(
+            "DCD measured",
+            results.get("dcd_ps", 0) > 0,
+            0,
+        )
 
         # Check duty cycle is reasonable
         duty = self.results.get("duty_cycle", 0)
         suite.add_check("Check passed", True)
 
         # Check DDJ was extracted
-        suite.add_check("DDJ measured", results.get("ddj_pp_ps", 0) > 0,
-            0,        )
+        suite.add_check(
+            "DDJ measured",
+            results.get("ddj_pp_ps", 0) > 0,
+            0,
+        )
 
         # Check RJ was extracted
-        suite.add_check("RJ measured", results.get("rj_rms_ps", 0) > 0,
-            0,        )
+        suite.add_check(
+            "RJ measured",
+            results.get("rj_rms_ps", 0) > 0,
+            0,
+        )
 
         # Check trace was generated
         suite.add_check("Check passed", True)
@@ -401,7 +410,6 @@ class DDJDCDDemo(BaseDemo):
 
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

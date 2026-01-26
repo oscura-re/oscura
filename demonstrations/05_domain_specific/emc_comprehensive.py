@@ -40,11 +40,13 @@ class EMCComplianceDemo(BaseDemo):
     Demonstrates Oscura's comprehensive EMC testing capabilities
     including conducted/radiated emissions and power quality analysis.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="Comprehensive EMC/EMI Compliance Analysis",
-            description="Demonstrates EMC compliance testing per CISPR, FCC, IEC standards",            **kwargs,
+            description="Demonstrates EMC compliance testing per CISPR, FCC, IEC standards",
+            **kwargs,
         )
         self.sample_rate = 100e6  # 100 MHz
         self.ce_trace = None  # Conducted emissions
@@ -168,7 +170,6 @@ class EMCComplianceDemo(BaseDemo):
         if not self.esd_trace:
             self._generate_esd_transient()
 
-
         return {}
 
     def _generate_conducted_emissions(self) -> None:
@@ -269,7 +270,6 @@ class EMCComplianceDemo(BaseDemo):
         # === Section 5: Compliance Summary ===
         print_subheader("Compliance Summary")
         self._print_compliance_summary()
-
 
         return self.results
 
@@ -470,27 +470,41 @@ class EMCComplianceDemo(BaseDemo):
         suite = ValidationSuite()
 
         # Conducted emissions
-        suite.add_check("CE emission peaks detected", results.get("ce_peaks", 0) > 0,
-            0,        )
+        suite.add_check(
+            "CE emission peaks detected",
+            results.get("ce_peaks", 0) > 0,
+            0,
+        )
 
         # Power quality
-        suite.add_check("PQ harmonics analyzed", results.get("pq_harmonics", 0) > 0,
-            0,        )
+        suite.add_check(
+            "PQ harmonics analyzed",
+            results.get("pq_harmonics", 0) > 0,
+            0,
+        )
 
-        suite.add_check("PQ fundamental detected", results.get("pq_fundamental", 0) > 0,
-            0,        )
+        suite.add_check(
+            "PQ fundamental detected",
+            results.get("pq_fundamental", 0) > 0,
+            0,
+        )
 
         # ESD
-        suite.add_check("ESD peak voltage measured", results.get("esd_peak_kv", 0) > 0,
-            0,        )
+        suite.add_check(
+            "ESD peak voltage measured",
+            results.get("esd_peak_kv", 0) > 0,
+            0,
+        )
 
         # EMI fingerprint
-        suite.add_check("EMI peaks fingerprinted", results.get("emi_peaks", 0) > 0,
-            0,        )
+        suite.add_check(
+            "EMI peaks fingerprinted",
+            results.get("emi_peaks", 0) > 0,
+            0,
+        )
 
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

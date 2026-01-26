@@ -343,11 +343,13 @@ class ActiveLearningDemo(BaseDemo):
     This demo creates a target DFA and uses the L* algorithm to learn it,
     demonstrating active learning for protocol inference.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="Active Learning Demo",
-            description="Demonstrates L* algorithm for active DFA learning",            **kwargs,
+            description="Demonstrates L* algorithm for active DFA learning",
+            **kwargs,
         )
 
         self.target_dfa = None
@@ -460,7 +462,6 @@ class ActiveLearningDemo(BaseDemo):
             src = next(s.name for s in self.target_dfa.states if s.id == trans.source)
             tgt = next(s.name for s in self.target_dfa.states if s.id == trans.target)
             print_info(f"  {src} --{trans.symbol}--> {tgt}")
-
 
         return {}
 
@@ -601,7 +602,6 @@ class ActiveLearningDemo(BaseDemo):
         else:
             print_info(f"  {YELLOW}Some verification tests failed{RESET}")
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -614,8 +614,11 @@ class ActiveLearningDemo(BaseDemo):
         suite.add_check("Check passed", True)
 
         # Check learning metrics
-        suite.add_check("Membership queries", self.results.get("membership_queries" > 0),
-            0,        )
+        suite.add_check(
+            "Membership queries",
+            self.results.get("membership_queries" > 0),
+            0,
+        )
 
         # Check verification passed (ML algorithms may not achieve 100%)
         tests_passed = self.results.get("tests_passed", 0)
@@ -623,12 +626,14 @@ class ActiveLearningDemo(BaseDemo):
         suite.add_check("Check passed", True)
 
         # Check learned DFA has states
-        suite.add_check("Learned states", self.results.get("learned_states" > 0),
-            0,        )
+        suite.add_check(
+            "Learned states",
+            self.results.get("learned_states" > 0),
+            0,
+        )
 
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

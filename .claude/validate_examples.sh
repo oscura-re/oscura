@@ -27,7 +27,7 @@ mapfile -t examples < <(find "${PROJECT_ROOT}/examples" "${PROJECT_ROOT}/demonst
   -not -name "__init__.py" \
   -not -path "*/common/*" \
   -not -path "*/data_generation/*" \
-  2>/dev/null | sort)
+  2> /dev/null | sort)
 
 echo "Found ${#examples[@]} example files to validate"
 echo "=========================================="
@@ -41,14 +41,14 @@ for example in "${examples[@]}"; do
   echo -n "Testing: ${rel_path} ... "
 
   # Check if example should be skipped (requires external dependencies)
-  if grep -q "# SKIP_VALIDATION" "${example}" 2>/dev/null; then
+  if grep -q "# SKIP_VALIDATION" "${example}" 2> /dev/null; then
     echo -e "${YELLOW}SKIP${NC} (marked for manual testing)"
     skipped=$((skipped + 1))
     continue
   fi
 
   # Run example with timeout using uv for package access
-  if timeout 30s uv run python "${example}" >"${log_file}" 2>&1; then
+  if timeout 30s uv run python "${example}" > "${log_file}" 2>&1; then
     echo -e "${GREEN}PASS${NC}"
     passed=$((passed + 1))
   else

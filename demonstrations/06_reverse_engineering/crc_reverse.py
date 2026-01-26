@@ -76,11 +76,13 @@ class CRCReverseDemo(BaseDemo):
     then uses the CRC reverser to recover the parameters, demonstrating
     Oscura's protocol inference capabilities.
     """
+
     def __init__(self, **kwargs):
         """Initialize demo."""
         super().__init__(
             name="CRC Reverse Engineering Demo",
-            description="Demonstrates CRC polynomial recovery from message-CRC pairs",            **kwargs,
+            description="Demonstrates CRC polynomial recovery from message-CRC pairs",
+            **kwargs,
         )
 
         # Test cases with known algorithms
@@ -252,7 +254,6 @@ class CRCReverseDemo(BaseDemo):
         print_result("Test cases generated", len(self.test_cases))
         print_result("Messages per case", len(test_messages))
 
-
         return {}
 
     def run_demonstration(self, data: dict) -> dict:
@@ -319,7 +320,6 @@ class CRCReverseDemo(BaseDemo):
             for alg in self.results["recovered_algorithms"]:
                 print_info(f"  - {alg}")
 
-
         return self.results
 
     def validate(self, results: dict) -> bool:
@@ -327,8 +327,11 @@ class CRCReverseDemo(BaseDemo):
         suite = ValidationSuite()
 
         # Check at least some algorithms were recovered
-        suite.add_check("Successful recoveries", self.results.get("successful_recoveries" > 0),
-            0,        )
+        suite.add_check(
+            "Successful recoveries",
+            self.results.get("successful_recoveries" > 0),
+            0,
+        )
 
         # We expect at least 50% success rate
         total = self.results.get("total_tests", 1)
@@ -346,7 +349,6 @@ class CRCReverseDemo(BaseDemo):
 
         suite.report()
         return suite.all_passed()
-
 
 
 if __name__ == "__main__":

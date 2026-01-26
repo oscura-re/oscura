@@ -10,7 +10,7 @@ echo ""
 
 # Test the fixed optimization demo
 echo "1. Testing fixed optimization demo..."
-timeout 60 uv run python3 demonstrations/09_batch_processing/04_optimization.py >/dev/null 2>&1 && echo "✓ Optimization demo passes" || echo "✗ Optimization demo failed"
+timeout 60 uv run python3 demonstrations/09_batch_processing/04_optimization.py > /dev/null 2>&1 && echo "✓ Optimization demo passes" || echo "✗ Optimization demo failed"
 
 # Test a skipped demo
 echo ""
