@@ -768,7 +768,7 @@ class TestImportErrors:
         config = HILConfig(interface="socketcan", port="can0", setup_delay=0.0)
         tester = HILTester(config)
 
-        with patch("builtins.__import__", side_effect=ImportError):
+        with patch("oscura.validation.hil_testing.can", None):
             with pytest.raises(ImportError, match="python-can is required"):
                 tester.setup()
 
@@ -779,7 +779,7 @@ class TestImportErrors:
         )
         tester = HILTester(config)
 
-        with patch("builtins.__import__", side_effect=ImportError):
+        with patch("oscura.validation.hil_testing.usb.core", None):
             with pytest.raises(ImportError, match="pyusb is required"):
                 tester.setup()
 
@@ -788,7 +788,7 @@ class TestImportErrors:
         config = HILConfig(interface="spi", port=0, setup_delay=0.0)
         tester = HILTester(config)
 
-        with patch("builtins.__import__", side_effect=ImportError):
+        with patch("oscura.validation.hil_testing.spidev", None):
             with pytest.raises(ImportError, match="spidev is required"):
                 tester.setup()
 
@@ -797,7 +797,7 @@ class TestImportErrors:
         config = HILConfig(interface="i2c", port=1, setup_delay=0.0)
         tester = HILTester(config)
 
-        with patch("builtins.__import__", side_effect=ImportError):
+        with patch("oscura.validation.hil_testing.SMBus", None):
             with pytest.raises(ImportError, match="smbus2 is required"):
                 tester.setup()
 
@@ -808,6 +808,7 @@ class TestImportErrors:
         )
         tester = HILTester(config)
 
-        with patch("builtins.__import__", side_effect=ImportError):
-            with pytest.raises(ImportError, match="No GPIO library available"):
-                tester.setup()
+        with patch("oscura.validation.hil_testing.GPIO", None):
+            with patch("oscura.validation.hil_testing.gpiod", None):
+                with pytest.raises(ImportError, match="No GPIO library available"):
+                    tester.setup()

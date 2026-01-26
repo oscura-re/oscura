@@ -34,6 +34,50 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol
 
+try:
+    import can  # type: ignore[import-untyped]
+except ImportError:
+    can = None  # type: ignore[assignment]
+
+try:
+    import usb  # type: ignore[import-not-found]
+    import usb.core  # type: ignore[import-not-found]
+except ImportError:
+    # Create module structure for test patching even when pyusb unavailable
+    import types
+
+    usb = types.ModuleType("usb")  # type: ignore[assignment]
+    usb.core = None  # type: ignore[attr-defined]
+
+try:
+    import spidev  # type: ignore[import-not-found]
+except ImportError:
+    spidev = None  # type: ignore[assignment]
+
+try:
+    from smbus2 import SMBus  # type: ignore[import-not-found]
+except ImportError:
+    SMBus = None  # type: ignore[assignment]
+
+try:
+    import RPi.GPIO as GPIO  # type: ignore[import-untyped]
+except ImportError:
+    try:
+        import gpiod  # type: ignore[import-not-found]
+
+        GPIO = None  # type: ignore[assignment]
+    except ImportError:
+        GPIO = None  # type: ignore[assignment]
+        gpiod = None  # type: ignore[assignment]
+
+try:
+    from scapy.all import IP, UDP, Packet, wrpcap  # type: ignore[attr-defined]
+except ImportError:
+    IP = None  # type: ignore[assignment]
+    UDP = None  # type: ignore[assignment]
+    Packet = None  # type: ignore[assignment]
+    wrpcap = None  # type: ignore[assignment]
+
 import serial  # type: ignore[import-untyped]
 
 from oscura.utils.serial import connect_serial_port
@@ -621,29 +665,24 @@ class HILTester:
         Raises:
             ImportError: If no GPIO library is available.
         """
-        try:
-            import gpiod  # type: ignore[import-not-found]  # Optional GPIO library
-
+        if "gpiod" in globals() and gpiod is not None:
             # Use libgpiod for modern Linux systems
             self._gpio_controller = gpiod
-        except ImportError:
-            try:
-                import RPi.GPIO as GPIO  # type: ignore[import-untyped]  # Optional GPIO library
+        elif GPIO is not None:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            self._gpio_controller = GPIO
 
-                GPIO.setmode(GPIO.BCM)
-                GPIO.setwarnings(False)
-                self._gpio_controller = GPIO
-
-                # Setup pins as outputs
-                if self.config.reset_gpio is not None:
-                    GPIO.setup(self.config.reset_gpio, GPIO.OUT, initial=GPIO.HIGH)
-                if self.config.power_gpio is not None:
-                    GPIO.setup(self.config.power_gpio, GPIO.OUT, initial=GPIO.LOW)
-            except ImportError as e:
-                raise ImportError(
-                    "No GPIO library available. Install gpiod or RPi.GPIO: "
-                    "pip install gpiod  # or  pip install RPi.GPIO"
-                ) from e
+            # Setup pins as outputs
+            if self.config.reset_gpio is not None:
+                GPIO.setup(self.config.reset_gpio, GPIO.OUT, initial=GPIO.HIGH)
+            if self.config.power_gpio is not None:
+                GPIO.setup(self.config.power_gpio, GPIO.OUT, initial=GPIO.LOW)
+        else:
+            raise ImportError(
+                "No GPIO library available. Install gpiod or RPi.GPIO: "
+                "pip install gpiod  # or  pip install RPi.GPIO"
+            )
 
     def _power_on(self) -> None:
         """Power on device via GPIO."""
@@ -715,12 +754,10 @@ class HILTester:
             ImportError: If python-can is not installed.
             OSError: If CAN interface cannot be opened.
         """
-        try:
-            import can
-        except ImportError as e:
+        if can is None:
             raise ImportError(
                 "python-can is required for SocketCAN. Install with: pip install python-can"
-            ) from e
+            )
 
         if not isinstance(self.config.port, str):
             raise ValueError(f"CAN interface must be string, got {type(self.config.port)}")
@@ -736,12 +773,10 @@ class HILTester:
             ImportError: If pyusb is not installed.
             OSError: If USB device not found or cannot be opened.
         """
-        try:
-            import usb.core  # type: ignore[import-not-found]  # Optional dependency
-        except ImportError as e:
+        if getattr(usb, "core", None) is None:
             raise ImportError(
                 "pyusb is required for USB interface. Install with: pip install pyusb"
-            ) from e
+            )
 
         if self.config.usb_vendor_id is None or self.config.usb_product_id is None:
             raise ValueError("usb_vendor_id and usb_product_id must be set for USB interface")
@@ -764,12 +799,10 @@ class HILTester:
             ImportError: If spidev is not installed.
             OSError: If SPI device cannot be opened.
         """
-        try:
-            import spidev  # type: ignore[import-not-found]  # Optional dependency
-        except ImportError as e:
+        if spidev is None:
             raise ImportError(
                 "spidev is required for SPI interface. Install with: pip install spidev"
-            ) from e
+            )
 
         spi = spidev.SpiDev()
         spi.open(self.config.spi_bus, self.config.spi_device)
@@ -783,12 +816,10 @@ class HILTester:
             ImportError: If smbus2 is not installed.
             OSError: If I2C device cannot be opened.
         """
-        try:
-            from smbus2 import SMBus  # type: ignore[import-not-found]  # Optional dependency
-        except ImportError as e:
+        if SMBus is None:
             raise ImportError(
                 "smbus2 is required for I2C interface. Install with: pip install smbus2"
-            ) from e
+            )
 
         self._connection = SMBus(self.config.i2c_bus)
 
@@ -839,8 +870,6 @@ class HILTester:
 
     def _send_receive_socketcan(self, data: bytes, timeout: float) -> bytes | None:
         """Send/receive via SocketCAN."""
-        import can
-
         bus: CANBusProtocol = self._connection
         msg = can.Message(arbitration_id=0x123, data=data, is_extended_id=False)
         bus.send(msg)
@@ -872,9 +901,7 @@ class HILTester:
 
     def _send_receive_i2c(self, data: bytes) -> bytes | None:
         """Send/receive via I2C."""
-        from smbus2 import SMBus
-
-        bus: SMBus = self._connection
+        bus = self._connection
         # Write data
         for byte in data:
             bus.write_byte(self.config.i2c_address, byte)
@@ -916,18 +943,11 @@ class HILTester:
 
         Requires scapy to be installed.
         """
-        try:
-            from scapy.all import (  # type: ignore[attr-defined]
-                IP,
-                UDP,
-                Packet,
-                wrpcap,
-            )
-        except ImportError:
+        if wrpcap is None or IP is None or UDP is None or Packet is None:
             # Silently skip if scapy not available
             return
 
-        packets: list[Packet] = []
+        packets: list = []
         for timestamp, sent_data, recv_data in self._pcap_packets:
             # Create UDP packet for sent data
             pkt = IP(dst="192.168.1.1") / UDP(dport=12345) / bytes(sent_data)
