@@ -426,6 +426,17 @@ class TDRImpedanceDemo(BaseDemo):
         else:
             print_info(f"{RED}Some discontinuities not detected{RESET}")
 
+        # Store summary results for validation
+        self.results["discontinuity_count"] = detected
+        self.results["z0_measured_ohms"] = self.z0
+
+        # Calculate total TDR length (distance to furthest discontinuity)
+        if self.results.get("impedance_profile"):
+            max_distance_cm = max(d["distance_cm"] for d in self.results["impedance_profile"])
+            self.results["tdr_length_m"] = max_distance_cm / 100
+        else:
+            self.results["tdr_length_m"] = 0
+
         return self.results
 
     def validate(self, results: dict) -> bool:

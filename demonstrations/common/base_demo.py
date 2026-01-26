@@ -276,6 +276,18 @@ class BaseDemo(ABC):
         """
         return Path(__file__).parent.parent / "data"
 
+    def find_default_data_file(self, filename: str) -> Path | None:
+        """Find a default data file in the data directory.
+
+        Args:
+            filename: Name of file to look for (e.g., "signal.npz")
+
+        Returns:
+            Path to file if it exists, None otherwise
+        """
+        data_file_path = self.get_data_dir() / filename
+        return data_file_path if data_file_path.exists() else None
+
     def get_output_dir(self) -> Path:
         """Get path to demonstration output directory.
 

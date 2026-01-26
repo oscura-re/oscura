@@ -492,8 +492,8 @@ class SetupHoldTimingDemo(BaseDemo):
         # Check signals were generated
         suite.add_check(
             "Clock trace generated",
-            self.clk_trace is not None and len(self.clk_trace.data) > 0,
-            f"Got {len(self.clk_trace.data) if self.clk_trace is not None else 0} samples",
+            self.clock_trace is not None and len(self.clock_trace.data) > 0,
+            f"Got {len(self.clock_trace.data) if self.clock_trace is not None else 0} samples",
         )
 
         suite.add_check(

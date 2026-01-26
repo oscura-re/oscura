@@ -216,6 +216,10 @@ class SParametersDemo(BaseDemo):
 
     def run_demonstration(self, data: dict) -> dict:
         """Analyze S-parameters and calculate key metrics."""
+        # Store flags for validation
+        self.results["s11_present"] = self.s_params is not None
+        self.results["s21_present"] = self.s_params is not None and self.s_params.n_ports >= 2
+
         # ===== Return Loss Analysis =====
         print_subheader("Return Loss Analysis (S11)")
 
@@ -356,6 +360,7 @@ class SParametersDemo(BaseDemo):
         # Should be approximately 2x (6 dB more)
         il_ratio = il_cascade[-1] / max(il_single[-1], 0.001)
         self.results["cascade_il_ratio"] = il_ratio
+        self.results["cascade_loss_db"] = il_cascade[-1]
 
         if 1.8 < il_ratio < 2.2:
             print_info(f"  {GREEN}Cascade IL is ~2x single (expected){RESET}")

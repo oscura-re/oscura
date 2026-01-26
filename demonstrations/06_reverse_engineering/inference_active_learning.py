@@ -616,8 +616,8 @@ class ActiveLearningDemo(BaseDemo):
         # Check learning metrics
         suite.add_check(
             "Membership queries",
-            self.results.get("membership_queries" > 0),
-            0,
+            self.results.get("membership_queries", 0) > 0,
+            True,
         )
 
         # Check verification passed (ML algorithms may not achieve 100%)
