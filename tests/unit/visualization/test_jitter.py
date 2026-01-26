@@ -220,12 +220,16 @@ class TestPlotTieHistogram:
         with pytest.raises((ValueError, IndexError)):
             jitter.plot_tie_histogram(empty_data, show=False)
 
+    @pytest.mark.filterwarnings("ignore:divide by zero:RuntimeWarning")
+    @pytest.mark.filterwarnings("ignore:invalid value:RuntimeWarning")
     def test_tie_single_value(self, mock_mpl):
         """Test single TIE value."""
         single_val = np.array([1e-12])
         fig = jitter.plot_tie_histogram(single_val, show=False)
         assert fig is not None
 
+    @pytest.mark.filterwarnings("ignore:divide by zero:RuntimeWarning")
+    @pytest.mark.filterwarnings("ignore:invalid value:RuntimeWarning")
     def test_tie_zero_jitter(self, mock_mpl):
         """Test all-zero jitter (ideal case)."""
         zero_jitter = np.zeros(100)
