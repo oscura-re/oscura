@@ -537,13 +537,13 @@ class DCDCEfficiencyDemo(BaseDemo):
         # Check that signals were generated
         suite.add_check(
             "Vin signal generated",
-            self.vin_trace is not None and len(self.vin_trace.data) > 0,
-            f"Got {len(self.vin_trace.data) if self.vin_trace is not None else 0} samples",
+            self.v_in_trace is not None and len(self.v_in_trace.data) > 0,
+            f"Got {len(self.v_in_trace.data) if self.v_in_trace is not None else 0} samples",
         )
         suite.add_check(
             "Vout signal generated",
-            self.vout_trace is not None and len(self.vout_trace.data) > 0,
-            f"Got {len(self.vout_trace.data) if self.vout_trace is not None else 0} samples",
+            self.v_out_trace is not None and len(self.v_out_trace.data) > 0,
+            f"Got {len(self.v_out_trace.data) if self.v_out_trace is not None else 0} samples",
         )
 
         suite.report()

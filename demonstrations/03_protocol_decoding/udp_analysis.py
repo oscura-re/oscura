@@ -266,8 +266,8 @@ class UDPPacketAnalysisDemo(BaseDemo):
         # Payload analysis
         suite.add_check(
             "All payloads processed",
-            self.results.get("total_payloads", 0) == 0,
-            len(self.payloads),
+            self.results.get("total_payloads", 0) == len(self.payloads),
+            f"Got {self.results.get('total_payloads', 0)} (expected {len(self.payloads)})",
         )
 
         suite.add_check(

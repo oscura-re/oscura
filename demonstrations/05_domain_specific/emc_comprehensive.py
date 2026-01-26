@@ -184,7 +184,7 @@ class EMCComplianceDemo(BaseDemo):
         )
 
         self.ce_trace = WaveformTrace(
-            data=signal.data["ch1"],
+            data=signal["ch1"],
             metadata=TraceMetadata(
                 sample_rate=self.sample_rate,
                 channel_name="CE_Line",
@@ -205,7 +205,7 @@ class EMCComplianceDemo(BaseDemo):
         )
 
         self.pq_trace = WaveformTrace(
-            data=signal.data["ch1"],
+            data=signal["ch1"],
             metadata=TraceMetadata(
                 sample_rate=self.sample_rate,
                 channel_name="AC_Power",

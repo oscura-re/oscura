@@ -310,3 +310,4 @@ validation_results/
 !.github/config/main-branch-ruleset.json
 !.github/config/README.md
 .claude/agent-outputs/
+examples/outputs/

@@ -338,6 +338,9 @@ class NetworkAnalysisWorkflow(BaseDemo):
 
     def run_demonstration(self, data: dict) -> dict:
         """Run complete network analysis workflow."""
+        # Store packet count for validation
+        self.results["packet_count"] = len(self.packets)
+
         # ===== Step 1: Session Reconstruction =====
         print_subheader("Step 1: Session Reconstruction")
 

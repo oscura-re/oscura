@@ -628,8 +628,8 @@ class ActiveLearningDemo(BaseDemo):
         # Check learned DFA has states
         suite.add_check(
             "Learned states",
-            self.results.get("learned_states" > 0),
-            0,
+            self.results.get("learned_states", 0) > 0,
+            f"Got {self.results.get('learned_states', 0)} states",
         )
 
         suite.report()
