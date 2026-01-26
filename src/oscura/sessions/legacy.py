@@ -23,11 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from oscura.core.exceptions import OscuraError
-
-
-class SecurityError(OscuraError):
-    """Security-related errors in session handling."""
+from oscura.core.exceptions import OscuraError, SecurityError
 
 
 # Session file format constants
@@ -721,21 +717,27 @@ def load_session(path: str | Path) -> Session:
         Loaded Session object.
 
     Raises:
-        SecurityError: If session verification fails.
-        ValueError: If file format is invalid.
+        SecurityError: If session verification fails or file format is invalid.
     """
     path = Path(path)
 
-    # Read file
-    if path.suffix == ".gz" or path.name.endswith(".tks.gz"):
-        with gzip.open(path, "rb") as f:
+    # Read file as raw bytes first
+    raw_data = path.read_bytes()
+
+    # Detect and decompress gzip files (magic bytes: 0x1f 0x8b)
+    if raw_data[:2] == b"\x1f\x8b":
+        import io
+
+        with gzip.open(io.BytesIO(raw_data), "rb") as f:
             full_data = f.read()
     else:
-        full_data = path.read_bytes()
+        full_data = raw_data
 
-    # Check magic
+    # Check magic - missing magic bytes is a security issue (file lacks HMAC signature)
     if not full_data.startswith(_SESSION_MAGIC):
-        raise ValueError("Invalid session file format (missing magic bytes)")
+        raise SecurityError(
+            "Invalid session file format: missing HMAC signature (magic bytes not found)"
+        )
 
     # Extract signature and data
     signature = full_data[len(_SESSION_MAGIC) : len(_SESSION_MAGIC) + _SESSION_SIGNATURE_SIZE]

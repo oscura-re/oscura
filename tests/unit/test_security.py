@@ -194,7 +194,7 @@ class TestPickleSecurity:
 
     def test_hmac_key_is_constant(self) -> None:
         """Test that HMAC key is deterministic."""
-        from oscura.sessions.legacy.session import _SECURITY_KEY
+        from oscura.sessions.legacy import _SECURITY_KEY
 
         # Key should be derived from constant string
         expected = hashlib.sha256(b"oscura-session-v1").digest()
@@ -202,7 +202,7 @@ class TestPickleSecurity:
 
     def test_session_magic_bytes(self) -> None:
         """Test that session files have correct magic bytes."""
-        from oscura.sessions.legacy.session import _SESSION_MAGIC
+        from oscura.sessions.legacy import _SESSION_MAGIC
 
         assert _SESSION_MAGIC == b"OSC1"
         assert len(_SESSION_MAGIC) == 4

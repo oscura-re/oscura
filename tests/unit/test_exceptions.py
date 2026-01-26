@@ -26,11 +26,17 @@ class TestDeprecatedExceptionsModule:
 
     def test_deprecation_warning_emitted(self) -> None:
         """Test that importing oscura.exceptions emits DeprecationWarning."""
+        import importlib
+        import sys
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            # Import triggers deprecation warning
-            import oscura.exceptions  # noqa: F401
+            # Reload module to trigger warning even if already imported
+            if "oscura.exceptions" in sys.modules:
+                importlib.reload(sys.modules["oscura.exceptions"])
+            else:
+                import oscura.exceptions  # noqa: F401
 
             # Should have deprecation warning
             assert len(w) >= 1
@@ -119,24 +125,32 @@ class TestDeprecatedExceptionsModule:
         try:
             raise AnalysisError(error_msg)
         except AnalysisError as e:
-            assert str(e) == error_msg
-            assert e.args[0] == error_msg
+            # Message should be in string representation (may include docs URL)
+            assert error_msg in str(e)
+            # Original message should be preserved in .message attribute
+            assert e.message == error_msg
 
         try:
             raise ValidationError(error_msg)
         except ValidationError as e:
-            assert str(e) == error_msg
+            # Message should be in string representation (may include docs URL)
+            assert error_msg in str(e)
 
     def test_exceptions_with_multiple_args(self) -> None:
-        """Test exceptions support multiple arguments."""
+        """Test exceptions support keyword arguments for additional context."""
         from oscura.exceptions import LoaderError
 
         try:
-            raise LoaderError("File not found", "path/to/file.vcd")
+            raise LoaderError(
+                "File not found", file_path="path/to/file.vcd", details="Additional info"
+            )
         except LoaderError as e:
-            assert len(e.args) == 2
-            assert e.args[0] == "File not found"
-            assert e.args[1] == "path/to/file.vcd"
+            # Verify message is present
+            assert "File not found" in str(e)
+            # Verify file_path attribute is set
+            assert e.file_path == "path/to/file.vcd"
+            # Verify details are included in error message
+            assert "path/to/file.vcd" in str(e)
 
     def test_exception_inheritance_chain(self) -> None:
         """Test exception inheritance relationships."""
