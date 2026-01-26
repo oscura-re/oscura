@@ -850,8 +850,8 @@ class TestGlobalFunctions:
     def test_get_preferences(self, tmp_path: Path) -> None:
         """Test get_preferences function."""
         # Create a manager with known path
-        with patch("oscura.config.preferences._manager", None):
-            with patch("oscura.config.preferences.PreferencesManager") as mock_manager:
+        with patch("oscura.core.config.preferences._manager", None):
+            with patch("oscura.core.config.preferences.PreferencesManager") as mock_manager:
                 mock_instance = MagicMock()
                 mock_instance.load.return_value = UserPreferences()
                 mock_manager.return_value = mock_instance
@@ -863,8 +863,8 @@ class TestGlobalFunctions:
 
     def test_save_preferences(self, tmp_path: Path) -> None:
         """Test save_preferences function."""
-        with patch("oscura.config.preferences._manager", None):
-            with patch("oscura.config.preferences.PreferencesManager") as mock_manager:
+        with patch("oscura.core.config.preferences._manager", None):
+            with patch("oscura.core.config.preferences.PreferencesManager") as mock_manager:
                 mock_instance = MagicMock()
                 mock_manager.return_value = mock_instance
 

@@ -286,3 +286,31 @@ class BaseDemo(ABC):
         output_dir = self.get_data_dir() / "outputs" / self.name
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
+
+
+def run_demo_main(demo_class: type[BaseDemo], *args: Any, **kwargs: Any) -> int:
+    """Run demonstration main entry point.
+
+    Args:
+        demo_class: BaseDemo subclass to instantiate and run
+        *args: Positional arguments to pass to demo constructor
+        **kwargs: Keyword arguments to pass to demo constructor
+
+    Returns:
+        Exit code (0 for success, 1 for failure)
+
+    Example:
+        if __name__ == "__main__":
+            sys.exit(run_demo_main(MyDemo))
+    """
+    try:
+        demo = demo_class(*args, **kwargs)
+        success = demo.execute()
+        return 0 if success else 1
+    except Exception as e:
+        print(f"\n✗ Demo failed with exception: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return 1
+
+
+__all__ = ["BaseDemo", "run_demo_main"]

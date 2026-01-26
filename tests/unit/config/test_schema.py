@@ -579,7 +579,7 @@ class TestValidateAgainstSchemaEdgeCases:
         )
 
         # Create custom registry to test
-        with patch("oscura.config.schema._global_registry", registry):
+        with patch("oscura.core.config.schema._global_registry", registry):
             config = {"old_field": "value"}
 
             # Should validate against v1.0.0
@@ -601,7 +601,7 @@ class TestValidateAgainstSchemaEdgeCases:
             )
         )
 
-        with patch("oscura.config.schema._global_registry", registry):
+        with patch("oscura.core.config.schema._global_registry", registry):
             config = {"name": "test", "extra": "field"}
 
             # Without strict, should pass
