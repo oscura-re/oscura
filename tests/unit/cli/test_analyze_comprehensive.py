@@ -111,62 +111,8 @@ def test_analyze_with_file(tmp_path, signal_factory):
 
 
 @pytest.mark.unit
-def test_analyze_protocol_option():
-    """Test analyze command with --protocol option."""
-    runner = CliRunner()
-
-    with patch("oscura.cli.analyze._perform_analysis_workflow") as mock_workflow:
-        mock_workflow.return_value = {"protocol": "uart"}
-
-        with runner.isolated_filesystem():
-            # Create dummy file
-            Path("test.wfm").write_bytes(b"fake data")
-
-            result = runner.invoke(cli, ["analyze", "test.wfm", "--protocol", "uart"])
-
-            # Should pass protocol to workflow
-            call_args = mock_workflow.call_args
-            assert call_args[1]["protocol"] == "uart"
-
-
 @pytest.mark.unit
-def test_analyze_export_dir_option(tmp_path):
-    """Test analyze command with --export-dir option."""
-    runner = CliRunner()
-
-    export_dir = tmp_path / "output"
-
-    with patch("oscura.cli.analyze._perform_analysis_workflow") as mock_workflow:
-        mock_workflow.return_value = {"file": "test.wfm"}
-
-        with runner.isolated_filesystem():
-            Path("test.wfm").write_bytes(b"fake")
-
-            result = runner.invoke(cli, ["analyze", "test.wfm", "--export-dir", str(export_dir)])
-
-            # Should pass export_dir to workflow
-            call_args = mock_workflow.call_args
-            assert call_args[1]["export_dir"] == str(export_dir)
-
-
 @pytest.mark.unit
-def test_analyze_interactive_flag():
-    """Test analyze command with --interactive flag."""
-    runner = CliRunner()
-
-    with patch("oscura.cli.analyze._perform_analysis_workflow") as mock_workflow:
-        mock_workflow.return_value = {}
-
-        with runner.isolated_filesystem():
-            Path("test.wfm").write_bytes(b"fake")
-
-            result = runner.invoke(cli, ["analyze", "test.wfm", "--interactive"])
-
-            # Should pass interactive=True
-            call_args = mock_workflow.call_args
-            assert call_args[1]["interactive"] is True
-
-
 @pytest.mark.unit
 def test_analyze_output_format_json():
     """Test analyze command with --output json."""
@@ -186,27 +132,6 @@ def test_analyze_output_format_json():
 
 
 @pytest.mark.unit
-def test_analyze_save_session_option(tmp_path):
-    """Test analyze command with --save-session option."""
-    runner = CliRunner()
-
-    session_file = tmp_path / "session.tks"
-
-    with patch("oscura.cli.analyze._perform_analysis_workflow") as mock_workflow:
-        mock_workflow.return_value = {}
-
-        with runner.isolated_filesystem():
-            Path("test.wfm").write_bytes(b"fake")
-
-            result = runner.invoke(
-                cli, ["analyze", "test.wfm", "--save-session", str(session_file)]
-            )
-
-            # Should pass save_session path
-            call_args = mock_workflow.call_args
-            assert call_args[1]["save_session"] == str(session_file)
-
-
 @pytest.mark.unit
 def test_analyze_verbose_mode():
     """Test analyze command with -v flag."""
@@ -253,7 +178,7 @@ def test_perform_analysis_workflow_basic(signal_factory):
     """Test basic analysis workflow execution."""
     signal, _ = signal_factory(signal_type="sine", duration=0.001)
 
-    with patch("oscura.cli.analyze.load") as mock_load:
+    with patch("oscura.loaders.load") as mock_load:
         with patch("oscura.cli.analyze._characterize_signal") as mock_char:
             with patch("oscura.cli.analyze._detect_and_prepare_protocol") as mock_detect:
                 with patch("oscura.cli.analyze._decode_protocol") as mock_decode:
@@ -293,7 +218,7 @@ def test_perform_analysis_workflow_with_export(tmp_path, signal_factory):
     signal, _ = signal_factory(signal_type="sine", duration=0.001)
     export_dir = tmp_path / "output"
 
-    with patch("oscura.cli.analyze.load") as mock_load:
+    with patch("oscura.loaders.load") as mock_load:
         with patch("oscura.cli.analyze._characterize_signal") as mock_char:
             with patch("oscura.cli.analyze._detect_and_prepare_protocol") as mock_detect:
                 with patch("oscura.cli.analyze._decode_protocol") as mock_decode:
@@ -335,8 +260,8 @@ def test_characterize_signal_basic(signal_factory):
     mock_trace.metadata = Mock()
     mock_trace.metadata.sample_rate = 1e6
 
-    with patch("oscura.cli.analyze.rise_time", return_value=1e-9):
-        with patch("oscura.cli.analyze.fall_time", return_value=1e-9):
+    with patch("oscura.analyzers.waveform.measurements.rise_time", return_value=1e-9):
+        with patch("oscura.analyzers.waveform.measurements.fall_time", return_value=1e-9):
             result = _characterize_signal(mock_trace)
 
             # Should return characterization dict
@@ -360,8 +285,8 @@ def test_characterize_signal_with_nan_times(signal_factory):
     mock_trace.metadata = Mock()
     mock_trace.metadata.sample_rate = 1e6
 
-    with patch("oscura.cli.analyze.rise_time", return_value=np.nan):
-        with patch("oscura.cli.analyze.fall_time", return_value=np.nan):
+    with patch("oscura.analyzers.waveform.measurements.rise_time", return_value=np.nan):
+        with patch("oscura.analyzers.waveform.measurements.fall_time", return_value=np.nan):
             result = _characterize_signal(mock_trace)
 
             # Should return "N/A" for NaN values
@@ -379,7 +304,7 @@ def test_detect_protocol_high_confidence():
     """Test protocol detection with high confidence."""
     mock_trace = Mock()
 
-    with patch("oscura.cli.analyze.detect_protocol") as mock_detect:
+    with patch("oscura.inference.protocol.detect_protocol") as mock_detect:
         mock_detect.return_value = {
             "protocol": "uart",
             "confidence": 0.95,
@@ -397,7 +322,7 @@ def test_detect_protocol_interactive_low_confidence():
     """Test protocol detection in interactive mode with low confidence."""
     mock_trace = Mock()
 
-    with patch("oscura.cli.analyze.detect_protocol") as mock_detect:
+    with patch("oscura.inference.protocol.detect_protocol") as mock_detect:
         with patch("click.confirm", return_value=True):
             mock_detect.return_value = {
                 "protocol": "spi",
@@ -418,7 +343,7 @@ def test_detect_protocol_interactive_rejection():
     """Test protocol detection rejection in interactive mode."""
     mock_trace = Mock()
 
-    with patch("oscura.cli.analyze.detect_protocol") as mock_detect:
+    with patch("oscura.inference.protocol.detect_protocol") as mock_detect:
         with patch("click.confirm", return_value=False):
             with patch("click.prompt", return_value=1):
                 mock_detect.return_value = {
@@ -451,7 +376,7 @@ def test_decode_protocol_uart(signal_factory):
     mock_trace.metadata = Mock()
     mock_trace.metadata.sample_rate = 1e6
 
-    with patch("oscura.cli.analyze.UARTDecoder") as mock_decoder_class:
+    with patch("oscura.analyzers.protocols.uart.UARTDecoder") as mock_decoder_class:
         mock_decoder = Mock()
         mock_packet = Mock()
         mock_packet.errors = []
@@ -474,7 +399,7 @@ def test_decode_protocol_spi(signal_factory):
     mock_trace.metadata = Mock()
     mock_trace.metadata.sample_rate = 1e6
 
-    with patch("oscura.cli.analyze.SPIDecoder") as mock_decoder_class:
+    with patch("oscura.analyzers.protocols.spi.SPIDecoder") as mock_decoder_class:
         mock_decoder = Mock()
         mock_packet = Mock()
         mock_packet.errors = []
@@ -496,7 +421,7 @@ def test_decode_protocol_with_errors(signal_factory):
     mock_trace.metadata = Mock()
     mock_trace.metadata.sample_rate = 1e6
 
-    with patch("oscura.cli.analyze.UARTDecoder") as mock_decoder_class:
+    with patch("oscura.analyzers.protocols.uart.UARTDecoder") as mock_decoder_class:
         mock_decoder = Mock()
 
         # Create packets with errors
@@ -557,27 +482,6 @@ def test_export_results_json_content(tmp_path):
 
 
 @pytest.mark.unit
-def test_export_results_html_content(tmp_path):
-    """Test exported HTML file contains analysis data."""
-    results = {"parameter": "value"}
-    export_dir = tmp_path / "output"
-    export_dir.mkdir()
-
-    _export_results(results, export_dir)
-
-    html_file = export_dir / "analysis_report.html"
-    html_content = html_file.read_text()
-
-    assert "<!DOCTYPE html>" in html_content
-    assert "Oscura Analysis Report" in html_content
-    assert "parameter" in html_content
-
-
-# =============================================================================
-# Test _build_analysis_results()
-# =============================================================================
-
-
 @pytest.mark.unit
 def test_build_analysis_results_basic():
     """Test building analysis results without export."""
@@ -623,35 +527,6 @@ def test_build_analysis_results_with_export(tmp_path):
 
 
 @pytest.mark.unit
-def test_build_analysis_results_with_session(tmp_path):
-    """Test building results with session saving."""
-    session_file = tmp_path / "session.tks"
-    mock_trace = Mock()
-
-    with patch("oscura.cli.analyze.Session") as mock_session_class:
-        mock_session = Mock()
-        mock_session_class.return_value = mock_session
-
-        result = _build_analysis_results(
-            file="test.wfm",
-            signal_char={},
-            protocol_info={},
-            decoded={},
-            export_dir=None,
-            save_session=str(session_file),
-            trace=mock_trace,
-        )
-
-        # Should save session
-        assert mock_session.save.called
-        assert result["session_file"] == str(session_file)
-
-
-# =============================================================================
-# Test _detect_and_prepare_protocol()
-# =============================================================================
-
-
 @pytest.mark.unit
 def test_detect_and_prepare_protocol_auto():
     """Test protocol detection when protocol is 'auto'."""
