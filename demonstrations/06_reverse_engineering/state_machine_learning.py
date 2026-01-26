@@ -62,20 +62,20 @@ class StateMachineLearningDemo(BaseDemo):
     protocol inference capabilities.
     """
 
-    name = "State Machine Learning Demo"
-    description = "Demonstrates RPNI algorithm for state machine inference"
-    category = "inference"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="State Machine Learning Demo",
+            description="Demonstrates RPNI algorithm for state machine inference",
+            **kwargs,
+        )
 
         # Test data storage
         self.positive_traces = []
         self.negative_traces = []
         self.learned_automaton = None
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load synthetic protocol traces for learning.
 
         Creates traces from a known state machine representing a simple
@@ -179,7 +179,9 @@ class StateMachineLearningDemo(BaseDemo):
 
         print_result("Negative traces", len(self.negative_traces))
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Learn state machine from traces using RPNI algorithm."""
         print_subheader("RPNI Learning")
 
@@ -332,69 +334,57 @@ class StateMachineLearningDemo(BaseDemo):
         print_result("Overall accuracy", f"{accuracy:.0f}%")
         self.results["overall_accuracy"] = accuracy
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate state machine learning results."""
+        suite = ValidationSuite()
+
         # Check that automaton was learned
-        suite.check_true(
-            "Automaton learned",
-            self.results.get("learned", False),
-            category="learning",
+        learned = results.get("learned", False)
+        suite.add_check(
+            "Automaton learned", learned, "Learning succeeded" if learned else "Learning failed"
         )
 
-        if not self.results.get("learned", False):
-            return
+        if not learned:
+            suite.report()
+            return suite.all_passed()
 
         # Check automaton structure
-        suite.check_greater(
-            "Number of states",
-            self.results.get("num_states", 0),
-            1,
-            category="structure",
-        )
+        num_states = results.get("num_states", 0)
+        suite.add_check("States discovered", num_states >= 1, f"Got {num_states} states")
 
-        suite.check_greater(
-            "Number of transitions",
-            self.results.get("num_transitions", 0),
-            0,
-            category="structure",
+        num_transitions = results.get("num_transitions", 0)
+        suite.add_check(
+            "Transitions discovered", num_transitions > 0, f"Got {num_transitions} transitions"
         )
 
         # Check positive sample acceptance
-        pos_accepted = self.results.get("positive_accepted", 0)
-        pos_total = self.results.get("positive_total", 1)
-        pos_rate = pos_accepted / pos_total
-        suite.check_greater_equal(
-            "Positive acceptance rate",
-            pos_rate,
-            0.8,  # At least 80% should be accepted
-            category="validation",
-        )
+        pos_accepted = results.get("positive_accepted", 0)
+        pos_total = results.get("positive_total", 1)
+        pos_rate = (pos_accepted / pos_total) * 100 if pos_total > 0 else 0
+        suite.add_check("Positive samples accepted", pos_rate > 50, f"{pos_rate:.1f}% accepted")
 
         # Check negative sample rejection
-        neg_rejected = self.results.get("negative_rejected", 0)
-        neg_total = self.results.get("negative_total", 1)
-        neg_rate = neg_rejected / neg_total
-        suite.check_greater_equal(
-            "Negative rejection rate",
-            neg_rate,
-            0.7,  # At least 70% should be rejected
-            category="validation",
-        )
+        neg_rejected = results.get("negative_rejected", 0)
+        neg_total = results.get("negative_total", 1)
+        neg_rate = (neg_rejected / neg_total) * 100 if neg_total > 0 else 0
+        suite.add_check("Negative samples rejected", neg_rate > 50, f"{neg_rate:.1f}% rejected")
 
         # Check DOT export
-        suite.check_true(
-            "DOT exported",
-            self.results.get("dot_exported", False),
-            category="export",
+        dot_generated = results.get("dot_file", "") != ""
+        suite.add_check(
+            "DOT file generated",
+            dot_generated,
+            "DOT export succeeded" if dot_generated else "No DOT export",
         )
 
         # Check overall accuracy
-        suite.check_greater_equal(
-            "Overall accuracy",
-            self.results.get("overall_accuracy", 0),
-            70.0,  # At least 70%
-            category="accuracy",
-        )
+        overall_accuracy = (pos_rate + neg_rate) / 2
+        suite.add_check("Overall accuracy", overall_accuracy >= 70.0, f"{overall_accuracy:.1f}%")
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

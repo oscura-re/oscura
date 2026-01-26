@@ -42,67 +42,28 @@ class WaveformAnalysisDemo(BaseDemo):
     measurements, spectral analysis, power analysis, and visualization.
     """
 
-    name = "Comprehensive Waveform Analysis"
-    description = "Demonstrates complete Oscura waveform analysis capabilities"
-    category = "waveform_analysis"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="comprehensive_waveform_analysis",
+            description="Demonstrates complete Oscura waveform analysis capabilities",
+            capabilities=[
+                "oscura.waveform_measurements",
+                "oscura.spectral_analysis",
+                "oscura.power_analysis",
+                "oscura.statistical_analysis",
+            ],
+            ieee_standards=["IEEE 1241", "IEEE 1459"],
+            **kwargs,
+        )
         self.sample_rate = 10e6  # 10 MHz sampling
         self.signal_freq = 10e3  # 10 kHz fundamental
 
         # Storage for signals and results
         self.trace = None
 
-    def generate_data(self) -> None:
-        """Generate or load test waveform data.
-
-        Tries in this order:
-        1. Load from --data-file if specified
-        2. Load from default demo_data file if exists
-        3. Generate synthetic data using SignalBuilder
-        """
-        import numpy as np
-
-        # Try loading from file
-        data_file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            data_file_to_load = self.data_file
-            print_info(f"Loading data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("multi_channel_mixed_signal.npz"):
-            data_file_to_load = default_file
-            print_info(f"Loading data from default file: {default_file.name}")
-
-        # Load from file if found
-        if data_file_to_load:
-            try:
-                data = np.load(data_file_to_load)
-                # Use first channel (ch1)
-                signal_data = data["ch1"]
-                loaded_sample_rate = float(data["sample_rate"])
-
-                self.trace = osc.WaveformTrace(
-                    data=signal_data,
-                    metadata=osc.TraceMetadata(
-                        sample_rate=loaded_sample_rate,
-                        channel_name=str(data.get("channel_names", ["CH1"])[0]),
-                        source_file=str(data_file_to_load),
-                    ),
-                )
-
-                print_result("Loaded from file", data_file_to_load.name)
-                print_result("Sample rate", loaded_sample_rate / 1e6, "MHz")
-                print_result("Duration", len(self.trace.data) / loaded_sample_rate * 1e3, "ms")
-                print_result("Samples", len(self.trace.data))
-                return
-            except Exception as e:
-                print_info(f"Failed to load from file: {e}, falling back to synthetic generation")
-
-        # 3. Generate synthetic data as fallback
+    def generate_test_data(self) -> dict:
+        """Generate synthetic test waveform data using SignalBuilder."""
         from demonstrations.common import SignalBuilder
 
         print_info("Generating synthetic test waveform using SignalBuilder...")
@@ -118,7 +79,7 @@ class WaveformAnalysisDemo(BaseDemo):
 
         # Convert to WaveformTrace
         self.trace = osc.WaveformTrace(
-            data=signal.data["ch1"],
+            data=signal["ch1"],
             metadata=osc.TraceMetadata(
                 sample_rate=self.sample_rate,
                 channel_name="Test_Signal",
@@ -130,8 +91,12 @@ class WaveformAnalysisDemo(BaseDemo):
         print_result("Duration", len(self.trace.data) / self.sample_rate * 1e3, "ms")
         print_result("Samples", len(self.trace.data))
 
-    def run_analysis(self) -> None:
+        return {"trace": self.trace}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Execute comprehensive waveform analysis."""
+        self.trace = data["trace"]
+
         # === Section 1: Waveform Measurements ===
         print_subheader("Waveform Measurements")
         self._analyze_measurements()
@@ -159,6 +124,8 @@ class WaveformAnalysisDemo(BaseDemo):
         # === Section 7: Math Operations ===
         print_subheader("Math Operations")
         self._analyze_math()
+
+        return self.results
 
     def _analyze_measurements(self) -> None:
         """Perform waveform measurements."""
@@ -352,47 +319,72 @@ class WaveformAnalysisDemo(BaseDemo):
             print_info(f"Math operations N/A: {e}")
             self.results["math_ok"] = False
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate analysis results."""
+        suite = ValidationSuite()
+
         # Basic measurements
-        suite.check_true(
+        suite.add_check(
             "Trace loaded",
-            self.trace is not None and len(self.trace.data) > 0,
-            category="loading",
+            "trace" in results or len(results) > 0,
+            "No results",
         )
 
-        suite.check_greater("FFT bins", self.results.get("fft_bins", 0), 0, category="spectral")
+        fft_bins = results.get("fft_bins", 0)
+        suite.add_check(
+            "FFT bins",
+            fft_bins > 0,
+            f"Got {fft_bins} bins",
+        )
 
         # Spectral metrics
-        if "thd" in self.results:
-            suite.check_less("THD reasonable", self.results["thd"], 0, category="spectral")
+        if "thd" in results:
+            thd = results["thd"]
+            suite.add_check(
+                "THD reasonable",
+                thd < 0,
+                f"Got {thd} dB",
+            )
 
-        if "snr" in self.results:
-            suite.check_greater("SNR positive", self.results["snr"], 0, category="spectral")
+        if "snr" in results:
+            snr = results["snr"]
+            suite.add_check(
+                "SNR positive",
+                snr > 0,
+                f"Got {snr} dB",
+            )
 
-        if "enob" in self.results:
-            suite.check_greater("ENOB positive", self.results["enob"], 0, category="spectral")
+        if "enob" in results:
+            enob = results["enob"]
+            suite.add_check(
+                "ENOB positive",
+                enob > 0,
+                f"Got {enob} bits",
+            )
 
         # Statistics
-        suite.check_true(
+        suite.add_check(
             "Basic stats computed",
-            self.results.get("basic_stats") is not None,
-            category="statistics",
+            results.get("basic_stats") is not None,
+            "Stats missing",
         )
 
         # Filtering
-        suite.check_true(
+        suite.add_check(
             "Filtering successful",
-            self.results.get("filtering_ok", False),
-            category="filtering",
+            results.get("filtering_ok", False),
+            "Filtering failed",
         )
 
         # Math operations
-        suite.check_true(
+        suite.add_check(
             "Math operations successful",
-            self.results.get("math_ok", False),
-            category="math",
+            results.get("math_ok", False),
+            "Math operations failed",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

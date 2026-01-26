@@ -86,13 +86,13 @@ class NetworkAnalysisWorkflow(BaseDemo):
     packet parsing, session reconstruction, and protocol inference.
     """
 
-    name = "Network Analysis Workflow"
-    description = "Complete end-to-end network packet analysis workflow"
-    category = "complete_workflows"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Network Analysis Workflow",
+            description="Complete end-to-end network packet analysis workflow",
+            **kwargs,
+        )
 
         self.packets: list[NetworkPacket] = []
         self.sessions: list[NetworkSession] = []
@@ -254,7 +254,7 @@ class NetworkAnalysisWorkflow(BaseDemo):
 
         return packets
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load simulated network capture.
 
         Tries in this order:
@@ -334,7 +334,9 @@ class NetworkAnalysisWorkflow(BaseDemo):
         for proto, count in sorted(protocols.items()):
             print_info(f"  {proto}: {count} packets")
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Run complete network analysis workflow."""
         # ===== Step 1: Session Reconstruction =====
         print_subheader("Step 1: Session Reconstruction")
@@ -514,47 +516,34 @@ class NetworkAnalysisWorkflow(BaseDemo):
 
         print_info("=" * 50)
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate workflow results."""
+        suite = ValidationSuite()
+
         # Check packets were generated
-        suite.check_greater(
-            "Packet count",
-            len(self.packets),
-            0,
-            category="capture",
-        )
+        packet_count = results.get("packet_count", 0)
+        suite.add_check("Packets generated", packet_count > 0, f"Generated {packet_count} packets")
 
         # Check sessions were identified
-        suite.check_greater(
-            "Session count",
-            self.results.get("session_count", 0),
-            0,
-            category="sessions",
-        )
+        session_count = results.get("session_count", 0)
+        suite.add_check("Sessions identified", session_count > 0, f"Found {session_count} sessions")
 
         # Check HTTP sessions detected
-        suite.check_greater(
-            "HTTP sessions",
-            self.results.get("http_sessions", 0),
-            0,
-            category="protocols",
-        )
+        http_sessions = results.get("http_sessions", 0)
+        suite.add_check("HTTP sessions", http_sessions > 0, f"Found {http_sessions} HTTP sessions")
 
         # Check DNS sessions detected
-        suite.check_greater(
-            "DNS sessions",
-            self.results.get("dns_sessions", 0),
-            0,
-            category="protocols",
-        )
+        dns_sessions = results.get("dns_sessions", 0)
+        suite.add_check("DNS sessions", dns_sessions > 0, f"Found {dns_sessions} DNS sessions")
 
         # Check timing analysis completed
-        suite.check_greater(
-            "Mean inter-packet time",
-            self.results.get("mean_ipt_ms", 0),
-            0,
-            category="timing",
-        )
+        mean_ipt_ms = results.get("mean_ipt_ms", 0)
+        suite.add_check("Timing analysis", mean_ipt_ms > 0, f"Mean IPT: {mean_ipt_ms:.2f} ms")
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

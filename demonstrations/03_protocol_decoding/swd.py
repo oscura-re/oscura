@@ -75,13 +75,13 @@ class SWDDemo(BaseDemo):
     and decodes them to demonstrate Oscura's SWD analysis capabilities.
     """
 
-    name = "SWD Protocol Demo"
-    description = "Demonstrates ARM Serial Wire Debug protocol decoding"
-    category = "debug_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="SWD Protocol Demo",
+            description="Demonstrates ARM Serial Wire Debug protocol decoding",
+            **kwargs,
+        )
         self.sample_rate = 50e6  # 50 MHz sampling
         self.swclk_freq = 4e6  # 4 MHz SWCLK (typical SWD speed)
 
@@ -90,7 +90,7 @@ class SWDDemo(BaseDemo):
         self.swdio = None
         self.packets = []
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load SWD test signals.
 
         Tries in this order:
@@ -280,7 +280,9 @@ class SWDDemo(BaseDemo):
         print_result("SWCLK frequency", self.swclk_freq / 1e6, "MHz")
         print_result("Sample rate", self.sample_rate / 1e6, "MHz")
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode SWD signals and analyze transactions."""
         print_subheader("SWD Decoding")
 
@@ -389,39 +391,49 @@ class SWDDemo(BaseDemo):
         print_result("AP Reads", len(ap_reads))
         print_result("AP Writes", len(ap_writes))
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate SWD decoding results."""
+        suite = ValidationSuite()
+
         # Check that packets were decoded
-        suite.check_greater("Total packets", self.results.get("total_packets", 0), 0)
+        total_packets = results.get("total_packets", 0)
+        suite.add_check("Total packets decoded", total_packets > 0, f"Got {total_packets} packets")
 
         # Check we have expected number of transactions
-        suite.check_greater_equal("Total transactions", self.results.get("total_packets", 0), 4)
+        suite.add_check(
+            "Expected number of transactions", total_packets >= 4, f"Got {total_packets} >= 4"
+        )
 
         # Check for successful ACKs
-        suite.check_greater("ACK=OK count", self.results.get("ack_ok_count", 0), 0)
+        ack_ok_count = results.get("ack_ok_count", 0)
+        suite.add_check("ACK=OK responses", ack_ok_count > 0, f"Got {ack_ok_count} ACK=OK")
 
         # Check DP operations
-        suite.check_greater_equal(
-            "DP reads", self.results.get("dp_reads", 0), 2, category="dp_access"
-        )
-        suite.check_greater_equal(
-            "DP writes", self.results.get("dp_writes", 0), 2, category="dp_access"
-        )
+        dp_reads = results.get("dp_reads", 0)
+        dp_writes = results.get("dp_writes", 0)
+        suite.add_check("DP read operations", dp_reads >= 2, f"Got {dp_reads} DP reads")
+        suite.add_check("DP write operations", dp_writes >= 2, f"Got {dp_writes} DP writes")
 
         # Check AP operations
-        suite.check_greater_equal(
-            "AP reads", self.results.get("ap_reads", 0), 1, category="ap_access"
-        )
+        ap_accesses = results.get("ap_accesses", 0)
+        suite.add_check("AP operations", ap_accesses >= 1, f"Got {ap_accesses} AP accesses")
 
         # Check DPIDR if present
-        if "dpidr" in self.results:
-            # Our test DPIDR is 0x0BB11477
-            suite.check_equal("DPIDR value", self.results["dpidr"], 0x0BB11477)
+        if "dpidr" in results:
+            dpidr = results["dpidr"]
+            suite.add_check("DPIDR value correct", dpidr == 0x0BB11477, f"Got 0x{dpidr:08X}")
 
         # Verify signal integrity
-        suite.check_true(
-            "Signals generated", self.swclk is not None and len(self.swclk) > 0, category="signals"
+        suite.add_check(
+            "Signals generated",
+            self.swclk is not None and len(self.swclk) > 0,
+            f"Got {len(self.swclk) if self.swclk is not None else 0} samples",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

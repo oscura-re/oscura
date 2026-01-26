@@ -345,9 +345,14 @@ After completing this section, you will understand:
 3. Uses absolute imports for dependencies
 
 ```python
-# Correct plugin import structure
-from oscura.plugins import BasePlugin
+# Custom measurements use function registration
+import oscura as osc
 from oscura.core.types import WaveformTrace
+
+# Register custom measurement
+@osc.register_measurement("my_custom")
+def my_measurement(trace: WaveformTrace) -> float:
+    return trace.data.mean()
 ```
 
 ### Custom measurement not appearing in registry

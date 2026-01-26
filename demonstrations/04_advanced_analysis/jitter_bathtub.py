@@ -73,13 +73,13 @@ class BathtubCurveDemo(BaseDemo):
     comprehensive jitter analysis including bathtub curve generation.
     """
 
-    name = "Bathtub Curve Jitter Demo"
-    description = "Demonstrates bathtub curve and jitter analysis for serial links"
-    category = "jitter_analysis"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Bathtub Curve Jitter Demo",
+            description="Demonstrates bathtub curve and jitter analysis for serial links",
+            **kwargs,
+        )
         self.sample_rate = 10e9  # 10 GHz
         self.clock_freq = 1e9  # 1 GHz clock
 
@@ -146,60 +146,11 @@ class BathtubCurveDemo(BaseDemo):
 
         return clock * 3.3  # 3.3V amplitude
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate jittered clock signal.
 
-        Loads from file if available (--data-file override or default NPZ),
-        otherwise generates synthetic jittered clock with RJ, PJ, and DCD.
+        Generates synthetic jittered clock with RJ, PJ, and DCD.
         """
-        # Try loading data from file
-        file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            file_to_load = self.data_file
-            print_info(f"Loading bathtub curve data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("bathtub_curve_jitter.npz"):
-            file_to_load = default_file
-            print_info(f"Loading bathtub curve data from default file: {default_file.name}")
-
-        # Load from file if found
-        if file_to_load:
-            try:
-                data = np.load(file_to_load)
-                clock_data = data["clock"]
-                self.tie_data = data["tie"]
-                loaded_sample_rate = float(data["sample_rate"])
-                self.sample_rate = loaded_sample_rate
-
-                # Load jitter parameters if available
-                if "clock_freq" in data:
-                    self.clock_freq = float(data["clock_freq"])
-                if "rj_rms_ps" in data:
-                    self.rj_rms_ps = float(data["rj_rms_ps"])
-                if "pj_pp_ps" in data:
-                    self.pj_pp_ps = float(data["pj_pp_ps"])
-                if "dcd_ps" in data:
-                    self.dcd_ps = float(data["dcd_ps"])
-
-                metadata = TraceMetadata(
-                    sample_rate=self.sample_rate,
-                    channel_name="CLK",
-                )
-                self.trace = WaveformTrace(data=clock_data, metadata=metadata)
-
-                print_result("Data loaded from file", file_to_load.name)
-                print_result("Total samples", len(clock_data))
-                print_result("TIE points", len(self.tie_data))
-                print_result("Clock frequency", f"{self.clock_freq / 1e9:.1f} GHz")
-                print_result("Sample rate", f"{self.sample_rate / 1e9:.1f} GHz")
-                return
-            except Exception as e:
-                print_info(f"Failed to load data from file: {e}, falling back to synthetic")
-                file_to_load = None
-
-        # Generate synthetic data if not loaded
         print_info("Generating jittered clock signal...")
 
         duration = 10e-6  # 10 us (10,000 cycles at 1 GHz)
@@ -223,7 +174,9 @@ class BathtubCurveDemo(BaseDemo):
         print_result("Total samples", n_samples)
         print_result("TIE points", len(self.tie_data))
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Perform jitter analysis and generate bathtub curve."""
         print_subheader("TIE Analysis")
 
@@ -360,54 +313,44 @@ class BathtubCurveDemo(BaseDemo):
         print_info(f"TJ @ 1e-12 BER        {tj_ber * 1e12:6.2f} ps")
         print_info(f"Eye Opening           {bathtub.eye_opening:6.4f} UI")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate jitter analysis results."""
+        suite = ValidationSuite()
+
         # Check TIE was calculated
-        suite.check_greater(
-            "TIE RMS",
-            self.results.get("tie_rms_ps", 0),
-            0,
-            category="tie",
-        )
+        tie_rms = results.get("tie_rms_ps", 0)
+        suite.add_check("TIE RMS calculated", tie_rms > 0, f"Got {tie_rms:.2f} ps")
 
         # Check jitter decomposition
-        suite.check_greater(
-            "RJ RMS",
-            self.results.get("rj_rms_ps", 0),
-            0,
-            category="decomposition",
-        )
+        rj_rms = results.get("rj_rms_ps", 0)
+        suite.add_check("RJ RMS calculated", rj_rms > 0, f"Got {rj_rms:.2f} ps")
 
         # Check eye opening is reasonable
-        eye = self.results.get("eye_opening_ui", 0)
-        suite.check_range(
-            "Eye opening",
-            eye,
-            0.1,  # At least 10% of UI
-            0.95,  # At most 95% of UI (allow excellent signal quality)
-            category="eye",
-        )
+        eye = results.get("eye_opening_ui", 0)
+        suite.add_check("Eye opening calculated", 0 < eye < 1, f"Got {eye:.4f} UI")
 
         # Check TJ at BER
-        suite.check_greater(
-            "TJ at BER",
-            self.results.get("tj_at_ber_ps", 0),
-            0,
-            category="tj",
-        )
+        tj_at_ber = results.get("tj_at_ber_ps", 0)
+        suite.add_check("TJ at BER calculated", tj_at_ber > 0, f"Got {tj_at_ber:.2f} ps")
 
         # Check trace was generated
-        suite.check_true(
+        suite.add_check(
             "Trace generated",
-            self.trace is not None,
-            category="signals",
+            self.trace is not None and len(self.trace.data) > 0,
+            f"Got {len(self.trace.data) if self.trace is not None else 0} samples",
         )
 
-        suite.check_true(
+        # Check TIE data
+        suite.add_check(
             "TIE data generated",
-            self.tie_data is not None,
-            category="signals",
+            self.tie_data is not None and len(self.tie_data) > 0,
+            f"Got {len(self.tie_data) if self.tie_data is not None else 0} TIE points",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

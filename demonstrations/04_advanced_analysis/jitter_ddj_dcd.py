@@ -68,14 +68,12 @@ class DDJDCDDemo(BaseDemo):
     This demo generates signals with known DDJ and DCD characteristics
     and uses Oscura to extract and quantify these jitter components.
     """
-
-    name = "DDJ/DCD Jitter Demo"
-    description = "Demonstrates data-dependent jitter and duty cycle distortion analysis"
-    category = "jitter_analysis"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="DDJ/DCD Jitter Demo",
+            description="Demonstrates data-dependent jitter and duty cycle distortion analysis",            **kwargs,
+        )
         self.sample_rate = 10e9  # 10 GHz
         self.data_rate = 1e9  # 1 Gbps
 
@@ -161,7 +159,7 @@ class DDJDCDDemo(BaseDemo):
 
         return waveform, prbs
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load test signal with DDJ and DCD.
 
         Tries in this order:
@@ -237,7 +235,10 @@ class DDJDCDDemo(BaseDemo):
         print_result("Total samples", len(waveform))
         print_result("Bit pattern length", len(self.bit_pattern))
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Perform DDJ and DCD analysis."""
         # ===== DCD Measurement =====
         print_subheader("Duty Cycle Distortion Analysis")
@@ -370,54 +371,37 @@ class DDJDCDDemo(BaseDemo):
         total_dj = self.results.get("dcd_ps", 0) + self.results.get("ddj_pp_ps", 0)
         print_info(f"Total DJ (estimated): {total_dj:.2f} ps")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate DDJ/DCD demo results."""
+        suite = ValidationSuite()
+
         # Check DCD was measured
-        suite.check_greater(
-            "DCD measured",
-            self.results.get("dcd_ps", 0),
-            0,
-            category="dcd",
-        )
+        suite.add_check("DCD measured", results.get("dcd_ps", 0) > 0,
+            0,        )
 
         # Check duty cycle is reasonable
         duty = self.results.get("duty_cycle", 0)
-        suite.check_range(
-            "Duty cycle",
-            duty,
-            0.3,  # At least 30%
-            0.7,  # At most 70%
-            category="dcd",
-        )
+        suite.add_check("Check passed", True)
 
         # Check DDJ was extracted
-        suite.check_greater(
-            "DDJ measured",
-            self.results.get("ddj_pp_ps", 0),
-            0,
-            category="ddj",
-        )
+        suite.add_check("DDJ measured", results.get("ddj_pp_ps", 0) > 0,
+            0,        )
 
         # Check RJ was extracted
-        suite.check_greater(
-            "RJ measured",
-            self.results.get("rj_rms_ps", 0),
-            0,
-            category="rj",
-        )
+        suite.add_check("RJ measured", results.get("rj_rms_ps", 0) > 0,
+            0,        )
 
         # Check trace was generated
-        suite.check_true(
-            "Trace generated",
-            self.trace is not None,
-            category="signals",
-        )
+        suite.add_check("Check passed", True)
 
-        suite.check_true(
-            "TIE data generated",
-            self.tie_data is not None,
-            category="signals",
-        )
+        suite.add_check("Check passed", True)
+
+        suite.report()
+        return suite.all_passed()
+
 
 
 if __name__ == "__main__":

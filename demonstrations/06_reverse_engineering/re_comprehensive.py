@@ -41,17 +41,17 @@ class SignalReverseEngineeringDemo(BaseDemo):
     analyzing unknown signals and discovering protocol characteristics.
     """
 
-    name = "Comprehensive Signal Reverse Engineering"
-    description = "Demonstrates signal reverse engineering workflow"
-    category = "reverse_engineering"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Comprehensive Signal Reverse Engineering",
+            description="Demonstrates signal reverse engineering workflow",
+            **kwargs,
+        )
         self.sample_rate = 10e6  # 10 MHz
         self.trace = None
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load test signal for reverse engineering.
 
         Tries in this order:
@@ -137,7 +137,9 @@ class SignalReverseEngineeringDemo(BaseDemo):
             "ms",
         )
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Execute reverse engineering analysis."""
         # === Phase 1: Waveform Measurements ===
         print_subheader("Phase 1: Waveform Measurements")
@@ -158,6 +160,8 @@ class SignalReverseEngineeringDemo(BaseDemo):
         # === Phase 5: Protocol Detection ===
         print_subheader("Phase 5: Protocol Detection")
         self._analyze_protocol()
+
+        return self.results
 
     def _analyze_waveform(self) -> None:
         """Perform waveform measurements."""
@@ -316,45 +320,28 @@ class SignalReverseEngineeringDemo(BaseDemo):
         except Exception:
             print_info("Protocol detection N/A")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate reverse engineering results."""
-        # Waveform measurements
-        suite.check_greater(
-            "Amplitude measured",
-            self.results.get("amplitude", 0),
-            0,
-            category="waveform",
-        )
+        suite = ValidationSuite()
 
-        suite.check_true(
-            "RMS is finite",
-            np.isfinite(self.results.get("rms", float("nan"))),
-            category="waveform",
-        )
+        # Waveform measurements
+        amplitude = results.get("amplitude", 0)
+        suite.add_check("Amplitude measured", amplitude > 0, f"Got {amplitude} V")
 
         # Spectral analysis
-        suite.check_greater(
-            "FFT computed",
-            self.results.get("fft_bins", 0),
-            0,
-            category="spectral",
-        )
+        fft_bins = results.get("fft_bins", 0)
+        suite.add_check("FFT computed", fft_bins > 0, f"Got {fft_bins} bins")
 
         # Digital analysis
-        suite.check_greater(
-            "Edges detected",
-            self.results.get("rising_edges", 0),
-            0,
-            category="digital",
-        )
+        rising_edges = results.get("rising_edges", 0)
+        suite.add_check("Edges detected", rising_edges > 0, f"Got {rising_edges} edges")
 
         # Pattern analysis
-        suite.check_greater(
-            "Patterns discovered",
-            self.results.get("unique_bytes", 0),
-            0,
-            category="patterns",
-        )
+        unique_bytes = results.get("unique_bytes", 0)
+        suite.add_check("Patterns discovered", unique_bytes > 0, f"Got {unique_bytes} unique bytes")
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

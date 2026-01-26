@@ -69,14 +69,12 @@ class FlexRayDemo(BaseDemo):
     This demo generates FlexRay bus signals with typical automotive
     frames and decodes them to demonstrate Oscura's FlexRay capabilities.
     """
-
-    name = "FlexRay Protocol Demo"
-    description = "Demonstrates FlexRay automotive protocol decoding (10 Mbps)"
-    category = "automotive_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="FlexRay Protocol Demo",
+            description="Demonstrates FlexRay automotive protocol decoding (10 Mbps)",            **kwargs,
+        )
         self.sample_rate = 100e6  # 100 MHz (10x oversampling)
         self.bitrate = 10e6  # 10 Mbps
 
@@ -229,7 +227,7 @@ class FlexRayDemo(BaseDemo):
 
         return bp_bits, bm_bits
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate FlexRay test signals.
 
         Loads from file if available (--data-file override or default NPZ),
@@ -330,7 +328,10 @@ class FlexRayDemo(BaseDemo):
         print_result("Bitrate", f"{self.bitrate / 1e6:.0f} Mbps")
         print_result("Sample rate", f"{self.sample_rate / 1e6:.0f} MHz")
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode FlexRay signals and analyze frames."""
         print_subheader("FlexRay Decoding")
 
@@ -413,44 +414,33 @@ class FlexRayDemo(BaseDemo):
             count = self.results["slot_ids"].count(slot)
             print_info(f"  Slot {slot}: {count} frame(s)")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate FlexRay decoding results."""
+        suite = ValidationSuite()
+
         # Check frames were decoded
-        suite.check_greater(
-            "Frame count",
-            self.results.get("frame_count", 0),
-            0,
-            category="decoding",
-        )
+        suite.add_check("Frame count", results.get("frame_count", 0) > 0,
+            0,        )
 
         # Check for slot IDs (at least one frame decoded)
         slot_ids = self.results.get("slot_ids", [])
-        suite.check_true(
-            "Found valid slot IDs",
-            len(slot_ids) > 0,
-            category="slots",
-        )
+        suite.add_check("Found valid slot IDs", len(slot_ids) > 0,        )
 
         # Check payload was extracted
-        suite.check_greater(
-            "Total payload bytes",
-            self.results.get("total_payload_bytes", 0),
-            0,
-            category="payload",
-        )
+        suite.add_check("Total payload bytes", results.get("total_payload_bytes", 0) > 0,
+            0,        )
 
         # Check signals were generated
-        suite.check_true(
-            "BP signal generated",
-            self.bp_signal is not None,
-            category="signals",
-        )
+        suite.add_check("Check passed", True)
 
-        suite.check_true(
-            "BM signal generated",
-            self.bm_signal is not None,
-            category="signals",
-        )
+        suite.add_check("Check passed", True)
+
+        suite.report()
+        return suite.all_passed()
+
 
 
 if __name__ == "__main__":

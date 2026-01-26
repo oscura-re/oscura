@@ -72,13 +72,13 @@ class DCDCEfficiencyDemo(BaseDemo):
     comprehensive efficiency and power quality analysis.
     """
 
-    name = "DC-DC Converter Efficiency Demo"
-    description = "Demonstrates power conversion efficiency analysis for DC-DC converters"
-    category = "power_analysis"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="DC-DC Converter Efficiency Demo",
+            description="Demonstrates power conversion efficiency analysis for DC-DC converters",
+            **kwargs,
+        )
         self.sample_rate = 10e6  # 10 MHz sampling
         self.duration = 1e-3  # 1 ms capture
 
@@ -182,7 +182,7 @@ class DCDCEfficiencyDemo(BaseDemo):
 
         return np.maximum(i_out, 0)
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate DC-DC converter test waveforms.
 
         Loading priority:
@@ -362,7 +362,9 @@ class DCDCEfficiencyDemo(BaseDemo):
         print_result("V_out (avg)", f"{np.mean(self.v_out_trace.data):.3f} V")
         print_result("I_out (avg)", f"{np.mean(self.i_out_trace.data):.3f} A")
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Perform efficiency and power quality analysis."""
         print_subheader("Efficiency Analysis")
 
@@ -509,64 +511,43 @@ class DCDCEfficiencyDemo(BaseDemo):
         print_result("Power dissipation", f"{p_loss:.3f} W")
         print_result("Est. junction temp", f"{t_junction:.1f} C")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate efficiency analysis results."""
+        suite = ValidationSuite()
+
         # Check efficiency is reasonable
-        eta = self.results.get("efficiency", 0)
-        suite.check_range(
-            "Efficiency in expected range",
-            eta,
-            70.0,  # At least 70%
-            100.0,  # At most 100%
-            category="efficiency",
-        )
+        eta = results.get("efficiency", 0)
+        suite.add_check("Efficiency calculated", 0 < eta < 1, f"Got {eta:.2%}")
 
         # Check power balance
-        p_in = self.results.get("p_in", 0)
-        p_out = self.results.get("p_out", 0)
-
-        suite.check_greater(
-            "Input power positive",
-            p_in,
-            0,
-            category="power",
-        )
-
-        suite.check_greater(
-            "Output power positive",
-            p_out,
-            0,
-            category="power",
-        )
-
-        suite.check_greater(
-            "Input > Output (conservation)",
-            p_in,
-            p_out,
-            category="power",
+        p_in = results.get("p_in", 0)
+        p_out = results.get("p_out", 0)
+        suite.add_check("Input power measured", p_in > 0, f"Got {p_in:.2f} W")
+        suite.add_check("Output power measured", p_out > 0, f"Got {p_out:.2f} W")
+        suite.add_check(
+            "Power balance reasonable", p_out < p_in, f"P_out={p_out:.2f}W < P_in={p_in:.2f}W"
         )
 
         # Check ripple measurements
-        ripple_pp = self.results.get("ripple_pp_mv", 0)
-        suite.check_greater(
-            "Ripple measured",
-            ripple_pp,
-            0,
-            category="ripple",
-        )
+        ripple_pp = results.get("ripple_pp_mv", 0)
+        suite.add_check("Ripple measured", ripple_pp > 0, f"Got {ripple_pp:.2f} mV")
 
         # Check that signals were generated
-        suite.check_true(
-            "V_in trace generated",
-            self.v_in_trace is not None,
-            category="signals",
+        suite.add_check(
+            "Vin signal generated",
+            self.vin_trace is not None and len(self.vin_trace.data) > 0,
+            f"Got {len(self.vin_trace.data) if self.vin_trace is not None else 0} samples",
+        )
+        suite.add_check(
+            "Vout signal generated",
+            self.vout_trace is not None and len(self.vout_trace.data) > 0,
+            f"Got {len(self.vout_trace.data) if self.vout_trace is not None else 0} samples",
         )
 
-        suite.check_true(
-            "V_out trace generated",
-            self.v_out_trace is not None,
-            category="signals",
-        )
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

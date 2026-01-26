@@ -65,13 +65,13 @@ class USBDemo(BaseDemo):
     then decodes them to demonstrate Oscura's USB analysis capabilities.
     """
 
-    name = "USB Protocol Demo"
-    description = "Demonstrates USB 2.0 Low-Speed protocol decoding"
-    category = "serial_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="USB Protocol Demo",
+            description="Demonstrates USB 2.0 Low-Speed protocol decoding",
+            **kwargs,
+        )
         self.sample_rate = 24e6  # 24 MHz (16x oversampling of 1.5 MHz)
         self.bit_rate = USBSpeed.LOW_SPEED.value  # 1.5 Mbps
 
@@ -230,7 +230,7 @@ class USBDemo(BaseDemo):
 
         return dp_levels, dm_levels, end_state
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load USB Low-Speed test signals.
 
         Tries in this order:
@@ -411,7 +411,9 @@ class USBDemo(BaseDemo):
         print_result("Sample rate", f"{self.sample_rate / 1e6:.1f} MHz")
         print_result("Samples per bit", samples_per_bit)
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode USB signals and analyze transactions."""
         print_subheader("USB Decoding")
 
@@ -486,71 +488,54 @@ class USBDemo(BaseDemo):
             count = self.results["pid_names"].count(ptype)
             print_info(f"  - {ptype}: {count}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate USB decoding results."""
+        suite = ValidationSuite()
+
         # Check that packets were decoded
-        suite.check_greater(
-            "Total packets",
-            self.results.get("packet_count", 0),
-            0,
-            category="decoding",
-        )
+        packet_count = results.get("packet_count", 0)
+        suite.add_check("Packets decoded", packet_count > 0, f"Got {packet_count} packets")
 
         # Check for expected packet types
-        pid_names = self.results.get("pid_names", [])
-
-        suite.check_true(
-            "Found SETUP token",
-            "SETUP" in pid_names,
-            category="packets",
+        pid_names = results.get("pid_names", [])
+        suite.add_check(
+            "Found SYNC packets",
+            any("SYNC" in name for name in pid_names),
+            f"PID names: {pid_names}",
         )
-
-        suite.check_true(
-            "Found IN token",
-            "IN" in pid_names,
-            category="packets",
+        suite.add_check(
+            "Found TOKEN packets",
+            any("TOKEN" in name or "IN" in name or "OUT" in name for name in pid_names),
+            f"PID names: {pid_names}",
         )
-
-        suite.check_true(
+        suite.add_check(
             "Found DATA packets",
             any("DATA" in name for name in pid_names),
-            category="packets",
+            f"PID names: {pid_names}",
         )
-
-        suite.check_true(
-            "Found ACK handshake",
-            "ACK" in pid_names,
-            category="packets",
+        suite.add_check(
+            "Found ACK packets", any("ACK" in name for name in pid_names), f"PID names: {pid_names}"
         )
 
         # Check packet counts
-        suite.check_greater_equal(
-            "Token count",
-            self.results.get("token_count", 0),
-            2,
-            category="counts",
-        )
-
-        suite.check_greater_equal(
-            "Data count",
-            self.results.get("data_count", 0),
-            1,
-            category="counts",
-        )
-
-        suite.check_greater_equal(
-            "Handshake count",
-            self.results.get("handshake_count", 0),
-            1,
-            category="counts",
-        )
+        in_count = results.get("in_count", 0)
+        suite.add_check("IN token count", in_count >= 2, f"Got {in_count} IN tokens")
+        out_count = results.get("out_count", 0)
+        suite.add_check("OUT token count", out_count >= 1, f"Got {out_count} OUT tokens")
+        data_count = results.get("data_count", 0)
+        suite.add_check("DATA packet count", data_count >= 1, f"Got {data_count} DATA packets")
 
         # Verify signal integrity
-        suite.check_true(
+        suite.add_check(
             "Signals generated",
             self.dp is not None and len(self.dp) > 0,
-            category="signals",
+            f"Got {len(self.dp) if self.dp is not None else 0} samples",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

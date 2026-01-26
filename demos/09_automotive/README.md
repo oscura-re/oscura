@@ -67,14 +67,13 @@ python demos/08_automotive/comprehensive_automotive_demo.py --list
 ```python
 import cantools
 from oscura.automotive.can import CANSession
-from oscura.acquisition import FileSource
 
 # Load DBC database
 db = cantools.database.load_file("vehicle.dbc")
 
 # Create session and load CAN data
 session = CANSession(name="Vehicle Analysis")
-session.add_recording("capture", FileSource("capture.blf"))
+session.load_recording("capture.blf")
 
 # Analyze traffic
 analysis = session.analyze()
@@ -114,13 +113,12 @@ for recording_name, messages in session._recordings.items():
 
 ```python
 from oscura.automotive.can import CANSession
-from oscura.acquisition import FileSource
 from oscura.automotive.can.discovery import DiscoveryDocument
 from oscura.automotive.dbc import DBCGenerator
 
 # Create session and load unknown CAN traffic
 session = CANSession(name="Unknown Protocol RE")
-session.add_recording("unknown", FileSource("unknown.blf"))
+session.load_recording("unknown.blf")
 
 # Analyze traffic
 analysis = session.analyze()
@@ -372,15 +370,14 @@ Generated files:
 
 ```python
 from oscura.automotive.can import CANSession
-from oscura.acquisition import FileSource
 
 # Create session
 session = CANSession(name="Vehicle Analysis")
 
-# Load from various formats using unified Source protocol
-session.add_recording("baseline", FileSource("capture.blf"))  # BLF
-session.add_recording("test1", FileSource("capture.asc"))  # ASC
-session.add_recording("test2", FileSource("capture.csv"))  # CSV
+# Load from various formats (automatically detected)
+session.load_recording("capture.blf")  # BLF
+session.load_recording("capture.asc")  # ASC
+session.load_recording("capture.csv")  # CSV
 
 # Analyze traffic
 analysis = session.analyze()

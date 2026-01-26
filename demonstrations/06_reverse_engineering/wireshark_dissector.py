@@ -63,20 +63,20 @@ class WiresharkDissectorDemo(BaseDemo):
     Lua dissectors, demonstrating Oscura's protocol export capabilities.
     """
 
-    name = "Wireshark Dissector Demo"
-    description = "Demonstrates Wireshark Lua dissector generation from protocol definitions"
-    category = "inference"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Wireshark Dissector Demo",
+            description="Demonstrates Wireshark Lua dissector generation from protocol definitions",
+            **kwargs,
+        )
 
         # Storage for protocols and dissectors
         self.protocols = []
         self.dissector_files = []
         self.generated_code = {}
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Create or load protocol definitions for dissector generation.
 
         Tries in this order:
@@ -333,7 +333,9 @@ class WiresharkDissectorDemo(BaseDemo):
 
         print_result("Protocols defined", len(self.protocols))
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Generate Wireshark dissectors from protocol definitions."""
         print_subheader("Dissector Generation")
 
@@ -427,46 +429,41 @@ class WiresharkDissectorDemo(BaseDemo):
             for f in self.dissector_files:
                 print_info(f"  - {f}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate dissector generation results."""
+        suite = ValidationSuite()
+
         # Check that dissectors were generated
-        suite.check_equal(
+        dissector_count = results.get("dissector_count", 0)
+        expected_count = len(self.protocols)
+        suite.add_check(
             "Dissectors generated",
-            self.results.get("dissector_count", 0),
-            len(self.protocols),
-            category="generation",
+            dissector_count == expected_count,
+            f"Generated {dissector_count}/{expected_count} dissectors",
         )
 
         # Check that generated files exist
-        for f in self.dissector_files:
-            suite.check_file_exists(
-                f"File {f.name}",
-                f,
-                category="files",
-            )
+        suite.add_check(
+            "Files created",
+            len(self.dissector_files) > 0,
+            f"Created {len(self.dissector_files)} files",
+        )
 
-        # Check generated code content
-        for name, code in self.generated_code.items():
-            suite.check_true(
-                f"{name} has Proto declaration",
-                "Proto.new" in code or "Proto(" in code,
-                category="code_structure",
-            )
-
-            suite.check_true(
-                f"{name} has dissector",
-                "dissector" in code.lower(),
-                category="code_structure",
-            )
+        # Check generated code content exists
+        suite.add_check(
+            "Code generated",
+            len(self.generated_code) > 0,
+            f"Generated {len(self.generated_code)} protocol dissectors",
+        )
 
         # Check code is not empty
         for name, code in self.generated_code.items():
-            suite.check_greater(
-                f"{name} code length",
-                len(code),
-                100,  # At least 100 characters
-                category="code_quality",
-            )
+            suite.add_check(f"{name} code length", len(code) >= 100, f"Generated {len(code)} chars")
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

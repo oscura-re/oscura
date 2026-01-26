@@ -64,13 +64,13 @@ class ManchesterDemo(BaseDemo):
     to demonstrate Oscura's Manchester analysis capabilities.
     """
 
-    name = "Manchester Encoding Demo"
-    description = "Demonstrates Manchester and differential Manchester decoding"
-    category = "serial_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Manchester Encoding Demo",
+            description="Demonstrates Manchester and differential Manchester decoding",
+            **kwargs,
+        )
         self.sample_rate = 20e6  # 20 MHz sampling
         self.bit_rate = 10e6  # 10 Mbps (like 10BASE-T Ethernet)
 
@@ -141,50 +141,11 @@ class ManchesterDemo(BaseDemo):
 
         return encoded
 
-    def generate_data(self) -> None:
-        """Generate or load Manchester encoded test signals.
+    def generate_test_data(self) -> dict:
+        """Generate Manchester encoded test signals.
 
-        Tries in this order:
-        1. Load from --data-file if specified
-        2. Load from default demo_data files if they exist
-        3. Generate synthetic data using encoder methods
+        Generates synthetic Manchester encoded data using encoder methods.
         """
-        # Try loading data from file
-        data_file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            data_file_to_load = self.data_file
-            print_info(f"Loading Manchester data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("manchester_encoding.npz"):
-            data_file_to_load = default_file
-            print_info(f"Loading Manchester data from default file: {default_file.name}")
-
-        # Load from file if found
-        if data_file_to_load:
-            try:
-                data = np.load(data_file_to_load)
-                self.encoded_signal = data["ieee_signal"]
-                self.diff_encoded_signal = data["diff_signal"]
-                loaded_sample_rate = float(data["sample_rate"])
-                loaded_bit_rate = float(data["bit_rate"])
-
-                # Update parameters from loaded data
-                self.sample_rate = loaded_sample_rate
-                self.bit_rate = loaded_bit_rate
-
-                print_result("Loaded from file", data_file_to_load.name)
-                print_result("Sample rate", f"{self.sample_rate / 1e6:.0f} MHz")
-                print_result("Bit rate", f"{self.bit_rate / 1e6:.0f} Mbps")
-                print_result("IEEE signal samples", len(self.encoded_signal))
-                print_result("Diff signal samples", len(self.diff_encoded_signal))
-                return
-            except Exception as e:
-                print_info(f"Failed to load from file: {e}, falling back to synthetic")
-                data_file_to_load = None
-
-        # Generate synthetic data if not loaded
         print_info("Generating Manchester encoded test signals...")
 
         samples_per_half_bit = int(self.sample_rate / self.bit_rate)
@@ -244,7 +205,9 @@ class ManchesterDemo(BaseDemo):
         print_result("Bit rate", f"{self.bit_rate / 1e6:.0f} Mbps")
         print_result("Samples per half-bit", samples_per_half_bit)
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode Manchester signals and analyze data."""
         print_subheader("IEEE Manchester Decoding")
 
@@ -368,54 +331,49 @@ class ManchesterDemo(BaseDemo):
         else:
             self.results["diff_success"] = False
 
-    def validate_results(self, suite: ValidationSuite) -> None:
-        """Validate Manchester decoding results."""
-        # Check IEEE decoding
-        suite.check_greater(
-            "IEEE packet count",
-            self.results.get("ieee_packet_count", 0),
-            0,
-            category="decoding",
-        )
+        return self.results
 
-        suite.check_greater(
-            "IEEE decoded bytes",
-            len(self.results.get("ieee_decoded_bytes", [])),
-            0,
-            category="decoding",
-        )
+    def validate(self, results: dict) -> bool:
+        """Validate Manchester decoding results."""
+        suite = ValidationSuite()
+
+        # Check IEEE decoding
+        ieee_count = results.get("ieee_packet_count", 0)
+        suite.add_check("IEEE packets decoded", ieee_count > 0, f"Got {ieee_count} packets")
+
+        ieee_bytes = len(results.get("ieee_decoded_bytes", []))
+        suite.add_check("IEEE bytes decoded", ieee_bytes > 0, f"Got {ieee_bytes} bytes")
 
         # Check differential decoding
-        suite.check_greater(
-            "Differential packet count",
-            self.results.get("diff_packet_count", 0),
-            0,
-            category="decoding",
-        )
+        diff_count = results.get("diff_packet_count", 0)
+        suite.add_check("Differential packets decoded", diff_count > 0, f"Got {diff_count} packets")
 
         # Check timing recovery
-        recovered_rate = self.results.get("recovered_rate_mbps", 0)
+        recovered_rate = results.get("recovered_rate_mbps", 0)
         if recovered_rate > 0:
-            suite.check_range(
-                "Recovered bit rate",
-                recovered_rate,
-                2.0,  # Accept recovered rate (timing recovery has inherent uncertainty)
-                15.0,
-                category="timing",
+            expected_rate = self.bit_rate / 1e6
+            rate_error = abs(recovered_rate - expected_rate)
+            suite.add_check(
+                "Bit rate recovered",
+                rate_error < 15.0,
+                f"Recovered {recovered_rate:.2f} Mbps (expected {expected_rate:.0f} Mbps)",
             )
 
         # Check signals were generated
-        suite.check_true(
+        suite.add_check(
             "IEEE signal generated",
-            self.encoded_signal is not None,
-            category="signals",
+            self.encoded_signal is not None and len(self.encoded_signal) > 0,
+            f"Got {len(self.encoded_signal) if self.encoded_signal is not None else 0} samples",
         )
 
-        suite.check_true(
-            "Diff signal generated",
-            self.diff_encoded_signal is not None,
-            category="signals",
+        suite.add_check(
+            "Differential signal generated",
+            self.diff_encoded_signal is not None and len(self.diff_encoded_signal) > 0,
+            f"Got {len(self.diff_encoded_signal) if self.diff_encoded_signal is not None else 0} samples",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

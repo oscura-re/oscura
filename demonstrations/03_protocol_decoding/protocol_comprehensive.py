@@ -37,19 +37,19 @@ class ProtocolDecodingDemo(BaseDemo):
     including auto-detection and multi-protocol support.
     """
 
-    name = "Comprehensive Protocol Decoding"
-    description = "Demonstrates protocol decoding (UART, SPI, I2C)"
-    category = "protocol_decoding"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Comprehensive Protocol Decoding",
+            description="Demonstrates protocol decoding (UART, SPI, I2C)",
+            **kwargs,
+        )
         self.sample_rate = 10e6  # 10 MHz
         self.uart_trace = None
         self.spi_traces = {}
         self.i2c_traces = {}
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load protocol signal data.
 
         Tries in this order:
@@ -100,6 +100,8 @@ class ProtocolDecodingDemo(BaseDemo):
         # Always generate SPI and I2C (or extend to support loading these too)
         self._generate_spi()
         self._generate_i2c()
+
+        return {}
 
     def _generate_uart(self) -> None:
         """Generate UART signal."""
@@ -169,7 +171,7 @@ class ProtocolDecodingDemo(BaseDemo):
                 )
         print_result("I2C channels", len(self.i2c_traces))
 
-    def run_analysis(self) -> None:
+    def run_demonstration(self, data: dict) -> dict:
         """Execute protocol decoding."""
         # === Section 1: UART Decoding ===
         print_subheader("UART Decoding")
@@ -186,6 +188,8 @@ class ProtocolDecodingDemo(BaseDemo):
         # === Section 4: Auto Protocol Detection ===
         print_subheader("Auto Protocol Detection")
         self._auto_detect()
+
+        return self.results
 
     def _decode_uart(self) -> None:
         """Decode UART protocol."""
@@ -302,28 +306,28 @@ class ProtocolDecodingDemo(BaseDemo):
         except Exception as e:
             print_info(f"Protocol detection: {e}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate decoding results."""
+        suite = ValidationSuite()
+
         # UART decoding
-        suite.check_greater(
-            "UART frames decoded",
-            self.results.get("uart_frames", 0),
-            0,
-            category="uart",
-        )
+        uart_frames = results.get("uart_frames", 0)
+        suite.add_check("UART frames decoded", uart_frames > 0, f"Got {uart_frames} frames")
 
         # Overall protocol support
         total_frames = (
-            self.results.get("uart_frames", 0)
-            + self.results.get("spi_frames", 0)
-            + self.results.get("i2c_frames", 0)
+            results.get("uart_frames", 0)
+            + results.get("spi_frames", 0)
+            + results.get("i2c_frames", 0)
         )
-        suite.check_greater(
-            "Total frames decoded",
-            total_frames,
-            0,
-            category="overall",
+        suite.add_check(
+            "Total protocol frames decoded",
+            total_frames >= 3,
+            f"Got {total_frames} frames across all protocols",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

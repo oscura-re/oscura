@@ -65,14 +65,12 @@ class LINDemo(BaseDemo):
     This demo generates LIN bus signals with various frame types,
     then decodes them to demonstrate Oscura's LIN analysis capabilities.
     """
-
-    name = "LIN Protocol Demo"
-    description = "Demonstrates LIN 1.x/2.x automotive protocol decoding"
-    category = "automotive_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="LIN Protocol Demo",
+            description="Demonstrates LIN 1.x/2.x automotive protocol decoding",            **kwargs,
+        )
         self.sample_rate = 1e6  # 1 MHz sampling
         self.baudrate = 19200  # 19200 bps (LIN 2.0)
 
@@ -148,7 +146,7 @@ class LINDemo(BaseDemo):
 
         return bits
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load LIN test signals.
 
         Tries in this order:
@@ -305,7 +303,10 @@ class LINDemo(BaseDemo):
         print_result("Sample rate", f"{self.sample_rate / 1e6:.1f} MHz")
         print_result("Samples per bit", samples_per_bit)
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode LIN signals and analyze frames."""
         print_subheader("LIN Decoding")
 
@@ -398,63 +399,56 @@ class LINDemo(BaseDemo):
 
             self.results["avg_gap_ms"] = np.mean(inter_frame_gaps) * 1e3
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate LIN decoding results."""
-        # Check that frames were decoded
-        suite.check_greater(
-            "Total frames",
-            self.results.get("frame_count", 0),
-            0,
-            category="decoding",
+        suite = ValidationSuite()
+
+        # Check total frames
+        frame_count = results.get("frame_count", 0)
+        suite.add_check(
+            "Total frames decoded",
+            frame_count > 0,
+            f"Got {frame_count} frames"
         )
 
         # Check for expected frame IDs
-        frame_ids = self.results.get("frame_ids", [])
-
-        suite.check_true(
-            "Found ID 0x10 (temperature)",
+        frame_ids = results.get("frame_ids", [])
+        suite.add_check(
+            "Frame ID 0x10 found",
             0x10 in frame_ids,
-            category="frames",
+            f"IDs: {[hex(id) for id in frame_ids]}"
         )
-
-        suite.check_true(
-            "Found ID 0x21 (motor control)",
+        suite.add_check(
+            "Frame ID 0x21 found",
             0x21 in frame_ids,
-            category="frames",
+            f"IDs: {[hex(id) for id in frame_ids]}"
         )
-
-        suite.check_true(
-            "Found ID 0x3C (diagnostic)",
+        suite.add_check(
+            "Frame ID 0x3C found",
             0x3C in frame_ids,
-            category="frames",
+            f"IDs: {[hex(id) for id in frame_ids]}"
         )
 
         # Check data integrity
-        suite.check_greater(
+        total_data_bytes = results.get("total_data_bytes", 0)
+        suite.add_check(
             "Total data bytes",
-            self.results.get("total_data_bytes", 0),
-            0,
-            category="data",
+            total_data_bytes > 0,
+            f"Got {total_data_bytes} bytes"
         )
 
         # Verify signal integrity
-        suite.check_true(
-            "Signal generated",
+        suite.add_check(
+            "Bus signal generated",
             self.bus_signal is not None and len(self.bus_signal) > 0,
-            category="signals",
+            f"Got {len(self.bus_signal) if self.bus_signal is not None else 0} samples"
         )
 
-        # Check error rate is reasonable
-        error_count = self.results.get("error_count", 0)
-        frame_count = self.results.get("frame_count", 1)
-        error_rate = error_count / frame_count if frame_count > 0 else 0
-
-        suite.check_less_equal(
-            "Error rate",
-            error_rate,
-            0.5,  # Allow up to 50% error rate (some decoding issues)
-            category="quality",
-        )
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

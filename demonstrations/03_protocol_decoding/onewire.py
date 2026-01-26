@@ -61,13 +61,13 @@ class OneWireDemo(BaseDemo):
     DS18B20 temperature sensor communication.
     """
 
-    name = "1-Wire Protocol Demo"
-    description = "Demonstrates 1-Wire protocol decoding for temperature sensors"
-    category = "serial_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="1-Wire Protocol Demo",
+            description="Demonstrates 1-Wire protocol decoding for temperature sensors",
+            **kwargs,
+        )
         self.sample_rate = 1e6  # 1 MHz sampling
         self.bus_signal = None
         self.packets = []
@@ -173,7 +173,7 @@ class OneWireDemo(BaseDemo):
             bit = (byte_val >> i) & 1
             self._generate_read_bit(bits, bit, samples_per_us)
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate 1-Wire test signals.
 
         Simulates DS18B20 temperature sensor communication:
@@ -185,38 +185,7 @@ class OneWireDemo(BaseDemo):
         6. Skip ROM (0xCC)
         7. Read Scratchpad (0xBE)
         8. Read 9 bytes of scratchpad
-
-        Supports loading from NPZ file with fallback to synthetic generation.
         """
-        file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            file_to_load = self.data_file
-            print_info(f"Loading 1-Wire data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("onewire_ds18b20.npz"):
-            file_to_load = default_file
-            print_info(f"Loading 1-Wire data from default file: {default_file.name}")
-
-        # Load from file if found
-        if file_to_load:
-            try:
-                data = np.load(file_to_load)
-                self.bus_signal = data["bus"]
-                loaded_sample_rate = float(data["sample_rate"])
-                self.sample_rate = loaded_sample_rate
-
-                print_result("1-Wire loaded from file", file_to_load.name)
-                print_result("Total samples", len(self.bus_signal))
-                print_result("Sample rate", f"{self.sample_rate / 1e6:.1f} MHz")
-                print_result("Duration", f"{len(self.bus_signal) / self.sample_rate * 1e3:.2f} ms")
-                return
-            except Exception as e:
-                print_info(f"Failed to load 1-Wire from file: {e}, falling back to synthetic")
-                file_to_load = None
-
-        # Generate synthetic data if not loaded
         print_info("Generating 1-Wire test signals...")
 
         samples_per_us = self.sample_rate / 1e6
@@ -298,7 +267,9 @@ class OneWireDemo(BaseDemo):
         print_result("Total samples", len(self.bus_signal))
         print_result("Duration", f"{len(self.bus_signal) / self.sample_rate * 1e3:.2f} ms")
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode 1-Wire signals and analyze transactions."""
         print_subheader("1-Wire Decoding")
 
@@ -421,38 +392,33 @@ class OneWireDemo(BaseDemo):
         print_result("Commands sent", len(self.results["command_bytes"]))
         print_result("Bytes read", len(self.results["data_bytes"]))
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate 1-Wire decoding results."""
+        suite = ValidationSuite()
+
         # Check packets were decoded
-        suite.check_greater(
-            "Packet count",
-            self.results.get("packet_count", 0),
-            0,
-            category="decoding",
-        )
+        packet_count = results.get("packet_count", 0)
+        suite.add_check("Packets decoded", packet_count > 0, f"Got {packet_count} packets")
 
         # Check for reset pulses
-        suite.check_greater(
-            "Reset pulses",
-            self.results.get("reset_count", 0),
-            0,
-            category="protocol",
-        )
+        reset_count = results.get("reset_count", 0)
+        suite.add_check("Reset pulses detected", reset_count > 0, f"Got {reset_count} resets")
 
         # Check for command bytes
-        suite.check_greater(
-            "Command bytes",
-            len(self.results.get("command_bytes", [])),
-            0,
-            category="protocol",
-        )
+        command_bytes = len(results.get("command_bytes", []))
+        suite.add_check("Command bytes decoded", command_bytes > 0, f"Got {command_bytes} commands")
 
         # Check signal was generated
-        suite.check_true(
+        suite.add_check(
             "Signal generated",
             self.bus_signal is not None and len(self.bus_signal) > 0,
-            category="signals",
+            f"Got {len(self.bus_signal) if self.bus_signal is not None else 0} samples",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

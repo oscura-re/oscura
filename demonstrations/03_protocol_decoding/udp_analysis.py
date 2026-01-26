@@ -48,18 +48,16 @@ class UDPPacketAnalysisDemo(BaseDemo):
     Demonstrates Oscura's packet analysis capabilities including
     traffic metrics, payload analysis, and protocol fingerprinting.
     """
-
-    name = "Comprehensive UDP Packet Analysis"
-    description = "Demonstrates UDP packet reverse engineering capabilities"
-    category = "packet_analysis"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Comprehensive UDP Packet Analysis",
+            description="Demonstrates UDP packet reverse engineering capabilities",            **kwargs,
+        )
         self.packets = []
         self.payloads = []
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load UDP packet data.
 
         Tries in this order:
@@ -122,7 +120,10 @@ class UDPPacketAnalysisDemo(BaseDemo):
         print_result("Packets generated", len(self.packets))
         print_result("Payload size", len(self.payloads[0]), "bytes")
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Execute packet analysis."""
         # === Section 1: Traffic Metrics ===
         print_subheader("Traffic Metrics")
@@ -143,6 +144,9 @@ class UDPPacketAnalysisDemo(BaseDemo):
         # === Section 5: Clustering ===
         print_subheader("Clustering Analysis")
         self._analyze_clustering()
+
+
+        return self.results
 
     def _analyze_traffic_metrics(self) -> None:
         """Analyze traffic metrics."""
@@ -242,53 +246,35 @@ class UDPPacketAnalysisDemo(BaseDemo):
         if clusters:
             self.results["largest_cluster"] = max(c.size for c in clusters)
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate analysis results."""
-        # Traffic metrics
-        suite.check_greater(
-            "Throughput measured",
-            self.results.get("throughput_bps", 0),
-            0,
-            category="traffic",
-        )
+        suite = ValidationSuite()
 
-        suite.check_greater(
-            "Packets/sec > 0",
-            self.results.get("packets_per_sec", 0),
-            0,
-            category="traffic",
-        )
+        # Traffic metrics
+        suite.add_check("Throughput measured", results.get("throughput_bps", 0) > 0,
+            0,        )
+
+        suite.add_check("Packets/sec > 0", results.get("packets_per_sec", 0) > 0,
+            0,        )
 
         # Payload analysis
-        suite.check_equal(
-            "All payloads processed",
-            self.results.get("total_payloads", 0),
-            len(self.payloads),
-            category="payload",
-        )
+        suite.add_check("All payloads processed", self.results.get("total_payloads", 0) == 0,
+            len(self.payloads),        )
 
-        suite.check_greater(
-            "Entropy calculated",
-            self.results.get("entropy_bits", 0),
-            0,
-            category="payload",
-        )
+        suite.add_check("Entropy calculated", results.get("entropy_bits", 0) > 0,
+            0,        )
 
         # Field inference
-        suite.check_greater(
-            "Fields inferred",
-            self.results.get("inferred_fields", 0),
-            0,
-            category="inference",
-        )
+        suite.add_check("Fields inferred", results.get("inferred_fields", 0) > 0,
+            0,        )
 
         # Clustering
-        suite.check_greater(
-            "Clustering completed",
-            self.results.get("clusters", 0),
-            0,
-            category="clustering",
-        )
+        suite.add_check("Clustering completed", results.get("clusters", 0) > 0,
+            0,        )
+
+        suite.report()
+        return suite.all_passed()
+
 
 
 if __name__ == "__main__":

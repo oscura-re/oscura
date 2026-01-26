@@ -105,13 +105,13 @@ class AutomotiveFullWorkflow(BaseDemo):
     CAN, LIN, and FlexRay buses with cross-bus correlation.
     """
 
-    name = "Automotive Full Stack Workflow"
-    description = "Complete automotive multi-protocol analysis workflow"
-    category = "complete_workflows"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Automotive Full Stack Workflow",
+            description="Complete automotive multi-protocol analysis workflow",
+            **kwargs,
+        )
 
         self.can_messages: list[CANMessage] = []
         self.lin_frames: list[LINFrame] = []
@@ -275,7 +275,7 @@ class AutomotiveFullWorkflow(BaseDemo):
 
         return frames
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load multi-protocol automotive capture.
 
         Tries in this order:
@@ -340,7 +340,9 @@ class AutomotiveFullWorkflow(BaseDemo):
         print_result("FlexRay frames", len(self.flexray_frames))
         print_result("Capture duration", f"{duration} s")
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Run complete automotive analysis workflow."""
         # ===== Step 1: Bus Characterization =====
         print_subheader("Step 1: Bus Characterization")
@@ -574,52 +576,47 @@ class AutomotiveFullWorkflow(BaseDemo):
 
         print_info("=" * 60)
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate workflow results."""
+        suite = ValidationSuite()
+
         # Check traffic was generated
-        suite.check_greater(
-            "CAN messages",
-            len(self.can_messages),
-            0,
-            category="capture",
+        can_messages = results.get("can_messages", 0)
+        suite.add_check(
+            "CAN messages generated", can_messages > 0, f"Generated {can_messages} messages"
         )
 
-        suite.check_greater(
-            "LIN frames",
-            len(self.lin_frames),
-            0,
-            category="capture",
+        uds_messages = results.get("uds_messages", 0)
+        suite.add_check(
+            "UDS messages generated", uds_messages > 0, f"Generated {uds_messages} messages"
         )
 
-        suite.check_greater(
-            "FlexRay frames",
-            len(self.flexray_frames),
-            0,
-            category="capture",
+        obd_messages = results.get("obd_messages", 0)
+        suite.add_check(
+            "OBD messages generated", obd_messages > 0, f"Generated {obd_messages} messages"
         )
 
         # Check analysis completed
-        suite.check_greater(
-            "CAN unique IDs",
-            self.results.get("can_unique_ids", 0),
-            0,
-            category="analysis",
-        )
+        can_unique_ids = results.get("can_unique_ids", 0)
+        suite.add_check("CAN unique IDs", can_unique_ids > 0, f"Found {can_unique_ids} unique IDs")
 
-        suite.check_greater(
+        diagnostic_msgs = results.get("diagnostic_msgs", 0)
+        suite.add_check(
             "Diagnostic messages",
-            self.results.get("diagnostic_msgs", 0),
-            0,
-            category="diagnostics",
+            diagnostic_msgs > 0,
+            f"Found {diagnostic_msgs} diagnostic messages",
         )
 
         # Check bus load is reasonable
-        suite.check_less(
-            "CAN bus load",
-            self.results.get("can_bus_load_pct", 100),
-            100,
-            category="performance",
+        can_bus_load_pct = results.get("can_bus_load_pct", 0)
+        suite.add_check(
+            "CAN bus load", can_bus_load_pct < 100, f"Bus load: {can_bus_load_pct:.1f}%"
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

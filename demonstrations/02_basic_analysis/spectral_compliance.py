@@ -54,66 +54,21 @@ class SpectralComplianceDemo(BaseDemo):
     including FFT, PSD, and IEEE 1241-2010 quality metrics.
     """
 
-    name = "Comprehensive Spectral and Compliance Analysis"
-    description = "Demonstrates spectral analysis and IEEE 1241-2010 compliance"
-    category = "spectral_compliance"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="comprehensive_spectral_and_compliance_analysis",
+            description="Demonstrates spectral analysis and IEEE 1241-2010 compliance",
+            capabilities=["oscura.spectral_analysis", "oscura.ieee1241_metrics"],
+            ieee_standards=["IEEE 1241-2010"],
+            **kwargs,
+        )
         self.sample_rate = 1e6  # 1 MHz
         self.signal_freq = 1000.0  # 1 kHz fundamental
         self.trace = None
 
-    def generate_data(self) -> None:
-        """Generate or load spectral test signal data.
-
-        Tries in this order:
-        1. Load from --data-file if specified
-        2. Load from default demo_data file if exists
-        3. Generate synthetic data using SignalBuilder
-        """
-        # Try loading from file
-        data_file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            data_file_to_load = self.data_file
-            print_info(f"Loading data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("audio_amplifier_1khz.npz"):
-            data_file_to_load = default_file
-            print_info(f"Loading data from default file: {default_file.name}")
-
-        # Load from file if found
-        if data_file_to_load:
-            try:
-                data = np.load(data_file_to_load)
-                signal_data = data["ch1"]
-                loaded_sample_rate = float(data["sample_rate"])
-
-                self.trace = WaveformTrace(
-                    data=signal_data,
-                    metadata=TraceMetadata(
-                        sample_rate=loaded_sample_rate,
-                        channel_name=str(data.get("channel_names", ["Spectral_Test"])[0]),
-                        source_file=str(data_file_to_load),
-                    ),
-                )
-
-                # Update signal parameters based on loaded data
-                if "fundamental_freq" in data:
-                    self.signal_freq = float(data["fundamental_freq"])
-
-                print_result("Loaded from file", data_file_to_load.name)
-                print_result("Sample rate", f"{loaded_sample_rate / 1e6:.1f}", "MHz")
-                print_result("Samples", len(self.trace.data))
-                print_result("Fundamental", f"{self.signal_freq:.0f}", "Hz")
-                return
-            except Exception as e:
-                print_info(f"Failed to load from file: {e}, falling back to synthetic generation")
-
-        # Generate synthetic data as fallback
+    def generate_test_data(self) -> dict:
+        """Generate synthetic spectral test signal data using SignalBuilder."""
         print_info("Generating synthetic test signal with harmonics...")
 
         # Create signal with harmonics for THD analysis
@@ -126,7 +81,7 @@ class SpectralComplianceDemo(BaseDemo):
         )
 
         self.trace = WaveformTrace(
-            data=signal.data["ch1"],
+            data=signal["ch1"],
             metadata=TraceMetadata(
                 sample_rate=self.sample_rate,
                 channel_name="Spectral_Test",
@@ -138,8 +93,12 @@ class SpectralComplianceDemo(BaseDemo):
         print_result("Samples", len(self.trace.data))
         print_result("Fundamental", f"{self.signal_freq:.0f}", "Hz")
 
-    def run_analysis(self) -> None:
+        return {"trace": self.trace}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Execute spectral analysis."""
+        self.trace = data["trace"]
+
         # === Section 1: FFT Analysis ===
         print_subheader("FFT Analysis")
         self._analyze_fft()
@@ -159,6 +118,8 @@ class SpectralComplianceDemo(BaseDemo):
         # === Section 5: Compliance Validation ===
         print_subheader("IEEE 1241-2010 Compliance")
         self._validate_compliance()
+
+        return self.results
 
     def _analyze_fft(self) -> None:
         """Perform FFT analysis."""
@@ -313,56 +274,61 @@ class SpectralComplianceDemo(BaseDemo):
         else:
             print_info(f"{len(violations)} compliance issues detected")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate spectral analysis results."""
+        suite = ValidationSuite()
+
         # FFT computed
-        suite.check_greater(
+        fft_bins = results.get("fft_bins", 0)
+        suite.add_check(
             "FFT bins computed",
-            self.results.get("fft_bins", 0),
-            0,
-            category="fft",
+            fft_bins > 0,
+            f"Got {fft_bins} bins",
         )
 
         # Fundamental detected
-        suite.check_greater(
+        fundamental_freq = results.get("fundamental_freq", 0)
+        suite.add_check(
             "Fundamental frequency detected",
-            self.results.get("fundamental_freq", 0),
-            0,
-            category="fft",
+            fundamental_freq > 0,
+            f"Got {fundamental_freq} Hz",
         )
 
         # PSD computed
-        suite.check_greater(
+        psd_bins = results.get("psd_welch_bins", 0)
+        suite.add_check(
             "PSD Welch computed",
-            self.results.get("psd_welch_bins", 0),
-            0,
-            category="psd",
+            psd_bins > 0,
+            f"Got {psd_bins} bins",
         )
 
         # Quality metrics
-        if "thd_db" in self.results:
-            suite.check_less(
+        if "thd_db" in results:
+            thd_db = results["thd_db"]
+            suite.add_check(
                 "THD is negative dB",
-                self.results["thd_db"],
-                0,
-                category="ieee1241",
+                thd_db < 0,
+                f"Got {thd_db} dB",
             )
 
-        if "snr_db" in self.results:
-            suite.check_greater(
+        if "snr_db" in results:
+            snr_db = results["snr_db"]
+            suite.add_check(
                 "SNR is positive",
-                self.results["snr_db"],
-                0,
-                category="ieee1241",
+                snr_db > 0,
+                f"Got {snr_db} dB",
             )
 
-        if "enob_bits" in self.results:
-            suite.check_greater(
+        if "enob_bits" in results:
+            enob_bits = results["enob_bits"]
+            suite.add_check(
                 "ENOB is positive",
-                self.results["enob_bits"],
-                0,
-                category="ieee1241",
+                enob_bits > 0,
+                f"Got {enob_bits} bits",
             )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

@@ -70,13 +70,13 @@ class BayesianInferenceDemo(BaseDemo):
     inference to recover those parameters with uncertainty quantification.
     """
 
-    name = "Bayesian Inference Demo"
-    description = "Demonstrates Bayesian inference for signal characterization"
-    category = "advanced_inference"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Bayesian Inference Demo",
+            description="Demonstrates Bayesian inference for signal characterization",
+            **kwargs,
+        )
 
         # True parameters (to be inferred)
         self.true_baud_rate = 115200  # UART baud rate
@@ -161,7 +161,7 @@ class BayesianInferenceDemo(BaseDemo):
 
         return high_times, low_times
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate test data for Bayesian inference.
 
         Loads from file if available (--data-file override or default NPZ),
@@ -228,7 +228,9 @@ class BayesianInferenceDemo(BaseDemo):
         self.duty_samples = (high_times, low_times)
         print_result("Duty cycle samples", len(high_times))
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Perform Bayesian inference on test data."""
         inference = BayesianInference()
 
@@ -379,43 +381,38 @@ class BayesianInferenceDemo(BaseDemo):
             + ("0%" if self.results["symbol_count"] == self.true_symbol_count else "error")
         )
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate Bayesian inference results."""
+        suite = ValidationSuite()
+
         # Check baud rate inference
-        baud_error = self.results.get("baud_error_pct", 100)
-        suite.check_less(
-            "Baud rate error",
-            baud_error,
-            20,  # Within 20%
-            category="baud_rate",
-        )
+        baud_error = results.get("baud_error_pct", 100)
+        suite.add_check("Baud rate accuracy", baud_error < 10, f"Error: {baud_error:.1f}%")
 
         # Check confidence
-        confidence = self.results.get("baud_confidence", 0)
-        suite.check_greater(
-            "Baud rate confidence",
-            confidence,
-            0.5,  # At least 50% confident
-            category="confidence",
-        )
+        confidence = results.get("baud_confidence", 0)
+        suite.add_check("Baud confidence", confidence > 0.5, f"Confidence: {confidence:.2f}")
 
         # Check symbol count (algorithm may estimate 3-4 for noisy signals)
-        suite.check_range(
-            "Symbol count",
-            self.results.get("symbol_count", 0),
-            self.true_symbol_count - 1,  # Allow one below
-            self.true_symbol_count,  # Up to true value
-            category="symbols",
+        inferred_symbols = results.get("inferred_symbol_count", 0)
+        suite.add_check(
+            "Symbol count estimation",
+            self.true_symbol_count - 1 <= inferred_symbols <= self.true_symbol_count,
+            f"Inferred {inferred_symbols} (true: {self.true_symbol_count})",
         )
 
         # Check sequential updating improved confidence
-        final_conf = self.results.get("sequential_final_confidence", 0)
-        suite.check_greater(
-            "Sequential final confidence",
-            final_conf,
-            0.6,
-            category="sequential",
+        final_conf = results.get("sequential_final_confidence", 0)
+        suite.add_check(
+            "Sequential learning",
+            final_conf > confidence,
+            f"Improved from {confidence:.2f} to {final_conf:.2f}",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

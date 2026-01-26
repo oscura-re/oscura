@@ -63,19 +63,19 @@ class ProtocolDSLDemo(BaseDemo):
     decoders to demonstrate Oscura's protocol definition capabilities.
     """
 
-    name = "Protocol DSL Demo"
-    description = "Demonstrates declarative protocol definition and decoder generation"
-    category = "advanced_inference"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Protocol DSL Demo",
+            description="Demonstrates declarative protocol definition and decoder generation",
+            **kwargs,
+        )
 
         self.protocols = []
         self.test_packets = []
         self.decode_results = []
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Create protocol definitions and test packets.
 
         Loads from file if available (--data-file override or default NPZ),
@@ -341,7 +341,9 @@ class ProtocolDSLDemo(BaseDemo):
 
         print_result("Protocols defined", len(self.protocols))
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode test packets using generated decoders."""
         print_subheader("Protocol Decoding")
 
@@ -464,32 +466,38 @@ class ProtocolDSLDemo(BaseDemo):
                     else:
                         print_info(f"  {field_name}: {value}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate Protocol DSL demo results."""
+        suite = ValidationSuite()
+
         # Check protocols were defined
-        suite.check_greater(
-            "Protocol count",
-            self.results.get("protocol_count", 0),
-            0,
-            category="definition",
+        protocol_count = results.get("protocol_count", 0)
+        suite.add_check(
+            "Protocols defined", protocol_count > 0, f"Defined {protocol_count} protocols"
         )
 
         # Check decoding was successful
-        suite.check_equal(
-            "Decode success count",
-            self.results.get("decode_success", 0),
-            self.results.get("decode_total", 0),
-            category="decoding",
+        decode_success = results.get("decode_success", 0)
+        decode_total = results.get("decode_total", 0)
+        suite.add_check(
+            "Decoding succeeded",
+            decode_success == decode_total,
+            f"{decode_success}/{decode_total} successful",
         )
 
         # Check all protocols have fields
         for proto_info in self.protocols:
-            suite.check_greater(
-                f"{proto_info['name']} field count",
-                len(proto_info["definition"].fields),
-                0,
-                category="fields",
+            proto_def = proto_info["definition"]
+            suite.add_check(
+                f"{proto_def.name} has fields",
+                len(proto_def.fields) > 0,
+                f"{len(proto_def.fields)} fields defined",
             )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

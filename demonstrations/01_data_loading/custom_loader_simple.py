@@ -42,13 +42,14 @@ class CustomDAQLoaderDemo(BaseDemo):
     configurable loader with YAML configuration.
     """
 
-    name = "Custom DAQ Binary Loader"
-    description = "Load custom DAQ binary data with YAML configuration"
-    category = "custom_daq"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="custom_daq_binary_loader",
+            description="Load custom DAQ binary data with YAML configuration",
+            capabilities=["oscura.loaders.binary", "oscura.streaming"],
+            **kwargs,
+        )
         self.sample_rate = 100e6  # 100 MHz
         self.sample_limit = 10000
         self.lanes = {}
@@ -66,7 +67,7 @@ class CustomDAQLoaderDemo(BaseDemo):
             # Different frequency per lane
             freq = 1e6 * lane_num
 
-            signal = (
+            signal_data = (
                 SignalBuilder(sample_rate=self.sample_rate, duration=0.0001)
                 .add_sine(frequency=freq, amplitude=32767)  # 16-bit range
                 .add_noise(snr_db=50)
@@ -74,7 +75,7 @@ class CustomDAQLoaderDemo(BaseDemo):
             )
 
             self.lanes[f"Lane_{lane_num}"] = WaveformTrace(
-                data=signal.data["ch1"],
+                data=signal_data["ch1"],
                 metadata=TraceMetadata(
                     sample_rate=self.sample_rate,
                     channel_name=f"Lane_{lane_num}",
@@ -89,36 +90,31 @@ class CustomDAQLoaderDemo(BaseDemo):
         # Return synthetic path marker (no actual file created in memory-only mode)
         return Path("synthetic_data")
 
-    def generate_data(self) -> None:
-        """Load or generate sample DAQ data for demonstration."""
-        bin_file_to_load = None
+    def generate_test_data(self) -> dict:
+        """Load or generate sample DAQ data for demonstration.
 
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            bin_file_to_load = self.data_file
-            print_info(f"Loading binary from CLI override: {self.data_file}")
-        # 2. Check default demo_data files
-        elif (default_file := self.find_default_data_file("multi_lane_daq_10M.bin")) or (
-            default_file := self.find_default_data_file("continuous_acquisition_100M.bin")
-        ):
-            bin_file_to_load = default_file
-            print_info(f"Loading binary from default file: {default_file.name}")
+        Returns:
+            Dictionary containing lanes data.
+        """
+        # Generate synthetic data
+        self._create_sample_binary()
+        return {"lanes": self.lanes}
 
-        # Use existing file if found
-        if bin_file_to_load:
-            # TODO: Load actual binary file data
-            # For now, fall back to synthetic generation
-            print_info("Binary file loading not yet implemented, using synthetic data")
-            self._create_sample_binary()
-        else:
-            # 3. Generate synthetic data as fallback
-            self._create_sample_binary()
+    def run_demonstration(self, data: dict) -> dict:
+        """Analyze loaded DAQ data.
 
-    def run_analysis(self) -> None:
-        """Analyze loaded DAQ data."""
+        Args:
+            data: Dictionary containing lanes data.
+
+        Returns:
+            Dictionary containing analysis results.
+        """
+        lanes = data["lanes"]
+        results = {}
+
         print_subheader("Channel Analysis")
 
-        for name, trace in self.lanes.items():
+        for name, trace in lanes.items():
             print_info(f"Channel: {name}")
             print_result("  Samples", len(trace.data))
             print_result("  Range", f"[{trace.data.min():.0f}, {trace.data.max():.0f}]")
@@ -126,50 +122,58 @@ class CustomDAQLoaderDemo(BaseDemo):
             print_result("  Unique values", len(np.unique(trace.data)))
 
             # Store statistics
-            self.results[f"{name}_samples"] = len(trace.data)
-            self.results[f"{name}_range"] = (trace.data.min(), trace.data.max())
+            results[f"{name}_samples"] = len(trace.data)
+            results[f"{name}_range"] = (trace.data.min(), trace.data.max())
 
         # Timing analysis
         print_subheader("Load Performance")
         start = time.time()
-        _ = [trace.data.copy() for trace in self.lanes.values()]
+        _ = [trace.data.copy() for trace in lanes.values()]
         elapsed = time.time() - start
 
-        total_samples = sum(len(t.data) for t in self.lanes.values())
+        total_samples = sum(len(t.data) for t in lanes.values())
         print_result("Total samples", total_samples)
         print_result("Copy time", f"{elapsed * 1000:.2f} ms")
         print_result("Throughput", f"{total_samples / elapsed / 1e6:.1f} M samples/sec")
 
-        self.results["total_samples"] = total_samples
-        self.results["throughput"] = total_samples / elapsed
+        results["total_samples"] = total_samples
+        results["throughput"] = total_samples / elapsed
+        results["lanes"] = lanes
 
-    def validate_results(self, suite: ValidationSuite) -> None:
-        """Validate loaded data."""
+        return results
+
+    def validate(self, results: dict) -> bool:
+        """Validate loaded data.
+
+        Args:
+            results: Dictionary containing analysis results.
+
+        Returns:
+            True if validation passed, False otherwise.
+        """
+        lanes = results.get("lanes", {})
+
         # Check all lanes loaded
-        suite.check_equal(
-            "All lanes loaded",
-            len(self.lanes),
-            4,
-            category="loading",
-        )
+        if len(lanes) != 4:
+            self.error(f"Expected 4 lanes, got {len(lanes)}")
+            return False
 
         # Check each lane has data
         for lane_num in range(1, 5):
             lane_name = f"Lane_{lane_num}"
-            suite.check_greater(
-                f"{lane_name} samples",
-                self.results.get(f"{lane_name}_samples", 0),
-                0,
-                category="data",
-            )
+            samples = results.get(f"{lane_name}_samples", 0)
+            if samples <= 0:
+                self.error(f"{lane_name} has no samples")
+                return False
 
         # Check throughput
-        suite.check_greater(
-            "Throughput > 1M samples/sec",
-            self.results.get("throughput", 0),
-            1e6,
-            category="performance",
-        )
+        throughput = results.get("throughput", 0)
+        if throughput <= 1e6:
+            self.error(f"Throughput too low: {throughput:.1f} samples/sec")
+            return False
+
+        self.success("All validation checks passed")
+        return True
 
 
 if __name__ == "__main__":

@@ -67,13 +67,15 @@ class VCDLoaderDemo(BaseDemo):
     with Oscura's VCD loader.
     """
 
-    name = "VCD File Loader Demo"
-    description = "Demonstrates IEEE 1364 VCD file loading and analysis"
-    category = "file_format_io"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="vcd_file_loader",
+            description="Demonstrates IEEE 1364 VCD file loading and analysis",
+            capabilities=["oscura.loaders.vcd", "oscura.digital_analysis"],
+            ieee_standards=["IEEE 1364"],
+            **kwargs,
+        )
         self.vcd_file = None
         self.traces = {}
 
@@ -164,32 +166,21 @@ class VCDLoaderDemo(BaseDemo):
             """
         )
 
-        vcd_path = self.data_dir / "demo_signals.vcd"
+        data_dir = self.get_data_dir()
+        data_dir.mkdir(parents=True, exist_ok=True)
+        vcd_path = data_dir / "demo_signals.vcd"
         vcd_path.write_text(vcd_content)
         return vcd_path
 
-    def generate_data(self) -> None:
-        """Create or load sample VCD files for demonstration."""
-        vcd_file_to_load = None
+    def generate_test_data(self) -> dict:
+        """Create or load sample VCD files for demonstration.
 
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            vcd_file_to_load = self.data_file
-            print_info(f"Loading VCD from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("demo_signals.vcd"):
-            vcd_file_to_load = default_file
-            print_info(f"Loading VCD from default file: {default_file.name}")
-
-        # Use existing file if found
-        if vcd_file_to_load:
-            self.vcd_file = vcd_file_to_load
-            print_result("Loaded VCD file", vcd_file_to_load.name)
-        else:
-            # 3. Generate VCD file as fallback
-            print_info("Creating sample VCD file...")
-            self.vcd_file = self._create_sample_vcd()
-            print_result("VCD file created", self.vcd_file)
+        Returns:
+            Dictionary containing vcd_file path.
+        """
+        print_info("Creating sample VCD file...")
+        self.vcd_file = self._create_sample_vcd()
+        print_result("VCD file created", self.vcd_file)
 
         # Show file content preview
         content = self.vcd_file.read_text()
@@ -205,32 +196,44 @@ class VCDLoaderDemo(BaseDemo):
         print_result("File size", f"{self.vcd_file.stat().st_size} bytes")
         print_result("Total lines", len(lines))
 
-    def run_analysis(self) -> None:
-        """Load and analyze VCD file."""
+        return {"vcd_file": self.vcd_file}
+
+    def run_demonstration(self, data: dict) -> dict:
+        """Load and analyze VCD file.
+
+        Args:
+            data: Dictionary containing vcd_file path.
+
+        Returns:
+            Dictionary containing analysis results.
+        """
+        vcd_file = data["vcd_file"]
+        results = {}
+
         print_subheader("Loading VCD File")
 
         # Load signals one at a time
         signal_names = ["clk", "rst_n", "data", "valid", "ready"]
-        self.traces = {}
+        traces = {}
 
         for signal_name in signal_names:
             try:
-                trace = load_vcd(self.vcd_file, signal=signal_name)
-                self.traces[signal_name] = trace
+                trace = load_vcd(vcd_file, signal=signal_name)
+                traces[signal_name] = trace
             except Exception:
                 # Skip signals that can't be loaded
                 pass
 
-        print_result("Signals loaded", len(self.traces))
+        print_result("Signals loaded", len(traces))
 
         # Store results
-        self.results["signal_count"] = len(self.traces)
-        self.results["signal_names"] = list(self.traces.keys())
+        results["signal_count"] = len(traces)
+        results["signal_names"] = list(traces.keys())
 
         # Analyze each signal
         print_subheader("Signal Analysis")
 
-        for signal_name, trace in self.traces.items():
+        for signal_name, trace in traces.items():
             print_info(f"  Signal: {signal_name}")
             print_info(f"    Type: {type(trace).__name__}")
             print_info(f"    Samples: {len(trace.data)}")
@@ -238,22 +241,22 @@ class VCDLoaderDemo(BaseDemo):
 
             # For digital traces, count edges
             if hasattr(trace, "data"):
-                data = trace.data
-                if len(data) > 1:
+                trace_data = trace.data
+                if len(trace_data) > 1:
                     # Count transitions
-                    edges = np.sum(data[:-1] != data[1:])
+                    edges = np.sum(trace_data[:-1] != trace_data[1:])
                     print_info(f"    Transitions: {edges}")
 
                     # Show first few values
-                    first_vals = data[:10].astype(int).tolist()
+                    first_vals = trace_data[:10].astype(int).tolist()
                     print_info(f"    First values: {first_vals}")
 
         # Signal relationships
         print_subheader("Signal Relationships")
 
-        if "clk" in self.traces and "valid" in self.traces:
-            clk_data = self.traces["clk"].data
-            valid_data = self.traces["valid"].data
+        if "clk" in traces and "valid" in traces:
+            clk_data = traces["clk"].data
+            valid_data = traces["valid"].data
 
             # Find clk rising edges
             clk_rising = np.where(~clk_data[:-1] & clk_data[1:])[0] + 1
@@ -269,13 +272,13 @@ class VCDLoaderDemo(BaseDemo):
 
             valid_count = sum(valid_at_clk)
             print_result("Valid assertions", valid_count)
-            self.results["valid_count"] = valid_count
+            results["valid_count"] = valid_count
 
         # Timing analysis
         print_subheader("Timing Analysis")
 
-        if "clk" in self.traces:
-            clk_trace = self.traces["clk"]
+        if "clk" in traces:
+            clk_trace = traces["clk"]
             clk_data = clk_trace.data
             sample_rate = clk_trace.metadata.sample_rate
 
@@ -290,14 +293,14 @@ class VCDLoaderDemo(BaseDemo):
                 print_result("Clock period", f"{avg_period * 1e9:.2f} ns")
                 print_result("Clock frequency", f"{clock_freq / 1e6:.2f} MHz")
 
-                self.results["clock_period_ns"] = avg_period * 1e9
-                self.results["clock_freq_mhz"] = clock_freq / 1e6
+                results["clock_period_ns"] = avg_period * 1e9
+                results["clock_freq_mhz"] = clock_freq / 1e6
 
         # Data bus analysis
-        if "data" in self.traces:
+        if "data" in traces:
             print_subheader("Data Bus Analysis")
 
-            data_trace = self.traces["data"]
+            data_trace = traces["data"]
             data_values = data_trace.data
 
             # Get unique values
@@ -305,9 +308,9 @@ class VCDLoaderDemo(BaseDemo):
             print_result("Unique data values", len(unique_vals))
 
             # Show data values at valid assertions
-            if "clk" in self.traces and "valid" in self.traces:
-                clk_data = self.traces["clk"].data
-                valid_data = self.traces["valid"].data
+            if "clk" in traces and "valid" in traces:
+                clk_data = traces["clk"].data
+                valid_data = traces["valid"].data
 
                 # Find when valid goes high
                 valid_rising = np.where(~valid_data[:-1] & valid_data[1:])[0]
@@ -321,51 +324,55 @@ class VCDLoaderDemo(BaseDemo):
                 for i, val in enumerate(captured_data[:10]):
                     print_info(f"    Transfer {i + 1}: 0x{val:02X} ({val})")
 
-                self.results["captured_data"] = captured_data
+                results["captured_data"] = captured_data
 
         # Summary
         print_subheader("Summary")
-        print_result("VCD file", self.vcd_file.name)
-        print_result("Signals extracted", self.results["signal_count"])
-        print_info(f"Signal names: {', '.join(self.results['signal_names'])}")
+        print_result("VCD file", vcd_file.name)
+        print_result("Signals extracted", results["signal_count"])
+        print_info(f"Signal names: {', '.join(results['signal_names'])}")
 
-        if self.results["signal_count"] > 0:
+        if results["signal_count"] > 0:
             print_info(f"  {GREEN}VCD loading successful!{RESET}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
-        """Validate VCD loading results."""
+        results["vcd_file"] = vcd_file
+        results["traces"] = traces
+        return results
+
+    def validate(self, results: dict) -> bool:
+        """Validate VCD loading results.
+
+        Args:
+            results: Dictionary containing analysis results.
+
+        Returns:
+            True if validation passed, False otherwise.
+        """
         # Check signals were loaded
-        suite.check_greater(
-            "Signal count",
-            self.results.get("signal_count", 0),
-            0,
-            category="loading",
-        )
+        signal_count = results.get("signal_count", 0)
+        if signal_count <= 0:
+            self.error("No signals loaded from VCD file")
+            return False
 
         # Check clock was found
-        signal_names = self.results.get("signal_names", [])
-        suite.check_true(
-            "Clock signal found",
-            "clk" in signal_names,
-            category="signals",
-        )
+        signal_names = results.get("signal_names", [])
+        if "clk" not in signal_names:
+            self.error("Clock signal not found")
+            return False
 
         # Check clock timing if available
-        clock_freq = self.results.get("clock_freq_mhz", 0)
-        if clock_freq > 0:
-            suite.check_greater(
-                "Clock frequency",
-                clock_freq,
-                0,
-                category="timing",
-            )
+        clock_freq = results.get("clock_freq_mhz", 0)
+        if clock_freq <= 0:
+            self.warning("Clock frequency not calculated")
 
         # Check VCD file exists
-        suite.check_file_exists(
-            "VCD file",
-            self.vcd_file,
-            category="files",
-        )
+        vcd_file = results.get("vcd_file")
+        if not vcd_file or not vcd_file.exists():
+            self.error("VCD file does not exist")
+            return False
+
+        self.success("All validation checks passed")
+        return True
 
 
 if __name__ == "__main__":

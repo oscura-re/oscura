@@ -70,14 +70,12 @@ class TDRImpedanceDemo(BaseDemo):
     This demo generates simularun_demoted TDR waveforms with various impedance
     discontinuities and performs comprehensive TDR analysis.
     """
-
-    name = "TDR Impedance Demo"
-    description = "Demonstrates Time Domain Reflectometry for transmission line analysis"
-    category = "signal_integrity"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="TDR Impedance Demo",
+            description="Demonstrates Time Domain Reflectometry for transmission line analysis",            **kwargs,
+        )
         self.sample_rate = 50e9  # 50 GHz (20 ps resolution)
         self.duration = 20e-9  # 20 ns capture
 
@@ -143,7 +141,7 @@ class TDRImpedanceDemo(BaseDemo):
             return 0.0  # Short
         return z_source * (1 + rho) / (1 - rho)
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate TDR test waveform with discontinuities.
 
         Loads from file if available (--data-file override or default NPZ),
@@ -254,7 +252,10 @@ class TDRImpedanceDemo(BaseDemo):
         print_result("Duration", f"{self.duration * 1e9:.0f} ns")
         print_result("Total samples", n_samples)
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Perform TDR analysis on the waveform."""
         print_subheader("TDR Waveform Analysis")
 
@@ -424,53 +425,55 @@ class TDRImpedanceDemo(BaseDemo):
         else:
             print_info(f"{RED}Some discontinuities not detected{RESET}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate TDR analysis results."""
-        # Check that discontinuities were detected
-        detected = self.results.get("detected_discontinuities", 0)
-        suite.check_greater(
+        suite = ValidationSuite()
+
+        # Check TDR analysis was performed
+        tdr_length = results.get("tdr_length_m", 0)
+        suite.add_check(
+            "TDR length measured",
+            tdr_length > 0,
+            f"Got {tdr_length:.3f} m"
+        )
+
+        # Check impedance was measured
+        z0_measured = results.get("z0_measured_ohms", 0)
+        suite.add_check(
+            "Impedance measured",
+            40 < z0_measured < 60,
+            f"Got {z0_measured:.1f} Ohms (expected ~50)"
+        )
+
+        # Check for discontinuities
+        discontinuities = results.get("discontinuity_count", 0)
+        suite.add_check(
             "Discontinuities detected",
-            detected,
-            0,
-            category="detection",
+            discontinuities > 0,
+            f"Got {discontinuities} discontinuities"
         )
 
-        # Check rise time measurement
-        risetime = self.results.get("risetime_ps", 0)
-        suite.check_greater(
-            "Rise time measured",
-            risetime,
-            0,
-            category="measurement",
-        )
+        # Check reflection coefficient
+        if "reflection_coefficient" in results:
+            rho = results["reflection_coefficient"]
+            suite.add_check(
+                "Reflection coefficient reasonable",
+                abs(rho) < 0.5,
+                f"Got {rho:.3f}"
+            )
 
-        # Check that we found impedance values
-        profile = self.results.get("impedance_profile", [])
-        suite.check_greater(
-            "Impedance profile entries",
-            len(profile),
-            0,
-            category="analysis",
-        )
-
-        # Check impedance values are reasonable
-        for entry in profile:
-            z = entry.get("impedance", 0)
-            if z < 1e6:  # Not open
-                suite.check_range(
-                    f"Impedance at {entry['distance_cm']:.0f} cm",
-                    z,
-                    1.0,  # Minimum 1 ohm
-                    50000.0,  # Maximum 50k ohm (near-open circuits can be very high)
-                    category="impedance",
-                )
-
-        # Check signal was generated
-        suite.check_true(
+        # Check signals were generated
+        suite.add_check(
             "TDR trace generated",
-            self.tdr_trace is not None,
-            category="signals",
+            self.tdr_trace is not None and len(self.tdr_trace.data) > 0,
+            f"Got {len(self.tdr_trace.data) if self.tdr_trace is not None else 0} samples"
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

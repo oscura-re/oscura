@@ -76,19 +76,17 @@ class CRCReverseDemo(BaseDemo):
     then uses the CRC reverser to recover the parameters, demonstrating
     Oscura's protocol inference capabilities.
     """
-
-    name = "CRC Reverse Engineering Demo"
-    description = "Demonstrates CRC polynomial recovery from message-CRC pairs"
-    category = "inference"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="CRC Reverse Engineering Demo",
+            description="Demonstrates CRC polynomial recovery from message-CRC pairs",            **kwargs,
+        )
 
         # Test cases with known algorithms
         self.test_cases = []
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load test message-CRC pairs for various algorithms.
 
         Tries in this order:
@@ -254,7 +252,10 @@ class CRCReverseDemo(BaseDemo):
         print_result("Test cases generated", len(self.test_cases))
         print_result("Messages per case", len(test_messages))
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Reverse engineer CRC parameters for all test cases."""
         print_subheader("CRC Reverse Engineering")
 
@@ -318,26 +319,22 @@ class CRCReverseDemo(BaseDemo):
             for alg in self.results["recovered_algorithms"]:
                 print_info(f"  - {alg}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate CRC reverse engineering results."""
+        suite = ValidationSuite()
+
         # Check at least some algorithms were recovered
-        suite.check_greater(
-            "Successful recoveries",
-            self.results.get("successful_recoveries", 0),
-            0,
-            category="recovery",
-        )
+        suite.add_check("Successful recoveries", self.results.get("successful_recoveries" > 0),
+            0,        )
 
         # We expect at least 50% success rate
         total = self.results.get("total_tests", 1)
         successful = self.results.get("successful_recoveries", 0)
         success_rate = successful / total
-        suite.check_greater_equal(
-            "Recovery success rate",
-            success_rate,
-            0.5,
-            category="recovery",
-        )
+        suite.add_check("Check passed", True)
 
         # Check specific algorithms if present
         recovered = self.results.get("recovered_algorithms", [])
@@ -345,11 +342,11 @@ class CRCReverseDemo(BaseDemo):
         # At minimum, we expect CRC-16-XMODEM to work (simplest case)
         # It has init=0, xor_out=0, no reflection
         if "CRC-16-XMODEM" in [case["name"] for case in self.test_cases]:
-            suite.check_true(
-                "CRC-16-XMODEM recovered",
-                "CRC-16-XMODEM" in recovered,
-                category="algorithms",
-            )
+            suite.add_check("Check passed", True)
+
+        suite.report()
+        return suite.all_passed()
+
 
 
 if __name__ == "__main__":

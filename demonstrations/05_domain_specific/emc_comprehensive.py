@@ -40,20 +40,18 @@ class EMCComplianceDemo(BaseDemo):
     Demonstrates Oscura's comprehensive EMC testing capabilities
     including conducted/radiated emissions and power quality analysis.
     """
-
-    name = "Comprehensive EMC/EMI Compliance Analysis"
-    description = "Demonstrates EMC compliance testing per CISPR, FCC, IEC standards"
-    category = "emc_compliance"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Comprehensive EMC/EMI Compliance Analysis",
+            description="Demonstrates EMC compliance testing per CISPR, FCC, IEC standards",            **kwargs,
+        )
         self.sample_rate = 100e6  # 100 MHz
         self.ce_trace = None  # Conducted emissions
         self.pq_trace = None  # Power quality
         self.esd_trace = None  # ESD transient
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load EMC test signals.
 
         Tries in this order:
@@ -170,6 +168,9 @@ class EMCComplianceDemo(BaseDemo):
         if not self.esd_trace:
             self._generate_esd_transient()
 
+
+        return {}
+
     def _generate_conducted_emissions(self) -> None:
         """Generate conducted emissions test signal."""
         # Simulate switching power supply noise
@@ -247,7 +248,7 @@ class EMCComplianceDemo(BaseDemo):
         )
         print_result("ESD signal samples", len(self.esd_trace.data))
 
-    def run_analysis(self) -> None:
+    def run_demonstration(self, data: dict) -> dict:
         """Execute EMC compliance analysis."""
         # === Section 1: Conducted Emissions ===
         print_subheader("Conducted Emissions Analysis (CISPR 32)")
@@ -268,6 +269,9 @@ class EMCComplianceDemo(BaseDemo):
         # === Section 5: Compliance Summary ===
         print_subheader("Compliance Summary")
         self._print_compliance_summary()
+
+
+        return self.results
 
     def _analyze_conducted_emissions(self) -> None:
         """Analyze conducted emissions."""
@@ -461,46 +465,32 @@ class EMCComplianceDemo(BaseDemo):
         print_result("Overall compliance", "PASS" if all_pass else "FAIL")
         self.results["overall_compliant"] = all_pass
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate EMC analysis results."""
+        suite = ValidationSuite()
+
         # Conducted emissions
-        suite.check_greater(
-            "CE emission peaks detected",
-            self.results.get("ce_peaks", 0),
-            0,
-            category="conducted_emissions",
-        )
+        suite.add_check("CE emission peaks detected", results.get("ce_peaks", 0) > 0,
+            0,        )
 
         # Power quality
-        suite.check_greater(
-            "PQ harmonics analyzed",
-            self.results.get("pq_harmonics", 0),
-            0,
-            category="power_quality",
-        )
+        suite.add_check("PQ harmonics analyzed", results.get("pq_harmonics", 0) > 0,
+            0,        )
 
-        suite.check_greater(
-            "PQ fundamental detected",
-            self.results.get("pq_fundamental", 0),
-            0,
-            category="power_quality",
-        )
+        suite.add_check("PQ fundamental detected", results.get("pq_fundamental", 0) > 0,
+            0,        )
 
         # ESD
-        suite.check_greater(
-            "ESD peak voltage measured",
-            self.results.get("esd_peak_kv", 0),
-            0,
-            category="esd",
-        )
+        suite.add_check("ESD peak voltage measured", results.get("esd_peak_kv", 0) > 0,
+            0,        )
 
         # EMI fingerprint
-        suite.check_greater(
-            "EMI peaks fingerprinted",
-            self.results.get("emi_peaks", 0),
-            0,
-            category="emi_fingerprint",
-        )
+        suite.add_check("EMI peaks fingerprinted", results.get("emi_peaks", 0) > 0,
+            0,        )
+
+        suite.report()
+        return suite.all_passed()
+
 
 
 if __name__ == "__main__":

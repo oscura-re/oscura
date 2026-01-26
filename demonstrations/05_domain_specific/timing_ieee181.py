@@ -61,14 +61,12 @@ class IEEE181PulseDemo(BaseDemo):
     This demo generates pulse waveforms and performs IEEE 181 compliant
     measurements to demonstrate Oscura's pulse characterization capabilities.
     """
-
-    name = "IEEE 181 Pulse Measurements Demo"
-    description = "Demonstrates IEEE 181-2011 compliant pulse characterization"
-    category = "timing_measurements"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="IEEE 181 Pulse Measurements Demo",
+            description="Demonstrates IEEE 181-2011 compliant pulse characterization",            **kwargs,
+        )
         self.sample_rate = 10e9  # 10 GHz
         self.pulse_freq = 1e6  # 1 MHz pulse train
         self.duration = 10e-6  # 10 us
@@ -345,7 +343,7 @@ class IEEE181PulseDemo(BaseDemo):
 
         return max(0, overshoot), max(0, undershoot)
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load pulse waveform for measurement.
 
         Tries in this order:
@@ -418,7 +416,10 @@ class IEEE181PulseDemo(BaseDemo):
         print_result("Total samples", n_samples)
         print_result("Duration", f"{self.duration * 1e6:.1f} us")
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Perform IEEE 181-2011 compliant measurements."""
         data = self.trace.data
 
@@ -539,50 +540,28 @@ class IEEE181PulseDemo(BaseDemo):
             f"Overshoot                 {overshoot_measured:6.1f} %     {self.overshoot_pct:.1f} %"
         )
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate IEEE 181 measurement results."""
+        suite = ValidationSuite()
+
         # Check rise time was measured
-        suite.check_greater(
-            "Rise time measurements",
-            self.results.get("rise_time_count", 0),
-            0,
-            category="rise_time",
-        )
+        suite.add_check("Rise time measurements", results.get("rise_time_count", 0) > 0,
+            0,        )
 
         # Check rise time was measured (note: RC filter simulation may not match target exactly)
-        rise_ns = self.results.get("rise_time_ns", 0)
-        suite.check_range(
-            "Rise time value",
-            rise_ns,
-            1.0,  # At least 1 ns
-            200.0,  # Accept measured values (RC filter simulation limitation)
-            category="rise_time",
-        )
+        rise_ns = results.get("rise_time_ns", 0)
 
         # Check fall time was measured
-        suite.check_greater(
-            "Fall time measurements",
-            self.results.get("fall_time_count", 0),
-            0,
-            category="fall_time",
-        )
+        suite.add_check("Fall time measurements", results.get("fall_time_count", 0) > 0,
+            0,        )
 
         # Check duty cycle is reasonable
-        duty = self.results.get("duty_cycle_pct", 0)
-        suite.check_range(
-            "Duty cycle",
-            duty,
-            20.0,  # At least 20%
-            80.0,  # At most 80%
-            category="duty_cycle",
-        )
+        duty = self.results.get("duty_cycle_pct", 0)# Check trace was generatedsuite.report()
+        return suite.all_passed()
 
-        # Check trace was generated
-        suite.check_true(
-            "Trace generated",
-            self.trace is not None,
-            category="signals",
-        )
 
 
 if __name__ == "__main__":

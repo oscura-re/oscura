@@ -45,66 +45,21 @@ class MixedSignalDemo(BaseDemo):
     clock recovery, jitter analysis, and IEEE 2414-2020 compliance.
     """
 
-    name = "Comprehensive Mixed-Signal Analysis"
-    description = "Demonstrates jitter analysis and IEEE 2414-2020 compliance"
-    category = "mixed_signal"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="comprehensive_mixed_signal_analysis",
+            description="Demonstrates jitter analysis and IEEE 2414-2020 compliance",
+            capabilities=["oscura.jitter_analysis", "oscura.clock_recovery"],
+            ieee_standards=["IEEE 2414-2020"],
+            **kwargs,
+        )
         self.sample_rate = 10e9  # 10 GHz
         self.bit_rate = 1e9  # 1 Gbps
         self.trace = None
 
-    def generate_data(self) -> None:
-        """Generate or load mixed-signal test data.
-
-        Tries in this order:
-        1. Load from --data-file if specified
-        2. Load from default demo_data file if exists
-        3. Generate synthetic data
-        """
-        # Try loading from file
-        data_file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            data_file_to_load = self.data_file
-            print_info(f"Loading data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("gigabit_ethernet_eye.npz"):
-            data_file_to_load = default_file
-            print_info(f"Loading data from default file: {default_file.name}")
-
-        # Load from file if found
-        if data_file_to_load:
-            try:
-                data = np.load(data_file_to_load)
-                signal_data = data["ch1"]
-                loaded_sample_rate = float(data["sample_rate"])
-
-                self.trace = WaveformTrace(
-                    data=signal_data,
-                    metadata=TraceMetadata(
-                        sample_rate=loaded_sample_rate,
-                        channel_name=str(data.get("channel_names", ["High_Speed_Serial"])[0]),
-                        source_file=str(data_file_to_load),
-                    ),
-                )
-
-                # Update parameters based on loaded data
-                self.sample_rate = loaded_sample_rate
-                if "bit_rate" in data:
-                    self.bit_rate = float(data["bit_rate"])
-
-                print_result("Loaded from file", data_file_to_load.name)
-                print_result("Sample rate", self.sample_rate / 1e9, "GHz")
-                print_result("Samples", len(self.trace.data))
-                return
-            except Exception as e:
-                print_info(f"Failed to load from file: {e}, falling back to synthetic generation")
-
-        # 3. Generate synthetic data as fallback
+    def generate_test_data(self) -> dict:
+        """Generate synthetic mixed-signal test data."""
         print_info("Generating synthetic high-speed serial signal with jitter...")
 
         samples_per_bit = int(self.sample_rate / self.bit_rate)
@@ -158,8 +113,12 @@ class MixedSignalDemo(BaseDemo):
         print_result("Samples", len(self.trace.data))
         print_result("Bits", n_bits)
 
-    def run_analysis(self) -> None:
+        return {"trace": self.trace}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Execute mixed-signal analysis."""
+        self.trace = data["trace"]
+
         # === Section 1: Clock Recovery ===
         print_subheader("Clock Recovery")
         self._analyze_clock_recovery()
@@ -175,6 +134,8 @@ class MixedSignalDemo(BaseDemo):
         # === Section 4: IEEE 2414-2020 Compliance ===
         print_subheader("IEEE 2414-2020 Compliance")
         self._validate_compliance()
+
+        return self.results
 
     def _analyze_clock_recovery(self) -> None:
         """Perform clock recovery analysis."""
@@ -332,48 +293,53 @@ class MixedSignalDemo(BaseDemo):
         else:
             print_info(f"{len(violations)} compliance issues detected")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate mixed-signal analysis results."""
+        suite = ValidationSuite()
+
         # Clock recovery
-        suite.check_greater(
+        clock_freq = results.get("clock_freq_fft", 0) + results.get("clock_freq_edge", 0)
+        suite.add_check(
             "Clock frequency detected",
-            self.results.get("clock_freq_fft", 0) + self.results.get("clock_freq_edge", 0),
-            0,
-            category="clock_recovery",
+            clock_freq > 0,
+            f"Got {clock_freq} Hz",
         )
 
         # Jitter analysis
-        suite.check_greater(
+        jitter_samples = results.get("jitter_samples", 0)
+        suite.add_check(
             "Jitter samples collected",
-            self.results.get("jitter_samples", 0),
-            0,
-            category="jitter",
+            jitter_samples > 0,
+            f"Got {jitter_samples} samples",
         )
 
         # RMS jitter computed
-        if "jitter_rms_ps" in self.results:
-            suite.check_greater(
+        if "jitter_rms_ps" in results:
+            rms_jitter = results["jitter_rms_ps"]
+            suite.add_check(
                 "RMS jitter computed",
-                self.results["jitter_rms_ps"],
-                0,
-                category="jitter",
+                rms_jitter > 0,
+                f"Got {rms_jitter} ps",
             )
 
         # Signal integrity
-        suite.check_greater(
+        v_pp = results.get("v_pp", 0)
+        suite.add_check(
             "Signal swing measured",
-            self.results.get("v_pp", 0),
-            0,
-            category="signal_integrity",
+            v_pp > 0,
+            f"Got {v_pp} V",
         )
 
         # TIE computed
-        suite.check_greater(
+        tie_edges = results.get("tie_edges", 0)
+        suite.add_check(
             "TIE edges detected",
-            self.results.get("tie_edges", 0),
-            0,
-            category="jitter",
+            tie_edges > 0,
+            f"Got {tie_edges} edges",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

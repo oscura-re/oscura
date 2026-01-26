@@ -42,14 +42,13 @@ This demo category covers all file format input/output operations. Oscura suppor
 
 ```python
 import oscura as osc
-from oscura.exporters import export_csv, export_hdf5
 
 # Load any format
 trace = osc.load("capture.wfm")
 
 # Export to different formats
-export_csv(trace, "output.csv")
-export_hdf5(trace, "output.h5", compression="gzip")
+osc.export_csv(trace, "output.csv")
+osc.export_hdf5(trace, "output.h5", compression="gzip")
 ```
 
 ---

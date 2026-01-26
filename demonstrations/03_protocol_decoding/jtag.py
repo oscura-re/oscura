@@ -61,13 +61,13 @@ class JTAGDemo(BaseDemo):
     JTAG analysis capabilities.
     """
 
-    name = "JTAG Protocol Demo"
-    description = "Demonstrates IEEE 1149.1 JTAG protocol decoding"
-    category = "debug_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="JTAG Protocol Demo",
+            description="Demonstrates IEEE 1149.1 JTAG protocol decoding",
+            **kwargs,
+        )
         self.sample_rate = 50e6  # 50 MHz sampling
         self.tck_freq = 10e6  # 10 MHz TCK
         self.ir_length = 4  # 4-bit IR (typical for small devices)
@@ -79,7 +79,7 @@ class JTAGDemo(BaseDemo):
         self.tdo = None
         self.packets = []
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate JTAG test signals.
 
         Creates JTAG signals demonstrating:
@@ -89,45 +89,6 @@ class JTAGDemo(BaseDemo):
         4. EXTEST instruction
         5. Custom data shift
         """
-        # Try loading JTAG data from file
-        jtag_file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            jtag_file_to_load = self.data_file
-            print_info(f"Loading JTAG data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("jtag_boundary_scan.npz"):
-            jtag_file_to_load = default_file
-            print_info(f"Loading JTAG data from default file: {default_file.name}")
-
-        # Load JTAG from file if found
-        if jtag_file_to_load:
-            try:
-                data = np.load(jtag_file_to_load)
-                self.tck = data["tck"]
-                self.tms = data["tms"]
-                self.tdi = data["tdi"]
-                self.tdo = data["tdo"]
-
-                # Load sample rate if present
-                if "sample_rate" in data:
-                    self.sample_rate = float(data["sample_rate"])
-
-                # Load TCK frequency if present
-                if "tck_freq" in data:
-                    self.tck_freq = float(data["tck_freq"])
-
-                print_result("JTAG loaded from file", jtag_file_to_load.name)
-                print_result("Total samples", len(self.tck))
-                print_result("TCK frequency", self.tck_freq / 1e6, "MHz")
-                print_result("Sample rate", self.sample_rate / 1e6, "MHz")
-                return
-            except Exception as e:
-                print_info(f"Failed to load JTAG from file: {e}, falling back to synthetic")
-                jtag_file_to_load = None
-
-        # Generate synthetic JTAG if not loaded
         print_info("Generating JTAG test signals...")
 
         samples_per_bit = int(self.sample_rate / self.tck_freq)
@@ -287,7 +248,9 @@ class JTAGDemo(BaseDemo):
         print_result("TCK frequency", self.tck_freq / 1e6, "MHz")
         print_result("Sample rate", self.sample_rate / 1e6, "MHz")
 
-    def run_analysis(self) -> None:
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Decode JTAG signals and analyze transactions."""
         print_subheader("JTAG Decoding")
 
@@ -371,34 +334,46 @@ class JTAGDemo(BaseDemo):
         for instr in instructions_found:
             print_info(f"  - {instr}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate JTAG decoding results."""
+        suite = ValidationSuite()
+
         # Check that packets were decoded
-        suite.check_greater("Total packets", self.results.get("total_packets", 0), 0)
+        total_packets = results.get("total_packets", 0)
+        suite.add_check("Total packets decoded", total_packets > 0, f"Got {total_packets} packets")
 
         # Check IR shifts
-        suite.check_greater_equal("IR shifts", self.results.get("ir_count", 0), 3)
+        ir_count = results.get("ir_count", 0)
+        suite.add_check("IR shifts detected", ir_count >= 3, f"Got {ir_count} IR shifts")
 
         # Check DR shifts
-        suite.check_greater_equal("DR shifts", self.results.get("dr_count", 0), 2)
+        dr_count = results.get("dr_count", 0)
+        suite.add_check("DR shifts detected", dr_count >= 2, f"Got {dr_count} DR shifts")
 
         # Check that we found expected instructions
-        instruction_names = self.results.get("instruction_names", [])
-
-        # We expect IDCODE, BYPASS, and EXTEST
-        suite.check_true(
-            "Found IDCODE instruction", "IDCODE" in instruction_names, category="instructions"
+        instruction_names = results.get("instruction_names", [])
+        suite.add_check(
+            "Found IDCODE instruction",
+            "IDCODE" in instruction_names,
+            f"Instructions: {instruction_names}",
         )
 
         # Check IDCODE value if present
-        if "idcode" in self.results:
-            # Our test IDCODE is 0x1CACE551
-            suite.check_equal("IDCODE value", self.results["idcode"], 0x1CACE551)
+        if "idcode" in results:
+            idcode = results["idcode"]
+            suite.add_check("IDCODE value correct", idcode == 0x1CACE551, f"Got 0x{idcode:08X}")
 
         # Verify signal integrity
-        suite.check_true(
-            "Signals generated", self.tck is not None and len(self.tck) > 0, category="signals"
+        suite.add_check(
+            "Signals generated",
+            self.tck is not None and len(self.tck) > 0,
+            f"Got {len(self.tck) if self.tck is not None else 0} samples",
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

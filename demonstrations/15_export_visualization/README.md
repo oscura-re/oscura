@@ -126,11 +126,11 @@ python demonstrations/validate_all.py
 
 **Capabilities**:
 
-- `oscura.exporters.csv` - CSV export with headers
-- `oscura.exporters.json` - Structured JSON export
-- `oscura.exporters.hdf5` - Large dataset export
-- `oscura.exporters.npz` - NumPy array export
-- `oscura.exporters.mat` - MATLAB compatibility
+- `osc.export_csv()` - CSV export with headers
+- `osc.export_json()` - Structured JSON export
+- `osc.export_hdf5()` - Large dataset export
+- `osc.export_npz()` - NumPy array export
+- `osc.export_matlab()` - MATLAB compatibility
 
 **Related Demos**:
 

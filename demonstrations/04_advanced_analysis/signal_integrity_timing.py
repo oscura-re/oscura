@@ -63,14 +63,12 @@ class SetupHoldTimingDemo(BaseDemo):
     relationships, then measures setup and hold times to demonstrate
     Oscura's timing analysis capabilities.
     """
-
-    name = "Setup/Hold Timing Demo"
-    description = "Demonstrates JEDEC JESD65B compliant timing analysis"
-    category = "signal_integrity"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Setup/Hold Timing Demo",
+            description="Demonstrates JEDEC JESD65B compliant timing analysis",            **kwargs,
+        )
         self.sample_rate = 1e9  # 1 GHz (1 ns resolution)
         self.clock_freq = 100e6  # 100 MHz clock
 
@@ -178,7 +176,7 @@ class SetupHoldTimingDemo(BaseDemo):
 
         return gaussian_filter1d(signal, sigma=sigma_samples)
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate clock and data signals for timing analysis.
 
         Loads from file if available (--data-file override or default NPZ),
@@ -313,7 +311,10 @@ class SetupHoldTimingDemo(BaseDemo):
         print_result("Signal duration", f"{duration * 1e6:.1f} us")
         print_result("Total samples", n_samples)
 
-    def run_analysis(self) -> None:
+
+        return {}
+
+    def run_demonstration(self, data: dict) -> dict:
         """Perform setup/hold timing analysis."""
         print_subheader("Timing Analysis - Good Data Signal")
 
@@ -464,61 +465,62 @@ class SetupHoldTimingDemo(BaseDemo):
         print_result("Setup spec", f">= {self.spec_setup_min:.1f} ns")
         print_result("Hold spec", f">= {self.spec_hold_min:.1f} ns")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate timing analysis results."""
-        # Check that measurements were performed
-        suite.check_true(
-            "Setup time measured (good)",
-            not np.isnan(self.results.get("setup_time_good_ns", np.nan)),
-            category="measurement",
+        suite = ValidationSuite()
+
+        # Check rise time
+        rise_time_ns = results.get("rise_time_ns", 0)
+        suite.add_check(
+            "Rise time measured",
+            rise_time_ns > 0,
+            f"Got {rise_time_ns:.2f} ns"
         )
 
-        suite.check_true(
-            "Hold time measured (good)",
-            not np.isnan(self.results.get("hold_time_good_ns", np.nan)),
-            category="measurement",
+        # Check fall time
+        fall_time_ns = results.get("fall_time_ns", 0)
+        suite.add_check(
+            "Fall time measured",
+            fall_time_ns > 0,
+            f"Got {fall_time_ns:.2f} ns"
         )
 
-        # Check that good data passes timing
-        setup_margin = self.results.get("setup_margin_good_ns", np.nan)
-        if not np.isnan(setup_margin):
-            suite.check_greater_equal(
-                "Setup margin (good data)",
-                setup_margin,
-                -0.5,  # Allow small measurement error
-                category="timing",
+        # Check propagation delay
+        if "prop_delay_ns" in results:
+            prop_delay = results["prop_delay_ns"]
+            suite.add_check(
+                "Propagation delay measured",
+                prop_delay > 0,
+                f"Got {prop_delay:.2f} ns"
             )
 
-        hold_margin = self.results.get("hold_margin_good_ns", np.nan)
-        if not np.isnan(hold_margin):
-            suite.check_greater_equal(
-                "Hold margin (good data)",
-                hold_margin,
-                -0.5,  # Allow small measurement error
-                category="timing",
+        # Check setup/hold times
+        if "setup_time_ns" in results:
+            setup_time = results["setup_time_ns"]
+            suite.add_check(
+                "Setup time measured",
+                setup_time > 0,
+                f"Got {setup_time:.2f} ns"
             )
 
-        # Check slew rate measurements
-        clock_sr = self.results.get("clock_slew_rate_vns", 0)
-        suite.check_greater(
-            "Clock slew rate",
-            clock_sr,
-            0,
-            category="edges",
-        )
-
-        # Check that signals were generated
-        suite.check_true(
+        # Check signals were generated
+        suite.add_check(
             "Clock trace generated",
-            self.clock_trace is not None,
-            category="signals",
+            self.clk_trace is not None and len(self.clk_trace.data) > 0,
+            f"Got {len(self.clk_trace.data) if self.clk_trace is not None else 0} samples"
         )
 
-        suite.check_true(
+        suite.add_check(
             "Data trace generated",
-            self.data_trace is not None,
-            category="signals",
+            self.data_trace is not None and len(self.data_trace.data) > 0,
+            f"Got {len(self.data_trace.data) if self.data_trace is not None else 0} samples"
         )
+
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

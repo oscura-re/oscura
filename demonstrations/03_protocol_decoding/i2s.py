@@ -62,13 +62,13 @@ class I2SDemo(BaseDemo):
     them to demonstrate Oscura's I2S analysis capabilities.
     """
 
-    name = "I2S Audio Protocol Demo"
-    description = "Demonstrates I2S audio bus protocol decoding"
-    category = "serial_protocols"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="I2S Audio Protocol Demo",
+            description="Demonstrates I2S audio bus protocol decoding",
+            **kwargs,
+        )
 
         # I2S parameters
         self.audio_sample_rate = 48000  # 48 kHz audio
@@ -195,59 +195,11 @@ class I2SDemo(BaseDemo):
 
         return bck_bits, ws_bits, sd_bits
 
-    def generate_data(self) -> None:
-        """Generate or load I2S test signals.
-
-        Tries in this order:
-        1. Load from --data-file if specified
-        2. Load from default demo_data files if they exist
-        3. Generate synthetic data
-        """
-        # Try loading I2S data from file
-        file_to_load = None
-
-        # 1. Check CLI override
-        if self.data_file and self.data_file.exists():
-            file_to_load = self.data_file
-            print_info(f"Loading I2S data from CLI override: {self.data_file}")
-        # 2. Check default generated data
-        elif default_file := self.find_default_data_file("i2s_audio_stream.npz"):
-            file_to_load = default_file
-            print_info(f"Loading I2S data from default file: {default_file.name}")
-
-        # Load I2S from file if found
-        if file_to_load:
-            try:
-                data = np.load(file_to_load)
-                self.bck = data["bck"]
-                self.ws = data["ws"]
-                self.sd = data["sd"]
-                loaded_sample_rate = float(data["sample_rate"])
-                self.capture_sample_rate = loaded_sample_rate
-
-                # Load audio parameters if available
-                if "audio_sample_rate" in data:
-                    self.audio_sample_rate = int(data["audio_sample_rate"])
-                if "bit_depth" in data:
-                    self.bit_depth = int(data["bit_depth"])
-
-                # Recalculate derived parameters
-                self.bck_freq = self.audio_sample_rate * self.bit_depth * 2
-                self.ws_freq = self.audio_sample_rate
-
-                print_result("I2S loaded from file", file_to_load.name)
-                print_result("Capture sample rate", f"{self.capture_sample_rate / 1e6:.1f} MHz")
-                print_result("Audio sample rate", f"{self.audio_sample_rate / 1e3:.1f} kHz")
-                print_result("Bit depth", f"{self.bit_depth} bits")
-                print_result("Total samples", len(self.bck))
-                return  # Successfully loaded
-            except Exception as e:
-                print_info(f"Failed to load I2S from file: {e}, falling back to synthetic")
-                file_to_load = None
-
-        # Generate synthetic I2S if not loaded
+    def generate_test_data(self) -> dict:
+        """Generate I2S test data."""
         print_info("Generating I2S test signals...")
         self._generate_synthetic_i2s()
+        return {}
 
     def _generate_synthetic_i2s(self) -> None:
         """Generate synthetic I2S test signals with audio data."""
@@ -294,7 +246,7 @@ class I2SDemo(BaseDemo):
         print_result("Total samples", len(self.bck))
         print_result("Duration", f"{len(self.bck) / self.capture_sample_rate * 1e3:.2f} ms")
 
-    def run_analysis(self) -> None:
+    def run_demonstration(self, data: dict) -> dict:
         """Decode I2S signals and analyze audio data."""
         print_subheader("I2S Decoding")
 
@@ -397,58 +349,40 @@ class I2SDemo(BaseDemo):
         if self.results["sample_count"] > 0:
             print_info(f"  {GREEN}I2S decoding successful!{RESET}")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+        return self.results
+
+    def validate(self, results: dict) -> bool:
         """Validate I2S decoding results."""
+        suite = ValidationSuite()
+
         # Check that samples were decoded
-        suite.check_greater(
-            "Sample count",
-            self.results.get("sample_count", 0),
-            0,
-            category="decoding",
-        )
+        sample_count = results.get("sample_count", 0)
+        suite.add_check("Samples decoded", sample_count > 0, f"Got {sample_count} samples")
 
         # Check that we got both channels
-        suite.check_greater(
-            "Left samples",
-            len(self.results.get("left_samples", [])),
-            0,
-            category="channels",
+        left_samples = results.get("left_samples", [])
+        suite.add_check(
+            "Left channel extracted", len(left_samples) > 0, f"Got {len(left_samples)} left samples"
         )
 
-        suite.check_greater(
-            "Right samples",
-            len(self.results.get("right_samples", [])),
-            0,
-            category="channels",
+        right_samples = results.get("right_samples", [])
+        suite.add_check(
+            "Right channel extracted",
+            len(right_samples) > 0,
+            f"Got {len(right_samples)} right samples",
         )
 
         # Check audio levels are reasonable
-        left_peak = self.results.get("left_peak_dbfs", -100)
-        suite.check_greater(
-            "Left peak level",
-            left_peak,
-            -60,  # Should be above -60 dBFS for our test signal
-            category="levels",
+        left_peak = results.get("left_peak_dbfs", -100)
+        suite.add_check("Left peak level", left_peak > -60, f"Left peak at {left_peak:.1f} dBFS")
+
+        right_peak = results.get("right_peak_dbfs", -100)
+        suite.add_check(
+            "Right peak level", right_peak > -60, f"Right peak at {right_peak:.1f} dBFS"
         )
 
-        # Check signals were generated
-        suite.check_true(
-            "BCK signal generated",
-            self.bck is not None,
-            category="signals",
-        )
-
-        suite.check_true(
-            "WS signal generated",
-            self.ws is not None,
-            category="signals",
-        )
-
-        suite.check_true(
-            "SD signal generated",
-            self.sd is not None,
-            category="signals",
-        )
+        suite.report()
+        return suite.all_passed()
 
 
 if __name__ == "__main__":

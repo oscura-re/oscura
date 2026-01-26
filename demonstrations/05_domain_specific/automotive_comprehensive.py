@@ -62,18 +62,16 @@ class AutomotiveProtocolDemo(BaseDemo):
     Demonstrates Oscura's comprehensive automotive reverse engineering
     capabilities across CAN, OBD-II, UDS, J1939, LIN, and FlexRay.
     """
-
-    name = "Comprehensive Automotive Protocol Analysis"
-    description = "Demonstrates automotive protocol reverse engineering"
-    category = "automotive"
-
     def __init__(self, **kwargs):
         """Initialize demo."""
-        super().__init__(**kwargs)
+        super().__init__(
+            name="Comprehensive Automotive Protocol Analysis",
+            description="Demonstrates automotive protocol reverse engineering",            **kwargs,
+        )
         self.messages = []
         self.session = None
 
-    def generate_data(self) -> None:
+    def generate_test_data(self) -> dict:
         """Generate or load automotive CAN traffic data.
 
         Tries in this order:
@@ -126,6 +124,9 @@ class AutomotiveProtocolDemo(BaseDemo):
         print_result("Messages generated", len(self.messages))
         print_result("Unique IDs", len(self.session.unique_ids()))
 
+
+        return {}
+
     def _generate_can_traffic(self) -> list:
         """Generate realistic CAN traffic."""
         messages = []
@@ -173,7 +174,7 @@ class AutomotiveProtocolDemo(BaseDemo):
         messages.sort(key=lambda m: m.timestamp)
         return messages
 
-    def run_analysis(self) -> None:
+    def run_demonstration(self, data: dict) -> dict:
         """Execute automotive protocol analysis."""
         if not HAS_AUTOMOTIVE:
             print_info("Skipping analysis - automotive module not available")
@@ -202,6 +203,9 @@ class AutomotiveProtocolDemo(BaseDemo):
         # === Section 6: Protocol Summary ===
         print_subheader("Protocol Summary")
         self._print_protocol_summary()
+
+
+        return self.results
 
     def _analyze_can(self) -> None:
         """Analyze CAN bus traffic."""
@@ -416,67 +420,39 @@ class AutomotiveProtocolDemo(BaseDemo):
         print_info("  - LIN protocol (single-wire)")
         print_info("  - FlexRay (time-triggered)")
 
-    def validate_results(self, suite: ValidationSuite) -> None:
+    def validate(self, results: dict) -> bool:
         """Validate automotive analysis results."""
-        if not HAS_AUTOMOTIVE:
-            suite.check_true(
-                "Automotive module check",
-                True,
-                category="dependencies",
-            )
-            return
+        suite = ValidationSuite()
+
+        if not HAS_AUTOMOTIVE:return
 
         # CAN analysis
-        suite.check_greater(
-            "CAN messages generated",
-            self.results.get("can_messages", 0),
-            0,
-            category="can",
-        )
+        suite.add_check("CAN messages generated", results.get("can_messages", 0) > 0,
+            0,        )
 
-        suite.check_greater(
-            "Unique CAN IDs",
-            self.results.get("can_unique_ids", 0),
-            0,
-            category="can",
-        )
+        suite.add_check("Unique CAN IDs", results.get("can_unique_ids", 0) > 0,
+            0,        )
 
         # Reverse engineering
-        suite.check_true(
-            "Hypothesis validated",
-            self.results.get("hypothesis_valid", False),
-            category="reverse_engineering",
-        )
 
-        suite.check_greater(
-            "Hypothesis confidence",
-            self.results.get("hypothesis_confidence", 0),
-            0.5,
-            category="reverse_engineering",
-        )
+
+        suite.add_check("Hypothesis confidence", results.get("hypothesis_confidence", 0) > 0,
+            0.5,        )
 
         # OBD-II
-        suite.check_greater(
-            "OBD-II RPM decoded",
-            self.results.get("obd2_rpm", 0),
-            0,
-            category="obd2",
-        )
+        suite.add_check("OBD-II RPM decoded", results.get("obd2_rpm", 0) > 0,
+            0,        )
 
         # UDS
-        suite.check_greater(
-            "UDS services decoded",
-            self.results.get("uds_services_decoded", 0),
-            0,
-            category="uds",
-        )
+        suite.add_check("UDS services decoded", results.get("uds_services_decoded", 0) > 0,
+            0,        )
 
         # J1939
-        suite.check_true(
-            "J1939 decoded",
-            self.results.get("j1939_decoded", False),
-            category="j1939",
-        )
+
+
+        suite.report()
+        return suite.all_passed()
+
 
 
 if __name__ == "__main__":
