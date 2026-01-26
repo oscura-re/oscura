@@ -442,11 +442,14 @@ class ReplayValidator:
         """Connect to serial port.
 
         Raises:
+            ValueError: If port is not a string.
             ImportError: If pyserial is not installed.
             OSError: If serial port cannot be opened.
         """
+        if not isinstance(self.config.port, str):
+            raise ValueError("Serial port must be string")
         self._connection = connect_serial_port(
-            port=str(self.config.port),
+            port=self.config.port,
             baud_rate=self.config.baud_rate,
             timeout=self.config.timeout,
         )
@@ -772,7 +775,9 @@ class ReplayValidator:
         actual_time = recv_time - send_time
         lower_bound = expected * (1.0 - tolerance)
         upper_bound = expected * (1.0 + tolerance)
-        return lower_bound <= actual_time <= upper_bound
+        # Add small epsilon to handle floating point precision errors
+        eps = 1e-9
+        return (lower_bound - eps) <= actual_time <= (upper_bound + eps)
 
 
 __all__ = [
