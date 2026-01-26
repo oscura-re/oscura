@@ -104,24 +104,32 @@ class NumberFormatter:
         Returns:
             Tuple of (scale_factor, exponent) or None for extreme values
         """
-        scale_map = [
-            (1e-15, 1e15, -15),
-            (1e-12, 1e12, -12),
-            (1e-9, 1e9, -9),
-            (1e-6, 1e6, -6),
-            (1e-3, 1e3, -3),
-            (1, 1, 0),
-            (1e3, 1e-3, 3),
-            (1e6, 1e-6, 6),
-            (1e9, 1e-9, 9),
-            (1e12, 1e-12, 12),
-            (1e15, 1e-15, 15),
-        ]
+        # Find the appropriate SI prefix by checking value ranges
+        # Each range is [lower_bound, upper_bound) for the prefix
+        if abs_val >= 1e15:
+            return (1e-15, 15)
+        if abs_val >= 1e12:
+            return (1e-12, 12)
+        if abs_val >= 1e9:
+            return (1e-9, 9)
+        if abs_val >= 1e6:
+            return (1e-6, 6)
+        if abs_val >= 1e3:
+            return (1e-3, 3)
+        if abs_val >= 1:
+            return (1, 0)
+        if abs_val >= 1e-3:
+            return (1e3, -3)
+        if abs_val >= 1e-6:
+            return (1e6, -6)
+        if abs_val >= 1e-9:
+            return (1e9, -9)
+        if abs_val >= 1e-12:
+            return (1e12, -12)
+        if abs_val >= 1e-15:
+            return (1e15, -15)
 
-        for threshold, scale, exp in scale_map:
-            if abs_val < threshold:
-                return (scale, exp)
-
+        # Value too small, use scientific notation
         return None
 
     def format(

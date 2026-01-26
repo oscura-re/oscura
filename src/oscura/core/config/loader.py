@@ -224,7 +224,11 @@ def load_config(
 
         config = copy.deepcopy(DEFAULT_CONFIG)
 
-    if config_path is None:
+    # Only search for config files if:
+    # 1. User wants defaults (use_defaults=True), OR
+    # 2. This is part of normal initialization (config_path=None means auto-search)
+    # BUT respect use_defaults=False by not searching when explicitly disabled
+    if config_path is None and use_defaults:
         # Search standard locations
         search_paths = [
             Path.cwd() / "oscura.yaml",
