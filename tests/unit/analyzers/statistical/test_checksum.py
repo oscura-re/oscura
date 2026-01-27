@@ -767,7 +767,8 @@ class TestIntegrationScenarios:
         candidates = detect_checksum_fields(messages)
 
         # May find some candidates but with low correlation
-        for _candidate in candidates:
+        for candidate in candidates:
             # High correlation would indicate false positive
             # In practice, random data should have low correlation
-            pass  # Just verify no crashes
+            assert candidate.correlation < 0.9, "Random data should not have high correlation"
+            # Just verify no crashes

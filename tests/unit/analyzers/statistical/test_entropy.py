@@ -67,6 +67,8 @@ class TestEntropyAnalysis:
             assert entropy >= 0.0, f"Entropy is negative: {entropy}"
 
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("calculate_entropy not available")
 
     def test_medium_entropy_text(self, entropy_files: dict[str, Path]) -> None:
@@ -90,6 +92,8 @@ class TestEntropyAnalysis:
             assert 2.0 < entropy < 6.0, f"Text entropy unexpected: {entropy}"
 
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("calculate_entropy not available")
 
 
@@ -111,6 +115,10 @@ class TestEntropyEdgeCases:
                 calculate_entropy(empty)
 
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("calculate_entropy not available")
 
     def test_entropy_single_byte(self) -> None:
@@ -180,6 +188,10 @@ class TestEntropyModule:
             assert entropy is not None
 
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("entropy module not available")
 
     def test_calculate_entropy_function(self) -> None:
@@ -196,6 +208,10 @@ class TestEntropyModule:
             assert 0 <= result <= 8
 
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("calculate_entropy not available")
 
     def test_entropy_window_analysis(self) -> None:
@@ -275,6 +291,10 @@ class TestEntropyDataTypes:
             assert isinstance(entropy, int | float)
 
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("calculate_entropy not available")
 
     def test_entropy_bytearray(self) -> None:
@@ -288,6 +308,10 @@ class TestEntropyDataTypes:
             assert isinstance(entropy, int | float)
 
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("calculate_entropy not available")
 
     def test_entropy_numpy_array(self) -> None:

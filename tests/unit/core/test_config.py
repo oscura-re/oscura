@@ -24,8 +24,8 @@ from oscura.core.config import (
     get_config_value,
     load_config,
     save_config,
-    validate_config,
 )
+from oscura.core.config.legacy import validate_config
 from oscura.core.exceptions import ConfigurationError
 
 pytestmark = [pytest.mark.unit, pytest.mark.core]

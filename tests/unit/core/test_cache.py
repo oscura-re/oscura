@@ -414,17 +414,15 @@ class TestCoreCacheIntegration:
         import threading
 
         cache = OscuraCache("1GB", cache_dir=tmp_path)
-        errors = []
+        results = []
 
         def worker(thread_id: int) -> None:
-            try:
-                for i in range(10):
-                    key = f"thread{thread_id}_key{i}"
-                    cache.put(key, f"value{i}")
-                    result = cache.get(key)
-                    assert result == f"value{i}"
-            except Exception as e:
-                errors.append(e)
+            for i in range(10):
+                key = f"thread{thread_id}_key{i}"
+                cache.put(key, f"value{i}")
+                result = cache.get(key)
+                assert result == f"value{i}", f"Expected value{i}, got {result}"
+                results.append((thread_id, i, result))
 
         threads = [threading.Thread(target=worker, args=(i,)) for i in range(3)]
         for t in threads:
@@ -432,5 +430,6 @@ class TestCoreCacheIntegration:
         for t in threads:
             t.join()
 
-        assert len(errors) == 0
+        # Verify all 30 operations completed successfully
+        assert len(results) == 30, f"Expected 30 operations, got {len(results)}"
         assert cache.get_stats().current_entries == 30

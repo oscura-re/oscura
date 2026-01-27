@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 
 from tests.hypothesis_strategies import clock_signals
 
@@ -22,8 +22,7 @@ class TestClockRecoveryProperties:
             if clock[i] != clock[i - 1]:
                 transitions.append(i)
 
-        if len(transitions) < 2:
-            pytest.skip("Too few transitions")
+        assume(len(transitions) >= 2)
 
         # Check regularity
         transition_intervals = np.diff(transitions)

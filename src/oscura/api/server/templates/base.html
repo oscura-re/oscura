@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title }}{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <!-- Plotly.js for waveform visualization -->
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+
+    <style>
+        :root[data-theme="dark"] {
+            --bs-body-bg: #1a1a1a;
+            --bs-body-color: #e0e0e0;
+            --bs-border-color: #333;
+            --bs-card-bg: #2a2a2a;
+            --bs-primary: #00d9ff;
+            --bs-secondary: #6c757d;
+            --bs-success: #28a745;
+            --bs-danger: #dc3545;
+        }
+
+        :root[data-theme="light"] {
+            --bs-body-bg: #ffffff;
+            --bs-body-color: #212529;
+            --bs-border-color: #dee2e6;
+            --bs-card-bg: #f8f9fa;
+            --bs-primary: #0d6efd;
+            --bs-secondary: #6c757d;
+            --bs-success: #28a745;
+            --bs-danger: #dc3545;
+        }
+
+        body {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .navbar {
+            background-color: var(--bs-card-bg);
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+
+        .card {
+            background-color: var(--bs-card-bg);
+            border: 1px solid var(--bs-border-color);
+        }
+
+        .btn-primary {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+
+        .dropzone {
+            border: 2px dashed var(--bs-border-color);
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dropzone:hover, .dropzone.drag-over {
+            border-color: var(--bs-primary);
+            background-color: rgba(0, 217, 255, 0.1);
+        }
+
+        .progress-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+
+        .session-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .status-processing {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-complete {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .status-error {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-cpu"></i> Oscura Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/sessions">
+                            <i class="bi bi-list-task"></i> Sessions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/protocols">
+                            <i class="bi bi-diagram-3"></i> Protocols
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleTheme()">
+                        <i class="bi bi-moon-stars" id="theme-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Theme Toggle -->
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+
+            // Update icon
+            const icon = document.getElementById('theme-icon');
+            icon.className = newTheme === 'dark' ? 'bi bi-moon-stars' : 'bi bi-sun';
+
+            // Save preference
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme preference
+        const savedTheme = localStorage.getItem('theme') || '{{ theme }}';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Update icon
+        const icon = document.getElementById('theme-icon');
+        icon.className = savedTheme === 'dark' ? 'bi bi-moon-stars' : 'bi bi-sun';
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

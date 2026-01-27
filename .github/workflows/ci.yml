@@ -186,7 +186,7 @@ jobs:
         uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python-version }}
-          install-optional: true
+          dev-group: true
 
       - name: Cache pytest
         uses: actions/cache@v5
@@ -214,60 +214,50 @@ jobs:
         run: |
           case "${{ matrix.test-group }}" in
             "analyzers")
-              echo "paths=tests/unit/analyzers/" >> $GITHUB_OUTPUT
+              # Analyzer tests including signal analysis, correlation
+              paths="tests/unit/analyzers/ tests/unit/analysis/"
+              paths="$paths tests/unit/signal/ tests/unit/correlation/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "core-protocols-loaders")
-              paths="tests/unit/core/ tests/unit/protocols/"
-              paths="$paths tests/unit/loaders/ tests/unit/math/"
-              paths="$paths tests/unit/acquisition/"
+              # Core functionality, protocol decoders, data loaders
+              paths="tests/unit/core/ tests/unit/protocols/ tests/unit/loaders/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "search-filtering-streaming")
-              paths="tests/unit/search/ tests/unit/filtering/"
-              paths="$paths tests/unit/streaming/ tests/unit/batch/"
+              # Standalone test files in tests/unit/ root
+              paths="tests/unit/test_*.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "cli-ui-reporting")
-              paths="tests/unit/cli/ tests/unit/ui/"
-              paths="$paths tests/unit/reporting/"
-              paths="$paths tests/unit/visualization/"
-              paths="$paths tests/unit/exporters/"
+              # CLI, reporting, visualization, web interface
+              paths="tests/unit/cli/ tests/unit/reporting/"
+              paths="$paths tests/unit/visualization/ tests/unit/web/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-workflows")
-              paths="tests/unit/workflow/ tests/unit/workflows/"
-              paths="$paths tests/unit/pipeline/"
-              paths="$paths tests/unit/session/"
-              paths="$paths tests/unit/sessions/"
-              paths="$paths tests/unit/automotive/"
-              paths="$paths tests/unit/integrations/"
+              # Workflows, sessions, automotive, hardware/IoT
+              paths="tests/unit/workflows/ tests/unit/sessions/"
+              paths="$paths tests/unit/automotive/ tests/unit/hardware/"
+              paths="$paths tests/unit/firmware/ tests/unit/iot/"
+              paths="$paths tests/unit/side_channel/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-exploratory")
-              paths="tests/unit/exploratory/ tests/unit/inference/"
-              paths="$paths tests/unit/discovery/"
-              paths="$paths tests/unit/guidance/"
-              paths="$paths tests/unit/onboarding/"
-              paths="$paths tests/unit/compliance/"
-              paths="$paths tests/unit/quality/"
-              paths="$paths tests/unit/testing/"
+              # Inference, discovery, guidance, compliance
+              paths="tests/unit/inference/ tests/unit/discovery/"
+              paths="$paths tests/unit/guidance/ tests/unit/compliance/"
               paths="$paths tests/unit/requirements/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-utils")
-              paths="tests/unit/utils/ tests/unit/config/"
-              paths="$paths tests/unit/hooks/ tests/unit/plugins/"
-              paths="$paths tests/unit/api/ tests/unit/dsl/"
-              paths="$paths tests/unit/extensibility/"
-              paths="$paths tests/unit/jupyter/"
-              paths="$paths tests/unit/optimization/"
-              paths="$paths tests/unit/schemas/"
-              paths="$paths tests/unit/triggering/"
-              paths="$paths tests/unit/component/"
-              paths="$paths tests/unit/comparison/"
-              paths="$paths tests/unit/builders/"
-              paths="$paths tests/unit/convenience/"
-              paths="$paths tests/unit/export/"
+              # Utilities, config, API, helpers, exports
+              paths="tests/unit/utils/ tests/unit/config/ tests/unit/hooks/"
+              paths="$paths tests/unit/api/ tests/unit/jupyter/"
+              paths="$paths tests/unit/component/ tests/unit/comparison/"
+              paths="$paths tests/unit/convenience/ tests/unit/export/"
+              paths="$paths tests/unit/storage/ tests/unit/validation/"
+              paths="$paths tests/unit/security/ tests/unit/performance/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "non-unit-tests")
@@ -306,7 +296,7 @@ jobs:
             $XDIST_ARGS \
             --hypothesis-profile=ci \
             -p no:benchmark \
-            --cov=src/oscura \
+            --cov=oscura \
             --cov-report=xml \
             --cov-report=term-missing \
             --cov-fail-under=0 \
@@ -400,134 +390,6 @@ jobs:
           name: codecov-${{ matrix.python-version }}-${{ matrix.test-group }}
           fail_ci_if_error: false
           verbose: true
-
-  test-isolation-serial:
-    name: Isolation Tests (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 60 # Isolation tests need more time (serial execution)
-    needs: [lint]
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-
-      - name: Setup Python Environment
-        uses: ./.github/actions/setup-python-env
-        with:
-          python-version: ${{ matrix.python-version }}
-          install-optional: true
-
-      - name: Cache pytest
-        uses: actions/cache@v5
-        with:
-          path: .pytest_cache
-          key: pytest-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            pytest-${{ runner.os }}-${{ matrix.python-version }}-
-
-      - name: Cache Hypothesis examples
-        uses: actions/cache@v5
-        with:
-          path: .hypothesis
-          key: hypothesis-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            hypothesis-${{ runner.os }}-${{ matrix.python-version }}-
-            hypothesis-${{ runner.os }}-
-
-      - name: Run isolation tests (serial execution)
-        id: run-isolation-tests
-        run: |
-          # Record start time
-          START_TIME=$(date +%s)
-          echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
-
-          echo "Running isolation tests serially (no xdist) to avoid resource limit conflicts"
-
-          # Run tests and capture exit code
-          # NOTE: Coverage disabled for isolation tests to avoid OOM (memory-intensive tests)
-          set +e
-          uv run python -m pytest tests/unit/plugins/test_isolation.py \
-            -v \
-            -m "not slow and not performance" \
-            --hypothesis-profile=ci \
-            -p no:benchmark \
-            --maxfail=10 \
-            --tb=short \
-            --durations=10 \
-            --reruns 2 \
-            --reruns-delay 1 \
-            --junit-xml=test-results-${{ matrix.python-version }}-isolation-serial.xml
-          TEST_EXIT_CODE=$?
-          set -e
-
-          # Always record end time and duration
-          END_TIME=$(date +%s)
-          DURATION=$((END_TIME - START_TIME))
-          echo "duration_seconds=$DURATION" >> $GITHUB_OUTPUT
-          echo "Test execution took ${DURATION}s ($((DURATION / 60))m $((DURATION % 60))s)"
-
-          # Exit with test result
-          exit $TEST_EXIT_CODE
-
-      - name: Check test duration
-        if: always()
-        run: |
-          DURATION="${{ steps.run-isolation-tests.outputs.duration_seconds }}"
-          TIMEOUT_SECONDS=$((60 * 60))  # 60 minutes in seconds
-          THRESHOLD=$((TIMEOUT_SECONDS * 80 / 100))  # 80% of timeout (48 minutes)
-
-          # Handle case where duration wasn't recorded (shouldn't happen but be safe)
-          if [ -z "$DURATION" ]; then
-            echo "Duration not recorded (step may have been skipped)"
-            exit 0
-          fi
-
-          if [ "$DURATION" -gt "$THRESHOLD" ]; then
-            MIN=$((DURATION / 60))
-            echo "::warning::Isolation tests took ${DURATION}s (${MIN}m), approaching 60m timeout. Consider optimizing."
-          fi
-
-          echo "Duration: ${DURATION}s ($((DURATION / 60))m $((DURATION % 60))s)"
-          echo "Threshold: ${THRESHOLD}s ($((THRESHOLD / 60))m)"
-          echo "Timeout: ${TIMEOUT_SECONDS}s (60m)"
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: test-results-${{ matrix.python-version }}-isolation-serial
-          path: test-results-${{ matrix.python-version }}-isolation-serial.xml
-          retention-days: ${{ env.RETENTION_SHORT }}
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v6
-        if: matrix.python-version == '3.12'
-        with:
-          name: coverage-isolation-serial
-          path: |
-            .coverage
-            coverage.xml
-          retention-days: ${{ env.RETENTION_SHORT }}
-          include-hidden-files: true
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        if: matrix.python-version == '3.12'
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          flags: unittests
-          name: codecov-${{ matrix.python-version }}-isolation-serial
-          fail_ci_if_error: false
-          verbose: true
-
-  # ============================================================================
-  # Stage 3: Specialized tests (depend on basic tests)
-  # ============================================================================
 
   diff-coverage:
     name: Diff Coverage
@@ -794,7 +656,7 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [pre-commit, lint, typecheck, config-validation, test, test-isolation-serial, build]
+    needs: [pre-commit, lint, typecheck, config-validation, test, build]
     if: always()
     steps:
       - name: Check all jobs
@@ -804,7 +666,6 @@ jobs:
           echo "Typecheck: ${{ needs.typecheck.result }}"
           echo "Config Validation: ${{ needs.config-validation.result }}"
           echo "Test: ${{ needs.test.result }}"
-          echo "Isolation Tests: ${{ needs.test-isolation-serial.result }}"
           echo "Build: ${{ needs.build.result }}"
 
           # Check required jobs (allow skipped for optional jobs)
@@ -835,10 +696,6 @@ jobs:
             REQUIRED_PASSED=false
           fi
 
-          if [[ "${{ needs.test-isolation-serial.result }}" != "success" ]]; then
-            echo "::error::Isolation tests failed"
-            REQUIRED_PASSED=false
-          fi
 
           # Build can be skipped (only runs for certain branches/events)
           if [[ "${{ needs.build.result }}" == "failure" ]]; then

@@ -8,7 +8,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oscura.comparison.mask import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.mask import (
     Mask,
     MaskRegion,
     MaskTestResult,
@@ -17,7 +18,6 @@ from oscura.comparison.mask import (
     eye_mask,
     mask_test,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

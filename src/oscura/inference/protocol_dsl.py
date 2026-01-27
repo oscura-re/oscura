@@ -512,6 +512,79 @@ class ProtocolDecoder:
             return None
         return idx
 
+    def _decode_bytes_field(
+        self, data: bytes, field: FieldDefinition, context: dict[str, Any]
+    ) -> tuple[bytes, int]:
+        """Decode bytes field.
+
+        Args:
+            data: Binary data
+            field: Field definition
+            context: Previously decoded fields
+
+        Returns:
+            Tuple of (bytes value, bytes consumed)
+        """
+        size = self._resolve_size(field.size, context, data)
+        if size > len(data):
+            size = len(data)  # Use remaining data
+        return bytes(data[:size]), size
+
+    def _decode_string_field(
+        self, data: bytes, field: FieldDefinition, context: dict[str, Any]
+    ) -> tuple[str, int]:
+        """Decode string field.
+
+        Args:
+            data: Binary data
+            field: Field definition
+            context: Previously decoded fields
+
+        Returns:
+            Tuple of (string value, bytes consumed)
+        """
+        size = self._resolve_size(field.size, context, data)
+        if size > len(data):
+            size = len(data)  # Use remaining data
+        string_bytes = data[:size]
+
+        # Try to decode as UTF-8, fall back to latin-1
+        try:
+            value = string_bytes.decode("utf-8").rstrip("\x00")
+        except UnicodeDecodeError:
+            value = string_bytes.decode("latin-1").rstrip("\x00")
+
+        return value, size
+
+    def _decode_bitfield_field(
+        self, data: bytes, field: FieldDefinition, endian: str
+    ) -> tuple[int, int]:
+        """Decode bitfield field.
+
+        Args:
+            data: Binary data
+            field: Field definition
+            endian: Endianness marker
+
+        Returns:
+            Tuple of (bitfield value, bytes consumed)
+
+        Raises:
+            ValueError: If bitfield size is unsupported
+        """
+        field_size = field.size if isinstance(field.size, int) else 1
+
+        if field_size == 1:
+            bitfield_value = int(data[0])
+        elif field_size == 2:
+            bitfield_value = struct.unpack(f"{endian}H", data[:2])[0]
+        elif field_size == 4:
+            bitfield_value = struct.unpack(f"{endian}I", data[:4])[0]
+        else:
+            raise ValueError(f"Unsupported bitfield size: {field_size}")
+
+        return bitfield_value, field_size
+
     def _decode_field(
         self, data: bytes, field: FieldDefinition, context: dict[str, Any]
     ) -> tuple[Any, int]:
@@ -538,55 +611,30 @@ class ProtocolDecoder:
             return self._decode_integer(data, field_type, endian)
 
         # Float types
-        elif field_type in ["float32", "float64"]:
+        if field_type in ["float32", "float64"]:
             return self._decode_float(data, field_type, endian)
 
         # Bytes
-        elif field_type == "bytes":
-            size = self._resolve_size(field.size, context, data)
-            if size > len(data):
-                size = len(data)  # Use remaining data
-            return bytes(data[:size]), size
+        if field_type == "bytes":
+            return self._decode_bytes_field(data, field, context)
 
         # String
-        elif field_type == "string":
-            size = self._resolve_size(field.size, context, data)
-            if size > len(data):
-                size = len(data)  # Use remaining data
-            string_bytes = data[:size]
-            # Try to decode as UTF-8, fall back to latin-1
-            try:
-                value = string_bytes.decode("utf-8").rstrip("\x00")
-            except UnicodeDecodeError:
-                value = string_bytes.decode("latin-1").rstrip("\x00")
-            return value, size
+        if field_type == "string":
+            return self._decode_string_field(data, field, context)
 
         # Bitfield
-        elif field_type == "bitfield":
-            # Decode as uint and extract bits
-            field_size = field.size if isinstance(field.size, int) else 1
-            if field_size == 1:
-                bitfield_value = int(data[0])
-            elif field_size == 2:
-                bitfield_value = struct.unpack(f"{endian}H", data[:2])[0]
-            elif field_size == 4:
-                bitfield_value = struct.unpack(f"{endian}I", data[:4])[0]
-            else:
-                raise ValueError(f"Unsupported bitfield size: {field_size}")
-
-            # Return as-is, caller can extract specific bits
-            return bitfield_value, field_size
+        if field_type == "bitfield":
+            return self._decode_bitfield_field(data, field, endian)
 
         # Array
-        elif field_type == "array":
+        if field_type == "array":
             return self._decode_array(data, field, context)
 
         # Struct (nested)
-        elif field_type == "struct":
+        if field_type == "struct":
             return self._decode_struct(data, field, context)
 
-        else:
-            raise ValueError(f"Unknown field type: {field_type}")
+        raise ValueError(f"Unknown field type: {field_type}")
 
     def _decode_array(
         self, data: bytes, field: FieldDefinition, context: dict[str, Any]
@@ -910,71 +958,121 @@ class ProtocolEncoder:
     def _encode_field(self, value: Any, field: FieldDefinition) -> bytes:
         """Encode single field value.
 
-        : Field encoding.
-
         Args:
-            value: Field value
-            field: Field definition
+            value: Field value.
+            field: Field definition.
 
         Returns:
-            Encoded bytes
+            Encoded bytes.
 
         Raises:
-            ValueError: If bytes value is invalid or field type is unknown for encoding
+            ValueError: If bytes value is invalid or field type is unknown for encoding.
+
+        Example:
+            >>> encoder._encode_field(42, FieldDefinition("counter", "uint16", "big"))
+            b'\\x00*'
+        """
+        field_type = field.field_type
+
+        # Dispatch to type-specific encoders
+        if field_type in {"uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64"}:
+            return self._encode_integer_field(value, field)
+        elif field_type in {"float32", "float64"}:
+            return self._encode_float_field(value, field)
+        elif field_type == "bytes":
+            return self._encode_bytes_field(value)
+        elif field_type == "string":
+            return self._encode_string_field(value)
+        elif field_type == "array":
+            return self._encode_array(value, field)
+        elif field_type == "struct":
+            return self._encode_struct(value, field)
+        else:
+            raise ValueError(f"Unknown field type for encoding: {field_type}")
+
+    def _encode_integer_field(self, value: Any, field: FieldDefinition) -> bytes:
+        """Encode integer field types.
+
+        Args:
+            value: Integer value.
+            field: Field definition with type and endianness.
+
+        Returns:
+            Packed integer bytes.
         """
         endian = self._endian_map.get(field.endian, ">")
         field_type = field.field_type
 
-        # Integer types
-        if field_type == "uint8":
-            return struct.pack("B", int(value))
-        elif field_type == "int8":
-            return struct.pack("b", int(value))
-        elif field_type == "uint16":
-            return struct.pack(f"{endian}H", int(value))
-        elif field_type == "int16":
-            return struct.pack(f"{endian}h", int(value))
-        elif field_type == "uint32":
-            return struct.pack(f"{endian}I", int(value))
-        elif field_type == "int32":
-            return struct.pack(f"{endian}i", int(value))
-        elif field_type == "uint64":
-            return struct.pack(f"{endian}Q", int(value))
-        elif field_type == "int64":
-            return struct.pack(f"{endian}q", int(value))
+        # Map field types to struct format characters
+        _INT_FORMATS = {
+            "uint8": "B",
+            "int8": "b",
+            "uint16": "H",
+            "int16": "h",
+            "uint32": "I",
+            "int32": "i",
+            "uint64": "Q",
+            "int64": "q",
+        }
 
-        # Float types
-        elif field_type == "float32":
-            return struct.pack(f"{endian}f", float(value))
-        elif field_type == "float64":
-            return struct.pack(f"{endian}d", float(value))
-
-        # Bytes
-        elif field_type == "bytes":
-            if isinstance(value, bytes):
-                return value
-            elif isinstance(value, list | tuple):
-                return bytes(value)
-            else:
-                raise ValueError(f"Invalid bytes value: {value}")
-
-        # String
-        elif field_type == "string":
-            if isinstance(value, str):
-                return value.encode("utf-8")
-            else:
-                return bytes(value)
-
-        # Array
-        elif field_type == "array":
-            return self._encode_array(value, field)
-
-        # Struct
-        elif field_type == "struct":
-            return self._encode_struct(value, field)
-
+        fmt_char = _INT_FORMATS[field_type]
+        if fmt_char in {"B", "b"}:
+            # uint8/int8 have no endianness
+            return struct.pack(fmt_char, int(value))
         else:
-            raise ValueError(f"Unknown field type for encoding: {field_type}")
+            return struct.pack(f"{endian}{fmt_char}", int(value))
+
+    def _encode_float_field(self, value: Any, field: FieldDefinition) -> bytes:
+        """Encode floating-point field types.
+
+        Args:
+            value: Float value.
+            field: Field definition with type and endianness.
+
+        Returns:
+            Packed float bytes.
+        """
+        endian = self._endian_map.get(field.endian, ">")
+
+        if field.field_type == "float32":
+            return struct.pack(f"{endian}f", float(value))
+        elif field.field_type == "float64":
+            return struct.pack(f"{endian}d", float(value))
+        else:
+            raise ValueError(f"Unknown float type: {field.field_type}")
+
+    def _encode_bytes_field(self, value: Any) -> bytes:
+        """Encode bytes field.
+
+        Args:
+            value: Bytes, list, or tuple of byte values.
+
+        Returns:
+            Byte sequence.
+
+        Raises:
+            ValueError: If value cannot be converted to bytes.
+        """
+        if isinstance(value, bytes):
+            return value
+        elif isinstance(value, list | tuple):
+            return bytes(value)
+        else:
+            raise ValueError(f"Invalid bytes value: {value}")
+
+    def _encode_string_field(self, value: Any) -> bytes:
+        """Encode string field.
+
+        Args:
+            value: String or bytes.
+
+        Returns:
+            UTF-8 encoded bytes.
+        """
+        if isinstance(value, str):
+            return value.encode("utf-8")
+        else:
+            return bytes(value)
 
     def _encode_array(self, value: list[Any], field: FieldDefinition) -> bytes:
         """Encode array field.

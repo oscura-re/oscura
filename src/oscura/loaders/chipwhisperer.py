@@ -141,68 +141,16 @@ def load_chipwhisperer_npy(
         ...     print("Plaintexts available")
     """
     path = Path(path)
+    traces = _load_chipwhisperer_traces(path)
+
+    # Load associated metadata files
     base_path = path.parent
     base_name = path.stem
+    plaintexts = _load_optional_npy(base_path, base_name, "textin")
+    ciphertexts = _load_optional_npy(base_path, base_name, "textout")
+    keys = _load_optional_npy(base_path, base_name, "keys")
 
-    try:
-        # Load main trace data
-        traces = np.load(path)
-
-        # Ensure 2D array (n_traces, n_samples)
-        if traces.ndim == 1:
-            traces = traces.reshape(1, -1)
-        elif traces.ndim > 2:
-            raise FormatError(
-                f"Expected 1D or 2D trace array, got {traces.ndim}D",
-                file_path=str(path),
-            )
-
-    except (OSError, ValueError) as e:
-        # Catch file I/O errors, but let FormatError propagate
-        raise LoaderError(
-            "Failed to load trace file",
-            file_path=str(path),
-            details=str(e),
-        ) from e
-
-    # Try to load associated files (common ChipWhisperer naming)
-    plaintexts = None
-    ciphertexts = None
-    keys = None
-
-    # Look for textin.npy (plaintexts)
-    textin_path = base_path / f"{base_name}_textin.npy"
-    if not textin_path.exists():
-        textin_path = base_path / "textin.npy"
-    if textin_path.exists():
-        try:
-            plaintexts = np.load(textin_path)
-        except Exception:
-            pass  # Optional metadata file, silently ignore if missing or corrupt  # Not critical
-
-    # Look for textout.npy (ciphertexts)
-    textout_path = base_path / f"{base_name}_textout.npy"
-    if not textout_path.exists():
-        textout_path = base_path / "textout.npy"
-    if textout_path.exists():
-        try:
-            ciphertexts = np.load(textout_path)
-        except Exception:
-            pass
-
-    # Look for keys.npy
-    keys_path = base_path / f"{base_name}_keys.npy"
-    if not keys_path.exists():
-        keys_path = base_path / "keys.npy"
-    if keys_path.exists():
-        try:
-            keys = np.load(keys_path)
-        except Exception:
-            pass  # Optional metadata file, silently ignore if corrupt
-
-    # Use default sample rate if not specified
-    if sample_rate is None:
-        sample_rate = 1e6  # Default 1 MS/s
+    sample_rate = sample_rate or 1e6  # Default 1 MS/s
 
     return ChipWhispererTraceSet(
         traces=traces.astype(np.float64),
@@ -210,11 +158,51 @@ def load_chipwhisperer_npy(
         ciphertexts=ciphertexts.astype(np.uint8) if ciphertexts is not None else None,
         keys=keys.astype(np.uint8) if keys is not None else None,
         sample_rate=sample_rate,
-        metadata={
-            "source_file": str(path),
-            "format": "chipwhisperer_npy",
-        },
+        metadata={"source_file": str(path), "format": "chipwhisperer_npy"},
     )
+
+
+def _load_chipwhisperer_traces(path: Path) -> NDArray[np.float64]:
+    """Load and validate ChipWhisperer trace array."""
+    try:
+        loaded_data: NDArray[Any] = np.load(path)
+
+        result: NDArray[np.float64]
+        if loaded_data.ndim == 1:
+            result = loaded_data.reshape(1, -1).astype(np.float64)
+        elif loaded_data.ndim == 2:
+            result = loaded_data.astype(np.float64)
+        else:
+            raise FormatError(
+                f"Expected 1D or 2D trace array, got {loaded_data.ndim}D",
+                file_path=str(path),
+            )
+        return result
+
+    except (OSError, ValueError) as e:
+        raise LoaderError(
+            "Failed to load trace file",
+            file_path=str(path),
+            details=str(e),
+        ) from e
+
+
+def _load_optional_npy(base_path: Path, base_name: str, suffix: str) -> NDArray[np.float64] | None:
+    """Load optional ChipWhisperer metadata file."""
+    # Try with base name prefix first
+    filepath = base_path / f"{base_name}_{suffix}.npy"
+    if not filepath.exists():
+        filepath = base_path / f"{suffix}.npy"
+
+    if filepath.exists():
+        try:
+            loaded: NDArray[Any] = np.load(filepath)
+            result: NDArray[np.float64] = loaded.astype(np.float64)
+            return result
+        except Exception:
+            pass  # Optional file, silently ignore if corrupt
+
+    return None
 
 
 def load_chipwhisperer_trs(
@@ -252,99 +240,24 @@ def load_chipwhisperer_trs(
 
     try:
         with open(path, "rb") as f:
-            # Read TRS header
-            # Tag-Length-Value structure
-            tags = {}
-
-            while True:
-                tag_byte = f.read(1)
-                if not tag_byte or tag_byte == b"\x5f":  # End of header
-                    break
-
-                tag = tag_byte[0]
-                length = int.from_bytes(f.read(1), byteorder="little")
-
-                # Extended length for large values
-                if length == 0xFF:
-                    length = int.from_bytes(f.read(4), byteorder="little")
-
-                value = f.read(length)
-                tags[tag] = value
-
-            # Parse critical tags
-            # 0x41: Number of traces
-            n_traces = int.from_bytes(tags.get(0x41, b"\x00\x00"), byteorder="little")
-
-            # 0x42: Number of samples per trace
-            n_samples = int.from_bytes(tags.get(0x42, b"\x00\x00"), byteorder="little")
-
-            # 0x43: Sample coding (1=byte, 2=short, 4=float)
-            sample_coding = tags.get(0x43, b"\x01")[0]
-
-            # 0x44: Data length (plaintext/ciphertext)
-            data_length = int.from_bytes(tags.get(0x44, b"\x00\x00"), byteorder="little")
-
-            if n_traces == 0 or n_samples == 0:
-                raise FormatError(
-                    "Invalid TRS file: zero traces or samples",
-                    file_path=str(path),
-                )
-
-            # Determine numpy dtype from sample coding
-            dtype: type[np.int8] | type[np.int16] | type[np.float32]
-            if sample_coding == 1:
-                dtype = np.int8
-            elif sample_coding == 2:
-                dtype = np.int16
-            elif sample_coding == 4:
-                dtype = np.float32
-            else:
-                raise FormatError(
-                    f"Unsupported sample coding: {sample_coding}",
-                    file_path=str(path),
-                )
-
-            # Read traces
-            traces = np.zeros((n_traces, n_samples), dtype=np.float64)
-            plaintexts = (
-                np.zeros((n_traces, data_length), dtype=np.uint8) if data_length > 0 else None
-            )
-            ciphertexts = None  # Not typically in TRS files
-
-            for trace_idx in range(n_traces):
-                # Read trace-specific data (plaintext/key)
-                if data_length > 0:
-                    trace_data = np.frombuffer(f.read(data_length), dtype=np.uint8)
-                    if plaintexts is not None:
-                        plaintexts[trace_idx] = trace_data
-
-                # Read trace samples
-                trace_samples = np.frombuffer(f.read(n_samples * dtype(0).itemsize), dtype=dtype)
-                traces[trace_idx] = trace_samples.astype(np.float64)
+            tags = _read_trs_header(f)
+            n_traces, n_samples, sample_coding, data_length = _parse_trs_tags(tags, str(path))
+            dtype = _get_trs_dtype(sample_coding, str(path))
+            traces, plaintexts = _read_trs_traces(f, n_traces, n_samples, data_length, dtype)
 
     except OSError as e:
-        raise LoaderError(
-            "Failed to read TRS file",
-            file_path=str(path),
-            details=str(e),
-        ) from e
+        raise LoaderError("Failed to read TRS file", file_path=str(path), details=str(e)) from e
     except Exception as e:
         if isinstance(e, (LoaderError, FormatError)):
             raise
-        raise LoaderError(
-            "Failed to parse TRS file",
-            file_path=str(path),
-            details=str(e),
-        ) from e
+        raise LoaderError("Failed to parse TRS file", file_path=str(path), details=str(e)) from e
 
-    # Use default sample rate if not specified
-    if sample_rate is None:
-        sample_rate = 1e6  # Default 1 MS/s
+    sample_rate = sample_rate or 1e6
 
     return ChipWhispererTraceSet(
         traces=traces,
         plaintexts=plaintexts,
-        ciphertexts=ciphertexts,
+        ciphertexts=None,
         keys=None,
         sample_rate=sample_rate,
         metadata={
@@ -355,6 +268,79 @@ def load_chipwhisperer_trs(
             "sample_coding": sample_coding,
         },
     )
+
+
+def _read_trs_header(f: Any) -> dict[int, bytes]:
+    """Read TRS header tags in Tag-Length-Value format."""
+    tags = {}
+    while True:
+        tag_byte = f.read(1)
+        if not tag_byte or tag_byte == b"\x5f":
+            break
+
+        tag = tag_byte[0]
+        length = int.from_bytes(f.read(1), byteorder="little")
+
+        if length == 0xFF:
+            length = int.from_bytes(f.read(4), byteorder="little")
+
+        value = f.read(length)
+        tags[tag] = value
+
+    return tags
+
+
+def _parse_trs_tags(tags: dict[int, bytes], file_path: str) -> tuple[int, int, int, int]:
+    """Parse critical TRS tags and validate."""
+    n_traces = int.from_bytes(tags.get(0x41, b"\x00\x00"), byteorder="little")
+    n_samples = int.from_bytes(tags.get(0x42, b"\x00\x00"), byteorder="little")
+    sample_coding = tags.get(0x43, b"\x01")[0]
+    data_length = int.from_bytes(tags.get(0x44, b"\x00\x00"), byteorder="little")
+
+    if n_traces == 0 or n_samples == 0:
+        raise FormatError("Invalid TRS file: zero traces or samples", file_path=file_path)
+
+    return n_traces, n_samples, sample_coding, data_length
+
+
+def _get_trs_dtype(
+    sample_coding: int, file_path: str
+) -> type[np.int8] | type[np.int16] | type[np.float32]:
+    """Map TRS sample coding to numpy dtype."""
+    dtype_map: dict[int, type[np.int8] | type[np.int16] | type[np.float32]] = {
+        1: np.int8,
+        2: np.int16,
+        4: np.float32,
+    }
+
+    if sample_coding not in dtype_map:
+        raise FormatError(f"Unsupported sample coding: {sample_coding}", file_path=file_path)
+
+    result = dtype_map[sample_coding]
+    return result
+
+
+def _read_trs_traces(
+    f: Any,
+    n_traces: int,
+    n_samples: int,
+    data_length: int,
+    dtype: type[np.int8] | type[np.int16] | type[np.float32],
+) -> tuple[NDArray[np.float64], NDArray[np.uint8] | None]:
+    """Read trace data from TRS file."""
+    traces = np.zeros((n_traces, n_samples), dtype=np.float64)
+    plaintexts = np.zeros((n_traces, data_length), dtype=np.uint8) if data_length > 0 else None
+
+    for trace_idx in range(n_traces):
+        if data_length > 0:
+            trace_data = np.frombuffer(f.read(data_length), dtype=np.uint8)
+            if plaintexts is not None:
+                plaintexts[trace_idx] = trace_data
+
+        trace_samples = np.frombuffer(f.read(n_samples * dtype(0).itemsize), dtype=dtype)
+        traces[trace_idx] = trace_samples.astype(np.float64)
+
+    return traces, plaintexts
 
 
 def to_waveform_trace(

@@ -152,3 +152,28 @@ def format_list(items: list[str], bullet: str = "-") -> str:
         # "  - Item 1\n  - Item 2"
     """
     return "\n".join(f"  {bullet} {item}" for item in items)
+
+
+# ANSI color codes for terminal output
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+BLUE = "\033[94m"
+RESET = "\033[0m"
+
+
+def print_subheader(text: str) -> None:
+    """Print formatted section subheader.
+
+    Prints a subheader with decorative formatting to visually separate
+    sections in demonstration output.
+
+    Args:
+        text: Subheader text to display
+
+    Example:
+        >>> print_subheader("Analysis Results")
+        ═══ Analysis Results ═══
+    """
+    separator = "═" * 3
+    print(f"\n{separator} {text} {separator}")

@@ -27,6 +27,10 @@ class TestNGramExtractionProperties:
         try:
             from oscura.analyzers.statistical.ngrams import extract_ngrams
         except ImportError:
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
             pytest.skip("ngrams module not available")
 
         # Create simple sequence
@@ -49,6 +53,10 @@ class TestNGramExtractionProperties:
         try:
             from oscura.analyzers.statistical.ngrams import extract_ngrams
         except ImportError:
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
             pytest.skip("ngrams module not available")
 
         ngrams = extract_ngrams(data, n=n)
@@ -68,6 +76,10 @@ class TestNGramExtractionProperties:
         try:
             from oscura.analyzers.statistical.ngrams import extract_ngrams
         except ImportError:
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
             pytest.skip("ngrams module not available")
 
         sequence = bytes(range(sequence_length % 256))
@@ -95,6 +107,10 @@ class TestNGramFrequencyProperties:
                 ngram_frequencies,
             )
         except ImportError:
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
             pytest.skip("ngrams module not available")
 
         frequencies = ngram_frequencies(data, n=n)
@@ -118,6 +134,10 @@ class TestNGramFrequencyProperties:
                 ngram_frequencies,
             )
         except ImportError:
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
             pytest.skip("ngrams module not available")
 
         frequencies = ngram_frequencies(data, n=n)
@@ -142,6 +162,10 @@ class TestNGramPatternDetectionProperties:
                 ngram_frequencies,
             )
         except ImportError:
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
+            # SKIP: Valid - Optional n-grams statistical analysis
+            # Only skip if n-grams module not available
             pytest.skip("ngrams module not available")
 
         # Create data with repeated pattern

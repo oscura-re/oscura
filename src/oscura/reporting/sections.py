@@ -77,60 +77,101 @@ def create_executive_summary_section(
     References:
         REPORT-004, REPORT-006
     """
-    content_parts = []
+    content_parts: list[str] = []
 
-    # Overall status
-    if "pass_count" in results and "total_count" in results:
-        pass_count = results["pass_count"]
-        total = results["total_count"]
-
-        if pass_count == total:
-            content_parts.append(f"All {total} tests passed with satisfactory margins.")
-        else:
-            fail_count = total - pass_count
-            content_parts.append(
-                f"{fail_count} of {total} tests failed ({fail_count / total * 100:.0f}% failure rate)."
-            )
-
-    # Key findings
-    if key_findings:
-        content_parts.append("\n**Key Findings:**")
-        for finding in key_findings[:5]:  # Top 5
-            content_parts.append(f"- {finding}")
-
-    # Margin analysis
-    if "min_margin" in results:
-        margin = results["min_margin"]
-        content_parts.append("\n**Margin Analysis:**")
-        if margin < 0:
-            content_parts.append(f"Critical: Minimum margin is {margin:.1f}% (violation).")
-        elif margin < 10:
-            content_parts.append(
-                f"Warning: Minimum margin is {margin:.1f}% (below recommended 10%)."
-            )
-        elif margin < 20:
-            content_parts.append(f"Acceptable: Minimum margin is {margin:.1f}% (below target 20%).")
-        else:
-            content_parts.append(f"Good: Minimum margin is {margin:.1f}% (exceeds target 20%).")
-
-    # Recommendations (for detailed summary)
-    if length == "detailed" and "violations" in results:
-        violations = results["violations"]
-        if violations:
-            content_parts.append("\n**Recommendations:**")
-            for violation in violations[:3]:
-                content_parts.append(
-                    f"- Address {violation.get('parameter', 'measurement')} violation"
-                )
-
-    content = "\n".join(content_parts)
+    _add_test_status(content_parts, results)
+    _add_key_findings(content_parts, key_findings)
+    _add_margin_analysis(content_parts, results)
+    _add_recommendations(content_parts, results, length)
 
     return Section(
         title="Executive Summary",
-        content=content,
+        content="\n".join(content_parts),
         level=1,
         visible=True,
     )
+
+
+def _add_test_status(content_parts: list[str], results: dict[str, Any]) -> None:
+    """Add test status to summary.
+
+    Args:
+        content_parts: List to append to.
+        results: Results dictionary.
+    """
+    if "pass_count" not in results or "total_count" not in results:
+        return
+
+    pass_count = results["pass_count"]
+    total = results["total_count"]
+
+    if pass_count == total:
+        content_parts.append(f"All {total} tests passed with satisfactory margins.")
+    else:
+        fail_count = total - pass_count
+        fail_rate = fail_count / total * 100
+        content_parts.append(
+            f"{fail_count} of {total} tests failed ({fail_rate:.0f}% failure rate)."
+        )
+
+
+def _add_key_findings(content_parts: list[str], key_findings: list[str] | None) -> None:
+    """Add key findings to summary.
+
+    Args:
+        content_parts: List to append to.
+        key_findings: Findings to add.
+    """
+    if not key_findings:
+        return
+
+    content_parts.append("\n**Key Findings:**")
+    for finding in key_findings[:5]:
+        content_parts.append(f"- {finding}")
+
+
+def _add_margin_analysis(content_parts: list[str], results: dict[str, Any]) -> None:
+    """Add margin analysis to summary.
+
+    Args:
+        content_parts: List to append to.
+        results: Results dictionary.
+    """
+    if "min_margin" not in results:
+        return
+
+    margin = results["min_margin"]
+    content_parts.append("\n**Margin Analysis:**")
+
+    if margin < 0:
+        content_parts.append(f"Critical: Minimum margin is {margin:.1f}% (violation).")
+    elif margin < 10:
+        content_parts.append(f"Warning: Minimum margin is {margin:.1f}% (below recommended 10%).")
+    elif margin < 20:
+        content_parts.append(f"Acceptable: Minimum margin is {margin:.1f}% (below target 20%).")
+    else:
+        content_parts.append(f"Good: Minimum margin is {margin:.1f}% (exceeds target 20%).")
+
+
+def _add_recommendations(content_parts: list[str], results: dict[str, Any], length: str) -> None:
+    """Add recommendations to summary if detailed.
+
+    Args:
+        content_parts: List to append to.
+        results: Results dictionary.
+        length: Summary length mode.
+    """
+    if length != "detailed" or "violations" not in results:
+        return
+
+    violations = results["violations"]
+    if not violations:
+        return
+
+    content_parts.append("\n**Recommendations:**")
+    for violation in violations[:3]:
+        param = violation.get("parameter", "measurement")
+        content_parts.append(f"- Address {param} violation")
 
 
 def create_measurement_results_section(

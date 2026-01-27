@@ -24,7 +24,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from oscura.config.memory import get_memory_config
+from oscura.core.config.memory import get_memory_config
 from oscura.utils.memory import get_available_memory, get_max_memory
 
 if TYPE_CHECKING:
@@ -97,7 +97,7 @@ class MemoryMonitor:
         if max_memory is None:
             self.max_memory = get_max_memory()
         elif isinstance(max_memory, str):
-            from oscura.config.memory import _parse_memory_string
+            from oscura.core.config.memory import _parse_memory_string
 
             self.max_memory = _parse_memory_string(max_memory)
         else:

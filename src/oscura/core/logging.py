@@ -226,9 +226,7 @@ class CompressingTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHand
         # Determine the file that just got rotated
         current_time = int(self.rolloverAt - self.interval)
         time_tuple = time.gmtime(current_time) if self.utc else time.localtime(current_time)
-        dfn = self.rotation_filename(
-            self.baseFilename + "." + self.suffix % time_tuple[:6]  # type: ignore[arg-type]
-        )
+        dfn = self.rotation_filename(self.baseFilename + "." + self.suffix % time_tuple[:6])
 
         # Handle the existing rotated file
         if Path(dfn).exists():
@@ -511,7 +509,7 @@ def configure_logging(
         LOG-002: Hierarchical Log Levels
         LOG-003: Automatic Log Rotation and Retention Policies
     """
-    global _logging_configured, _config  # noqa: PLW0602
+    global _logging_configured, _config
 
     # Update config
     _config.level = level
@@ -523,62 +521,136 @@ def configure_logging(
     root_logger.setLevel(getattr(logging, level.upper()))
 
     # Remove existing handlers and close them to prevent resource leaks
-    for handler in root_logger.handlers[:]:
-        handler.close()
-        root_logger.removeHandler(handler)
+    _cleanup_existing_handlers(root_logger)
 
     # Create formatter
     formatter = StructuredFormatter(format, timestamp_format)
 
     # Add handlers
     if handlers:
-        for name, config in handlers.items():
-            if name == "console":
-                handler = logging.StreamHandler(sys.stderr)
-                handler.setLevel(getattr(logging, config.get("level", level).upper()))
-                handler.setFormatter(formatter)
-                root_logger.addHandler(handler)
-            elif name == "file":
-                filename = config.get("filename", "oscura.log")
-                handler_level = config.get("level", "DEBUG")
-                backup_count = int(config.get("backup_count", 5))
-                compress = config.get("compress", False)
-
-                # Check if time-based rotation is requested
-                when = config.get("when")
-                if when:
-                    # Time-based rotation (LOG-003)
-                    interval = int(config.get("interval", 1))
-                    max_age = config.get("max_age")
-                    handler = CompressingTimedRotatingFileHandler(
-                        filename,
-                        when=when,
-                        interval=interval,
-                        backupCount=backup_count,
-                        compress=compress,
-                        max_age=max_age,
-                    )
-                else:
-                    # Size-based rotation
-                    max_bytes = int(config.get("max_bytes", 10_000_000))
-                    handler = CompressingRotatingFileHandler(
-                        filename,
-                        maxBytes=max_bytes,
-                        backupCount=backup_count,
-                        compress=compress,
-                    )
-
-                handler.setLevel(getattr(logging, handler_level.upper()))
-                handler.setFormatter(formatter)
-                root_logger.addHandler(handler)
+        _add_configured_handlers(root_logger, handlers, formatter, level)
     else:
-        # Default: console only
-        handler = logging.StreamHandler(sys.stderr)
-        handler.setLevel(getattr(logging, level.upper()))
-        handler.setFormatter(formatter)
-        root_logger.addHandler(handler)
+        _add_default_console_handler(root_logger, formatter, level)
 
     _logging_configured = True
+
+
+def _cleanup_existing_handlers(logger: logging.Logger) -> None:
+    """Remove and close existing handlers.
+
+    Args:
+        logger: Logger to cleanup.
+    """
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
+
+
+def _add_configured_handlers(
+    logger: logging.Logger,
+    handlers: dict[str, dict[str, Any]],
+    formatter: StructuredFormatter,
+    default_level: str,
+) -> None:
+    """Add configured handlers to logger.
+
+    Args:
+        logger: Logger to add handlers to.
+        handlers: Handler configuration dict.
+        formatter: Formatter to use.
+        default_level: Default log level.
+    """
+    for name, config in handlers.items():
+        if name == "console":
+            _add_console_handler(logger, config, formatter, default_level)
+        elif name == "file":
+            _add_file_handler(logger, config, formatter)
+
+
+def _add_console_handler(
+    logger: logging.Logger,
+    config: dict[str, Any],
+    formatter: StructuredFormatter,
+    default_level: str,
+) -> None:
+    """Add console handler to logger.
+
+    Args:
+        logger: Logger to add handler to.
+        config: Handler configuration.
+        formatter: Formatter to use.
+        default_level: Default log level.
+    """
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(getattr(logging, config.get("level", default_level).upper()))
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+
+def _add_file_handler(
+    logger: logging.Logger,
+    config: dict[str, Any],
+    formatter: StructuredFormatter,
+) -> None:
+    """Add file handler to logger with rotation support.
+
+    Args:
+        logger: Logger to add handler to.
+        config: Handler configuration.
+        formatter: Formatter to use.
+    """
+    filename = config.get("filename", "oscura.log")
+    handler_level = config.get("level", "DEBUG")
+    backup_count = int(config.get("backup_count", 5))
+    compress = config.get("compress", False)
+
+    # Check if time-based rotation is requested
+    when = config.get("when")
+    if when:
+        # Time-based rotation
+        interval = int(config.get("interval", 1))
+        max_age = config.get("max_age")
+        time_handler = CompressingTimedRotatingFileHandler(
+            filename,
+            when=when,
+            interval=interval,
+            backupCount=backup_count,
+            compress=compress,
+            max_age=max_age,
+        )
+        time_handler.setLevel(getattr(logging, handler_level.upper()))
+        time_handler.setFormatter(formatter)
+        logger.addHandler(time_handler)
+    else:
+        # Size-based rotation
+        max_bytes = int(config.get("max_bytes", 10_000_000))
+        size_handler = CompressingRotatingFileHandler(
+            filename,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            compress=compress,
+        )
+        size_handler.setLevel(getattr(logging, handler_level.upper()))
+        size_handler.setFormatter(formatter)
+        logger.addHandler(size_handler)
+
+
+def _add_default_console_handler(
+    logger: logging.Logger,
+    formatter: StructuredFormatter,
+    level: str,
+) -> None:
+    """Add default console handler when no handlers configured.
+
+    Args:
+        logger: Logger to add handler to.
+        formatter: Formatter to use.
+        level: Log level.
+    """
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(getattr(logging, level.upper()))
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -675,7 +747,7 @@ class ErrorContextCapture:
     def from_exception(
         cls,
         exc: BaseException,
-        include_locals: bool = True,  # noqa: ARG003
+        include_locals: bool = True,
         additional_context: dict[str, Any] | None = None,
     ) -> ErrorContextCapture:
         """Create error context from an exception.
@@ -885,14 +957,14 @@ _init_logging()
 
 # Re-export correlation and performance functions for convenience
 # These provide LOG-004 and LOG-006 functionality through this module
-from oscura.core.correlation import (  # noqa: E402
+from oscura.core.correlation import (
     CorrelationContext,
     generate_correlation_id,
     get_correlation_id,
     set_correlation_id,
     with_correlation_id,
 )
-from oscura.core.performance import (  # noqa: E402
+from oscura.core.performance import (
     PerformanceContext,
     PerformanceRecord,
     clear_performance_data,

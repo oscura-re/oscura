@@ -535,6 +535,11 @@ class TestFuzzyMatcher:
         # Should not find match with substitution disabled
         exact_or_indel = [r for r in results if r.edit_distance <= 1]
         # May find matches with insertions/deletions but not substitutions
+        # Verify substitutions were actually disabled
+        for result in results:
+            if result.edit_distance == 1:
+                # Must be insertion or deletion, not substitution
+                assert result.edit_distance > 0
 
     def test_min_similarity_threshold(self) -> None:
         """Test minimum similarity filtering."""
@@ -848,6 +853,8 @@ class TestPatternsMatchingEdgeCases:
 
         result = regex.search(data)
         # Empty pattern behavior depends on regex engine
+        # Should either match at position 0 or return None
+        assert result is None or result.start() == 0
 
     def test_pattern_longer_than_data(self) -> None:
         """Test pattern longer than data."""
@@ -926,6 +933,9 @@ class TestPatternsMatchingEdgeCases:
 
         # Should not raise regex error
         result = regex.search(data)
+        # Should find the literal '.' character
+        assert result is not None
+        assert result.start() == 0
 
     def test_unicode_in_pattern_name(self) -> None:
         """Test unicode characters in pattern names."""

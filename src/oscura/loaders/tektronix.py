@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import tm_data_types for full Tektronix support
 try:
-    import tm_data_types  # type: ignore[import-untyped, import-not-found]
+    import tm_data_types  # type: ignore[import-untyped]  # Optional third-party library
 
     TM_DATA_TYPES_AVAILABLE = True
 except ImportError:
@@ -150,105 +150,8 @@ def _load_with_tm_data_types(
         if hasattr(wfm, "digital_waveforms"):
             logger.debug("Digital waveforms found: %d", len(wfm.digital_waveforms))
 
-        # Extract waveform data - handle different file formats
-        # Path 1: Multi-channel container format (wrapped analog)
-        if hasattr(wfm, "analog_waveforms") and len(wfm.analog_waveforms) > channel:
-            logger.debug("Loading from analog_waveforms[%d]", channel)
-            waveform = wfm.analog_waveforms[channel]
-            data = np.array(waveform.y_data, dtype=np.float64)
-            sample_rate = 1.0 / waveform.x_increment if waveform.x_increment > 0 else 1e6
-            vertical_scale = getattr(waveform, "y_scale", None)
-            vertical_offset = getattr(waveform, "y_offset", None)
-            channel_name = getattr(waveform, "name", f"CH{channel + 1}")
-
-            return _build_waveform_trace(
-                data=data,
-                sample_rate=sample_rate,
-                vertical_scale=vertical_scale,
-                vertical_offset=vertical_offset,
-                channel_name=channel_name,
-                path=path,
-                wfm=wfm,
-            )
-
-        # Path 2: Direct AnalogWaveform format (tm_data_types 0.3.0+)
-        elif hasattr(wfm, "y_axis_values") and wfm_type == "AnalogWaveform":
-            logger.debug("Loading direct AnalogWaveform with y_axis_values")
-            # Extract raw integer values
-            y_raw = np.array(wfm.y_axis_values, dtype=np.float64)
-            # Reconstruct voltage values using offset and spacing
-            y_spacing = float(wfm.y_axis_spacing) if wfm.y_axis_spacing else 1.0
-            y_offset = float(wfm.y_axis_offset) if wfm.y_axis_offset else 0.0
-            data = y_raw * y_spacing + y_offset
-
-            x_spacing = float(wfm.x_axis_spacing) if wfm.x_axis_spacing else 1e-6
-            sample_rate = 1.0 / x_spacing if x_spacing > 0 else 1e6
-            vertical_offset = y_offset
-            channel_name = (
-                wfm.source_name
-                if hasattr(wfm, "source_name") and wfm.source_name
-                else f"CH{channel + 1}"
-            )
-
-            return _build_waveform_trace(
-                data=data,
-                sample_rate=sample_rate,
-                vertical_scale=None,
-                vertical_offset=vertical_offset,
-                channel_name=channel_name,
-                path=path,
-                wfm=wfm,
-            )
-
-        # Path 3: DigitalWaveform format
-        elif wfm_type == "DigitalWaveform" or hasattr(wfm, "y_axis_byte_values"):
-            logger.debug("Loading DigitalWaveform with y_axis_byte_values")
-            return _load_digital_waveform(wfm, path, channel)
-
-        # Path 4: Legacy single channel format with y_data
-        elif hasattr(wfm, "y_data"):
-            logger.debug("Loading legacy format with y_data")
-            data = np.array(wfm.y_data, dtype=np.float64)
-            x_increment = getattr(wfm, "x_increment", 1e-6)
-            sample_rate = 1.0 / x_increment if x_increment > 0 else 1e6
-            vertical_scale = getattr(wfm, "y_scale", None)
-            vertical_offset = getattr(wfm, "y_offset", None)
-            channel_name = getattr(wfm, "name", "CH1")
-
-            return _build_waveform_trace(
-                data=data,
-                sample_rate=sample_rate,
-                vertical_scale=vertical_scale,
-                vertical_offset=vertical_offset,
-                channel_name=channel_name,
-                path=path,
-                wfm=wfm,
-            )
-
-        # Path 5: Check for wrapped digital waveforms
-        elif hasattr(wfm, "digital_waveforms") and len(wfm.digital_waveforms) > channel:
-            logger.debug("Loading from digital_waveforms[%d]", channel)
-            digital_wfm = wfm.digital_waveforms[channel]
-            return _load_digital_waveform(digital_wfm, path, channel)
-
-        # Path 6: IQWaveform format (I/Q data)
-        elif wfm_type == "IQWaveform" or (
-            hasattr(wfm, "i_axis_values") and hasattr(wfm, "q_axis_values")
-        ):
-            logger.debug("Loading IQWaveform with i_axis_values and q_axis_values")
-            return _load_iq_waveform(wfm, path)
-
-        # No recognized format - provide detailed error
-        raise FormatError(
-            f"No waveform data found. Object type: {wfm_type}. "
-            f"Available attributes: {', '.join(available_attrs[:15])}",
-            file_path=str(path),
-            expected="Tektronix analog or digital waveform data",
-            fix_hint=(
-                "This file may use an unsupported Tektronix format variant. "
-                "Check that tm_data_types is up to date: pip install -U tm_data_types"
-            ),
-        )
+        # Dispatch to appropriate loader based on waveform format
+        return _dispatch_waveform_loader(wfm, wfm_type, available_attrs, path, channel)
 
     except Exception as e:
         if isinstance(e, LoaderError | FormatError):
@@ -259,6 +162,176 @@ def _load_with_tm_data_types(
             details=str(e),
             fix_hint="Ensure the file is a valid Tektronix WFM format.",
         ) from e
+
+
+def _dispatch_waveform_loader(
+    wfm: Any,
+    wfm_type: str,
+    available_attrs: list[str],
+    path: Path,
+    channel: int,
+) -> TektronixTrace:
+    """Dispatch to appropriate waveform loader based on format.
+
+    Args:
+        wfm: Waveform object from tm_data_types.
+        wfm_type: Type name of waveform object.
+        available_attrs: List of available attributes on waveform object.
+        path: Path to WFM file.
+        channel: Channel index.
+
+    Returns:
+        Loaded trace (WaveformTrace, DigitalTrace, or IQTrace).
+
+    Raises:
+        FormatError: If no recognized waveform format found.
+    """
+    # Path 1: Multi-channel container format (wrapped analog)
+    if hasattr(wfm, "analog_waveforms") and len(wfm.analog_waveforms) > channel:
+        logger.debug("Loading from analog_waveforms[%d]", channel)
+        return _load_analog_waveforms_container(wfm.analog_waveforms[channel], path, channel)
+
+    # Path 2: Direct AnalogWaveform format (tm_data_types 0.3.0+)
+    if hasattr(wfm, "y_axis_values") and wfm_type == "AnalogWaveform":
+        logger.debug("Loading direct AnalogWaveform with y_axis_values")
+        return _load_analog_waveform_direct(wfm, path, channel)
+
+    # Path 3: DigitalWaveform format
+    if wfm_type == "DigitalWaveform" or hasattr(wfm, "y_axis_byte_values"):
+        logger.debug("Loading DigitalWaveform with y_axis_byte_values")
+        return _load_digital_waveform(wfm, path, channel)
+
+    # Path 4: Legacy single channel format with y_data
+    if hasattr(wfm, "y_data"):
+        logger.debug("Loading legacy format with y_data")
+        return _load_legacy_y_data(wfm, path)
+
+    # Path 5: Check for wrapped digital waveforms
+    if hasattr(wfm, "digital_waveforms") and len(wfm.digital_waveforms) > channel:
+        logger.debug("Loading from digital_waveforms[%d]", channel)
+        return _load_digital_waveform(wfm.digital_waveforms[channel], path, channel)
+
+    # Path 6: IQWaveform format (I/Q data)
+    if wfm_type == "IQWaveform" or (
+        hasattr(wfm, "i_axis_values") and hasattr(wfm, "q_axis_values")
+    ):
+        logger.debug("Loading IQWaveform with i_axis_values and q_axis_values")
+        return _load_iq_waveform(wfm, path)
+
+    # No recognized format - provide detailed error
+    raise FormatError(
+        f"No waveform data found. Object type: {wfm_type}. "
+        f"Available attributes: {', '.join(available_attrs[:15])}",
+        file_path=str(path),
+        expected="Tektronix analog or digital waveform data",
+        fix_hint=(
+            "This file may use an unsupported Tektronix format variant. "
+            "Check that tm_data_types is up to date: pip install -U tm_data_types"
+        ),
+    )
+
+
+def _load_analog_waveforms_container(
+    waveform: Any,
+    path: Path,
+    channel: int,
+) -> WaveformTrace:
+    """Load analog waveform from multi-channel container format.
+
+    Args:
+        waveform: Analog waveform object from container.
+        path: Path to WFM file.
+        channel: Channel index.
+
+    Returns:
+        WaveformTrace with extracted data.
+    """
+    data = np.array(waveform.y_data, dtype=np.float64)
+    sample_rate = 1.0 / waveform.x_increment if waveform.x_increment > 0 else 1e6
+    vertical_scale = getattr(waveform, "y_scale", None)
+    vertical_offset = getattr(waveform, "y_offset", None)
+    channel_name = getattr(waveform, "name", f"CH{channel + 1}")
+
+    # Use original wfm for trigger info (need to get it from parent)
+    return _build_waveform_trace(
+        data=data,
+        sample_rate=sample_rate,
+        vertical_scale=vertical_scale,
+        vertical_offset=vertical_offset,
+        channel_name=channel_name,
+        path=path,
+        wfm=waveform,
+    )
+
+
+def _load_analog_waveform_direct(
+    wfm: Any,
+    path: Path,
+    channel: int,
+) -> WaveformTrace:
+    """Load direct AnalogWaveform format (tm_data_types 0.3.0+).
+
+    Args:
+        wfm: AnalogWaveform object.
+        path: Path to WFM file.
+        channel: Channel index.
+
+    Returns:
+        WaveformTrace with extracted data.
+    """
+    # Extract raw integer values and reconstruct voltage values
+    y_raw = np.array(wfm.y_axis_values, dtype=np.float64)
+    y_spacing = float(wfm.y_axis_spacing) if wfm.y_axis_spacing else 1.0
+    y_offset = float(wfm.y_axis_offset) if wfm.y_axis_offset else 0.0
+    data = y_raw * y_spacing + y_offset
+
+    x_spacing = float(wfm.x_axis_spacing) if wfm.x_axis_spacing else 1e-6
+    sample_rate = 1.0 / x_spacing if x_spacing > 0 else 1e6
+    vertical_offset = y_offset
+    channel_name = (
+        wfm.source_name if hasattr(wfm, "source_name") and wfm.source_name else f"CH{channel + 1}"
+    )
+
+    return _build_waveform_trace(
+        data=data,
+        sample_rate=sample_rate,
+        vertical_scale=None,
+        vertical_offset=vertical_offset,
+        channel_name=channel_name,
+        path=path,
+        wfm=wfm,
+    )
+
+
+def _load_legacy_y_data(
+    wfm: Any,
+    path: Path,
+) -> WaveformTrace:
+    """Load legacy single channel format with y_data.
+
+    Args:
+        wfm: Legacy waveform object with y_data.
+        path: Path to WFM file.
+
+    Returns:
+        WaveformTrace with extracted data.
+    """
+    data = np.array(wfm.y_data, dtype=np.float64)
+    x_increment = getattr(wfm, "x_increment", 1e-6)
+    sample_rate = 1.0 / x_increment if x_increment > 0 else 1e6
+    vertical_scale = getattr(wfm, "y_scale", None)
+    vertical_offset = getattr(wfm, "y_offset", None)
+    channel_name = getattr(wfm, "name", "CH1")
+
+    return _build_waveform_trace(
+        data=data,
+        sample_rate=sample_rate,
+        vertical_scale=vertical_scale,
+        vertical_offset=vertical_offset,
+        channel_name=channel_name,
+        path=path,
+        wfm=wfm,
+    )
 
 
 def _build_waveform_trace(
@@ -328,47 +401,13 @@ def _load_digital_waveform(
     logger.debug("Extracting digital waveform data")
 
     # Extract digital sample data
-    if hasattr(wfm, "y_axis_byte_values"):
-        # y_axis_byte_values contains byte-level digital data
-        raw_bytes = wfm.y_axis_byte_values
-        # Convert bytes to numpy array and interpret as boolean
-        # Each byte typically represents a logic state (0 = low, non-zero = high)
-        byte_array = np.frombuffer(bytes(raw_bytes), dtype=np.uint8)
-        data = byte_array.astype(np.bool_)
-        logger.debug("Loaded %d digital samples from y_axis_byte_values", len(data))
-    elif hasattr(wfm, "samples"):
-        # Alternative attribute name
-        data = np.array(wfm.samples, dtype=np.bool_)
-        logger.debug("Loaded %d digital samples from samples", len(data))
-    else:
-        # Try to find any data attribute
-        for attr in ["data", "digital_data", "logic_data"]:
-            if hasattr(wfm, attr):
-                data = np.array(getattr(wfm, attr), dtype=np.bool_)
-                logger.debug("Loaded %d digital samples from %s", len(data), attr)
-                break
-        else:
-            raise FormatError(
-                "DigitalWaveform has no recognized data attribute",
-                file_path=str(path),
-                expected="y_axis_byte_values, samples, or data attribute",
-            )
+    data = _extract_digital_samples(wfm, path)
 
     # Extract timing information
-    x_spacing = 1e-6  # Default 1 microsecond per sample
-    if hasattr(wfm, "x_axis_spacing") and wfm.x_axis_spacing:
-        x_spacing = float(wfm.x_axis_spacing)
-    elif hasattr(wfm, "horizontal_spacing") and wfm.horizontal_spacing:
-        x_spacing = float(wfm.horizontal_spacing)
-
-    sample_rate = 1.0 / x_spacing if x_spacing > 0 else 1e6
+    sample_rate = _extract_sample_rate(wfm)
 
     # Extract channel name
-    channel_name = f"D{channel + 1}"  # Digital channels typically labeled D1, D2, etc.
-    if hasattr(wfm, "source_name") and wfm.source_name:
-        channel_name = wfm.source_name
-    elif hasattr(wfm, "name") and wfm.name:
-        channel_name = wfm.name
+    channel_name = _extract_channel_name(wfm, channel)
 
     # Build metadata
     metadata = TraceMetadata(
@@ -378,14 +417,79 @@ def _load_digital_waveform(
     )
 
     # Extract edge information if available
-    edges = None
-    if hasattr(wfm, "edges"):
-        try:
-            edges = [(float(ts), bool(is_rising)) for ts, is_rising in wfm.edges]
-        except (TypeError, ValueError):
-            pass
+    edges = _extract_edges(wfm)
 
     return DigitalTrace(data=data, metadata=metadata, edges=edges)
+
+
+def _extract_digital_samples(wfm: Any, path: Path) -> NDArray[np.bool_]:
+    """Extract digital sample data from waveform object."""
+    # Try y_axis_byte_values (most common)
+    if hasattr(wfm, "y_axis_byte_values"):
+        raw_bytes = wfm.y_axis_byte_values
+        byte_array = np.frombuffer(bytes(raw_bytes), dtype=np.uint8)
+        data = byte_array.astype(np.bool_)
+        logger.debug("Loaded %d digital samples from y_axis_byte_values", len(data))
+        return data
+
+    # Try samples attribute
+    if hasattr(wfm, "samples"):
+        data = np.array(wfm.samples, dtype=np.bool_)
+        logger.debug("Loaded %d digital samples from samples", len(data))
+        return data
+
+    # Try alternative data attributes
+    for attr in ["data", "digital_data", "logic_data"]:
+        if hasattr(wfm, attr):
+            data = np.array(getattr(wfm, attr), dtype=np.bool_)
+            logger.debug("Loaded %d digital samples from %s", len(data), attr)
+            return data
+
+    # No recognized attribute found
+    raise FormatError(
+        "DigitalWaveform has no recognized data attribute",
+        file_path=str(path),
+        expected="y_axis_byte_values, samples, or data attribute",
+    )
+
+
+def _extract_sample_rate(wfm: Any) -> float:
+    """Extract sample rate from waveform timing attributes."""
+    x_spacing = 1e-6  # Default 1 microsecond per sample
+
+    if hasattr(wfm, "x_axis_spacing") and wfm.x_axis_spacing:
+        x_spacing = float(wfm.x_axis_spacing)
+    elif hasattr(wfm, "horizontal_spacing") and wfm.horizontal_spacing:
+        x_spacing = float(wfm.horizontal_spacing)
+
+    return 1.0 / x_spacing if x_spacing > 0 else 1e6
+
+
+def _extract_channel_name(wfm: Any, channel: int) -> str:
+    """Extract channel name from waveform object."""
+    # Try source_name first
+    if hasattr(wfm, "source_name") and wfm.source_name:
+        name: str = str(wfm.source_name)
+        return name
+
+    # Try name attribute
+    if hasattr(wfm, "name") and wfm.name:
+        name_str: str = str(wfm.name)
+        return name_str
+
+    # Default: digital channels labeled D1, D2, etc.
+    return f"D{channel + 1}"
+
+
+def _extract_edges(wfm: Any) -> list[tuple[float, bool]] | None:
+    """Extract edge timing information if available."""
+    if not hasattr(wfm, "edges"):
+        return None
+
+    try:
+        return [(float(ts), bool(is_rising)) for ts, is_rising in wfm.edges]
+    except (TypeError, ValueError):
+        return None
 
 
 def _load_iq_waveform(
@@ -528,9 +632,30 @@ def _parse_wfm003(
     Raises:
         FormatError: If the file signature is invalid or no waveform data found.
     """
-    import struct
 
-    # Validate signature
+    _validate_wfm003_signature(file_data, path)
+    header_size = 838
+    waveform_bytes = _extract_waveform_data(file_data, header_size, path)
+    data = np.frombuffer(waveform_bytes, dtype=np.int16).astype(np.float64)
+
+    # Extract metadata from header
+    sample_rate = _extract_sample_interval(file_data, header_size)
+    vertical_scale, vertical_offset = _extract_vertical_params(file_data, header_size)
+    channel_name = f"CH{channel + 1}"
+
+    metadata = TraceMetadata(
+        sample_rate=sample_rate,
+        vertical_scale=vertical_scale,
+        vertical_offset=vertical_offset,
+        source_file=str(path),
+        channel_name=channel_name,
+    )
+
+    return WaveformTrace(data=data, metadata=metadata)
+
+
+def _validate_wfm003_signature(file_data: bytes, path: Path) -> None:
+    """Validate WFM#003 file signature."""
     signature = file_data[2:10]
     if signature != b":WFM#003":
         raise FormatError(
@@ -540,20 +665,14 @@ def _parse_wfm003(
             got=signature.decode("latin-1", errors="replace"),
         )
 
-    # WFM#003 files have a fixed header size of 838 bytes
-    # This is consistent across all WFM#003 files
-    header_size = 838
 
-    # Find metadata footer (tekmeta!) if present
-    # This helps us determine where waveform data ends
+def _extract_waveform_data(file_data: bytes, header_size: int, path: Path) -> bytes:
+    """Extract waveform data region from file."""
     footer_start = len(file_data)
     if b"tekmeta!" in file_data:
         footer_start = file_data.find(b"tekmeta!")
 
-    # Extract waveform data region
-    data_start = header_size
-    data_end = footer_start
-    waveform_bytes = file_data[data_start:data_end]
+    waveform_bytes = file_data[header_size:footer_start]
 
     if len(waveform_bytes) < 2:
         raise FormatError(
@@ -561,23 +680,20 @@ def _parse_wfm003(
             file_path=str(path),
         )
 
-    # WFM#003 data is stored as int16 (16-bit signed integers)
-    # Ensure we have an even number of bytes
+    # Ensure even number of bytes for int16
     if len(waveform_bytes) % 2 != 0:
         waveform_bytes = waveform_bytes[:-1]
 
-    # Parse as int16 little-endian
-    data = np.frombuffer(waveform_bytes, dtype=np.int16).astype(np.float64)
+    return waveform_bytes
 
-    # Try to extract metadata from header
-    sample_rate = 1e6  # Default 1 MSa/s
-    vertical_scale = None
-    vertical_offset = None
-    channel_name = f"CH{channel + 1}"
 
-    # Try to find sample interval in header
-    # The header contains doubles at various offsets
-    # Sample interval is typically found in the horizontal dimension info
+def _extract_sample_interval(file_data: bytes, header_size: int) -> float:
+    """Extract sample rate from header doubles."""
+    import struct
+
+    # Default 1 MSa/s
+    sample_rate = 1e6
+
     try:
         # Search for reasonable sample interval values (doubles in header)
         for offset in range(16, min(header_size - 8, 200), 8):
@@ -589,8 +705,18 @@ def _parse_wfm003(
     except (struct.error, ZeroDivisionError):
         pass
 
-    # Try to extract vertical scale/offset
-    # These are also doubles in the header
+    return sample_rate
+
+
+def _extract_vertical_params(
+    file_data: bytes, header_size: int
+) -> tuple[float | None, float | None]:
+    """Extract vertical scale and offset from header."""
+    import struct
+
+    vertical_scale = None
+    vertical_offset = None
+
     try:
         # Vertical scale is often in a specific range
         for offset in range(16, min(header_size - 8, 400), 8):
@@ -606,16 +732,7 @@ def _parse_wfm003(
     except struct.error:
         pass
 
-    # Build metadata
-    metadata = TraceMetadata(
-        sample_rate=sample_rate,
-        vertical_scale=vertical_scale,
-        vertical_offset=vertical_offset,
-        source_file=str(path),
-        channel_name=channel_name,
-    )
-
-    return WaveformTrace(data=data, metadata=metadata)
+    return vertical_scale, vertical_offset
 
 
 def _parse_wfm_legacy(

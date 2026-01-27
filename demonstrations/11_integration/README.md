@@ -139,9 +139,9 @@ response = client.messages.create(
 
 **Key capabilities:**
 
-- `oscura.config.load_config()` - Load configuration files
-- `oscura.config.validate_against_schema()` - Schema validation
-- `oscura.config.load_pipeline()` - Pipeline configuration
+- `oscura.core.config.load_config()` - Load configuration files
+- `oscura.core.config.validate_against_schema()` - Schema validation
+- `oscura.core.config.load_pipeline()` - Pipeline configuration
 - Configuration merging and overrides
 
 **When to use this:**

@@ -1,7 +1,7 @@
 # Session Management & Audit Trail API
 
-> **Version**: 0.5.1
-> **Last Updated**: 2026-01-17
+> **Version**: 0.6.0
+> **Last Updated**: 2026-01-25
 
 ## Overview
 
@@ -11,17 +11,16 @@ Oscura provides comprehensive session management and audit trail capabilities fo
 
 ```python
 import oscura as osc
+from oscura.sessions import BlackBoxSession, GenericSession
 
-# Create and work with a session
-session = osc.Session(name="Power Supply Analysis")
-trace = session.load_trace("capture.wfm")
-session.annotate("Voltage spike", time=1.5e-6)
-session.record_measurement("rise_time", 2.3e-9, unit="s")
-session.save("analysis.tks")
+# Create and work with a session (use BlackBoxSession for protocol RE)
+session = BlackBoxSession(name="Power Supply Analysis")
 
-# Resume later
-session = osc.load_session("analysis.tks")
-print(session.summary())
+# Or use GenericSession for general waveform analysis
+session = GenericSession(name="Power Supply Analysis")
+session.add_recording("capture", source)  # Add data source
+results = session.analyze()  # Run analysis
+print(results["summary"])
 
 # Enable audit trail for compliance
 audit = osc.AuditTrail(secret_key=b"your-secret-key")
@@ -30,104 +29,79 @@ assert audit.verify_integrity()
 audit.export_audit_log("audit.json", format="json")
 ```
 
+> **Note**: The legacy `osc.Session()` and `osc.load_session()` APIs have been removed.
+> Use `BlackBoxSession`, `GenericSession`, or `AnalysisSession` from `oscura.sessions` instead.
+
 ## Session Management
 
-### `Session`
+### Session Classes
 
-Analysis session container that manages traces, annotations, measurements, and operation history.
+Oscura provides three session classes for different use cases:
 
-**Class Definition:**
+| Class | Use Case |
+|-------|----------|
+| `BlackBoxSession` | Protocol reverse engineering, differential analysis |
+| `GenericSession` | General waveform analysis workflows |
+| `AnalysisSession` | Abstract base class for custom sessions |
+
+**Import Pattern:**
 
 ```python
-@dataclass
-class Session:
-    """Analysis session container.
-
-    Attributes:
-        name: Session name
-        traces: Dictionary of loaded traces (name -> trace)
-        annotation_layers: Annotation layers
-        measurements: Recorded measurements
-        history: Operation history
-        metadata: Session metadata
-        created_at: Creation timestamp
-        modified_at: Last modification timestamp
-    """
+from oscura.sessions import BlackBoxSession, GenericSession, AnalysisSession
 ```
 
-**Example - Basic Session Usage:**
+### `BlackBoxSession`
+
+Specialized session for unknown protocol reverse engineering with differential analysis.
+
+**Example - Protocol Reverse Engineering:**
+
+```python
+from oscura.sessions import BlackBoxSession
+
+# Create session for protocol analysis
+session = BlackBoxSession(name="IoT Device Protocol Analysis")
+
+# Add captures (recordings) for analysis
+session.add_recording("baseline", source)
+session.add_recording("button_press", source)
+
+# Compare captures to find differences
+diff = session.compare("baseline", "button_press")
+print(f"Changed bytes: {diff.changed_bytes}")
+print(f"Similarity: {diff.similarity_score:.4f}")
+
+# Run comprehensive analysis
+results = session.analyze()
+print(f"Fields detected: {len(results['field_hypotheses'])}")
+
+# Generate protocol specification
+spec = session.generate_protocol_spec()
+
+# Export results
+session.export_results("dissector", "protocol.lua")  # Wireshark dissector
+session.export_results("spec", "protocol.json")       # JSON specification
+```
+
+### `GenericSession`
+
+General-purpose session for waveform analysis workflows.
+
+**Example - General Waveform Analysis:**
 
 ```python
 import oscura as osc
-
-# Create a new session
-session = osc.Session(name="Debug Session")
-
-# Load traces
-trace1 = session.load_trace("oscilloscope.wfm", name="CH1")
-trace2 = session.load_trace("logic_analyzer.sr", name="DIGITAL")
-
-# List loaded traces
-print(session.list_traces())  # ['CH1', 'DIGITAL']
-
-# Get a specific trace
-trace = session.get_trace("CH1")
-
-# Add in-memory trace
-import numpy as np
-data = np.sin(np.linspace(0, 2*np.pi, 1000))
-my_trace = osc.WaveformTrace(data=data, sample_rate=1e6)
-session.add_trace("SYNTHETIC", my_trace)
-```
-
-**Example - Complete Analysis Workflow:**
-
-```python
-import oscura as osc
+from oscura.sessions import GenericSession
 
 # Create session
-session = osc.Session(name="Power Rail Analysis")
+session = GenericSession(name="Power Rail Analysis")
 
-# Load and analyze
-trace = session.load_trace("power_supply.wfm", name="5V_RAIL")
+# Add recordings
+session.add_recording("5V_RAIL", source)
 
-# Record measurements
-freq = osc.frequency(trace)
-session.record_measurement(
-    "frequency",
-    freq,
-    unit="Hz",
-    trace_name="5V_RAIL"
-)
-
-ripple = osc.amplitude(trace)
-session.record_measurement(
-    "ripple_vpp",
-    ripple,
-    unit="V",
-    trace_name="5V_RAIL",
-    acceptable=ripple < 0.1
-)
-
-# Add annotations
-session.annotate(
-    "Transient response",
-    time_range=(1e-3, 2e-3),
-    layer="analysis"
-)
-
-session.annotate(
-    "Maximum ripple",
-    time=1.5e-3,
-    layer="measurements"
-)
-
-# Save session
-session.save("power_analysis.tks", compress=True)
-
-# Get summary
-print(session.summary())
-```
+# Run analysis
+results = session.analyze()
+print(results["summary"])
 
 ### Session Methods
 
@@ -153,198 +127,59 @@ def load_trace(
     """
 ```
 
-**Example:**
+## Session API Reference
+
+> **Note**: The following methods document the legacy `Session` API for historical reference.
+> New code should use `BlackBoxSession` or `GenericSession` from `oscura.sessions`.
+> See the Quick Start section for current usage patterns.
+
+### Recording Management
+
+Sessions manage recordings (data sources) using `add_recording()` and `list_recordings()`:
 
 ```python
-session = osc.Session()
+from oscura.sessions import BlackBoxSession
 
-# Load with auto-generated name
-trace1 = session.load_trace("capture.wfm")
+session = BlackBoxSession(name="Analysis")
 
-# Load with custom name
-trace2 = session.load_trace("data.csv", name="SENSOR_DATA")
+# Add recordings
+session.add_recording("baseline", source)
+session.add_recording("stimulus", source)
 
-# Load with loader options
-trace3 = session.load_trace("large_file.wfm", lazy=True)
+# List recordings
+recordings = session.list_recordings()
+print(recordings)  # ['baseline', 'stimulus']
 ```
 
-#### `add_trace()`
-
-Add a programmatically created trace to the session.
+### Differential Analysis (BlackBoxSession)
 
 ```python
-def add_trace(
-    name: str,
-    trace: Any,
-) -> None:
-    """Add an in-memory trace to the session.
+from oscura.sessions import BlackBoxSession
 
-    Args:
-        name: Name for the trace in the session.
-        trace: Trace object (WaveformTrace, DigitalTrace, etc.).
-    """
+session = BlackBoxSession(name="Protocol RE")
+session.add_recording("baseline", source)
+session.add_recording("button_press", source)
+
+# Compare two recordings
+diff = session.compare("baseline", "button_press")
+print(f"Changed bytes: {diff.changed_bytes}")
+print(f"Similarity: {diff.similarity_score:.4f}")
+print(f"Changed regions: {diff.changed_regions}")
 ```
 
-**Example:**
+### Export Results
 
 ```python
-import numpy as np
-import oscura as osc
+from oscura.sessions import BlackBoxSession
 
-session = osc.Session()
+session = BlackBoxSession(name="Protocol RE")
+# ... add recordings and analyze ...
 
-# Create synthetic waveform
-t = np.linspace(0, 1e-3, 10000)
-data = 3.3 * np.sin(2 * np.pi * 1000 * t)
-trace = osc.WaveformTrace(data=data, sample_rate=10e6)
-
-# Add to session
-session.add_trace("SINE_1KHZ", trace)
-```
-
-#### `annotate()`
-
-Add an annotation to the session.
-
-```python
-def annotate(
-    text: str,
-    *,
-    time: float | None = None,
-    time_range: tuple[float, float] | None = None,
-    layer: str = "default",
-    **kwargs: Any,
-) -> None:
-    """Add annotation to session.
-
-    Args:
-        text: Annotation text.
-        time: Time point for annotation.
-        time_range: Time range for annotation.
-        layer: Annotation layer name.
-        **kwargs: Additional annotation parameters (color, style, etc.).
-    """
-```
-
-**Example:**
-
-```python
-session = osc.Session()
-session.load_trace("debug.wfm")
-
-# Point annotation
-session.annotate("Glitch detected", time=1.5e-6)
-
-# Range annotation
-session.annotate(
-    "Data packet",
-    time_range=(2e-6, 5e-6),
-    layer="protocol"
-)
-
-# Custom styling
-session.annotate(
-    "Critical error",
-    time=10e-6,
-    layer="errors",
-    color="#FF0000",
-    style="dashed"
-)
-```
-
-#### `record_measurement()`
-
-Record a measurement result.
-
-```python
-def record_measurement(
-    name: str,
-    value: Any,
-    unit: str = "",
-    trace_name: str | None = None,
-    **metadata: Any,
-) -> None:
-    """Record a measurement result.
-
-    Args:
-        name: Measurement name (e.g., 'rise_time').
-        value: Measurement value.
-        unit: Unit of measurement.
-        trace_name: Associated trace name.
-        **metadata: Additional metadata.
-    """
-```
-
-**Example:**
-
-```python
-import oscura as osc
-
-session = osc.Session()
-trace = session.load_trace("signal.wfm", name="CH1")
-
-# Record measurements
-rise = osc.rise_time(trace)
-session.record_measurement(
-    "rise_time",
-    rise,
-    unit="s",
-    trace_name="CH1",
-    standard="IEEE 181-2011"
-)
-
-freq = osc.frequency(trace)
-session.record_measurement(
-    "frequency",
-    freq,
-    unit="Hz",
-    trace_name="CH1",
-    confidence=0.95
-)
-
-# Get all measurements
-measurements = session.get_measurements()
-print(measurements)
-```
-
-#### `save()`
-
-Save session to file.
-
-```python
-def save(
-    path: str | Path | None = None,
-    *,
-    include_traces: bool = True,
-    compress: bool = True,
-) -> Path:
-    """Save session to file.
-
-    Args:
-        path: Output path (default: use existing or generate).
-        include_traces: Include trace data in session file.
-        compress: Compress session file with gzip.
-
-    Returns:
-        Path to saved file.
-    """
-```
-
-**Example:**
-
-```python
-session = osc.Session(name="Analysis")
-session.load_trace("capture.wfm")
-session.annotate("Start", time=0)
-
-# Save with all defaults
-session.save("analysis.tks")
-
-# Save without trace data (smaller file)
-session.save("analysis_meta.tks", include_traces=False)
-
-# Save uncompressed
-session.save("analysis_raw.tks", compress=False)
+# Export to various formats
+session.export_results("report", "analysis.md")      # Markdown report
+session.export_results("dissector", "proto.lua")    # Wireshark dissector
+session.export_results("spec", "proto.json")        # JSON specification
+session.export_results("csv", "fields.csv")         # CSV format
 ```
 
 #### `get_annotations()`
@@ -367,60 +202,8 @@ def get_annotations(
     """
 ```
 
-**Example:**
-
-```python
-session = osc.Session()
-session.load_trace("signal.wfm")
-
-# Add annotations
-session.annotate("Event 1", time=1e-6, layer="events")
-session.annotate("Event 2", time=2e-6, layer="events")
-session.annotate("Error", time=1.5e-6, layer="errors")
-
-# Get all annotations
-all_annotations = session.get_annotations()
-
-# Get annotations from specific layer
-events = session.get_annotations(layer="events")
-
-# Get annotations in time range
-window = session.get_annotations(time_range=(1e-6, 2e-6))
-```
-
-### `load_session()`
-
-Load a saved session from file.
-
-```python
-def load_session(path: str | Path) -> Session:
-    """Load session from file.
-
-    Args:
-        path: Path to session file (.tks).
-
-    Returns:
-        Loaded Session object.
-    """
-```
-
-**Example:**
-
-```python
-import oscura as osc
-
-# Load saved session
-session = osc.load_session("debug_session.tks")
-
-# Resume analysis
-print(session.summary())
-print(f"Traces: {session.list_traces()}")
-
-# Access saved data
-measurements = session.get_measurements()
-annotations = session.get_annotations()
-history = session.history.entries
-```
+> **Deprecated**: The legacy `osc.Session()` and `osc.load_session()` APIs have been removed.
+> Use the new session classes from `oscura.sessions` instead.
 
 ## Annotations
 
@@ -556,27 +339,8 @@ events.clear()
 
 **Example - Multiple Layers:**
 
-```python
-import oscura as osc
-
-session = osc.Session()
-session.load_trace("debug.wfm")
-
-# Add annotations to different layers
-session.annotate("Start bit", time=0, layer="uart")
-session.annotate("Data byte", time_range=(1e-6, 9e-6), layer="uart")
-session.annotate("Parity error", time=8e-6, layer="errors")
-session.annotate("Maximum voltage", time=5e-6, layer="measurements")
-
-# Access layer directly
-uart_layer = session.annotation_layers["uart"]
-uart_layer.color = "#0000FF"
-uart_layer.description = "UART protocol decode"
-
-# Query by layer
-uart_annotations = session.get_annotations(layer="uart")
-error_annotations = session.get_annotations(layer="errors")
-```
+> **Note**: The annotation layer example below shows conceptual usage.
+> For current API usage, see BlackBoxSession and GenericSession documentation.
 
 ## Operation History
 
@@ -667,37 +431,20 @@ print(f"Total time: {stats['total_duration_ms']:.1f} ms")
 
 ```python
 import oscura as osc
+from oscura.sessions import GenericSession
 
-session = osc.Session()
-session.load_trace("signal.wfm")
-osc.frequency(session.get_trace("signal"))
-osc.rise_time(session.get_trace("signal"))
+session = GenericSession(name="Signal Analysis")
+trace = osc.load("signal.wfm")
+session.add_recording("signal", trace)
 
-# Export history as Python script
-script = session.history.to_script()
-print(script)
+# Perform measurements
+freq = osc.frequency(trace)
+rise = osc.rise_time(trace)
+print(f"Frequency: {freq} Hz, Rise time: {rise} s")
 ```
 
-Output:
-
-```python
-#!/usr/bin/env python3
-"""Oscura analysis script.
-
-Generated: 2026-01-08T10:30:00
-"""
-
-import oscura as osc
-
-# 10:30:01 - load_trace
-osc.load_trace(path="signal.wfm")
-
-# 10:30:02 - measure_frequency
-osc.measure_frequency()
-
-# 10:30:03 - measure_rise_time
-osc.measure_rise_time()
-```
+> **Note**: Script generation from operation history is a planned feature.
+> For now, use GenericSession.analyze() to get analysis results programmatically.
 
 ## Audit Trail
 
@@ -994,74 +741,70 @@ audit.export_audit_log("global_audit.json")
 
 ```python
 import oscura as osc
-import numpy as np
+from oscura.sessions import GenericSession
 
 # Create session with metadata
-session = osc.Session(name="Motor Controller Debug")
+session = GenericSession(name="Motor Controller Debug")
 session.metadata["project"] = "MC-2024"
 session.metadata["engineer"] = "Alice"
 
-# Load multiple traces
-session.load_trace("pwm_signal.wfm", name="PWM")
-session.load_trace("current_sense.wfm", name="CURRENT")
-session.load_trace("can_bus.sr", name="CAN")
+# Load traces and add to session
+pwm = osc.load("pwm_signal.wfm")
+current = osc.load("current_sense.wfm")
+can_trace = osc.load("can_bus.sr")
+
+session.add_recording("PWM", pwm)
+session.add_recording("CURRENT", current)
+session.add_recording("CAN", can_trace)
 
 # Perform measurements
-pwm = session.get_trace("PWM")
 freq = osc.frequency(pwm)
 duty = osc.duty_cycle(pwm)
+print(f"PWM Frequency: {freq} Hz, Duty Cycle: {duty}%")
 
-session.record_measurement("pwm_frequency", freq, unit="Hz", trace_name="PWM")
-session.record_measurement("duty_cycle", duty, unit="%", trace_name="PWM")
+# Run analysis on all recordings
+results = session.analyze()
+print(f"Analyzed {results['num_recordings']} recordings")
 
-# Add structured annotations
-session.annotate("Motor start", time=0, layer="events")
-session.annotate("Acceleration phase", time_range=(0, 0.1), layer="phases")
-session.annotate("Steady state", time_range=(0.1, 0.5), layer="phases")
-session.annotate("Overshoot detected", time=0.05, layer="issues", color="#FF0000")
-
-# Save session
-path = session.save("motor_debug.tks")
-print(f"Session saved to {path}")
-
-# Print summary
-print("\n" + session.summary())
+# Export results
+session.export_results("report", "motor_debug.md")
+session.export_results("json", "motor_debug.json")
 ```
 
 ### Example 2: Session with Audit Trail
 
 ```python
 import oscura as osc
+from oscura.sessions import GenericSession
 
 # Create session with audit trail
-session = osc.Session(name="Compliance Test")
+session = GenericSession(name="Compliance Test")
 audit = osc.AuditTrail(secret_key=b"compliance-secret-key")
 
 # Record all operations
 audit.record_action("create_session", {"name": session.name})
 
-# Load and analyze
-trace = session.load_trace("test_signal.wfm")
+# Load and add to session
+trace = osc.load("test_signal.wfm")
+session.add_recording("test_signal", trace)
 audit.record_action("load_trace", {"file": "test_signal.wfm"})
 
 # Measurements with audit
 freq = osc.frequency(trace)
-session.record_measurement("frequency", freq, "Hz")
 audit.record_action(
     "measure_frequency",
     {"result": freq, "unit": "Hz", "standard": "IEEE 181"}
 )
 
 thd = osc.thd(trace)
-session.record_measurement("thd", thd, "%")
 audit.record_action(
     "measure_thd",
     {"result": thd, "unit": "%", "harmonics": 10}
 )
 
-# Save both
-session.save("compliance_session.tks")
-audit.record_action("save_session", {"file": "compliance_session.tks"})
+# Export results and audit log
+session.export_results("json", "compliance_session.json")
+audit.record_action("export_session", {"file": "compliance_session.json"})
 
 audit.export_audit_log("compliance_audit.json")
 audit.record_action("export_audit", {"file": "compliance_audit.json"})
@@ -1073,95 +816,78 @@ else:
     print("WARNING: Audit trail integrity check failed!")
 ```
 
-### Example 3: Resuming Saved Session
+### Example 3: Multi-Recording Workflow
 
 ```python
 import oscura as osc
+from oscura.sessions import BlackBoxSession
 
-# Load previous session
-session = osc.load_session("motor_debug.tks")
+# Create session for protocol reverse engineering
+session = BlackBoxSession(name="IoT Device Analysis")
 
-print(f"Loaded session: {session.name}")
+# Add multiple captures
+baseline = osc.load("baseline.wfm")
+button_press = osc.load("button_press.wfm")
+temp_change = osc.load("temp_change.wfm")
+
+session.add_recording("baseline", baseline)
+session.add_recording("button_press", button_press)
+session.add_recording("temp_change", temp_change)
+
+print(f"Session: {session.name}")
 print(f"Created: {session.created_at}")
-print(f"Modified: {session.modified_at}")
+print(f"Recordings: {session.list_recordings()}")
 
-# Access saved data
-print(f"\nTraces: {session.list_traces()}")
+# Compare recordings (differential analysis)
+diff = session.compare("baseline", "button_press")
+print(f"\nBaseline vs Button Press:")
+print(f"  Changed bytes: {diff.changed_bytes}")
+print(f"  Similarity: {diff.similarity_score:.4f}")
 
-measurements = session.get_measurements()
-for name, data in measurements.items():
-    print(f"  {name}: {data['value']} {data['unit']}")
+# Run comprehensive analysis
+results = session.analyze()
+print(f"\nAnalysis Results:")
+print(f"  Fields detected: {len(results.get('field_hypotheses', []))}")
 
-# View annotations by layer
-for layer_name, layer in session.annotation_layers.items():
-    print(f"\nLayer '{layer_name}':")
-    for ann in layer.annotations:
-        print(f"  - {ann.text} @ {ann.time}")
+# Generate protocol specification
+spec = session.generate_protocol_spec()
+print(f"  Protocol spec: {spec.name}")
 
-# Review operation history
-print(f"\nOperation history ({len(session.history.entries)} entries):")
-for entry in session.history.entries[:5]:
-    status = "✓" if entry.success else "✗"
-    print(f"  {status} {entry.operation} ({entry.duration_ms:.1f}ms)")
-
-# Continue analysis
-trace = session.get_trace("PWM")
-rise = osc.rise_time(trace)
-session.record_measurement("rise_time", rise, "s", trace_name="PWM")
-
-# Save updated session
-session.save()
+# Export in multiple formats
+session.export_results("report", "analysis.md")
+session.export_results("dissector", "protocol.lua")
+session.export_results("spec", "protocol.json")
 ```
 
-### Example 4: Multi-Layer Annotations
+### Example 4: Protocol Decoding with Sessions
 
 ```python
 import oscura as osc
+from oscura.sessions import GenericSession
 
-session = osc.Session(name="Protocol Analysis")
-trace = session.load_trace("uart_capture.wfm")
+# Create session for UART analysis
+session = GenericSession(name="UART Protocol Analysis")
 
-# Protocol decode layer
-session.annotate("START", time=0, layer="protocol", color="#00FF00")
-session.annotate("DATA: 0x41", time_range=(1e-6, 9e-6), layer="protocol")
-session.annotate("PARITY", time=9e-6, layer="protocol")
-session.annotate("STOP", time=10e-6, layer="protocol")
+# Load UART capture
+trace = osc.load("uart_capture.wfm")
+session.add_recording("uart", trace)
 
-# Timing analysis layer
-session.annotate("Bit 0", time_range=(1e-6, 2e-6), layer="timing")
-session.annotate("Bit 1", time_range=(2e-6, 3e-6), layer="timing")
+# Decode UART protocol
+messages = osc.decode_uart(trace, baud_rate=115200)
+print(f"Decoded {len(messages)} UART frames")
 
-# Issues layer
-session.annotate(
-    "Timing violation",
-    time=5e-6,
-    layer="issues",
-    color="#FF0000",
-    style="dashed"
-)
+for i, msg in enumerate(messages[:5]):
+    print(f"  Frame {i}: {msg}")
 
-# Access layers
-protocol_layer = session.annotation_layers["protocol"]
-protocol_layer.description = "UART protocol decode at 115200 baud"
-protocol_layer.color = "#00FF00"
+# Run session analysis for statistics
+results = session.analyze()
+print(f"\nSession Analysis:")
+print(f"  Mean amplitude: {results['summary']['uart']['mean']:.4f}")
+print(f"  RMS: {results['summary']['uart']['rms']:.4f}")
 
-issues_layer = session.annotation_layers["issues"]
-issues_layer.locked = False  # Allow modifications
-
-# Query annotations
-protocol_events = session.get_annotations(layer="protocol")
-issues = session.get_annotations(layer="issues")
-
-print(f"Protocol events: {len(protocol_events)}")
-print(f"Issues found: {len(issues)}")
-
-# Find annotations in specific time window
-window_annotations = session.get_annotations(
-    time_range=(0, 5e-6)
-)
-print(f"Annotations in first 5μs: {len(window_annotations)}")
-
-session.save("uart_analysis.tks")
+# Export results
+session.export_results("report", "uart_analysis.md")
+session.export_results("csv", "uart_data.csv")
 ```
 
 ### Example 5: Compliance Audit Trail
@@ -1257,7 +983,11 @@ for i, entry in enumerate(entries, 1):
 1. **Use Descriptive Names**: Give sessions clear, descriptive names
 
    ```python
-   session = osc.Session(name="2026-01-08_Power_Supply_Debug")
+   from oscura.sessions import GenericSession, BlackBoxSession
+
+   session = GenericSession(name="2026-01-08_Power_Supply_Debug")
+   # Or for protocol RE:
+   session = BlackBoxSession(name="IoT_Protocol_RE")
    ```
 
 2. **Add Metadata**: Store project context in metadata
@@ -1268,31 +998,27 @@ for i, entry in enumerate(entries, 1):
    session.metadata["dut_serial"] = "PSU-001234"
    ```
 
-3. **Organize with Layers**: Use annotation layers for organization
+3. **Use Meaningful Recording Names**: Name recordings descriptively
 
    ```python
-   session.annotate("...", layer="protocol")
-   session.annotate("...", layer="measurements")
-   session.annotate("...", layer="issues")
+   session.add_recording("baseline_idle", baseline_trace)
+   session.add_recording("button_press", stimulus_trace)
+   session.add_recording("temp_25C", temp_trace)
    ```
 
-4. **Save Regularly**: Save sessions periodically during analysis
+4. **Export Results Regularly**: Save analysis results periodically
 
    ```python
-   session.save()  # Quick save
+   session.export_results("report", "analysis.md")
+   session.export_results("json", "results.json")
    ```
 
-5. **Record Measurements**: Capture all important results
+5. **Use Compare for Differential Analysis**: Find changes between captures
 
    ```python
-   session.record_measurement(
-       name="thd",
-       value=thd_value,
-       unit="dB",
-       trace_name="SIGNAL",
-       standard="IEC 61000-4-7",
-       pass_criteria=thd_value < -60
-   )
+   diff = session.compare("baseline", "stimulus")
+   print(f"Changed: {diff.changed_bytes} bytes")
+   print(f"Similarity: {diff.similarity_score:.4f}")
    ```
 
 ### Audit Trail

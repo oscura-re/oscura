@@ -180,33 +180,41 @@ def decode_protocol(
         )
 
 
-def _decode_uart_auto(
+def _extract_uart_data_and_sample_rate(
     trace: WaveformTrace | DigitalTrace,
-    params_hint: dict[str, Any] | None,
-    confidence_threshold: float,
-    return_errors: bool,
-) -> DecodeResult:
-    """Auto-decode UART with parameter detection.
+) -> tuple[NDArray[np.floating[Any]], float]:
+    """Extract data array and sample rate from trace.
 
     Args:
-        trace: Input trace.
-        params_hint: Optional parameter hints.
-        confidence_threshold: Minimum confidence threshold.
-        return_errors: Whether to include errors.
+        trace: Input trace
 
     Returns:
-        DecodeResult for UART.
+        Tuple of (data array, sample rate)
     """
-    from oscura.analyzers.protocols.uart import UARTDecoder
-
-    # Get data array
     if isinstance(trace, WaveformTrace):
         data = trace.data
         sample_rate = trace.metadata.sample_rate
     else:
         data = trace.data.astype(np.float64)
         sample_rate = trace.metadata.sample_rate
+    return data, sample_rate
 
+
+def _determine_uart_parameters(
+    params_hint: dict[str, Any] | None,
+    data: NDArray[np.floating[Any]],
+    sample_rate: float,
+) -> tuple[int, int, str, int]:
+    """Determine UART parameters from hints or auto-detection.
+
+    Args:
+        params_hint: Optional parameter hints
+        data: Signal data
+        sample_rate: Sampling rate
+
+    Returns:
+        Tuple of (baud_rate, data_bits, parity, stop_bits)
+    """
     # Auto-detect baud rate if not provided
     if params_hint and "baud_rate" in params_hint:
         baud_rate = params_hint["baud_rate"]
@@ -218,27 +226,41 @@ def _decode_uart_auto(
     parity = params_hint.get("parity", "none") if params_hint else "none"
     stop_bits = params_hint.get("stop_bits", 1) if params_hint else 1
 
-    # Create decoder with detected parameters
-    decoder = UARTDecoder(
-        baudrate=baud_rate,
-        data_bits=data_bits,
-        parity=parity,  # type: ignore[arg-type]
-        stop_bits=stop_bits,
-    )
+    return baud_rate, data_bits, parity, stop_bits
 
-    # Decode
+
+def _decode_uart_packets(
+    decoder: Any,
+    trace: WaveformTrace | DigitalTrace,
+    baud_rate: int,
+) -> list[Any]:
+    """Decode UART packets from trace.
+
+    Args:
+        decoder: UART decoder instance
+        trace: Input trace
+        baud_rate: Baud rate for error reporting
+
+    Returns:
+        List of decoded packets (empty on failure)
+    """
     try:
-        packets = list(decoder.decode(trace))
+        return list(decoder.decode(trace))
     except Exception:
-        # Decode failed
-        return DecodeResult(
-            protocol="UART",
-            overall_confidence=0.3,
-            detected_params={"baud_rate": baud_rate},
-            data=[],
-        )
+        return []
 
-    # Convert to DecodedByte format
+
+def _convert_uart_packets_to_bytes(
+    packets: list[Any],
+) -> tuple[list[DecodedByte], int]:
+    """Convert UART packets to DecodedByte format.
+
+    Args:
+        packets: List of decoded packets
+
+    Returns:
+        Tuple of (decoded bytes list, error count)
+    """
     decoded_bytes: list[DecodedByte] = []
     error_count = 0
 
@@ -263,12 +285,72 @@ def _decode_uart_auto(
                 )
             )
 
-    # Calculate overall confidence
+    return decoded_bytes, error_count
+
+
+def _calculate_uart_confidence(decoded_bytes: list[DecodedByte]) -> float:
+    """Calculate overall confidence from decoded bytes.
+
+    Args:
+        decoded_bytes: List of decoded bytes
+
+    Returns:
+        Overall confidence score
+    """
     if decoded_bytes:
         avg_confidence = np.mean([b.confidence for b in decoded_bytes])
-        overall_confidence = float(round(float(avg_confidence), 2))
-    else:
-        overall_confidence = 0.0
+        return float(round(float(avg_confidence), 2))
+    return 0.0
+
+
+def _decode_uart_auto(
+    trace: WaveformTrace | DigitalTrace,
+    params_hint: dict[str, Any] | None,
+    confidence_threshold: float,
+    return_errors: bool,
+) -> DecodeResult:
+    """Auto-decode UART with parameter detection.
+
+    Args:
+        trace: Input trace.
+        params_hint: Optional parameter hints.
+        confidence_threshold: Minimum confidence threshold.
+        return_errors: Whether to include errors.
+
+    Returns:
+        DecodeResult for UART.
+    """
+    from oscura.analyzers.protocols.uart import UARTDecoder
+
+    # Extract data and determine parameters
+    data, sample_rate = _extract_uart_data_and_sample_rate(trace)
+    baud_rate, data_bits, parity, stop_bits = _determine_uart_parameters(
+        params_hint, data, sample_rate
+    )
+
+    # Create decoder with detected parameters
+    decoder = UARTDecoder(
+        baudrate=baud_rate,
+        data_bits=data_bits,
+        parity=parity,  # type: ignore[arg-type]
+        stop_bits=stop_bits,
+    )
+
+    # Decode packets
+    packets = _decode_uart_packets(decoder, trace, baud_rate)
+
+    # Handle decode failure
+    if not packets:
+        return DecodeResult(
+            protocol="UART",
+            overall_confidence=0.3,
+            detected_params={"baud_rate": baud_rate},
+            data=[],
+        )
+
+    # Convert packets to bytes and calculate confidence
+    decoded_bytes, error_count = _convert_uart_packets_to_bytes(packets)
+    overall_confidence = _calculate_uart_confidence(decoded_bytes)
 
     return DecodeResult(
         protocol="UART",

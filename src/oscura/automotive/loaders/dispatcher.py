@@ -27,6 +27,32 @@ def detect_format(file_path: Path | str) -> str:
     path = Path(file_path)
 
     # Check extension first
+    ext_format = _detect_by_extension(path)
+    if ext_format != "unknown":
+        return ext_format
+
+    # Check binary file contents
+    binary_format = _detect_by_binary_header(path)
+    if binary_format != "unknown":
+        return binary_format
+
+    # Check text file contents
+    text_format = _detect_by_text_content(path)
+    if text_format != "unknown":
+        return text_format
+
+    return "unknown"
+
+
+def _detect_by_extension(path: Path) -> str:
+    """Detect format by file extension.
+
+    Args:
+        path: Path to the file.
+
+    Returns:
+        Format name or 'unknown'.
+    """
     ext = path.suffix.lower()
 
     if ext == ".blf":
@@ -40,7 +66,18 @@ def detect_format(file_path: Path | str) -> str:
     elif ext in [".pcap", ".pcapng"]:
         return "pcap"
 
-    # If extension is ambiguous, check file contents
+    return "unknown"
+
+
+def _detect_by_binary_header(path: Path) -> str:
+    """Detect format by binary file header.
+
+    Args:
+        path: Path to the file.
+
+    Returns:
+        Format name or 'unknown'.
+    """
     try:
         with open(path, "rb") as f:
             header = f.read(16)
@@ -60,7 +97,18 @@ def detect_format(file_path: Path | str) -> str:
     except Exception:
         pass
 
-    # Try as text file
+    return "unknown"
+
+
+def _detect_by_text_content(path: Path) -> str:
+    """Detect format by text file content.
+
+    Args:
+        path: Path to the file.
+
+    Returns:
+        Format name or 'unknown'.
+    """
     try:
         with open(path, encoding="utf-8") as f:
             first_line = f.readline().strip()

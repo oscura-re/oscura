@@ -65,15 +65,15 @@ class I2SDecoder(SyncDecoder):
     longname = "Inter-IC Sound"
     desc = "I2S audio bus protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("bck", "BCK", "Bit Clock (SCLK)", required=True),
         ChannelDef("ws", "WS", "Word Select (LRCLK)", required=True),
         ChannelDef("sd", "SD", "Serial Data", required=True),
     ]
 
-    optional_channels = []  # noqa: RUF012
+    optional_channels = []
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef(
             "bit_depth",
             "Bit depth",
@@ -90,7 +90,7 @@ class I2SDecoder(SyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("left", "Left channel sample"),
         ("right", "Right channel sample"),
         ("word", "Word boundary"),
@@ -140,15 +140,8 @@ class I2SDecoder(SyncDecoder):
         if bck is None or ws is None or sd is None:
             return
 
-        n_samples = min(len(bck), len(ws), len(sd))
-        bck = bck[:n_samples]
-        ws = ws[:n_samples]
-        sd = sd[:n_samples]
-
-        # Find rising edges of BCK (data sampled on rising edge in I2S)
+        bck, ws, sd = self._align_signals(bck, ws, sd)
         rising_edges = np.where(~bck[:-1] & bck[1:])[0] + 1
-
-        # Find WS transitions to identify word boundaries
         ws_transitions = np.where(ws[:-1] != ws[1:])[0] + 1
 
         if len(rising_edges) == 0 or len(ws_transitions) == 0:
@@ -156,111 +149,170 @@ class I2SDecoder(SyncDecoder):
 
         trans_num = 0
         ws_idx = 0
+        left_sample = 0
+        right_sample = 0
+        first_start_time = 0.0
 
         while ws_idx < len(ws_transitions) - 1:
-            # Get word boundaries
             word_start_idx = ws_transitions[ws_idx]
             word_end_idx = ws_transitions[ws_idx + 1]
 
-            # Determine channel (WS=0 is left, WS=1 is right in standard I2S)
             is_left = not ws[word_start_idx]
-
-            # Find BCK edges in this word period
-            word_edges = rising_edges[
-                (rising_edges >= word_start_idx) & (rising_edges < word_end_idx)
-            ]
+            word_edges = self._get_word_edges(rising_edges, word_start_idx, word_end_idx)
 
             if len(word_edges) == 0:
                 ws_idx += 1
                 continue
 
-            # In standard I2S mode, data starts 1 clock after WS change
-            # In left-justified mode, data starts at WS change
-            # In right-justified mode, data is aligned to end of word period
-            if self._mode == I2SMode.STANDARD:
-                # Skip first edge (data starts on second edge)
-                data_edges = word_edges[1:] if len(word_edges) > 1 else []
-            elif self._mode == I2SMode.LEFT_JUSTIFIED:
-                data_edges = word_edges
-            else:  # RIGHT_JUSTIFIED
-                # Take last bit_depth edges
-                data_edges = (
-                    word_edges[-self._bit_depth :]
-                    if len(word_edges) >= self._bit_depth
-                    else word_edges
-                )
+            data_edges = self._select_data_edges(word_edges)
+            sample_value = self._extract_sample(sd, data_edges)
 
-            # Extract sample data (MSB first)
-            sample_bits = []
-            for edge_idx in data_edges[: self._bit_depth]:
-                if edge_idx < len(sd):
-                    sample_bits.append(1 if sd[edge_idx] else 0)
-
-            if len(sample_bits) < self._bit_depth:
-                # Incomplete sample, pad with zeros
-                sample_bits.extend([0] * (self._bit_depth - len(sample_bits)))
-
-            # Convert to signed integer value (MSB first, two's complement)
-            sample_value = 0
-            for bit in sample_bits:
-                sample_value = (sample_value << 1) | bit
-
-            # Convert from unsigned to signed (two's complement)
-            if sample_bits[0] == 1:  # Negative number
-                sample_value = sample_value - (1 << self._bit_depth)
-
-            # Calculate timing
             start_time = word_start_idx / sample_rate
             end_time = word_end_idx / sample_rate
 
-            # Store left and right channels
+            # Accumulate stereo pair
             if ws_idx % 2 == 0:
-                # First word of stereo pair
                 left_sample = sample_value if is_left else 0
                 right_sample = 0 if is_left else sample_value
                 first_start_time = start_time
             else:
-                # Second word of stereo pair - emit packet
                 if is_left:
                     left_sample = sample_value
                 else:
                     right_sample = sample_value
 
-                # Add annotation
-                self.put_annotation(
-                    first_start_time,
-                    end_time,
-                    AnnotationLevel.PACKETS,
-                    f"L: {left_sample} / R: {right_sample}",
-                )
-
-                # Create packet
-                annotations = {
-                    "sample_num": trans_num,
-                    "left_sample": left_sample,
-                    "right_sample": right_sample,
-                    "bit_depth": self._bit_depth,
-                    "mode": self._mode.value,
-                }
-
-                # Encode as bytes (little-endian, signed)
-                byte_count = (self._bit_depth + 7) // 8
-                left_bytes = left_sample.to_bytes(byte_count, "little", signed=True)
-                right_bytes = right_sample.to_bytes(byte_count, "little", signed=True)
-                data_bytes = left_bytes + right_bytes
-
-                packet = ProtocolPacket(
-                    timestamp=first_start_time,
-                    protocol="i2s",
-                    data=data_bytes,
-                    annotations=annotations,
-                    errors=[],
+                packet = self._build_stereo_packet(
+                    left_sample, right_sample, first_start_time, end_time, trans_num
                 )
 
                 yield packet
                 trans_num += 1
 
             ws_idx += 1
+
+    def _align_signals(
+        self, bck: NDArray[np.bool_], ws: NDArray[np.bool_], sd: NDArray[np.bool_]
+    ) -> tuple[NDArray[np.bool_], NDArray[np.bool_], NDArray[np.bool_]]:
+        """Align all signals to minimum length.
+
+        Args:
+            bck: Bit clock signal.
+            ws: Word select signal.
+            sd: Serial data signal.
+
+        Returns:
+            Aligned signals.
+        """
+        n_samples = min(len(bck), len(ws), len(sd))
+        return bck[:n_samples], ws[:n_samples], sd[:n_samples]
+
+    def _get_word_edges(
+        self, rising_edges: NDArray[np.intp], start_idx: int, end_idx: int
+    ) -> NDArray[np.intp]:
+        """Get clock edges within word period.
+
+        Args:
+            rising_edges: All rising edge indices.
+            start_idx: Word start index.
+            end_idx: Word end index.
+
+        Returns:
+            Edges within word period.
+        """
+        return rising_edges[(rising_edges >= start_idx) & (rising_edges < end_idx)]
+
+    def _select_data_edges(self, word_edges: NDArray[np.intp]) -> NDArray[np.intp]:
+        """Select data edges based on I2S mode.
+
+        Args:
+            word_edges: All edges in word period.
+
+        Returns:
+            Edges containing valid data.
+        """
+        if self._mode == I2SMode.STANDARD:
+            # Skip first edge (data starts on second edge)
+            return word_edges[1:] if len(word_edges) > 1 else np.array([])
+        elif self._mode == I2SMode.LEFT_JUSTIFIED:
+            return word_edges
+        else:  # RIGHT_JUSTIFIED
+            # Take last bit_depth edges
+            if len(word_edges) >= self._bit_depth:
+                return word_edges[-self._bit_depth :]
+            return word_edges
+
+    def _extract_sample(self, sd: NDArray[np.bool_], data_edges: NDArray[np.intp]) -> int:
+        """Extract and convert sample value.
+
+        Args:
+            sd: Serial data signal.
+            data_edges: Edges to sample.
+
+        Returns:
+            Signed sample value.
+        """
+        sample_bits = []
+        for edge_idx in data_edges[: self._bit_depth]:
+            if edge_idx < len(sd):
+                sample_bits.append(1 if sd[edge_idx] else 0)
+
+        # Pad incomplete samples
+        if len(sample_bits) < self._bit_depth:
+            sample_bits.extend([0] * (self._bit_depth - len(sample_bits)))
+
+        # Convert to signed integer (MSB first, two's complement)
+        sample_value = 0
+        for bit in sample_bits:
+            sample_value = (sample_value << 1) | bit
+
+        # Convert to signed
+        if sample_bits[0] == 1:  # Negative number
+            sample_value = sample_value - (1 << self._bit_depth)
+
+        return sample_value
+
+    def _build_stereo_packet(
+        self, left: int, right: int, start_time: float, end_time: float, sample_num: int
+    ) -> ProtocolPacket:
+        """Build I2S stereo sample packet.
+
+        Args:
+            left: Left channel sample.
+            right: Right channel sample.
+            start_time: Packet start time.
+            end_time: Packet end time.
+            sample_num: Sample number.
+
+        Returns:
+            Protocol packet.
+        """
+        self.put_annotation(
+            start_time,
+            end_time,
+            AnnotationLevel.PACKETS,
+            f"L: {left} / R: {right}",
+        )
+
+        annotations = {
+            "sample_num": sample_num,
+            "left_sample": left,
+            "right_sample": right,
+            "bit_depth": self._bit_depth,
+            "mode": self._mode.value,
+        }
+
+        byte_count = (self._bit_depth + 7) // 8
+        left_bytes = left.to_bytes(byte_count, "little", signed=True)
+        right_bytes = right.to_bytes(byte_count, "little", signed=True)
+        data_bytes = left_bytes + right_bytes
+
+        return ProtocolPacket(
+            timestamp=start_time,
+            protocol="i2s",
+            data=data_bytes,
+            annotations=annotations,
+            errors=[],
+        )
 
 
 def decode_i2s(

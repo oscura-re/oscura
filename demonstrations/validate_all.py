@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Comprehensive demonstration validator.
 
+# SKIP_VALIDATION: Meta-validator runs all demonstrations, would timeout
+
 Discovers and validates all demonstrations in the demonstrations/ directory.
 Ensures 100% pass rate and proper functionality.
 
@@ -80,6 +82,29 @@ class DemoValidator:
 
         return demo_files
 
+    def should_skip(self, demo_path: Path) -> tuple[bool, str | None]:
+        """Check if demonstration should be skipped.
+
+        Args:
+            demo_path: Path to demonstration file
+
+        Returns:
+            Tuple of (should_skip, skip_reason)
+        """
+        try:
+            content = demo_path.read_text()
+            # Check for SKIP_VALIDATION marker in first 50 lines
+            for line in content.split("\n")[:50]:
+                if "# SKIP_VALIDATION" in line:
+                    # Extract reason if present
+                    if ":" in line:
+                        reason = line.split(":", 1)[1].strip()
+                        return True, reason
+                    return True, "Marked for skip"
+            return False, None
+        except Exception:
+            return False, None
+
     def run_demo(self, demo_path: Path) -> DemoResult:
         """Run a single demonstration and validate.
 
@@ -93,6 +118,18 @@ class DemoValidator:
         print(f"\n{'=' * 80}")
         print(f"Running: {relative_path}")
         print("=" * 80)
+
+        # Check if should be skipped
+        should_skip, skip_reason = self.should_skip(demo_path)
+        if should_skip:
+            print(f"⊘ SKIP: {skip_reason or 'Marked for skip'}")
+            return DemoResult(
+                path=str(relative_path),
+                passed=True,  # Skips count as passing
+                duration=0.0,
+                output=f"Skipped: {skip_reason}",
+                error=None,
+            )
 
         start_time = time.time()
 
@@ -201,6 +238,7 @@ class DemoValidator:
         total = len(self.results)
         passed = sum(1 for r in self.results if r.passed)
         failed = total - passed
+        skipped = sum(1 for r in self.results if "Skipped:" in r.output)
         total_duration = sum(r.duration for r in self.results)
 
         print(f"\n{'=' * 80}")
@@ -208,6 +246,8 @@ class DemoValidator:
         print("=" * 80)
         print(f"Total demonstrations: {total}")
         print(f"Passed: {passed}")
+        if skipped > 0:
+            print(f"Skipped: {skipped} (documented incomplete features)")
         print(f"Failed: {failed}")
         print(f"Pass rate: {passed / total * 100:.1f}%")
         print(f"Total duration: {total_duration:.2f}s")

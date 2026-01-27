@@ -25,6 +25,10 @@ class TestClusteringProperties:
                 cluster_messages,
             )
         except ImportError:
+            # SKIP: Valid - Optional clustering module (scikit-learn)
+            # Only skip if sklearn not installed (pip install oscura[ml])
+            # SKIP: Valid - Optional clustering module (scikit-learn)
+            # Only skip if sklearn not installed (pip install oscura[ml])
             pytest.skip("clustering module not available")
 
         n_clusters = 3
@@ -46,6 +50,10 @@ class TestClusteringProperties:
                 cluster_messages,
             )
         except ImportError:
+            # SKIP: Valid - Optional clustering module (scikit-learn)
+            # Only skip if sklearn not installed (pip install oscura[ml])
+            # SKIP: Valid - Optional clustering module (scikit-learn)
+            # Only skip if sklearn not installed (pip install oscura[ml])
             pytest.skip("clustering module not available")
 
         # Ensure we don't ask for more clusters than points
@@ -66,6 +74,10 @@ class TestClusteringProperties:
                 cluster_messages,
             )
         except ImportError:
+            # SKIP: Valid - Optional clustering module (scikit-learn)
+            # Only skip if sklearn not installed (pip install oscura[ml])
+            # SKIP: Valid - Optional clustering module (scikit-learn)
+            # Only skip if sklearn not installed (pip install oscura[ml])
             pytest.skip("clustering module not available")
 
         n_clusters = 3

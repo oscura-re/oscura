@@ -18,7 +18,7 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
@@ -325,11 +325,12 @@ def slew_rate(
     Args:
         trace: Input waveform trace.
         ref_levels: Reference levels as fractions (default 20%-80%).
-        edge_type: Type of edges to measure.
+        edge_type: Type of edges to measure ("rising", "falling", or "both").
         return_all: If True, return array of all slew rates. If False, return mean.
 
     Returns:
         Slew rate in V/s (positive for rising, negative for falling).
+        Returns NaN if no transitions found or amplitude is zero.
 
     Example:
         >>> sr = slew_rate(trace)
@@ -339,69 +340,107 @@ def slew_rate(
         IEEE 181-2011 Section 5.2
     """
     if len(trace.data) < 3:
-        if return_all:
-            return np.array([], dtype=np.float64)
-        return np.nan
+        return np.array([], dtype=np.float64) if return_all else np.nan
 
     data = trace.data
     sample_period = trace.metadata.time_base
 
-    # Find signal levels
+    # Find signal levels and validate
     low, high = _find_levels(data)
     amplitude = high - low
 
     if amplitude <= 0:
-        if return_all:
-            return np.array([], dtype=np.float64)
-        return np.nan
+        return np.array([], dtype=np.float64) if return_all else np.nan
 
     # Calculate reference voltages
     v_low = low + ref_levels[0] * amplitude
     v_high = low + ref_levels[1] * amplitude
     dv = v_high - v_low
 
+    # Measure slew rates for requested edge types
     slew_rates: list[float] = []
 
     if edge_type in ("rising", "both"):
-        # Find rising transitions
-        rising_start = np.where((data[:-1] < v_low) & (data[1:] >= v_low))[0]
-
-        for start_idx in rising_start:
-            # Find where signal reaches v_high
-            remaining = data[start_idx:]
-            above_high = remaining >= v_high
-
-            if np.any(above_high):
-                end_offset = np.argmax(above_high)
-                dt = end_offset * sample_period
-                if dt > 0:
-                    slew_rates.append(float(dv / dt))
+        slew_rates.extend(_measure_rising_slew_rates(data, v_low, v_high, dv, sample_period))
 
     if edge_type in ("falling", "both"):
-        # Find falling transitions
-        falling_start = np.where((data[:-1] > v_high) & (data[1:] <= v_high))[0]
-
-        for start_idx in falling_start:
-            # Find where signal reaches v_low
-            remaining = data[start_idx:]
-            below_low = remaining <= v_low
-
-            if np.any(below_low):
-                end_offset = np.argmax(below_low)
-                dt = end_offset * sample_period
-                if dt > 0:
-                    slew_rates.append(float(-dv / dt))  # Negative for falling
+        slew_rates.extend(_measure_falling_slew_rates(data, v_low, v_high, dv, sample_period))
 
     if len(slew_rates) == 0:
-        if return_all:
-            return np.array([], dtype=np.float64)
-        return np.nan
+        return np.array([], dtype=np.float64) if return_all else np.nan
 
     result = np.array(slew_rates, dtype=np.float64)
+    return result if return_all else float(np.mean(result))
 
-    if return_all:
-        return result
-    return float(np.mean(result))
+
+def _measure_rising_slew_rates(
+    data: NDArray[np.float64],
+    v_low: float,
+    v_high: float,
+    dv: float,
+    sample_period: float,
+) -> list[float]:
+    """Measure slew rates for rising edges.
+
+    Args:
+        data: Signal data.
+        v_low: Low reference voltage.
+        v_high: High reference voltage.
+        dv: Voltage difference between reference levels.
+        sample_period: Time between samples.
+
+    Returns:
+        List of rising slew rates (V/s).
+    """
+    slew_rates: list[float] = []
+    rising_start = np.where((data[:-1] < v_low) & (data[1:] >= v_low))[0]
+
+    for start_idx in rising_start:
+        remaining = data[start_idx:]
+        above_high = remaining >= v_high
+
+        if np.any(above_high):
+            end_offset = np.argmax(above_high)
+            dt = end_offset * sample_period
+            if dt > 0:
+                slew_rates.append(float(dv / dt))
+
+    return slew_rates
+
+
+def _measure_falling_slew_rates(
+    data: NDArray[np.float64],
+    v_low: float,
+    v_high: float,
+    dv: float,
+    sample_period: float,
+) -> list[float]:
+    """Measure slew rates for falling edges.
+
+    Args:
+        data: Signal data.
+        v_low: Low reference voltage.
+        v_high: High reference voltage.
+        dv: Voltage difference between reference levels.
+        sample_period: Time between samples.
+
+    Returns:
+        List of falling slew rates (negative V/s).
+    """
+    slew_rates: list[float] = []
+    falling_start = np.where((data[:-1] > v_high) & (data[1:] <= v_high))[0]
+
+    for start_idx in falling_start:
+        remaining = data[start_idx:]
+        below_low = remaining <= v_low
+
+        if np.any(below_low):
+            end_offset = np.argmax(below_low)
+            dt = end_offset * sample_period
+            if dt > 0:
+                slew_rates.append(float(-dv / dt))  # Negative for falling
+
+    return slew_rates
 
 
 def phase(
@@ -456,13 +495,13 @@ def _phase_edge(
     edges2 = _get_edge_timestamps(trace2, "rising", 0.5)
 
     if len(edges1) < 2 or len(edges2) < 2:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Calculate period from first signal
     period1 = np.mean(np.diff(edges1))
 
     if period1 <= 0:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Calculate phase from edge differences
     phase_times: list[float] = []
@@ -475,7 +514,7 @@ def _phase_edge(
         phase_times.append(diffs[idx])
 
     if len(phase_times) == 0:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     mean_phase_time = np.mean(phase_times)
 
@@ -505,7 +544,7 @@ def _phase_fft(
     data2 = data2[:n]
 
     if n < 16:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Compute FFTs
     fft1 = np.fft.rfft(data1)
@@ -543,12 +582,7 @@ def skew(
         edge_type: Type of edges to use for comparison.
 
     Returns:
-        Dictionary with skew statistics:
-            - skew_values: Array of skew for each non-reference trace
-            - min: Minimum skew
-            - max: Maximum skew
-            - mean: Mean skew
-            - range: Max - min (total skew spread)
+        Dictionary with skew statistics (skew_values, min, max, mean, range).
 
     Raises:
         ValueError: If fewer than 2 traces or reference_idx out of range.
@@ -562,52 +596,103 @@ def skew(
     """
     if len(traces) < 2:
         raise ValueError("Need at least 2 traces for skew measurement")
-
     if reference_idx >= len(traces):
         raise ValueError(f"reference_idx {reference_idx} out of range")
 
-    # Get reference edges
-    ref_trace = traces[reference_idx]
-    ref_edges = _get_edge_timestamps(ref_trace, edge_type, 0.5)
+    ref_edges = _get_edge_timestamps(traces[reference_idx], edge_type, 0.5)
 
     if len(ref_edges) == 0:
-        return {
-            "skew_values": np.array([], dtype=np.float64),
-            "min": float(np.nan),
-            "max": float(np.nan),
-            "mean": float(np.nan),
-            "range": float(np.nan),
-        }
+        return _empty_skew_result()
 
-    # Compute skew for all traces (including reference which has 0 skew)
+    all_skews, skew_values = _compute_all_skews(traces, reference_idx, ref_edges, edge_type)
+
+    return _build_skew_result(skew_values, all_skews)
+
+
+def _empty_skew_result() -> dict[str, float | NDArray[np.float64]]:
+    """Return empty skew result dictionary.
+
+    Returns:
+        Dictionary with empty/NaN skew values.
+    """
+    return {
+        "skew_values": np.array([], dtype=np.float64),
+        "min": float(np.nan),
+        "max": float(np.nan),
+        "mean": float(np.nan),
+        "range": float(np.nan),
+    }
+
+
+def _compute_all_skews(
+    traces: list[WaveformTrace | DigitalTrace],
+    reference_idx: int,
+    ref_edges: NDArray[np.float64],
+    edge_type: Literal["rising", "falling"],
+) -> tuple[list[float], list[float]]:
+    """Compute skew values for all traces.
+
+    Args:
+        traces: List of traces to analyze.
+        reference_idx: Index of reference trace.
+        ref_edges: Reference edge timestamps.
+        edge_type: Edge type to analyze.
+
+    Returns:
+        Tuple of (all_skews including reference, skew_values excluding reference).
+    """
     all_skews: list[float] = []
     skew_values: list[float] = []
 
     for i, trace in enumerate(traces):
         if i == reference_idx:
-            # Reference has zero skew by definition
             all_skews.append(0.0)
             continue
 
         trace_edges = _get_edge_timestamps(trace, edge_type, 0.5)
-
-        if len(trace_edges) == 0:
-            skew_val = np.nan
-        else:
-            # Match edges and compute skew
-            edge_skews = []
-            for ref_edge in ref_edges:
-                # Find nearest edge in this trace
-                diffs = np.abs(trace_edges - ref_edge)
-                nearest_idx = np.argmin(diffs)
-                skew_val_edge = trace_edges[nearest_idx] - ref_edge
-                edge_skews.append(skew_val_edge)
-
-            skew_val = float(np.mean(edge_skews)) if len(edge_skews) > 0 else np.nan
+        skew_val = _compute_trace_skew(trace_edges, ref_edges)
 
         skew_values.append(skew_val)
         all_skews.append(skew_val)
 
+    return all_skews, skew_values
+
+
+def _compute_trace_skew(trace_edges: NDArray[np.float64], ref_edges: NDArray[np.float64]) -> float:
+    """Compute skew for a single trace relative to reference.
+
+    Args:
+        trace_edges: Edge timestamps for trace.
+        ref_edges: Reference edge timestamps.
+
+    Returns:
+        Mean skew value or NaN if no edges.
+    """
+    if len(trace_edges) == 0:
+        return float(np.nan)
+
+    edge_skews = []
+    for ref_edge in ref_edges:
+        diffs = np.abs(trace_edges - ref_edge)
+        nearest_idx = np.argmin(diffs)
+        skew_val_edge = trace_edges[nearest_idx] - ref_edge
+        edge_skews.append(skew_val_edge)
+
+    return float(np.mean(edge_skews)) if len(edge_skews) > 0 else float(np.nan)
+
+
+def _build_skew_result(
+    skew_values: list[float], all_skews: list[float]
+) -> dict[str, float | NDArray[np.float64]]:
+    """Build final skew result dictionary.
+
+    Args:
+        skew_values: Skew values excluding reference.
+        all_skews: Skew values including reference.
+
+    Returns:
+        Dictionary with skew statistics.
+    """
     skew_arr = np.array(skew_values, dtype=np.float64)
     all_skews_arr = np.array(all_skews, dtype=np.float64)
     valid_all_skews = all_skews_arr[~np.isnan(all_skews_arr)]
@@ -615,13 +700,12 @@ def skew(
     if len(valid_all_skews) == 0:
         return {
             "skew_values": skew_arr,
-            "min": np.nan,
-            "max": np.nan,
-            "mean": np.nan,
-            "range": np.nan,
+            "min": float(np.nan),
+            "max": float(np.nan),
+            "mean": float(np.nan),
+            "range": float(np.nan),
         }
 
-    # Compute statistics across ALL traces (including reference)
     return {
         "skew_values": skew_arr,
         "min": float(np.min(valid_all_skews)),
@@ -673,73 +757,141 @@ def recover_clock_fft(
     References:
         IEEE 1241-2010 Section 4.1
     """
+    # Prepare data and validate
     data = trace.data.astype(np.float64) if isinstance(trace, DigitalTrace) else trace.data
-
-    n = len(data)
     sample_rate = trace.metadata.sample_rate
+    _validate_fft_requirements(len(data))
 
-    # FFT requires sufficient samples for reliable frequency resolution
-    # Rule of thumb: At least 4-5 cycles of the signal for accurate peak detection
-    # With typical bit rates, this means ~100-200 samples minimum
-    min_samples = 64  # Increased from 16 for better frequency resolution
-    if n < min_samples:
+    # Set frequency range
+    min_freq_val, max_freq_val = _determine_frequency_range(min_freq, max_freq, sample_rate)
+
+    # Compute FFT spectrum
+    freq, magnitude = _compute_fft_spectrum(data, sample_rate)
+
+    # Find peak frequency
+    peak_freq, peak_mag, valid_indices = _find_peak_frequency(
+        freq, magnitude, min_freq_val, max_freq_val
+    )
+
+    # Calculate confidence
+    confidence = _calculate_fft_confidence(magnitude, peak_mag, valid_indices)
+
+    # Refine frequency with interpolation
+    peak_freq_refined = _refine_peak_frequency(peak_freq, magnitude, freq, sample_rate, len(data))
+
+    # Warn if low confidence
+    _check_confidence_and_warn(confidence, peak_freq_refined)
+
+    period = 1.0 / peak_freq_refined if peak_freq_refined > 0 else np.nan
+
+    return ClockRecoveryResult(
+        frequency=float(peak_freq_refined),
+        period=float(period),
+        method="fft",
+        confidence=float(confidence),
+    )
+
+
+def _validate_fft_requirements(n_samples: int) -> None:
+    """Validate trace has enough samples for FFT."""
+    min_samples = 64
+    if n_samples < min_samples:
         raise InsufficientDataError(
             f"FFT clock recovery requires at least {min_samples} samples for reliable frequency detection",
             required=min_samples,
-            available=n,
+            available=n_samples,
             analysis_type="clock_recovery_fft",
             fix_hint="Use edge-based clock recovery for short signals or acquire more data",
         )
 
-    # Set frequency range defaults
-    if min_freq is None:
-        min_freq = sample_rate / 1000
-    if max_freq is None:
-        max_freq = sample_rate / 2
 
-    # Remove DC and compute FFT
+def _determine_frequency_range(
+    min_freq: float | None,
+    max_freq: float | None,
+    sample_rate: float,
+) -> tuple[float, float]:
+    """Determine frequency range for FFT analysis."""
+    min_freq_val = min_freq if min_freq is not None else sample_rate / 1000
+    max_freq_val = max_freq if max_freq is not None else sample_rate / 2
+    return min_freq_val, max_freq_val
+
+
+def _compute_fft_spectrum(
+    data: NDArray[Any],
+    sample_rate: float,
+) -> tuple[NDArray[Any], NDArray[Any]]:
+    """Compute FFT spectrum of signal."""
+    n = len(data)
     data_centered = data - np.mean(data)
     nfft = int(2 ** np.ceil(np.log2(n)))
     spectrum = np.fft.rfft(data_centered, n=nfft)
     freq = np.fft.rfftfreq(nfft, d=1.0 / sample_rate)
     magnitude = np.abs(spectrum)
+    return freq, magnitude
 
-    # Apply frequency range mask
+
+def _find_peak_frequency(
+    freq: NDArray[Any],
+    magnitude: NDArray[Any],
+    min_freq: float,
+    max_freq: float,
+) -> tuple[float, float, NDArray[Any]]:
+    """Find peak frequency in specified range."""
     mask = (freq >= min_freq) & (freq <= max_freq)
     valid_indices = np.where(mask)[0]
 
     if len(valid_indices) == 0:
-        # No valid frequencies in range - signal may be DC or out of range
         raise ValueError(
             f"No frequency components found in range [{min_freq:.0f} Hz, {max_freq:.0f} Hz]. "
             f"Signal may be constant (DC) or frequency is outside specified range. "
             f"Adjust min_freq/max_freq or check signal integrity."
         )
 
-    # Find peak in valid range
     local_peak_idx = np.argmax(magnitude[valid_indices])
     peak_idx = valid_indices[local_peak_idx]
     peak_freq = freq[peak_idx]
     peak_mag = magnitude[peak_idx]
 
-    # Calculate confidence (ratio of peak to RMS of spectrum)
-    rms_mag = np.sqrt(np.mean(magnitude[valid_indices] ** 2))
-    confidence = min(1.0, (peak_mag / rms_mag - 1) / 10) if rms_mag > 0 else 0.0
+    return peak_freq, peak_mag, valid_indices
 
-    # Parabolic interpolation for more accurate frequency
+
+def _calculate_fft_confidence(
+    magnitude: NDArray[Any],
+    peak_mag: float,
+    valid_indices: NDArray[Any],
+) -> float:
+    """Calculate confidence score for FFT peak."""
+    rms_mag = np.sqrt(np.mean(magnitude[valid_indices] ** 2))
+    return min(1.0, (peak_mag / rms_mag - 1) / 10) if rms_mag > 0 else 0.0
+
+
+def _refine_peak_frequency(
+    peak_freq: float,
+    magnitude: NDArray[Any],
+    freq: NDArray[Any],
+    sample_rate: float,
+    n_data: int,
+) -> float:
+    """Refine peak frequency using parabolic interpolation."""
+    peak_idx = np.argmin(np.abs(freq - peak_freq))
+
     if 0 < peak_idx < len(magnitude) - 1:
         alpha = magnitude[peak_idx - 1]
         beta = magnitude[peak_idx]
         gamma = magnitude[peak_idx + 1]
 
         if beta > alpha and beta > gamma:
+            nfft = int(2 ** np.ceil(np.log2(n_data)))
             freq_resolution = sample_rate / nfft
             delta = 0.5 * (alpha - gamma) / (alpha - 2 * beta + gamma + 1e-12)
-            peak_freq = peak_freq + delta * freq_resolution
+            refined: float = float(peak_freq + delta * freq_resolution)
+            return refined
 
-    period = 1.0 / peak_freq if peak_freq > 0 else np.nan
+    return peak_freq
 
-    # Warn on low confidence results (may be unreliable)
+
+def _check_confidence_and_warn(confidence: float, peak_freq: float) -> None:
+    """Warn if confidence is low."""
     if confidence < 0.5:
         import warnings
 
@@ -748,15 +900,8 @@ def recover_clock_fft(
             f"Detected frequency: {peak_freq / 1e6:.3f} MHz. "
             f"Consider using longer signal, edge-based recovery, or verifying signal periodicity.",
             UserWarning,
-            stacklevel=2,
+            stacklevel=3,
         )
-
-    return ClockRecoveryResult(
-        frequency=float(peak_freq),
-        period=float(period),
-        method="fft",
-        confidence=float(confidence),
-    )
 
 
 def recover_clock_edge(
@@ -1038,13 +1183,13 @@ def peak_to_peak_jitter(
     edges = _get_edge_timestamps(trace, edge_type, threshold)
 
     if len(edges) < 3:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Calculate periods
     periods = np.diff(edges)
 
     if len(periods) < 2:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Pk-Pk jitter is the range of period variations
     jitter_pp = float(np.max(periods) - np.min(periods))

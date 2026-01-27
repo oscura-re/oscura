@@ -91,97 +91,292 @@ def detect_checksum_fields(
     if not messages:
         return []
 
-    # Convert all messages to bytes
+    byte_messages = _convert_messages_to_bytes(messages)
+    min_len = min(len(msg) for msg in byte_messages)
+
+    if min_len < 2:
+        return []
+
+    if candidate_offsets is None:
+        candidate_offsets = _generate_default_candidate_offsets(min_len)
+
+    candidates = _test_candidate_offsets(byte_messages, candidate_offsets, min_len)
+    candidates.sort(key=lambda c: c.correlation, reverse=True)
+
+    return candidates
+
+
+def _generate_default_candidate_offsets(min_len: int) -> list[int]:
+    """Generate default candidate positions in header and trailer."""
+    header_positions = list(range(min(16, min_len - 1)))
+    trailer_start = max(0, min_len - 16)
+    trailer_positions = list(range(trailer_start, min_len - 1))
+    return list(set(header_positions + trailer_positions))
+
+
+def _test_candidate_offsets(
+    byte_messages: list[bytes], candidate_offsets: list[int], min_len: int
+) -> list[ChecksumCandidate]:
+    """Test each candidate offset for checksum correlation."""
+    candidates = []
+
+    for offset in candidate_offsets:
+        for size in [1, 2, 4]:
+            if offset + size > min_len:
+                continue
+
+            candidate = _analyze_field_correlation(byte_messages, offset, size, min_len)
+            if candidate is not None:
+                candidates.append(candidate)
+
+    return candidates
+
+
+def _analyze_field_correlation(
+    byte_messages: list[bytes], offset: int, size: int, min_len: int
+) -> ChecksumCandidate | None:
+    """Analyze correlation between field and message content."""
+    field_values = []
+    content_hashes = []
+
+    for msg in byte_messages:
+        if len(msg) < offset + size:
+            continue
+
+        field_bytes = msg[offset : offset + size]
+        field_value = int.from_bytes(field_bytes, byteorder="big")
+        field_values.append(field_value)
+
+        content = msg[:offset] + msg[offset + size :]
+        content_hash = hash(content)
+        content_hashes.append(content_hash)
+
+    if len(field_values) < 2:
+        return None
+
+    correlation = _calculate_field_correlation(content_hashes, field_values)
+
+    if correlation < 0.3:
+        return None
+
+    position: Literal["header", "trailer"] = "header" if offset < min_len // 2 else "trailer"
+    likely_scope = (offset + size, min_len) if position == "header" else (0, offset)
+
+    return ChecksumCandidate(
+        offset=offset,
+        size=size,
+        position=position,
+        correlation=correlation,
+        likely_scope=likely_scope,
+    )
+
+
+def _calculate_field_correlation(content_hashes: list[int], field_values: list[int]) -> float:
+    """Calculate correlation between content and field variability."""
+    unique_content = len(set(content_hashes))
+    unique_fields = len(set(field_values))
+
+    if unique_content > 1:
+        return min(1.0, unique_fields / unique_content)
+
+    return 0.0
+
+
+def _convert_messages_to_bytes(messages: list[DataType]) -> list[bytes]:
+    """Convert messages to bytes format.
+
+    Args:
+        messages: List of messages in various formats.
+
+    Returns:
+        List of messages as bytes objects.
+    """
     byte_messages = []
     for msg in messages:
         if isinstance(msg, np.ndarray):
             byte_messages.append(msg.tobytes() if msg.dtype == np.uint8 else bytes(msg.flatten()))
         else:
             byte_messages.append(bytes(msg))
+    return byte_messages
 
-    # Find minimum message length
-    min_len = min(len(msg) for msg in byte_messages)
 
-    if min_len < 2:
-        return []
+def _get_algorithms_for_size(size: int) -> list[str]:
+    """Get list of checksum algorithms to test for given field size.
 
-    # Determine candidate positions
-    if candidate_offsets is None:
-        # Check header (first 16 bytes) and trailer (last 16 bytes)
-        header_positions = list(range(min(16, min_len - 1)))
-        trailer_start = max(0, min_len - 16)
-        trailer_positions = list(range(trailer_start, min_len - 1))
-        candidate_offsets = list(set(header_positions + trailer_positions))
+    Args:
+        size: Field size in bytes (1, 2, or 4).
 
-    candidates = []
+    Returns:
+        List of algorithm names to test.
+    """
+    if size == 1:
+        return ["xor", "sum8"]
+    elif size == 2:
+        return ["sum16_big", "sum16_little", "crc16_ccitt", "crc16_ibm", "crc16", "checksum"]
+    elif size == 4:
+        return ["crc32"]
+    return []
 
-    # Test each candidate offset for different field sizes
-    for offset in candidate_offsets:
-        for size in [1, 2, 4]:
-            if offset + size > min_len:
-                continue
 
-            # Extract field values and content
-            field_values = []
-            content_hashes = []
+def _normalize_algorithm_name(algo: str) -> str:
+    """Normalize algorithm name to actual function name.
 
-            for msg in byte_messages:
-                if len(msg) < offset + size:
-                    continue
+    Args:
+        algo: Original algorithm name.
 
-                # Extract field value
-                field_bytes = msg[offset : offset + size]
-                field_value = int.from_bytes(field_bytes, byteorder="big")
-                field_values.append(field_value)
+    Returns:
+        Normalized algorithm name.
+    """
+    if algo == "crc16":
+        return "crc16_ccitt"
+    elif algo == "checksum":
+        return "sum16_big"
+    return algo
 
-                # Hash content (excluding the field itself)
-                content = msg[:offset] + msg[offset + size :]
-                content_hash = hash(content)
-                content_hashes.append(content_hash)
 
-            if len(field_values) < 2:
-                continue
+def _get_init_values_for_algorithm(algo: str) -> list[int | None]:
+    """Get list of initialization values to test for algorithm.
 
-            # Calculate correlation between field and content
-            # If field varies with content, it's a good candidate
-            unique_content = len(set(content_hashes))
-            unique_fields = len(set(field_values))
+    Args:
+        algo: Algorithm name.
 
-            if unique_content > 1:
-                # Correlation estimate: how much field varies with content
-                correlation = min(1.0, unique_fields / unique_content)
-            else:
-                correlation = 0.0
+    Returns:
+        List of init values to test (None means use default).
+    """
+    if algo in ["crc16_ccitt", "crc16_ibm"]:
+        return [0x0000, 0xFFFF]
+    return [None]
 
-            # Skip if correlation is too low
-            if correlation < 0.3:
-                continue
 
-            # Determine position (header vs trailer)
-            position: Literal["header", "trailer"] = (
-                "header" if offset < min_len // 2 else "trailer"
+def _extract_checksummed_data(
+    msg: bytes, scope_start: int, scope_end: int, field_offset: int, field_size: int
+) -> bytes:
+    """Extract data region for checksum calculation.
+
+    Args:
+        msg: Full message bytes.
+        scope_start: Start offset of checksummed region.
+        scope_end: End offset of checksummed region.
+        field_offset: Offset of checksum field.
+        field_size: Size of checksum field.
+
+    Returns:
+        Data bytes to be checksummed (excluding checksum field if in range).
+    """
+    if scope_start < field_offset < scope_end:
+        # Exclude checksum field from data
+        return msg[scope_start:field_offset] + msg[field_offset + field_size : scope_end]
+    else:
+        return msg[scope_start:scope_end]
+
+
+def _test_checksum_match(
+    byte_messages: list[bytes],
+    field_offset: int,
+    field_size: int,
+    algo: str,
+    init_val: int | None,
+    scope_start: int,
+    scope_end: int,
+) -> int:
+    """Test if checksum algorithm matches messages in given scope.
+
+    Args:
+        byte_messages: List of message bytes.
+        field_offset: Offset of checksum field.
+        field_size: Size of checksum field in bytes.
+        algo: Algorithm name.
+        init_val: Initialization value for CRC algorithms.
+        scope_start: Start of checksummed region.
+        scope_end: End of checksummed region.
+
+    Returns:
+        Number of messages that match the algorithm.
+    """
+    matches = 0
+
+    for msg in byte_messages:
+        if len(msg) < scope_end:
+            continue
+
+        # Try both big and little endian for field extraction
+        endian_val: Literal["big", "little"]
+        for endian_val in ("big", "little"):
+            expected = int.from_bytes(
+                msg[field_offset : field_offset + field_size], byteorder=endian_val
             )
 
-            # Estimate likely scope
-            if position == "header":
-                likely_scope = (offset + size, min_len)
-            else:
-                likely_scope = (0, offset)
+            data = _extract_checksummed_data(msg, scope_start, scope_end, field_offset, field_size)
 
-            candidates.append(
-                ChecksumCandidate(
-                    offset=offset,
+            # Compute checksum
+            try:
+                if init_val is not None:
+                    computed = compute_checksum(data, algo, init=init_val)
+                else:
+                    computed = compute_checksum(data, algo)
+
+                if computed == expected:
+                    matches += 1
+                    break  # Found match with this endian
+            except Exception:
+                pass
+
+    return matches
+
+
+def _test_algorithm_variant(
+    byte_messages: list[bytes],
+    field_offset: int,
+    size: int,
+    algo: str,
+    init_val: int | None,
+) -> ChecksumMatch | None:
+    """Test an algorithm variant across different scopes.
+
+    Args:
+        byte_messages: List of message bytes.
+        field_offset: Offset of checksum field.
+        size: Field size in bytes.
+        algo: Original algorithm name.
+        init_val: Initialization value for CRC.
+
+    Returns:
+        ChecksumMatch if match rate >= 80%, None otherwise.
+    """
+    actual_algo = _normalize_algorithm_name(algo)
+    best_match = None
+    best_rate = 0.0
+
+    # Try different scopes
+    for scope_start in [0, field_offset + size]:
+        for scope_end in [field_offset, len(byte_messages[0])]:
+            if scope_end <= scope_start:
+                continue
+
+            matches = _test_checksum_match(
+                byte_messages, field_offset, size, actual_algo, init_val, scope_start, scope_end
+            )
+
+            total = sum(1 for msg in byte_messages if len(msg) >= scope_end)
+            if total == 0:
+                continue
+
+            match_rate = matches / total
+
+            # Consider it a match if >= 80% of messages match
+            if match_rate >= 0.8 and match_rate > best_rate:
+                best_rate = match_rate
+                best_match = ChecksumMatch(
+                    algorithm=algo,
+                    offset=field_offset,
                     size=size,
-                    position=position,
-                    correlation=correlation,
-                    likely_scope=likely_scope,
+                    scope_start=scope_start,
+                    scope_end=scope_end,
+                    match_rate=match_rate,
+                    init_value=init_val,
                 )
-            )
 
-    # Sort by correlation descending
-    candidates.sort(key=lambda c: c.correlation, reverse=True)
-
-    return candidates
+    return best_match
 
 
 def identify_checksum_algorithm(
@@ -211,19 +406,10 @@ def identify_checksum_algorithm(
     if not messages:
         return None
 
-    # Convert messages to bytes
-    byte_messages = []
-    for msg in messages:
-        if isinstance(msg, np.ndarray):
-            byte_messages.append(msg.tobytes() if msg.dtype == np.uint8 else bytes(msg.flatten()))
-        else:
-            byte_messages.append(bytes(msg))
+    byte_messages = _convert_messages_to_bytes(messages)
 
-    # Determine field size if not specified
-    if field_size is None:
-        field_sizes = [1, 2, 4]
-    else:
-        field_sizes = [field_size]
+    # Determine field sizes to test
+    field_sizes = [1, 2, 4] if field_size is None else [field_size]
 
     best_match = None
     best_rate = 0.0
@@ -233,103 +419,21 @@ def identify_checksum_algorithm(
         if any(len(msg) < field_offset + size for msg in byte_messages):
             continue
 
-        # Define algorithm tests based on field size
-        if size == 1:
-            algorithms = ["xor", "sum8"]
-        elif size == 2:
-            # Include both big and little endian CRC variants
-            algorithms = [
-                "sum16_big",
-                "sum16_little",
-                "crc16_ccitt",
-                "crc16_ibm",
-                "crc16",
-                "checksum",
-            ]
-        elif size == 4:
-            algorithms = ["crc32"]
-        else:
+        algorithms = _get_algorithms_for_size(size)
+        if not algorithms:
             continue
 
         # Test each algorithm
         for algo in algorithms:
-            # Map algorithm names to computation functions
-            actual_algo = algo
-            if algo == "crc16":
-                actual_algo = "crc16_ccitt"
-            elif algo == "checksum":
-                actual_algo = "sum16_big"
-
-            # For CRC algorithms, try different init values
-            init_values: list[int | None] = [None]
-            if actual_algo in ["crc16_ccitt", "crc16_ibm"]:
-                init_values = [0x0000, 0xFFFF]
+            actual_algo = _normalize_algorithm_name(algo)
+            init_values = _get_init_values_for_algorithm(actual_algo)
 
             for init_val in init_values:
-                # Try different scopes
-                for scope_start in [0, field_offset + size]:
-                    for scope_end in [field_offset, len(byte_messages[0])]:
-                        if scope_end <= scope_start:
-                            continue
+                match = _test_algorithm_variant(byte_messages, field_offset, size, algo, init_val)
 
-                        # Test algorithm on all messages
-                        matches = 0
-                        total = 0
-
-                        for msg in byte_messages:
-                            if len(msg) < scope_end:
-                                continue
-
-                            # Try both big and little endian for field extraction
-                            endian_val: Literal["big", "little"]
-                            for endian_val in ("big", "little"):  # type: ignore[assignment]
-                                expected = int.from_bytes(
-                                    msg[field_offset : field_offset + size], byteorder=endian_val
-                                )
-
-                                # Extract data to checksum
-                                if scope_start < field_offset < scope_end:
-                                    # Exclude checksum field from data
-                                    data = (
-                                        msg[scope_start:field_offset]
-                                        + msg[field_offset + size : scope_end]
-                                    )
-                                else:
-                                    data = msg[scope_start:scope_end]
-
-                                # Compute checksum
-                                try:
-                                    if init_val is not None:
-                                        computed = compute_checksum(
-                                            data, actual_algo, init=init_val
-                                        )
-                                    else:
-                                        computed = compute_checksum(data, actual_algo)
-                                    if computed == expected:
-                                        matches += 1
-                                        break  # Found match with this endian
-                                except Exception:
-                                    pass
-
-                            total += 1
-
-                        if total == 0:
-                            continue
-
-                        match_rate = matches / total
-
-                        # Consider it a match if >= 80% of messages match
-                        if match_rate >= 0.8 and match_rate > best_rate:
-                            best_rate = match_rate
-                            best_match = ChecksumMatch(
-                                algorithm=algo,
-                                offset=field_offset,
-                                size=size,
-                                scope_start=scope_start,
-                                scope_end=scope_end,
-                                match_rate=match_rate,
-                                init_value=init_val,
-                            )
+                if match and match.match_rate > best_rate:
+                    best_rate = match.match_rate
+                    best_match = match
 
     return best_match
 
@@ -344,14 +448,13 @@ def verify_checksums(
 ) -> tuple[int, int]:
     """Verify checksums using identified algorithm.
 
-    : Checksum and CRC Field Detection
-
     Validates checksums across multiple messages using the specified algorithm.
+    Tries both big-endian and little-endian byte orders.
 
     Args:
         messages: List of messages to verify
-        algorithm: Checksum algorithm name
-        field_offset: Offset of checksum field
+        algorithm: Checksum algorithm name (e.g., 'xor', 'sum8', 'crc16', 'crc32')
+        field_offset: Offset of checksum field in message
         scope_start: Start of checksummed data (default: 0)
         scope_end: End of checksummed data (None = message end)
         init_value: Initial value for CRC algorithms (None = use default)
@@ -368,66 +471,122 @@ def verify_checksums(
     if not messages:
         return (0, 0)
 
+    field_size = _get_checksum_field_size(algorithm)
     passed = 0
     failed = 0
 
-    # Determine field size from algorithm
-    if algorithm in ["xor", "sum8"]:
-        field_size = 1
-    elif algorithm.startswith("sum16") or algorithm.startswith("crc16"):
-        field_size = 2
-    elif algorithm == "crc32":
-        field_size = 4
-    else:
-        # Try to infer from first message
-        field_size = 1
-
     for msg in messages:
-        if isinstance(msg, np.ndarray):
-            msg = msg.tobytes() if msg.dtype == np.uint8 else bytes(msg.flatten())
-        else:
-            msg = bytes(msg)
-
-        msg_scope_end = scope_end if scope_end is not None else len(msg)
-
-        if len(msg) < field_offset + field_size or len(msg) < msg_scope_end:
-            failed += 1
-            continue
-
-        # Try both endiannesses
-        matched = False
-        endian_val2: Literal["big", "little"]
-        for endian_val2 in ("big", "little"):  # type: ignore[assignment]
-            expected = int.from_bytes(
-                msg[field_offset : field_offset + field_size], byteorder=endian_val2
-            )
-
-            # Extract data to checksum
-            if scope_start < field_offset < msg_scope_end:
-                data = (
-                    msg[scope_start:field_offset] + msg[field_offset + field_size : msg_scope_end]
-                )
-            else:
-                data = msg[scope_start:msg_scope_end]
-
-            # Compute checksum
-            try:
-                if init_value is not None:
-                    computed = compute_checksum(data, algorithm, init=init_value)
-                else:
-                    computed = compute_checksum(data, algorithm)
-                if computed == expected:
-                    matched = True
-                    break
-            except Exception:
-                pass
-
-        if matched:
+        msg_bytes = _normalize_message_to_bytes(msg)
+        if _verify_single_message(
+            msg_bytes, algorithm, field_offset, field_size, scope_start, scope_end, init_value
+        ):
             passed += 1
         else:
             failed += 1
 
     return (passed, failed)
+
+
+def _get_checksum_field_size(algorithm: str) -> int:
+    """Determine field size in bytes from algorithm name.
+
+    Args:
+        algorithm: Checksum algorithm name.
+
+    Returns:
+        Field size in bytes (1, 2, or 4).
+    """
+    if algorithm in ["xor", "sum8"]:
+        return 1
+    if algorithm.startswith("sum16") or algorithm.startswith("crc16"):
+        return 2
+    if algorithm == "crc32":
+        return 4
+    return 1  # Default to 1 byte
+
+
+def _normalize_message_to_bytes(msg: DataType) -> bytes:
+    """Normalize message to bytes.
+
+    Args:
+        msg: Message as bytes, numpy array, or byte-like object.
+
+    Returns:
+        Message as bytes.
+    """
+    if isinstance(msg, np.ndarray):
+        return msg.tobytes() if msg.dtype == np.uint8 else bytes(msg.flatten())
+    return bytes(msg)
+
+
+def _verify_single_message(
+    msg: bytes,
+    algorithm: str,
+    field_offset: int,
+    field_size: int,
+    scope_start: int,
+    scope_end: int | None,
+    init_value: int | None,
+) -> bool:
+    """Verify checksum for a single message.
+
+    Args:
+        msg: Message bytes.
+        algorithm: Checksum algorithm name.
+        field_offset: Offset of checksum field.
+        field_size: Size of checksum field in bytes.
+        scope_start: Start of checksummed data.
+        scope_end: End of checksummed data (None = message end).
+        init_value: Initial value for CRC algorithms.
+
+    Returns:
+        True if checksum matches, False otherwise.
+    """
+    msg_scope_end = scope_end if scope_end is not None else len(msg)
+
+    # Validate message length
+    if len(msg) < field_offset + field_size or len(msg) < msg_scope_end:
+        return False
+
+    # Try both endiannesses
+    for endian in ("big", "little"):
+        expected = int.from_bytes(msg[field_offset : field_offset + field_size], byteorder=endian)
+
+        # Extract data to checksum (excluding checksum field)
+        data = _extract_checksummed_data(msg, scope_start, msg_scope_end, field_offset, field_size)
+
+        # Compute and compare checksum
+        if _compute_and_compare(data, algorithm, expected, init_value):
+            return True
+
+    return False
+
+
+def _compute_and_compare(
+    data: bytes,
+    algorithm: str,
+    expected: int,
+    init_value: int | None,
+) -> bool:
+    """Compute checksum and compare with expected value.
+
+    Args:
+        data: Data to checksum.
+        algorithm: Checksum algorithm name.
+        expected: Expected checksum value.
+        init_value: Initial value for CRC algorithms.
+
+    Returns:
+        True if computed checksum matches expected.
+    """
+    try:
+        if init_value is not None:
+            computed = compute_checksum(data, algorithm, init=init_value)
+        else:
+            computed = compute_checksum(data, algorithm)
+        return computed == expected
+    except Exception:
+        return False
 
 
 def compute_checksum(data: bytes, algorithm: str, **kwargs: Any) -> int:

@@ -151,27 +151,30 @@ def _render_html(report: Report, path: Path, **kwargs: Any) -> None:
 
 def _render_markdown(report: Report, path: Path, **kwargs: Any) -> None:
     """Render to Markdown."""
-    # Generate Markdown content
-    content = f"# {report.config.title}\n\n"
+    # Use list + join for O(n) string building instead of O(n²) +=
+    content_parts = [f"# {report.config.title}\n\n"]
 
     if hasattr(report.config, "author") and report.config.author:
-        content += f"**Author:** {report.config.author}  \n"
+        content_parts.append(f"**Author:** {report.config.author}  \n")
 
-    content += f"**Date:** {report.config.created.strftime('%Y-%m-%d')}\n\n"
+    content_parts.append(f"**Date:** {report.config.created.strftime('%Y-%m-%d')}\n\n")
 
-    # Add sections
+    # Add sections with list.append instead of += in loops
     for section in report.sections:
         if not section.visible:
             continue
 
-        content += f"{'#' * (section.level + 1)} {section.title}\n\n"
+        content_parts.append(f"{'#' * (section.level + 1)} {section.title}\n\n")
 
         if isinstance(section.content, str):
-            content += section.content + "\n\n"
+            content_parts.append(section.content)
+            content_parts.append("\n\n")
         elif isinstance(section.content, list):
             for item in section.content:
-                content += str(item) + "\n\n"
+                content_parts.append(str(item))
+                content_parts.append("\n\n")
 
+    content = "".join(content_parts)
     path.write_text(content)
 
 

@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from tests.hypothesis_strategies import distribution_samples
@@ -17,8 +17,7 @@ class TestDistributionAnalysisProperties:
     @settings(max_examples=50, deadline=None)
     def test_mean_within_data_range(self, samples: np.ndarray) -> None:
         """Property: Mean is within min-max range of data."""
-        if len(samples) == 0:
-            pytest.skip("Empty samples")
+        assume(len(samples) > 0)
 
         mean_val = np.mean(samples)
         min_val = np.min(samples)
@@ -30,8 +29,7 @@ class TestDistributionAnalysisProperties:
     @settings(max_examples=50, deadline=None)
     def test_standard_deviation_non_negative(self, samples: np.ndarray) -> None:
         """Property: Standard deviation is never negative."""
-        if len(samples) == 0:
-            pytest.skip("Empty samples")
+        assume(len(samples) > 0)
 
         std_dev = np.std(samples)
 
@@ -56,8 +54,7 @@ class TestDistributionAnalysisProperties:
     @settings(max_examples=50, deadline=None)
     def test_variance_equals_std_squared(self, samples: np.ndarray) -> None:
         """Property: Variance equals standard deviation squared."""
-        if len(samples) == 0:
-            pytest.skip("Empty samples")
+        assume(len(samples) > 0)
 
         variance = np.var(samples)
         std_dev = np.std(samples)

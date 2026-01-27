@@ -290,8 +290,9 @@ validation_results/
 *FIXES*.md
 *IMPROVEMENTS*.md
 
-# Exceptions: legitimate documentation with these keywords in name
-# (none currently - add here if needed)
+# Exceptions: legitimate historical documentation
+!docs/audits/*COMPLETE*.md
+!docs/audits/*IMPLEMENTATION*.md
 
 # =============================================================================
 # GitHub Configuration Exports
@@ -308,3 +309,5 @@ validation_results/
 !.github/config/*-template.json
 !.github/config/main-branch-ruleset.json
 !.github/config/README.md
+.claude/agent-outputs/
+examples/outputs/

@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from oscura.config.loader import (
+from oscura.core.config.loader import (
     _load_json,
     _load_yaml,
     get_config_value,
@@ -96,7 +96,7 @@ class TestLoadConfigFile:
         config_file.write_text("name: test\n")
 
         # Mock the validate_against_schema function
-        with patch("oscura.config.schema.validate_against_schema") as mock_validate:
+        with patch("oscura.core.config.schema.validate_against_schema") as mock_validate:
             config = load_config_file(config_file, schema="protocol", validate=True)
 
             # Verify validation was called
@@ -108,7 +108,7 @@ class TestLoadConfigFile:
         config_file = tmp_path / "test.yaml"
         config_file.write_text("name: test\n")
 
-        with patch("oscura.config.schema.validate_against_schema") as mock_validate:
+        with patch("oscura.core.config.schema.validate_against_schema") as mock_validate:
             load_config_file(config_file, schema="protocol", validate=False)
 
             # Validation should not be called
@@ -119,7 +119,7 @@ class TestLoadConfigFile:
         config_file = tmp_path / "test.yaml"
         config_file.write_text("name: test\n")
 
-        with patch("oscura.config.defaults.inject_defaults") as mock_inject:
+        with patch("oscura.core.config.defaults.inject_defaults") as mock_inject:
             mock_inject.return_value = {"name": "test", "default": "value"}
 
             config = load_config_file(
@@ -137,7 +137,7 @@ class TestLoadConfigFile:
         config_file = tmp_path / "test.yaml"
         config_file.write_text("name: test\n")
 
-        with patch("oscura.config.defaults.inject_defaults") as mock_inject:
+        with patch("oscura.core.config.defaults.inject_defaults") as mock_inject:
             load_config_file(
                 config_file,
                 schema="protocol",
@@ -152,7 +152,7 @@ class TestLoadConfigFile:
         config_file = tmp_path / "test.yaml"
         config_file.write_text("name: test\n")
 
-        with patch("oscura.config.schema.validate_against_schema") as mock_validate:
+        with patch("oscura.core.config.schema.validate_against_schema") as mock_validate:
             load_config_file(config_file, schema=None, validate=True)
 
             # No validation without schema
@@ -205,7 +205,7 @@ class TestLoadYaml:
         with pytest.raises(ConfigurationError, match="Failed to read"):
             _load_yaml(yaml_file)
 
-    @patch("oscura.config.loader.YAML_AVAILABLE", False)
+    @patch("oscura.core.config.loader.YAML_AVAILABLE", False)
     def test_yaml_not_available(self, tmp_path: Path) -> None:
         """Test error when PyYAML is not installed."""
         yaml_file = tmp_path / "test.yaml"
@@ -505,7 +505,7 @@ class TestSaveConfig:
         with pytest.raises(ConfigurationError, match="Failed to save"):
             save_config(config, config_file)
 
-    @patch("oscura.config.loader.YAML_AVAILABLE", False)
+    @patch("oscura.core.config.loader.YAML_AVAILABLE", False)
     def test_save_yaml_not_available(self, tmp_path: Path) -> None:
         """Test error when PyYAML not available for YAML save."""
         config_file = tmp_path / "config.yaml"

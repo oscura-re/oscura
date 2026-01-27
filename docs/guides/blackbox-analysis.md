@@ -1,7 +1,7 @@
 # Black-Box Protocol Analysis Guide
 
-**Version**: 0.5.1
-**Last Updated**: 2026-01-20
+**Version**: 0.6.0
+**Last Updated**: 2026-01-25
 
 Complete guide to reverse engineering unknown protocols using Oscura's BlackBoxSession.
 
@@ -36,16 +36,17 @@ Black-box protocol analysis is the process of reverse engineering unknown commun
 
 ```python
 from oscura.sessions import BlackBoxSession
-from oscura.acquisition import FileSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 # Create analysis session
 session = BlackBoxSession(name="IoT Device Protocol Analysis")
 
 # Add recordings from different stimuli
-session.add_recording("baseline", FileSource("idle.bin"))
-session.add_recording("button_press", FileSource("button.bin"))
-session.add_recording("temp_25C", FileSource("temp25.bin"))
-session.add_recording("temp_30C", FileSource("temp30.bin"))
+session.add_recording("baseline", osc.load("idle.bin"))
+session.add_recording("button_press", osc.load("button.bin"))
+session.add_recording("temp_25C", osc.load("temp25.bin"))
+session.add_recording("temp_30C", osc.load("temp30.bin"))
 
 # Compare recordings to find differences
 diff = session.compare("baseline", "button_press")
@@ -104,9 +105,9 @@ Compare recordings to identify protocol fields that change based on stimuli.
 
 ```python
 # Record device at different temperatures
-session.add_recording("temp_20C", FileSource("temp20.bin"))
-session.add_recording("temp_25C", FileSource("temp25.bin"))
-session.add_recording("temp_30C", FileSource("temp30.bin"))
+session.add_recording("temp_20C", osc.load("temp20.bin"))
+session.add_recording("temp_25C", osc.load("temp25.bin"))
+session.add_recording("temp_30C", osc.load("temp30.bin"))
 
 # Compare to find temperature field
 diff_20_25 = session.compare("temp_20C", "temp_25C")
@@ -197,24 +198,25 @@ Capture protocol data under controlled conditions.
 
 ```python
 from oscura.sessions import BlackBoxSession
-from oscura.acquisition import FileSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 session = BlackBoxSession(name="Smart Lock Protocol")
 
 # Baseline: device idle
-session.add_recording("idle", FileSource("captures/idle.bin"))
+session.add_recording("idle", osc.load("captures/idle.bin"))
 
 # Stimulus 1: unlock command
-session.add_recording("unlock", FileSource("captures/unlock.bin"))
+session.add_recording("unlock", osc.load("captures/unlock.bin"))
 
 # Stimulus 2: lock command
-session.add_recording("lock", FileSource("captures/lock.bin"))
+session.add_recording("lock", osc.load("captures/lock.bin"))
 
 # Stimulus 3: invalid PIN
-session.add_recording("invalid_pin", FileSource("captures/invalid_pin.bin"))
+session.add_recording("invalid_pin", osc.load("captures/invalid_pin.bin"))
 
 # Stimulus 4: valid PIN
-session.add_recording("valid_pin", FileSource("captures/valid_pin.bin"))
+session.add_recording("valid_pin", osc.load("captures/valid_pin.bin"))
 ```
 
 **Best Practices**:
@@ -373,10 +375,10 @@ Correlate changes across multiple stimuli to improve confidence.
 
 ```python
 # Test multiple related conditions
-session.add_recording("temp_10C", FileSource("temp10.bin"))
-session.add_recording("temp_20C", FileSource("temp20.bin"))
-session.add_recording("temp_30C", FileSource("temp30.bin"))
-session.add_recording("temp_40C", FileSource("temp40.bin"))
+session.add_recording("temp_10C", osc.load("temp10.bin"))
+session.add_recording("temp_20C", osc.load("temp20.bin"))
+session.add_recording("temp_30C", osc.load("temp30.bin"))
+session.add_recording("temp_40C", osc.load("temp40.bin"))
 
 # Analyze correlation
 temp_diffs = [
@@ -408,7 +410,7 @@ Identify message framing and boundaries.
 from oscura.inference.message_format import infer_format
 
 # Load binary data
-with FileSource("capture.bin") as source:
+with osc.load("capture.bin") as source:
     trace = source.read()
 
 # Infer message format
@@ -472,7 +474,7 @@ sm = session.infer_state_machine()
 
 # Load new test data
 test_session = BlackBoxSession(name="Validation")
-test_session.add_recording("test1", FileSource("test1.bin"))
+test_session.add_recording("test1", osc.load("test1.bin"))
 
 # Validate state machine predictions
 validation_results = sm.validate(test_session.get_recording("test1"))
@@ -536,9 +538,9 @@ sudo cp myprotocol.lua /usr/lib/x86_64-linux-gnu/wireshark/plugins/
 
 ```python
 # 1. Add more recordings with varied stimuli
-session.add_recording("stimulus_1", FileSource("stim1.bin"))
-session.add_recording("stimulus_2", FileSource("stim2.bin"))
-session.add_recording("stimulus_3", FileSource("stim3.bin"))
+session.add_recording("stimulus_1", osc.load("stim1.bin"))
+session.add_recording("stimulus_2", osc.load("stim2.bin"))
+session.add_recording("stimulus_3", osc.load("stim3.bin"))
 
 # 2. Check data quality
 for name in session.list_recordings():
@@ -592,7 +594,7 @@ for field in uncertain:
 
 ```python
 # 1. Filter noise before inference
-from oscura.filtering import low_pass
+from oscura.utils.filtering import low_pass
 
 filtered_recordings = {}
 for name in session.list_recordings():
@@ -654,11 +656,11 @@ if check_custom_crc(trace.data):
 session = BlackBoxSession(name="Device XYZ Protocol")
 
 # Baseline
-session.add_recording("baseline_idle", FileSource("baseline/idle_1.bin"))
+session.add_recording("baseline_idle", osc.load("baseline/idle_1.bin"))
 
 # Single variable tests
-session.add_recording("test_unlock", FileSource("tests/unlock_1.bin"))
-session.add_recording("test_lock", FileSource("tests/lock_1.bin"))
+session.add_recording("test_unlock", osc.load("tests/unlock_1.bin"))
+session.add_recording("test_lock", osc.load("tests/lock_1.bin"))
 
 # Multiple samples
 for i in range(5):
@@ -669,9 +671,9 @@ for i in range(5):
 
 ```python
 # Disorganized collection
-session.add_recording("test1", FileSource("data.bin"))
-session.add_recording("test2", FileSource("capture.bin"))
-session.add_recording("other", FileSource("temp.bin"))
+session.add_recording("test1", osc.load("data.bin"))
+session.add_recording("test2", osc.load("capture.bin"))
+session.add_recording("other", osc.load("temp.bin"))
 # No clear relationship between recordings
 ```
 
@@ -690,7 +692,7 @@ for field in spec['fields']:
     print(f"  Hypothesis: {field.field_type} at offset {field.offset}")
 
     # Load validation data
-    validation = FileSource("validation.bin").read()
+    validation = osc.load("validation.bin").read()
 
     # Check if hypothesis holds
     field_data = validation.data[field.offset:field.offset + field.length]
@@ -761,7 +763,8 @@ Full end-to-end example.
 
 ```python
 from oscura.sessions import BlackBoxSession
-from oscura.acquisition import FileSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 from pathlib import Path
 
 # Setup

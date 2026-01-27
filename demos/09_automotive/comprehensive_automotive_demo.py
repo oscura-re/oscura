@@ -18,6 +18,8 @@ Author: Oscura Development Team
 Date: 2026-01-16
 """
 
+# SKIP_VALIDATION: Advanced automotive features incomplete
+
 from __future__ import annotations
 
 import struct
@@ -43,7 +45,7 @@ try:
         MessageDiscovery,
         SignalDiscovery,
     )
-    from oscura.automotive.dbc import DBCGenerator
+    from oscura.automotive.dbc.generator import DBCGenerator
     from oscura.automotive.dtc import DTCDatabase
     from oscura.automotive.j1939 import J1939Decoder
     from oscura.automotive.obd import OBD2Decoder

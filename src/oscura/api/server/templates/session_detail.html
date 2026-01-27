@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Session {{ session.id[:8] }} - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="bi bi-file-earmark-code"></i> {{ session.filename }}
+                </h2>
+                <p class="text-muted">Session ID: <code>{{ session.id }}</code></p>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong>
+                            <span class="session-status status-{{ session.status }}">
+                                {{ session.status }}
+                            </span>
+                        </p>
+                        <p><strong>Created:</strong> {{ session.created_at[:19] }}</p>
+                        <p><strong>Updated:</strong> {{ session.updated_at[:19] }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>File Hash:</strong> <code>{{ session.file_hash[:16] }}...</code></p>
+                    </div>
+                </div>
+
+                {% if protocol_spec %}
+                <hr>
+                <h5>Protocol Specification</h5>
+                <p><strong>Protocol:</strong> {{ protocol_spec.protocol_name }}</p>
+                <p><strong>Messages:</strong> {{ protocol_spec.message_count }}</p>
+                <p><strong>Fields:</strong> {{ protocol_spec.field_count }}</p>
+
+                {% if protocol_spec.fields %}
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Offset</th>
+                                <th>Length</th>
+                                <th>Type</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for field in protocol_spec.fields %}
+                            <tr>
+                                <td>{{ field.name }}</td>
+                                <td>{{ field.offset }}</td>
+                                <td>{{ field.length }}</td>
+                                <td>{{ field.type }}</td>
+                                <td>{{ (field.confidence * 100)|round(1) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-tools"></i> Actions
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="/waveforms/{{ session.id }}" class="btn btn-outline-primary">
+                        <i class="bi bi-graph-up"></i> View Waveforms
+                    </a>
+                    <a href="/reports/{{ session.id }}" class="btn btn-outline-primary">
+                        <i class="bi bi-file-text"></i> View Reports
+                    </a>
+                    <a href="/export/{{ session.id }}" class="btn btn-outline-primary">
+                        <i class="bi bi-download"></i> Export/Download
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

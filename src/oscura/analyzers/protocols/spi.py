@@ -57,17 +57,17 @@ class SPIDecoder(SyncDecoder):
     longname = "Serial Peripheral Interface"
     desc = "SPI bus protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("clk", "CLK", "Clock signal", required=True),
         ChannelDef("mosi", "MOSI", "Master Out Slave In", required=True),
     ]
 
-    optional_channels = [  # noqa: RUF012
+    optional_channels = [
         ChannelDef("miso", "MISO", "Master In Slave Out", required=False),
         ChannelDef("cs", "CS#", "Chip Select (active low)", required=False),
     ]
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef("cpol", "Clock Polarity", "Clock idle state", default=0, values=[0, 1]),
         OptionDef("cpha", "Clock Phase", "Sample edge", default=0, values=[0, 1]),
         OptionDef(
@@ -87,7 +87,7 @@ class SPIDecoder(SyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("bit", "Bit value"),
         ("byte", "Decoded byte"),
         ("word", "Decoded word"),
@@ -152,12 +152,78 @@ class SPIDecoder(SyncDecoder):
             >>> for pkt in decoder.decode(clk=clk, mosi=mosi, miso=miso, sample_rate=1e9):
             ...     print(f"Word: 0x{pkt.annotations['mosi_value']:04X}")
         """
+        clk, mosi, miso, cs, sample_rate = self._prepare_spi_signals(
+            trace, clk, mosi, miso, cs, sample_rate
+        )
+
+        if clk is None or mosi is None:
+            return
+
+        edges = self._find_sample_edges(clk)
+        if len(edges) == 0:
+            return
+
+        mosi_bits: list[int] = []
+        miso_bits: list[int] = []
+        word_start_idx = edges[0]
+        word_num = 0
+
+        for edge_idx in edges:
+            if not self._is_cs_active(cs, edge_idx):
+                mosi_bits = []
+                miso_bits = []
+                continue
+
+            mosi_bits, miso_bits = self._sample_data_lines(
+                mosi, miso, edge_idx, mosi_bits, miso_bits
+            )
+
+            if len(mosi_bits) >= self._word_size:
+                packet = self._build_spi_word_packet(
+                    mosi_bits, miso_bits, word_start_idx, edge_idx, sample_rate, word_num
+                )
+
+                yield packet
+
+                mosi_bits = mosi_bits[self._word_size :]
+                miso_bits = miso_bits[self._word_size :] if miso_bits else []
+                word_start_idx = edge_idx
+                word_num += 1
+
+    def _prepare_spi_signals(
+        self,
+        trace: DigitalTrace | None,
+        clk: NDArray[np.bool_] | None,
+        mosi: NDArray[np.bool_] | None,
+        miso: NDArray[np.bool_] | None,
+        cs: NDArray[np.bool_] | None,
+        sample_rate: float,
+    ) -> tuple[
+        NDArray[np.bool_] | None,
+        NDArray[np.bool_] | None,
+        NDArray[np.bool_] | None,
+        NDArray[np.bool_] | None,
+        float,
+    ]:
+        """Prepare and align all SPI signals.
+
+        Args:
+            trace: Optional trace.
+            clk: Clock signal.
+            mosi: MOSI signal.
+            miso: MISO signal.
+            cs: CS signal.
+            sample_rate: Sample rate.
+
+        Returns:
+            Tuple of aligned signals and sample rate.
+        """
         if trace is not None:
             clk = trace.data
             sample_rate = trace.metadata.sample_rate
 
         if clk is None or mosi is None:
-            return
+            return None, None, None, None, sample_rate
 
         n_samples = min(len(clk), len(mosi))
         if miso is not None:
@@ -172,107 +238,138 @@ class SPIDecoder(SyncDecoder):
         if cs is not None:
             cs = cs[:n_samples]
 
-        # Determine sampling edge based on CPOL and CPHA
-        # CPOL=0: idle low, first edge is rising
-        # CPOL=1: idle high, first edge is falling
-        # CPHA=0: sample on first edge
-        # CPHA=1: sample on second edge
-        if self._cpol == 0:
-            sample_edge = "rising" if self._cpha == 0 else "falling"
-        elif self._cpha == 0:
-            sample_edge = "falling"
-        else:
-            sample_edge = "rising"
+        return clk, mosi, miso, cs, sample_rate
 
-        # Find clock edges
+    def _find_sample_edges(self, clk: NDArray[np.bool_]) -> NDArray[np.intp]:
+        """Find clock edges for sampling based on CPOL/CPHA.
+
+        Args:
+            clk: Clock signal.
+
+        Returns:
+            Array of edge indices.
+        """
+        sample_edge = self._determine_sample_edge()
+
         if sample_edge == "rising":
-            edges = np.where(~clk[:-1] & clk[1:])[0] + 1
+            return np.where(~clk[:-1] & clk[1:])[0] + 1
         else:
-            edges = np.where(clk[:-1] & ~clk[1:])[0] + 1
+            return np.where(clk[:-1] & ~clk[1:])[0] + 1
 
-        if len(edges) == 0:
-            return
+    def _determine_sample_edge(self) -> str:
+        """Determine which clock edge to sample on.
 
-        # Collect bits into words
-        mosi_bits: list[int] = []
-        miso_bits: list[int] = []
-        word_start_idx = edges[0]
-        word_num = 0
+        Returns:
+            "rising" or "falling".
+        """
+        if self._cpol == 0:
+            return "rising" if self._cpha == 0 else "falling"
+        elif self._cpha == 0:
+            return "falling"
+        else:
+            return "rising"
 
-        for edge_idx in edges:
-            # Check if CS is active (if provided)
-            if cs is not None:
-                cs_active = cs[edge_idx] == (self._cs_polarity == 1)
-                if not cs_active:
-                    # CS not active, reset and skip
-                    if mosi_bits:
-                        # Emit partial word if any
-                        pass
-                    mosi_bits = []
-                    miso_bits = []
-                    continue
+    def _is_cs_active(self, cs: NDArray[np.bool_] | None, idx: int) -> bool:
+        """Check if chip select is active.
 
-            # Sample MOSI
-            mosi_bit = 1 if mosi[edge_idx] else 0
-            mosi_bits.append(mosi_bit)
+        Args:
+            cs: CS signal or None.
+            idx: Index to check.
 
-            # Sample MISO if available
-            if miso is not None:
-                miso_bit = 1 if miso[edge_idx] else 0
-                miso_bits.append(miso_bit)
+        Returns:
+            True if CS active or not provided.
+        """
+        if cs is None:
+            return True
+        return bool(cs[idx] == (self._cs_polarity == 1))
 
-            # Check if we have a complete word
-            if len(mosi_bits) >= self._word_size:
-                # Convert bits to value
-                mosi_value = self._bits_to_value(mosi_bits[: self._word_size])
-                miso_value = (
-                    self._bits_to_value(miso_bits[: self._word_size]) if miso_bits else None
-                )
+    def _sample_data_lines(
+        self,
+        mosi: NDArray[np.bool_],
+        miso: NDArray[np.bool_] | None,
+        idx: int,
+        mosi_bits: list[int],
+        miso_bits: list[int],
+    ) -> tuple[list[int], list[int]]:
+        """Sample MOSI and MISO lines at edge.
 
-                # Calculate timing
-                start_time = word_start_idx / sample_rate
-                end_time = edge_idx / sample_rate
+        Args:
+            mosi: MOSI signal.
+            miso: MISO signal or None.
+            idx: Edge index.
+            mosi_bits: Current MOSI bit buffer.
+            miso_bits: Current MISO bit buffer.
 
-                # Encode as bytes
-                byte_count = (self._word_size + 7) // 8
-                mosi_bytes = mosi_value.to_bytes(byte_count, "big")
+        Returns:
+            Updated (mosi_bits, miso_bits).
+        """
+        mosi_bit = 1 if mosi[idx] else 0
+        mosi_bits.append(mosi_bit)
 
-                # Add annotations
-                self.put_annotation(
-                    start_time,
-                    end_time,
-                    AnnotationLevel.WORDS,
-                    f"MOSI: 0x{mosi_value:0{byte_count * 2}X}",
-                    data=mosi_bytes,
-                )
+        if miso is not None:
+            miso_bit = 1 if miso[idx] else 0
+            miso_bits.append(miso_bit)
 
-                annotations = {
-                    "word_num": word_num,
-                    "mosi_bits": mosi_bits[: self._word_size],
-                    "mosi_value": mosi_value,
-                    "word_size": self._word_size,
-                    "mode": self._cpol * 2 + self._cpha,
-                }
+        return mosi_bits, miso_bits
 
-                if miso_value is not None:
-                    annotations["miso_bits"] = miso_bits[: self._word_size]
-                    annotations["miso_value"] = miso_value
+    def _build_spi_word_packet(
+        self,
+        mosi_bits: list[int],
+        miso_bits: list[int],
+        start_idx: int,
+        end_idx: int,
+        sample_rate: float,
+        word_num: int,
+    ) -> ProtocolPacket:
+        """Build SPI word packet.
 
-                packet = ProtocolPacket(
-                    timestamp=start_time,
-                    protocol="spi",
-                    data=mosi_bytes,
-                    annotations=annotations,
-                    errors=[],
-                )
+        Args:
+            mosi_bits: MOSI bit buffer.
+            miso_bits: MISO bit buffer.
+            start_idx: Word start index.
+            end_idx: Word end index.
+            sample_rate: Sample rate.
+            word_num: Word number.
 
-                yield packet
+        Returns:
+            Protocol packet.
+        """
+        mosi_value = self._bits_to_value(mosi_bits[: self._word_size])
+        miso_value = self._bits_to_value(miso_bits[: self._word_size]) if miso_bits else None
 
-                # Reset for next word
-                mosi_bits = mosi_bits[self._word_size :]
-                miso_bits = miso_bits[self._word_size :] if miso_bits else []
-                word_start_idx = edge_idx
-                word_num += 1
+        start_time = start_idx / sample_rate
+        end_time = end_idx / sample_rate
+
+        byte_count = (self._word_size + 7) // 8
+        mosi_bytes = mosi_value.to_bytes(byte_count, "big")
+
+        self.put_annotation(
+            start_time,
+            end_time,
+            AnnotationLevel.WORDS,
+            f"MOSI: 0x{mosi_value:0{byte_count * 2}X}",
+            data=mosi_bytes,
+        )
+
+        annotations = {
+            "word_num": word_num,
+            "mosi_bits": mosi_bits[: self._word_size],
+            "mosi_value": mosi_value,
+            "word_size": self._word_size,
+            "mode": self._cpol * 2 + self._cpha,
+        }
+
+        if miso_value is not None:
+            annotations["miso_bits"] = miso_bits[: self._word_size]
+            annotations["miso_value"] = miso_value
+
+        return ProtocolPacket(
+            timestamp=start_time,
+            protocol="spi",
+            data=mosi_bytes,
+            annotations=annotations,
+            errors=[],
+        )
 
     def _bits_to_value(self, bits: list[int]) -> int:
         """Convert bit list to integer value.

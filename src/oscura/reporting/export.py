@@ -142,68 +142,111 @@ def _export_docx(
     References:
         REPORT-019
     """
+    doc = _create_docx_document()
+    path = output_path.with_suffix(".docx")
+
+    _add_docx_header(doc, report)
+    _add_docx_sections(doc, report)
+
+    doc.save(str(path))
+    return path
+
+
+def _create_docx_document() -> Any:
+    """Create and configure DOCX document.
+
+    Returns:
+        Document object from python-docx.
+
+    Raises:
+        ImportError: If python-docx not installed.
+    """
     try:
-        from docx import Document  # type: ignore[import-not-found]
-        from docx.enum.text import (  # type: ignore[import-not-found]
-            WD_ALIGN_PARAGRAPH,  # type: ignore[import-not-found]
-        )
-        from docx.shared import (  # noqa: F401  # type: ignore[import-not-found]
-            Inches,
-            Pt,
-            RGBColor,
-        )
+        from docx import Document
     except ImportError:
-        raise ImportError(  # noqa: B904
+        raise ImportError(
             "python-docx is required for DOCX export. Install with: pip install python-docx"
         )
+    return Document()
 
-    path = output_path.with_suffix(".docx")
-    doc = Document()
 
-    # Add title
+def _add_docx_header(doc: Any, report: Report) -> None:
+    """Add title and metadata to DOCX document.
+
+    Args:
+        doc: Document object.
+        report: Report to extract metadata from.
+    """
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
     title = doc.add_heading(report.config.title, level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Add metadata
     if report.config.author:
         doc.add_paragraph(f"Author: {report.config.author}")
     doc.add_paragraph(f"Date: {report.config.created.strftime('%Y-%m-%d %H:%M')}")
-    doc.add_paragraph()  # Blank line
+    doc.add_paragraph()
 
-    # Add sections
+
+def _add_docx_sections(doc: Any, report: Report) -> None:
+    """Add all sections to DOCX document.
+
+    Args:
+        doc: Document object.
+        report: Report with sections to add.
+    """
     for section in report.sections:
         if not section.visible:
             continue
 
-        # Section heading
         doc.add_heading(section.title, level=section.level)
+        _add_docx_section_content(doc, section)
+        _add_docx_subsections(doc, section)
 
-        # Section content
-        if isinstance(section.content, str):
-            doc.add_paragraph(section.content)
 
-        elif isinstance(section.content, list):
-            for item in section.content:
-                if isinstance(item, dict):
-                    if item.get("type") == "table":
-                        _add_table_to_docx(doc, item)
-                    elif item.get("type") == "figure":
-                        # Placeholder for figures
-                        doc.add_paragraph(f"[Figure: {item.get('caption', 'N/A')}]")
-                else:
-                    doc.add_paragraph(str(item))
+def _add_docx_section_content(doc: Any, section: Any) -> None:
+    """Add section content to DOCX.
 
-        # Subsections
-        for subsec in section.subsections:
-            if not subsec.visible:
-                continue
-            doc.add_heading(subsec.title, level=subsec.level)
-            if isinstance(subsec.content, str):
-                doc.add_paragraph(subsec.content)
+    Args:
+        doc: Document object.
+        section: Section with content to add.
+    """
+    if isinstance(section.content, str):
+        doc.add_paragraph(section.content)
+    elif isinstance(section.content, list):
+        for item in section.content:
+            _add_docx_content_item(doc, item)
 
-    # Save document
-    doc.save(str(path))
-    return path
+
+def _add_docx_content_item(doc: Any, item: Any) -> None:
+    """Add single content item to DOCX.
+
+    Args:
+        doc: Document object.
+        item: Content item (dict or other).
+    """
+    if isinstance(item, dict):
+        if item.get("type") == "table":
+            _add_table_to_docx(doc, item)
+        elif item.get("type") == "figure":
+            doc.add_paragraph(f"[Figure: {item.get('caption', 'N/A')}]")
+    else:
+        doc.add_paragraph(str(item))
+
+
+def _add_docx_subsections(doc: Any, section: Any) -> None:
+    """Add subsections to DOCX document.
+
+    Args:
+        doc: Document object.
+        section: Section with subsections.
+    """
+    for subsec in section.subsections:
+        if not subsec.visible:
+            continue
+        doc.add_heading(subsec.title, level=subsec.level)
+        if isinstance(subsec.content, str):
+            doc.add_paragraph(subsec.content)
 
 
 def _add_table_to_docx(doc: Any, table_dict: dict[str, Any]) -> None:

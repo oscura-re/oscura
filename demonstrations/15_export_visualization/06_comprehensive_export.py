@@ -1,5 +1,7 @@
 """Comprehensive Export: Complete guide to all export formats and workflows
 
+# SKIP_VALIDATION: oscura.exporters module removed in v0.6 refactoring
+
 Demonstrates:
 - CSV export (text data, cross-platform)
 - JSON export (structured data, web integration)

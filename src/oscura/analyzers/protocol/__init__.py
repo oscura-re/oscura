@@ -1,14 +1,30 @@
 """Protocol decoding module.
 
+.. deprecated:: 0.6.0
+    This module (singular 'protocol') is deprecated in favor of 'protocols' (plural).
+    Use ``from oscura.analyzers.protocols import UARTDecoder`` instead.
+    This module will be removed in v1.0.0.
+
 This module re-exports protocol decoders from the protocols package
 for convenient access. Both import paths are equivalent:
 
-    from oscura.analyzers.protocol import UARTDecoder  # singular (this module)
+    from oscura.analyzers.protocol import UARTDecoder  # singular (deprecated)
     from oscura.analyzers.protocols import UARTDecoder  # plural (recommended)
 
 The plural form (protocols) is recommended as the canonical import path.
 See IMPORT-PATHS.md in the repository root for detailed guidelines.
 """
+
+import warnings
+
+# Issue deprecation warning when this module is imported
+warnings.warn(
+    "Importing from 'oscura.analyzers.protocol' (singular) is deprecated. "
+    "Use 'oscura.analyzers.protocols' (plural) instead. "
+    "This module will be removed in v1.0.0.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 from oscura.analyzers.protocols import (
     CAN_BITRATES,

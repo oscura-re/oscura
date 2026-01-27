@@ -75,71 +75,21 @@ def auto_spectral_config(
     # Analyze signal stationarity
     stationarity_score = _assess_stationarity(trace.data)
 
-    # Determine method based on stationarity
-    if stationarity_score > 0.8:
-        # Stationary - can use simpler methods
-        method = "bartlett"
-        rationale = f"Signal is stationary (score={stationarity_score:.2f}). Bartlett method provides good variance reduction."
-    elif stationarity_score > 0.5:
-        # Moderately stationary - Welch is safest
-        method = "welch"
-        rationale = f"Signal is moderately stationary (score={stationarity_score:.2f}). Welch method with overlap for variance reduction."
-    else:
-        # Non-stationary - need time-frequency analysis or careful windowing
-        method = "welch"
-        rationale = f"Signal is non-stationary (score={stationarity_score:.2f}). Welch method with short segments to track changes."
+    # Select method and window based on signal characteristics
+    method, method_rationale = _select_spectral_method(stationarity_score)
+    window, window_rationale = _select_window_function(dynamic_range_db)
 
-    # Select window function based on dynamic range requirements
-    if dynamic_range_db > 80:
-        window = "blackman-harris"
-        window_rationale = "Blackman-Harris window for high dynamic range (>80 dB)"
-    elif dynamic_range_db > 60:
-        window = "blackman"
-        window_rationale = "Blackman window for good dynamic range (60-80 dB)"
-    elif dynamic_range_db > 40:
-        window = "hamming"
-        window_rationale = "Hamming window for moderate dynamic range (40-60 dB)"
-    else:
-        window = "hann"
-        window_rationale = "Hann window for general purpose (<40 dB)"
+    # Build rationale if requested
+    rationale = f"{method_rationale} {window_rationale}" if log_rationale else ""
 
-    if log_rationale:
-        rationale += " " + window_rationale
-
-    # Determine segment size
+    # Calculate segment sizes and FFT parameters
     n_samples = len(trace.data)
     sample_rate = trace.metadata.sample_rate
-
-    if target_resolution is not None:
-        # User specified resolution
-        nperseg = int(sample_rate / target_resolution)
-        # Round to next power of 2 for efficiency
-        nperseg = 2 ** int(np.ceil(np.log2(nperseg)))
-    # Auto-select based on signal length and stationarity
-    elif stationarity_score > 0.8:
-        # Stationary - can use longer segments
-        nperseg = min(n_samples, 2**14)  # Up to 16k samples
-    else:
-        # Non-stationary - shorter segments
-        nperseg = min(n_samples // 8, 2**12)  # Up to 4k samples
-
-    # Ensure nperseg is reasonable
-    nperseg = max(256, min(nperseg, n_samples // 2))
-
-    # Determine overlap
-    if method == "welch":
-        # Welch typically uses 50% overlap
-        noverlap = nperseg // 2
-    elif method == "bartlett":
-        # Bartlett uses no overlap
-        noverlap = 0
-    else:
-        # Periodogram doesn't use segments
-        noverlap = 0
-
-    # FFT size (usually same as segment size or next power of 2)
+    nperseg = _calculate_segment_size(target_resolution, stationarity_score, n_samples, sample_rate)
+    noverlap = _calculate_overlap(method, nperseg)
     nfft = 2 ** int(np.ceil(np.log2(nperseg)))
 
+    # Build configuration dictionary
     config = {
         "method": method,
         "window": window,
@@ -153,6 +103,98 @@ def auto_spectral_config(
         config["rationale"] = rationale
 
     return config
+
+
+def _select_spectral_method(stationarity_score: float) -> tuple[str, str]:
+    """Select spectral method based on stationarity score.
+
+    Args:
+        stationarity_score: Signal stationarity score (0-1).
+
+    Returns:
+        Tuple of (method_name, rationale).
+    """
+    if stationarity_score > 0.8:
+        return (
+            "bartlett",
+            f"Signal is stationary (score={stationarity_score:.2f}). "
+            "Bartlett method provides good variance reduction.",
+        )
+    elif stationarity_score > 0.5:
+        return (
+            "welch",
+            f"Signal is moderately stationary (score={stationarity_score:.2f}). "
+            "Welch method with overlap for variance reduction.",
+        )
+    else:
+        return (
+            "welch",
+            f"Signal is non-stationary (score={stationarity_score:.2f}). "
+            "Welch method with short segments to track changes.",
+        )
+
+
+def _select_window_function(dynamic_range_db: float) -> tuple[str, str]:
+    """Select window function based on dynamic range requirements.
+
+    Args:
+        dynamic_range_db: Required dynamic range in dB.
+
+    Returns:
+        Tuple of (window_name, rationale).
+    """
+    if dynamic_range_db > 80:
+        return "blackman-harris", "Blackman-Harris window for high dynamic range (>80 dB)"
+    elif dynamic_range_db > 60:
+        return "blackman", "Blackman window for good dynamic range (60-80 dB)"
+    elif dynamic_range_db > 40:
+        return "hamming", "Hamming window for moderate dynamic range (40-60 dB)"
+    else:
+        return "hann", "Hann window for general purpose (<40 dB)"
+
+
+def _calculate_segment_size(
+    target_resolution: float | None,
+    stationarity_score: float,
+    n_samples: int,
+    sample_rate: float,
+) -> int:
+    """Calculate segment size for spectral analysis.
+
+    Args:
+        target_resolution: Target frequency resolution in Hz or None.
+        stationarity_score: Signal stationarity score (0-1).
+        n_samples: Number of samples in signal.
+        sample_rate: Sample rate in Hz.
+
+    Returns:
+        Segment size (nperseg).
+    """
+    if target_resolution is not None:
+        nperseg = int(sample_rate / target_resolution)
+        nperseg = 2 ** int(np.ceil(np.log2(nperseg)))
+    elif stationarity_score > 0.8:
+        nperseg = min(n_samples, 2**14)
+    else:
+        nperseg = min(n_samples // 8, 2**12)
+
+    return max(256, min(nperseg, n_samples // 2))
+
+
+def _calculate_overlap(method: str, nperseg: int) -> int:
+    """Calculate overlap for spectral method.
+
+    Args:
+        method: Spectral method name.
+        nperseg: Segment size.
+
+    Returns:
+        Overlap size in samples.
+    """
+    if method == "welch":
+        return nperseg // 2
+    else:
+        return 0
 
 
 def _assess_stationarity(data: NDArray[np.floating[Any]]) -> float:

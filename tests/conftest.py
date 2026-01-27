@@ -1281,7 +1281,7 @@ def reset_threshold_registry():
             ...
     """
     try:
-        from oscura.config.thresholds import ThresholdRegistry
+        from oscura.core.config.thresholds import ThresholdRegistry
 
         registry = ThresholdRegistry()
         # Reset any session overrides before the test

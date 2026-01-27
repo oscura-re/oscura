@@ -25,44 +25,44 @@ from oscura.core.types import DigitalTrace, ProtocolPacket, WaveformTrace
 logger = logging.getLogger("oscura.cli.decode")
 
 
-@click.command()  # type: ignore[misc]
-@click.argument("file", type=click.Path(exists=True))  # type: ignore[misc]
-@click.option(  # type: ignore[misc]
+@click.command()
+@click.argument("file", type=click.Path(exists=True))
+@click.option(
     "--protocol",
     type=click.Choice(["uart", "spi", "i2c", "can", "auto"], case_sensitive=False),
     default="auto",
     help="Protocol type (default: auto-detect).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--baud-rate",
     type=int,
     default=None,
     help="Baud rate for UART (auto-detect if not specified).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--parity",
     type=click.Choice(["none", "even", "odd"], case_sensitive=False),
     default="none",
     help="Parity for UART (default: none).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--stop-bits",
     type=click.Choice(["1", "2"]),
     default="1",
     help="Stop bits for UART (default: 1).",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--show-errors",
     is_flag=True,
     help="Show only errors with context.",
 )
-@click.option(  # type: ignore[misc]
+@click.option(
     "--output",
     type=click.Choice(["json", "csv", "html", "table"], case_sensitive=False),
     default="table",
     help="Output format (default: table).",
 )
-@click.pass_context  # type: ignore[misc]
+@click.pass_context
 def decode(
     ctx: click.Context,
     file: str,
@@ -198,80 +198,113 @@ def _perform_decoding(
     Returns:
         Dictionary of decoding results.
     """
-    # Import protocol decoders
-    from oscura.inference.protocol import detect_protocol
+    # Build base results
+    results = _build_base_results(trace)
 
+    # Auto-detect protocol if needed
+    detected_protocol, baud_rate = _detect_protocol_if_auto(trace, protocol, baud_rate, results)
+    results["protocol"] = detected_protocol.upper()
+
+    # Decode with appropriate decoder
+    digital_trace = _to_digital(trace)
+    packets, errors = _dispatch_protocol_decode(
+        digital_trace, detected_protocol, baud_rate, parity, stop_bits, show_errors, results
+    )
+
+    # Filter and format results
+    if show_errors:
+        packets = [p for p in packets if p.errors]
+
+    _add_packet_summary(results, packets, errors)
+    return results
+
+
+def _build_base_results(trace: WaveformTrace | DigitalTrace) -> dict[str, Any]:
+    """Build base results dictionary with trace metadata."""
     sample_rate = trace.metadata.sample_rate
     duration_ms = len(trace.data) / sample_rate * 1e3
-
-    results: dict[str, Any] = {
+    return {
         "sample_rate": f"{sample_rate / 1e6:.1f} MHz",
         "samples": len(trace.data),
         "duration": f"{duration_ms:.3f} ms",
     }
 
-    # Auto-detect protocol if requested
-    detected_protocol = protocol
-    detection_confidence = 1.0
 
-    if protocol.lower() == "auto":
-        try:
-            detection = detect_protocol(trace, min_confidence=0.5, return_candidates=True)  # type: ignore[arg-type]
-            detected_protocol = detection["protocol"].lower()
-            detection_confidence = detection["confidence"]
-            results["auto_detection"] = {
-                "protocol": detection["protocol"],
-                "confidence": f"{detection_confidence:.1%}",
-                "candidates": [
-                    {"protocol": c["protocol"], "confidence": f"{c['confidence']:.1%}"}
-                    for c in detection.get("candidates", [])[:3]
-                ],
-            }
-            # Extract config suggestions
-            if "config" in detection:
-                if detected_protocol == "uart" and baud_rate is None:
-                    baud_rate = detection["config"].get("baud_rate")
-        except Exception as e:
-            logger.warning(f"Auto-detection failed: {e}, defaulting to UART")
-            detected_protocol = "uart"
-            detection_confidence = 0.0
+def _detect_protocol_if_auto(
+    trace: WaveformTrace | DigitalTrace,
+    protocol: str,
+    baud_rate: int | None,
+    results: dict[str, Any],
+) -> tuple[str, int | None]:
+    """Auto-detect protocol if requested, otherwise return protocol as-is."""
+    if protocol.lower() != "auto":
+        return protocol, baud_rate
 
-    results["protocol"] = detected_protocol.upper()
+    from oscura.inference.protocol import detect_protocol
 
-    # Convert to digital trace for decoding
-    digital_trace = _to_digital(trace)
+    try:
+        detection = detect_protocol(trace, min_confidence=0.5, return_candidates=True)  # type: ignore[arg-type]
+        detected_protocol = detection["protocol"].lower()
+        results["auto_detection"] = _format_detection_results(detection)
 
-    # Decode based on protocol
-    packets: list[ProtocolPacket] = []
-    errors: list[dict[str, Any]] = []
+        # Extract config suggestions
+        if "config" in detection and detected_protocol == "uart" and baud_rate is None:
+            baud_rate = detection["config"].get("baud_rate")
 
-    if detected_protocol == "uart":
+        return detected_protocol, baud_rate
+    except Exception as e:
+        logger.warning(f"Auto-detection failed: {e}, defaulting to UART")
+        return "uart", baud_rate
+
+
+def _format_detection_results(detection: dict[str, Any]) -> dict[str, Any]:
+    """Format auto-detection results for display."""
+    return {
+        "protocol": detection["protocol"],
+        "confidence": f"{detection['confidence']:.1%}",
+        "candidates": [
+            {"protocol": c["protocol"], "confidence": f"{c['confidence']:.1%}"}
+            for c in detection.get("candidates", [])[:3]
+        ],
+    }
+
+
+def _dispatch_protocol_decode(
+    digital_trace: DigitalTrace,
+    protocol: str,
+    baud_rate: int | None,
+    parity: str,
+    stop_bits: int,
+    show_errors: bool,
+    results: dict[str, Any],
+) -> tuple[list[ProtocolPacket], list[dict[str, Any]]]:
+    """Dispatch to appropriate protocol decoder."""
+    if protocol == "uart":
         packets, errors, protocol_info = _decode_uart(
             digital_trace, baud_rate, parity, stop_bits, show_errors
         )
-        results.update(protocol_info)
-
-    elif detected_protocol == "spi":
+    elif protocol == "spi":
         packets, errors, protocol_info = _decode_spi(digital_trace, show_errors)
-        results.update(protocol_info)
-
-    elif detected_protocol == "i2c":
+    elif protocol == "i2c":
         packets, errors, protocol_info = _decode_i2c(digital_trace, show_errors)
-        results.update(protocol_info)
-
-    elif detected_protocol == "can":
+    elif protocol == "can":
         packets, errors, protocol_info = _decode_can(digital_trace, baud_rate, show_errors)
-        results.update(protocol_info)
+    else:
+        packets, errors, protocol_info = [], [], {}
 
-    # Filter to errors only if requested
-    if show_errors:
-        packets = [p for p in packets if p.errors]
+    results.update(protocol_info)
+    return packets, errors
 
-    # Summarize results
+
+def _add_packet_summary(
+    results: dict[str, Any],
+    packets: list[ProtocolPacket],
+    errors: list[dict[str, Any]],
+) -> None:
+    """Add packet summary and details to results."""
     results["packets_decoded"] = len(packets)
     results["errors_found"] = len(errors)
 
-    # Add packet details
     results["packets"] = [
         {
             "index": i,
@@ -280,17 +313,14 @@ def _perform_decoding(
             "errors": p.errors,
             **{k: v for k, v in (p.annotations or {}).items() if k != "data_bits"},
         }
-        for i, p in enumerate(packets[:100])  # Limit to first 100 packets
+        for i, p in enumerate(packets[:100])
     ]
 
     if len(packets) > 100:
         results["note"] = f"Showing first 100 of {len(packets)} packets"
 
-    # Add error details if any
     if errors:
-        results["error_details"] = errors[:20]  # Limit to first 20 errors
-
-    return results
+        results["error_details"] = errors[:20]
 
 
 def _decode_uart(
@@ -498,29 +528,60 @@ def _decode_can(
     """
     from oscura.analyzers.protocols.can import CANDecoder
 
-    # Try common CAN baud rates if not specified
     if baud_rate is None:
-        common_rates = [500000, 250000, 125000, 1000000]
-        best_rate = 500000
-        max_packets = 0
-
-        for rate in common_rates:
-            try:
-                decoder = CANDecoder(bitrate=rate)
-                test_packets = list(decoder.decode(trace))
-                if len(test_packets) > max_packets:
-                    max_packets = len(test_packets)
-                    best_rate = rate
-            except Exception:
-                continue
-
-        baud_rate = best_rate
+        baud_rate = _detect_can_baud_rate(trace)
 
     decoder = CANDecoder(bitrate=baud_rate)
     packets = list(decoder.decode(trace))
-    errors = []
 
+    errors, arbitration_ids = _extract_can_errors(packets)
+    protocol_info = _build_can_protocol_info(baud_rate, packets, arbitration_ids)
+
+    return packets, errors, protocol_info
+
+
+def _detect_can_baud_rate(trace: DigitalTrace) -> int:
+    """Detect CAN baud rate by trying common rates.
+
+    Args:
+        trace: Digital trace to analyze.
+
+    Returns:
+        Best matching baud rate.
+    """
+    from oscura.analyzers.protocols.can import CANDecoder
+
+    common_rates = [500000, 250000, 125000, 1000000]
+    best_rate = 500000
+    max_packets = 0
+
+    for rate in common_rates:
+        try:
+            decoder = CANDecoder(bitrate=rate)
+            test_packets = list(decoder.decode(trace))
+            if len(test_packets) > max_packets:
+                max_packets = len(test_packets)
+                best_rate = rate
+        except Exception:
+            continue
+
+    return best_rate
+
+
+def _extract_can_errors(
+    packets: list[ProtocolPacket],
+) -> tuple[list[dict[str, Any]], set[int]]:
+    """Extract errors and arbitration IDs from CAN packets.
+
+    Args:
+        packets: Decoded packets.
+
+    Returns:
+        Tuple of (errors list, arbitration ID set).
+    """
+    errors = []
     arbitration_ids: set[int] = set()
+
     for i, pkt in enumerate(packets):
         arb_id = pkt.annotations.get("arbitration_id", 0) if pkt.annotations else 0
         arbitration_ids.add(arb_id)
@@ -536,16 +597,32 @@ def _decode_can(
                     }
                 )
 
-    protocol_info = {
+    return errors, arbitration_ids
+
+
+def _build_can_protocol_info(
+    baud_rate: int, packets: list[ProtocolPacket], arbitration_ids: set[int]
+) -> dict[str, Any]:
+    """Build CAN protocol info dictionary.
+
+    Args:
+        baud_rate: Detected baud rate.
+        packets: Decoded packets.
+        arbitration_ids: Set of arbitration IDs.
+
+    Returns:
+        Protocol info dictionary.
+    """
+    extended_count = sum(1 for p in packets if p.annotations and p.annotations.get("is_extended"))
+
+    info = {
         "bit_rate": f"{baud_rate / 1000:.0f} kbps",
         "messages": len(packets),
         "arbitration_ids": [f"0x{a:03X}" for a in sorted(arbitration_ids)[:10]],
-        "extended_frames": sum(
-            1 for p in packets if p.annotations and p.annotations.get("is_extended")
-        ),
+        "extended_frames": extended_count,
     }
 
     if len(arbitration_ids) > 10:
-        protocol_info["note"] = f"Showing first 10 of {len(arbitration_ids)} arbitration IDs"
+        info["note"] = f"Showing first 10 of {len(arbitration_ids)} arbitration IDs"
 
-    return packets, errors, protocol_info
+    return info

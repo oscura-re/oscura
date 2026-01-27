@@ -70,12 +70,12 @@ def plot_eye(
         colorbar: Show colorbar for density plot.
 
     Returns:
-        Matplotlib Figure object.
+        Matplotlib Figure object with eye diagram.
 
     Raises:
         ImportError: If matplotlib is not available.
         InsufficientDataError: If trace is too short for analysis.
-        ValueError: If clock recovery failed.
+        ValueError: If clock recovery failed or axes has no figure.
 
     Example:
         >>> # With known bit rate
@@ -90,35 +90,82 @@ def plot_eye(
         IEEE 802.3: Ethernet eye diagram specifications
         JEDEC JESD65B: High-Speed Interface Eye Diagram Measurements
     """
+    _validate_matplotlib_available()
+    _validate_trace_length(trace, min_samples=100)
+
+    bit_rate, samples_per_bit = _determine_timing_parameters(
+        trace, bit_rate, clock_recovery, samples_per_bit
+    )
+
+    fig, ax = _prepare_figure(ax)
+    data, n_bits, time_ui = _prepare_eye_data(trace, samples_per_bit)
+
+    _plot_eye_traces(ax, fig, data, n_bits, samples_per_bit, time_ui, cmap, alpha, colorbar)
+    _format_eye_plot(ax, bit_rate, title)
+
+    if show_measurements:
+        eye_metrics = _calculate_eye_metrics(data, samples_per_bit, n_bits)
+        _add_eye_measurements(ax, eye_metrics, time_ui)
+
+    fig.tight_layout()
+    return fig
+
+
+def _validate_matplotlib_available() -> None:
+    """Validate matplotlib is available for plotting.
+
+    Raises:
+        ImportError: If matplotlib not installed.
+    """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
-    if len(trace.data) < 100:
+
+def _validate_trace_length(trace: WaveformTrace, min_samples: int) -> None:
+    """Validate trace has sufficient samples.
+
+    Args:
+        trace: Waveform trace to validate.
+        min_samples: Minimum required samples.
+
+    Raises:
+        InsufficientDataError: If trace too short.
+    """
+    if len(trace.data) < min_samples:
         raise InsufficientDataError(
-            "Eye diagram requires at least 100 samples",
-            required=100,
+            f"Eye diagram requires at least {min_samples} samples",
+            required=min_samples,
             available=len(trace.data),
             analysis_type="eye_diagram",
         )
 
-    # Recover clock if bit_rate not provided
+
+def _determine_timing_parameters(
+    trace: WaveformTrace,
+    bit_rate: float | None,
+    clock_recovery: Literal["fft", "edge"],
+    samples_per_bit: int | None,
+) -> tuple[float, int]:
+    """Determine bit rate and samples per bit.
+
+    Args:
+        trace: Input waveform trace.
+        bit_rate: Bit rate or None for auto-recovery.
+        clock_recovery: Clock recovery method.
+        samples_per_bit: Samples per bit or None for auto-calculation.
+
+    Returns:
+        Tuple of (bit_rate, samples_per_bit).
+
+    Raises:
+        ValueError: If clock recovery fails.
+        InsufficientDataError: If too few samples per bit.
+    """
     if bit_rate is None:
-        from oscura.analyzers.digital.timing import (
-            recover_clock_edge,
-            recover_clock_fft,
-        )
-
-        result = recover_clock_fft(trace) if clock_recovery == "fft" else recover_clock_edge(trace)
-
-        if np.isnan(result.frequency):
-            raise ValueError("Clock recovery failed - cannot determine bit rate")
-
-        bit_rate = result.frequency
-        bit_period = result.period
+        bit_rate, bit_period = _recover_clock(trace, clock_recovery)
     else:
         bit_period = 1.0 / bit_rate
 
-    # Calculate samples per bit
     if samples_per_bit is None:
         samples_per_bit = int(bit_period / trace.metadata.time_base)
 
@@ -130,16 +177,69 @@ def plot_eye(
             analysis_type="eye_diagram",
         )
 
-    # Create figure
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 6))
-    else:
-        fig_temp = ax.get_figure()
-        if fig_temp is None:
-            raise ValueError("Axes must have an associated figure")
-        fig = cast("Figure", fig_temp)
+    return bit_rate, samples_per_bit
 
-    # Extract overlaid bit periods
+
+def _recover_clock(trace: WaveformTrace, method: Literal["fft", "edge"]) -> tuple[float, float]:
+    """Recover clock from signal.
+
+    Args:
+        trace: Input trace.
+        method: Recovery method.
+
+    Returns:
+        Tuple of (bit_rate, bit_period).
+
+    Raises:
+        ValueError: If recovery fails.
+    """
+    from oscura.analyzers.digital.timing import recover_clock_edge, recover_clock_fft
+
+    result = recover_clock_fft(trace) if method == "fft" else recover_clock_edge(trace)
+
+    if np.isnan(result.frequency):
+        raise ValueError("Clock recovery failed - cannot determine bit rate")
+
+    return result.frequency, result.period
+
+
+def _prepare_figure(ax: Axes | None) -> tuple[Figure, Axes]:
+    """Prepare matplotlib figure and axes.
+
+    Args:
+        ax: Existing axes or None to create new.
+
+    Returns:
+        Tuple of (figure, axes).
+
+    Raises:
+        ValueError: If axes has no associated figure.
+    """
+    if ax is None:
+        fig, ax_new = plt.subplots(figsize=(8, 6))
+        return fig, ax_new
+
+    fig_temp = ax.get_figure()
+    if fig_temp is None:
+        raise ValueError("Axes must have an associated figure")
+    return cast("Figure", fig_temp), ax
+
+
+def _prepare_eye_data(
+    trace: WaveformTrace, samples_per_bit: int
+) -> tuple[NDArray[np.floating[Any]], int, NDArray[np.float64]]:
+    """Prepare data for eye diagram plotting.
+
+    Args:
+        trace: Input trace.
+        samples_per_bit: Samples per bit period.
+
+    Returns:
+        Tuple of (data, n_bits, time_ui).
+
+    Raises:
+        InsufficientDataError: If not enough bit periods.
+    """
     data = trace.data
     n_bits = len(data) // samples_per_bit
 
@@ -151,75 +251,126 @@ def plot_eye(
             analysis_type="eye_diagram",
         )
 
-    # Time axis for one bit period (normalized to UI - Unit Interval)
     time_ui = np.linspace(0, 1, samples_per_bit)
+    return data, n_bits, time_ui
 
-    # Overlay traces with density tracking
+
+def _plot_eye_traces(
+    ax: Axes,
+    fig: Figure,
+    data: NDArray[np.floating[Any]],
+    n_bits: int,
+    samples_per_bit: int,
+    time_ui: NDArray[np.float64],
+    cmap: str,
+    alpha: float,
+    colorbar: bool,
+) -> None:
+    """Plot eye traces as density or line overlay.
+
+    Args:
+        ax: Matplotlib axes.
+        fig: Matplotlib figure.
+        data: Waveform data.
+        n_bits: Number of bit periods.
+        samples_per_bit: Samples per bit.
+        time_ui: Time axis in UI.
+        cmap: Colormap name.
+        alpha: Transparency.
+        colorbar: Show colorbar.
+    """
     if cmap != "none":
-        # Use density plot (histogram2d)
-        all_times: list[np.floating[Any]] = []
-        all_voltages: list[np.floating[Any]] = []
-
-        for i in range(n_bits - 1):
-            start_idx = i * samples_per_bit
-            end_idx = start_idx + samples_per_bit
-            if end_idx <= len(data):
-                all_times.extend(time_ui)
-                all_voltages.extend(data[start_idx:end_idx])
-
-        # Create 2D histogram
-        h, xedges, yedges = np.histogram2d(
-            all_times,
-            all_voltages,
-            bins=[200, 200],
-        )
-
-        # Plot as image
-        extent_list = [float(xedges[0]), float(xedges[-1]), float(yedges[0]), float(yedges[-1])]
-        im = ax.imshow(
-            h.T,
-            extent=tuple(extent_list),  # type: ignore[arg-type]
-            origin="lower",
-            aspect="auto",
-            cmap=cmap,
-            interpolation="bilinear",
-        )
-
-        if colorbar:
-            fig.colorbar(im, ax=ax, label="Sample Density")
+        _plot_density_eye(ax, fig, data, n_bits, samples_per_bit, time_ui, cmap, colorbar)
     else:
-        # Simple line overlay
-        for i in range(min(n_bits - 1, 1000)):  # Limit to 1000 traces for performance
-            start_idx = i * samples_per_bit
-            end_idx = start_idx + samples_per_bit
-            if end_idx <= len(data):
-                ax.plot(
-                    time_ui,
-                    data[start_idx:end_idx],
-                    color="blue",
-                    alpha=alpha,
-                    linewidth=0.5,
-                )
+        _plot_line_eye(ax, data, n_bits, samples_per_bit, time_ui, alpha)
 
-    # Labels and formatting
+
+def _plot_density_eye(
+    ax: Axes,
+    fig: Figure,
+    data: NDArray[np.floating[Any]],
+    n_bits: int,
+    samples_per_bit: int,
+    time_ui: NDArray[np.float64],
+    cmap: str,
+    colorbar: bool,
+) -> None:
+    """Plot eye diagram as density heatmap.
+
+    Args:
+        ax: Axes to plot on.
+        fig: Figure for colorbar.
+        data: Waveform data.
+        n_bits: Number of bits.
+        samples_per_bit: Samples per bit.
+        time_ui: Time in UI.
+        cmap: Colormap.
+        colorbar: Show colorbar.
+    """
+    all_times: list[np.floating[Any]] = []
+    all_voltages: list[np.floating[Any]] = []
+
+    for i in range(n_bits - 1):
+        start_idx = i * samples_per_bit
+        end_idx = start_idx + samples_per_bit
+        if end_idx <= len(data):
+            all_times.extend(time_ui)
+            all_voltages.extend(data[start_idx:end_idx])
+
+    h, xedges, yedges = np.histogram2d(all_times, all_voltages, bins=[200, 200])
+    extent_list = [float(xedges[0]), float(xedges[-1]), float(yedges[0]), float(yedges[-1])]
+
+    im = ax.imshow(
+        h.T,
+        extent=tuple(extent_list),  # type: ignore[arg-type]
+        origin="lower",
+        aspect="auto",
+        cmap=cmap,
+        interpolation="bilinear",
+    )
+
+    if colorbar:
+        fig.colorbar(im, ax=ax, label="Sample Density")
+
+
+def _plot_line_eye(
+    ax: Axes,
+    data: NDArray[np.floating[Any]],
+    n_bits: int,
+    samples_per_bit: int,
+    time_ui: NDArray[np.float64],
+    alpha: float,
+) -> None:
+    """Plot eye diagram as overlaid lines.
+
+    Args:
+        ax: Axes to plot on.
+        data: Waveform data.
+        n_bits: Number of bits.
+        samples_per_bit: Samples per bit.
+        time_ui: Time in UI.
+        alpha: Line transparency.
+    """
+    for i in range(min(n_bits - 1, 1000)):  # Limit for performance
+        start_idx = i * samples_per_bit
+        end_idx = start_idx + samples_per_bit
+        if end_idx <= len(data):
+            ax.plot(time_ui, data[start_idx:end_idx], color="blue", alpha=alpha, linewidth=0.5)
+
+
+def _format_eye_plot(ax: Axes, bit_rate: float, title: str | None) -> None:
+    """Format eye diagram plot labels and styling.
+
+    Args:
+        ax: Axes to format.
+        bit_rate: Bit rate for title.
+        title: Custom title or None.
+    """
     ax.set_xlabel("Time (UI)")
     ax.set_ylabel("Voltage (V)")
     ax.set_xlim(0, 1)
-
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title(f"Eye Diagram @ {bit_rate / 1e6:.1f} Mbps")
-
+    ax.set_title(title if title else f"Eye Diagram @ {bit_rate / 1e6:.1f} Mbps")
     ax.grid(True, alpha=0.3)
-
-    # Add eye opening measurements
-    if show_measurements:
-        eye_metrics = _calculate_eye_metrics(data, samples_per_bit, n_bits)
-        _add_eye_measurements(ax, eye_metrics, time_ui)
-
-    fig.tight_layout()
-    return fig
 
 
 def _calculate_eye_metrics(

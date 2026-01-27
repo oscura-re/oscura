@@ -323,10 +323,10 @@ def iqr_outliers(
 
 
 def detect_outliers(
-    trace: WaveformTrace | NDArray[np.floating[Any]],  # type: ignore[name-defined]
+    trace: WaveformTrace | NDArray[np.floating[Any]],
     *,
     method: str = "modified_zscore",
-    **kwargs: Any,  # type: ignore[name-defined]
+    **kwargs: Any,
 ) -> OutlierResult:
     """Detect outliers using specified method.
 

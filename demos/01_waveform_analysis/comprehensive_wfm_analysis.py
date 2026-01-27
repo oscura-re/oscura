@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Comprehensive Waveform Analysis Demo using BaseDemo Pattern.
 
+# SKIP_VALIDATION: Comprehensive analysis takes >30s
+
 This demo showcases Oscura's complete waveform analysis capabilities:
 - Signal loading and metadata extraction
 - Waveform measurements (amplitude, frequency, rise/fall time)

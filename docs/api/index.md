@@ -1,6 +1,6 @@
 # API Reference
 
-> **Version**: 0.5.1 | **Last Updated**: 2026-01-19
+> **Version**: 0.6.0 | **Last Updated**: 2026-01-25
 
 Complete API documentation for Oscura.
 
@@ -55,12 +55,11 @@ fall_time = osc.fall_time(trace)
 duty_cycle = osc.duty_cycle(trace)
 
 # Amplitude
-amplitude = osc.amplitude(trace)
-peak_to_peak = osc.peak_to_peak(trace)
+amplitude = osc.amplitude(trace)  # Same as peak_to_peak (Vpp)
 rms = osc.rms(trace)
 
 # Edges
-edges = osc.find_edges(trace, threshold=0.5)
+edges = osc.detect_edges(trace, threshold=0.5)
 ```
 
 **Full documentation**: [analysis.md](analysis.md)
@@ -178,30 +177,24 @@ vf = osc.velocity_factor(tdr_trace, line_length=0.1)
 
 ```python
 import oscura as osc
-from oscura.comparison import (
-    compare_traces,
-    create_golden,
-    compare_to_golden,
-    create_limit_spec,
-    check_limits,
-    eye_mask,
-    mask_test,
-)
+# Comparison functions available at top-level
+# Use: osc.compare_traces(), osc.create_golden(), etc.
+# Or import from oscura.utils.comparison
 
 # Compare waveforms
-result = compare_traces(measured, reference, tolerance=0.01)
+result = osc.compare_traces(measured, reference, tolerance=0.01)
 
 # Golden reference testing
-golden = create_golden(reference, tolerance_pct=5)
-test_result = compare_to_golden(measured, golden)
+golden = osc.create_golden(reference, tolerance_pct=5)
+test_result = osc.compare_to_golden(measured, golden)
 
 # Limit testing
-spec = create_limit_spec(upper=3.3, lower=2.7)
-limit_result = check_limits(trace, spec)
+spec = osc.create_limit_spec(upper=3.3, lower=2.7)
+limit_result = osc.check_limits(trace, spec)
 
 # Eye diagram mask testing
-mask = eye_mask(eye_width=0.5, eye_height=0.4)
-mask_result = mask_test(eye_trace, mask)
+mask = osc.eye_mask(eye_width=0.5, eye_height=0.4)
+mask_result = osc.mask_test(eye_trace, mask)
 ```
 
 **Full documentation**: [comparison-and-limits.md](comparison-and-limits.md)
@@ -210,7 +203,7 @@ mask_result = mask_test(eye_trace, mask)
 
 ```python
 import oscura as osc
-from oscura.compliance import (
+from oscura.validation.compliance import (
     load_limit_mask,
     check_compliance,
     create_custom_mask,
@@ -245,17 +238,20 @@ generate_compliance_report(
 
 ```python
 import oscura as osc
+from oscura.sessions import BlackBoxSession, GenericSession
 
-# Create and manage analysis sessions
-session = osc.Session(name="Power Supply Analysis")
-trace = session.load_trace("capture.wfm")
-session.annotate("Voltage spike", time=1.5e-6)
-session.record_measurement("rise_time", 2.3e-9, unit="s")
-session.save("analysis.tks")
+# Create analysis session (use BlackBoxSession for protocol RE)
+session = BlackBoxSession(name="Power Supply Analysis")
+# Or use GenericSession for general waveform analysis
+session = GenericSession(name="Power Supply Analysis")
 
-# Resume saved session
-session = osc.load_session("analysis.tks")
-print(session.summary())
+# Add recordings and analyze
+session.add_recording("capture", source)  # Add data source
+results = session.analyze()
+print(results["summary"])
+
+# Export results
+session.export_results("report", "analysis.md")
 
 # Audit trail for compliance
 audit = osc.AuditTrail(secret_key=b"your-secret-key")
@@ -263,6 +259,9 @@ audit.record_action("load_trace", {"file": "data.wfm"})
 assert audit.verify_integrity()
 audit.export_audit_log("audit.json", format="json")
 ```
+
+> **Note**: The legacy `osc.Session()` and `osc.load_session()` APIs have been removed.
+> Use `BlackBoxSession`, `GenericSession`, or `AnalysisSession` from `oscura.sessions` instead.
 
 **Full documentation**: [session-management.md](session-management.md)
 
@@ -289,13 +288,24 @@ save_html_report(report, "report.html")
 ```python
 import oscura as osc
 
-# Export to various formats
-osc.export_csv(trace, "data.csv")
-osc.export_hdf5(trace, "data.h5", compression="gzip")
-osc.export_npz(trace, "data.npz")
-osc.export_json(trace, "data.json")
-osc.export_mat(trace, "data.mat")
-osc.export_pwl(trace, "data.pwl")  # For SPICE
+# For protocol exports (Wireshark dissectors, Scapy layers, Kaitai specs):
+from oscura.export.wireshark import generate_lua_dissector
+from oscura.export.scapy_layer import generate_scapy_layer
+from oscura.export.kaitai_struct import generate_kaitai_spec
+
+# Generate Wireshark dissector from protocol spec
+lua_code = generate_lua_dissector(protocol_spec)
+
+# Generate Scapy layer for packet manipulation
+scapy_code = generate_scapy_layer(protocol_spec)
+
+# Generate Kaitai Struct specification
+kaitai_spec = generate_kaitai_spec(protocol_spec)
+
+# For data export, use session.export_results() or reporting:
+from oscura.reporting import generate_report, save_html_report
+report = generate_report(trace, title="Analysis")
+save_html_report(report, "report.html")
 ```
 
 **Full documentation**: [export.md](export.md)
@@ -364,38 +374,34 @@ osc.export_pwl(trace, "data.pwl")  # For SPICE
 
 ### Comparison & Testing
 
-| Module                      | Description                  |
-| --------------------------- | ---------------------------- |
-| `oscura.comparison`         | Waveform comparison          |
-| `oscura.comparison.compare` | Trace comparison functions   |
-| `oscura.comparison.golden`  | Golden reference testing     |
-| `oscura.comparison.limits`  | Specification limit testing  |
-| `oscura.comparison.mask`    | Mask-based pass/fail testing |
+| Module                           | Description                  |
+| -------------------------------- | ---------------------------- |
+| `oscura.utils.comparison`        | Waveform comparison          |
+| `oscura.utils.comparison.compare`| Trace comparison functions   |
+| `oscura.utils.comparison.golden` | Golden reference testing     |
+| `oscura.utils.comparison.limits` | Specification limit testing  |
+| `oscura.utils.comparison.mask`   | Mask-based pass/fail testing |
 
 ### EMC Compliance
 
-| Module                        | Description                                    |
-| ----------------------------- | ---------------------------------------------- |
-| `oscura.compliance`           | EMC/EMI compliance testing                     |
-| `oscura.compliance.masks`     | Regulatory limit masks (FCC, CISPR, MIL-STD)   |
-| `oscura.compliance.testing`   | Compliance test execution and result analysis  |
-| `oscura.compliance.reporting` | Compliance report generation (HTML, PDF, JSON) |
-| `oscura.compliance.advanced`  | Advanced detectors and interpolation methods   |
+| Module                                 | Description                                    |
+| -------------------------------------- | ---------------------------------------------- |
+| `oscura.validation.compliance`         | EMC/EMI compliance testing                     |
 
 ### Session Management & Audit
 
-| Module              | Description                        |
-| ------------------- | ---------------------------------- |
-| `oscura.session`    | Session management and annotations |
-| `oscura.core.audit` | Audit trail with HMAC verification |
+| Module                  | Description                        |
+| ----------------------- | ---------------------------------- |
+| `oscura.sessions`       | Session management (GenericSession, BlackBoxSession) |
+| `oscura.core.audit`     | Audit trail with HMAC verification |
 
 ### Export & Reporting
 
-| Module                 | Description        |
-| ---------------------- | ------------------ |
-| `oscura.exporters`     | Data exporters     |
-| `oscura.reporting`     | Report generation  |
-| `oscura.visualization` | Plotting utilities |
+| Module                 | Description                 |
+| ---------------------- | --------------------------- |
+| `oscura.export`        | Protocol export (Wireshark, Scapy, Kaitai) |
+| `oscura.reporting`     | Report generation           |
+| `oscura.visualization` | Plotting utilities          |
 
 ## Accessing Documentation
 

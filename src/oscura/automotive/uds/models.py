@@ -16,7 +16,8 @@ class UDSService:
     """A decoded UDS service.
 
     Attributes:
-        sid: Service ID (0x10-0xFF).
+        sid: Service ID (0x10-0xFF). For responses, this is the response SID (e.g., 0x50),
+             not the request SID (0x10).
         name: Human-readable service name.
         request: True if request message, False if positive response.
         sub_function: Sub-function byte (if applicable).
@@ -28,6 +29,11 @@ class UDSService:
     request: bool
     sub_function: int | None = None
     data: bytes = b""
+
+    @property
+    def is_response(self) -> bool:
+        """True if this is a response message."""
+        return not self.request
 
     def __repr__(self) -> str:
         """Human-readable representation."""

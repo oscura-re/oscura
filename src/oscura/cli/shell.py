@@ -45,153 +45,177 @@ def get_oscura_namespace() -> dict[str, Any]:
     """
     namespace: dict[str, Any] = {}
 
-    # Core imports
+    _import_core_oscura(namespace)
+    _import_protocols(namespace)
+    _import_discovery(namespace)
+    _import_common_utilities(namespace)
+
+    return namespace
+
+
+def _import_core_oscura(namespace: dict[str, Any]) -> None:
+    """Import core Oscura functions and types."""
     try:
         import oscura as osc
 
         namespace["osc"] = osc
+        imports = _get_oscura_imports()
+        namespace.update(_build_namespace_dict(imports))
+    except ImportError as e:
+        print(f"Warning: Could not import Oscura: {e}")
 
-        # Auto-import commonly used functions at top level
-        from oscura import (
-            DigitalTrace,
-            ProtocolPacket,
-            TraceMetadata,
-            # Core types
-            WaveformTrace,
-            # Math
-            add,
-            amplitude,
-            band_pass,
-            band_stop,
-            # Statistics
-            basic_stats,
-            detect_edges,
-            differentiate,
-            divide,
-            duty_cycle,
-            enob,
-            fall_time,
-            # Spectral
-            fft,
-            frequency,
-            get_supported_formats,
-            high_pass,
-            histogram,
-            integrate,
-            # Loaders
-            load,
-            # Filtering
-            low_pass,
-            mean,
-            measure,
-            multiply,
-            overshoot,
-            percentiles,
-            period,
-            psd,
-            pulse_width,
-            # Measurements
-            rise_time,
-            rms,
-            sfdr,
-            sinad,
-            snr,
-            spectrogram,
-            subtract,
-            thd,
-            # Digital
-            to_digital,
-            undershoot,
+
+def _get_oscura_imports() -> dict[str, Any]:
+    """Get all Oscura imports as dictionary.
+
+    Returns:
+        Dictionary of imported symbols.
+    """
+    from oscura import (
+        DigitalTrace,
+        ProtocolPacket,
+        TraceMetadata,
+        WaveformTrace,
+        add,
+        amplitude,
+        band_pass,
+        band_stop,
+        basic_stats,
+        detect_edges,
+        differentiate,
+        divide,
+        duty_cycle,
+        enob,
+        fall_time,
+        fft,
+        frequency,
+        get_supported_formats,
+        high_pass,
+        histogram,
+        integrate,
+        load,
+        low_pass,
+        mean,
+        measure,
+        multiply,
+        overshoot,
+        percentiles,
+        period,
+        psd,
+        pulse_width,
+        rise_time,
+        rms,
+        sfdr,
+        sinad,
+        snr,
+        spectrogram,
+        subtract,
+        thd,
+        to_digital,
+        undershoot,
+    )
+
+    return {
+        "WaveformTrace": WaveformTrace,
+        "DigitalTrace": DigitalTrace,
+        "TraceMetadata": TraceMetadata,
+        "ProtocolPacket": ProtocolPacket,
+        "load": load,
+        "get_supported_formats": get_supported_formats,
+        "rise_time": rise_time,
+        "fall_time": fall_time,
+        "frequency": frequency,
+        "period": period,
+        "amplitude": amplitude,
+        "rms": rms,
+        "mean": mean,
+        "overshoot": overshoot,
+        "undershoot": undershoot,
+        "duty_cycle": duty_cycle,
+        "pulse_width": pulse_width,
+        "measure": measure,
+        "fft": fft,
+        "psd": psd,
+        "thd": thd,
+        "snr": snr,
+        "sinad": sinad,
+        "enob": enob,
+        "sfdr": sfdr,
+        "spectrogram": spectrogram,
+        "to_digital": to_digital,
+        "detect_edges": detect_edges,
+        "low_pass": low_pass,
+        "high_pass": high_pass,
+        "band_pass": band_pass,
+        "band_stop": band_stop,
+        "add": add,
+        "subtract": subtract,
+        "multiply": multiply,
+        "divide": divide,
+        "differentiate": differentiate,
+        "integrate": integrate,
+        "basic_stats": basic_stats,
+        "histogram": histogram,
+        "percentiles": percentiles,
+    }
+
+
+def _build_namespace_dict(imports: dict[str, Any]) -> dict[str, Any]:
+    """Build namespace dictionary from imports.
+
+    Args:
+        imports: Dictionary of imported symbols.
+
+    Returns:
+        Namespace dictionary.
+    """
+    return imports
+
+
+def _import_protocols(namespace: dict[str, Any]) -> None:
+    """Import protocol decoders."""
+    try:
+        from oscura.analyzers.protocols import (
+            decode_can,
+            decode_i2c,
+            decode_spi,
+            decode_uart,
         )
 
         namespace.update(
             {
-                "WaveformTrace": WaveformTrace,
-                "DigitalTrace": DigitalTrace,
-                "TraceMetadata": TraceMetadata,
-                "ProtocolPacket": ProtocolPacket,
-                "load": load,
-                "get_supported_formats": get_supported_formats,
-                "rise_time": rise_time,
-                "fall_time": fall_time,
-                "frequency": frequency,
-                "period": period,
-                "amplitude": amplitude,
-                "rms": rms,
-                "mean": mean,
-                "overshoot": overshoot,
-                "undershoot": undershoot,
-                "duty_cycle": duty_cycle,
-                "pulse_width": pulse_width,
-                "measure": measure,
-                "fft": fft,
-                "psd": psd,
-                "thd": thd,
-                "snr": snr,
-                "sinad": sinad,
-                "enob": enob,
-                "sfdr": sfdr,
-                "spectrogram": spectrogram,
-                "to_digital": to_digital,
-                "detect_edges": detect_edges,
-                "low_pass": low_pass,
-                "high_pass": high_pass,
-                "band_pass": band_pass,
-                "band_stop": band_stop,
-                "add": add,
-                "subtract": subtract,
-                "multiply": multiply,
-                "divide": divide,
-                "differentiate": differentiate,
-                "integrate": integrate,
-                "basic_stats": basic_stats,
-                "histogram": histogram,
-                "percentiles": percentiles,
+                "decode_uart": decode_uart,
+                "decode_spi": decode_spi,
+                "decode_i2c": decode_i2c,
+                "decode_can": decode_can,
             }
         )
+    except ImportError:
+        pass
 
-        # Protocol decoders
-        try:
-            from oscura.analyzers.protocols import (
-                decode_can,
-                decode_i2c,
-                decode_spi,
-                decode_uart,
-            )
 
-            namespace.update(
-                {
-                    "decode_uart": decode_uart,
-                    "decode_spi": decode_spi,
-                    "decode_i2c": decode_i2c,
-                    "decode_can": decode_can,
-                }
-            )
-        except ImportError:
-            pass
+def _import_discovery(namespace: dict[str, Any]) -> None:
+    """Import discovery functions."""
+    try:
+        from oscura.discovery import (
+            characterize_signal,
+            decode_protocol,
+            find_anomalies,
+        )
 
-        # Discovery
-        try:
-            from oscura.discovery import (
-                characterize_signal,
-                decode_protocol,
-                find_anomalies,
-            )
+        namespace.update(
+            {
+                "characterize_signal": characterize_signal,
+                "find_anomalies": find_anomalies,
+                "decode_protocol": decode_protocol,
+            }
+        )
+    except ImportError:
+        pass
 
-            namespace.update(
-                {
-                    "characterize_signal": characterize_signal,
-                    "find_anomalies": find_anomalies,
-                    "decode_protocol": decode_protocol,
-                }
-            )
-        except ImportError:
-            pass
 
-    except ImportError as e:
-        print(f"Warning: Could not import Oscura: {e}")
-
-    # Common utilities
+def _import_common_utilities(namespace: dict[str, Any]) -> None:
+    """Import common utilities like numpy and matplotlib."""
     try:
         import matplotlib.pyplot as plt
 
@@ -205,8 +229,6 @@ def get_oscura_namespace() -> dict[str, Any]:
         namespace["np"] = np
     except ImportError:
         pass
-
-    return namespace
 
 
 def setup_history() -> None:

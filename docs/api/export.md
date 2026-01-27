@@ -1,6 +1,6 @@
 # Oscura Export API Documentation
 
-> **Version**: 0.5.1 | **Last Updated**: 2026-01-19
+> **Version**: 0.6.0 | **Last Updated**: 2026-01-25
 
 Complete guide to exporting trace data and analysis results in multiple formats.
 

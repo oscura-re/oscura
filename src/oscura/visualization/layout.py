@@ -21,6 +21,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from oscura.utils.geometry import generate_leader_line
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -165,6 +167,170 @@ def layout_stacked_channels(
     )
 
 
+def _initialize_placed_annotations(
+    annotations: list[Annotation],
+) -> list[PlacedAnnotation]:
+    """Initialize placed annotations at anchor points.
+
+    Args:
+        annotations: List of annotations to place.
+
+    Returns:
+        List of PlacedAnnotation initially at anchor points.
+    """
+    placed = []
+    for annot in annotations:
+        placed.append(
+            PlacedAnnotation(
+                annotation=annot,
+                display_x=annot.x,
+                display_y=annot.y,
+                needs_leader=False,
+                leader_points=None,
+            )
+        )
+    return placed
+
+
+def _calculate_repulsive_force(
+    placed_i: PlacedAnnotation,
+    placed_j: PlacedAnnotation,
+    min_spacing: float,
+    repulsion_strength: float,
+) -> tuple[float, float]:
+    """Calculate repulsive force between two annotations.
+
+    Args:
+        placed_i: First annotation.
+        placed_j: Second annotation.
+        min_spacing: Minimum spacing in pixels.
+        repulsion_strength: Repulsive force strength.
+
+    Returns:
+        Tuple of (fx, fy) force components.
+    """
+    # Check for bounding box overlap
+    dx = placed_j.display_x - placed_i.display_x
+    dy = placed_j.display_y - placed_i.display_y
+
+    # Bounding box sizes
+    w1 = placed_i.annotation.bbox_width
+    h1 = placed_i.annotation.bbox_height
+    w2 = placed_j.annotation.bbox_width
+    h2 = placed_j.annotation.bbox_height
+
+    # Minimum separation (sum of half-widths + spacing)
+    min_dx = (w1 + w2) / 2 + min_spacing
+    min_dy = (h1 + h2) / 2 + min_spacing
+
+    # Check if overlapping
+    if abs(dx) < min_dx and abs(dy) < min_dy:
+        # Calculate repulsive force
+        distance = np.sqrt(dx**2 + dy**2)
+        if distance < 1e-6:
+            # Avoid division by zero
+            distance = 1e-6
+            dx = np.random.randn() * 0.1
+            dy = np.random.randn() * 0.1
+
+        # Repulsion inversely proportional to distance
+        force = repulsion_strength / distance
+
+        # Return force in direction away from overlap
+        return -force * dx / distance, -force * dy / distance
+
+    return 0.0, 0.0
+
+
+def _apply_force_iteration(
+    placed: list[PlacedAnnotation],
+    display_width: float,
+    display_height: float,
+    min_spacing: float,
+    repulsion_strength: float,
+) -> bool:
+    """Apply one iteration of force-directed layout.
+
+    Args:
+        placed: List of placed annotations to update.
+        display_width: Display width for clamping.
+        display_height: Display height for clamping.
+        min_spacing: Minimum spacing in pixels.
+        repulsion_strength: Repulsive force strength.
+
+    Returns:
+        True if any annotation moved significantly.
+    """
+    moved = False
+
+    for i in range(len(placed)):
+        fx = 0.0
+        fy = 0.0
+
+        # Calculate forces from all other annotations
+        for j in range(len(placed)):
+            if i != j:
+                force_x, force_y = _calculate_repulsive_force(
+                    placed[i], placed[j], min_spacing, repulsion_strength
+                )
+                fx += force_x
+                fy += force_y
+
+        # Apply forces with damping (priority affects inertia)
+        damping = 0.5
+        priority_factor = 1.0 - placed[i].annotation.priority
+        step_size = damping * priority_factor
+
+        new_x = placed[i].display_x + fx * step_size
+        new_y = placed[i].display_y + fy * step_size
+
+        # Clamp to display bounds
+        new_x = np.clip(new_x, 0, display_width)
+        new_y = np.clip(new_y, 0, display_height)
+
+        # Update if moved significantly
+        if abs(new_x - placed[i].display_x) > 0.1 or abs(new_y - placed[i].display_y) > 0.1:
+            placed[i] = PlacedAnnotation(
+                annotation=placed[i].annotation,
+                display_x=new_x,
+                display_y=new_y,
+                needs_leader=False,
+                leader_points=None,
+            )
+            moved = True
+
+    return moved
+
+
+def _add_leader_lines(placed: list[PlacedAnnotation], leader_threshold: float = 20.0) -> None:
+    """Add leader lines to annotations displaced from anchor points.
+
+    Args:
+        placed: List of placed annotations to update in-place.
+        leader_threshold: Displacement threshold for leader line in pixels.
+    """
+    for i, p in enumerate(placed):
+        anchor_x = p.annotation.x
+        anchor_y = p.annotation.y
+
+        displacement = np.sqrt((p.display_x - anchor_x) ** 2 + (p.display_y - anchor_y) ** 2)
+
+        if displacement > leader_threshold:
+            # Generate simple orthogonal leader line
+            leader_points = generate_leader_line(
+                (anchor_x, anchor_y),
+                (p.display_x, p.display_y),
+            )
+
+            placed[i] = PlacedAnnotation(
+                annotation=p.annotation,
+                display_x=p.display_x,
+                display_y=p.display_y,
+                needs_leader=True,
+                leader_points=leader_points,
+            )
+
+
 def optimize_annotation_placement(
     annotations: list[Annotation],
     *,
@@ -206,154 +372,23 @@ def optimize_annotation_placement(
     if len(annotations) == 0:
         raise ValueError("annotations list cannot be empty")
 
-    # Convert annotations to display coordinates
-    # For now, assume data coordinates are normalized to display units
-    placed = []
+    # Data preparation - initialize at anchor points
+    placed = _initialize_placed_annotations(annotations)
 
-    for annot in annotations:
-        # Initial placement at anchor point
-        placed.append(
-            PlacedAnnotation(
-                annotation=annot,
-                display_x=annot.x,
-                display_y=annot.y,
-                needs_leader=False,
-                leader_points=None,
-            )
-        )
-
-    # Apply force-directed layout to resolve overlaps
+    # Force-directed layout iterations
     for _iteration in range(max_iterations):
-        moved = False
-
-        # Calculate forces between all pairs
-        for i in range(len(placed)):
-            fx = 0.0
-            fy = 0.0
-
-            for j in range(len(placed)):
-                if i == j:
-                    continue
-
-                # Check for bounding box overlap
-                dx = placed[j].display_x - placed[i].display_x
-                dy = placed[j].display_y - placed[i].display_y
-
-                # Bounding box sizes
-                w1 = placed[i].annotation.bbox_width
-                h1 = placed[i].annotation.bbox_height
-                w2 = placed[j].annotation.bbox_width
-                h2 = placed[j].annotation.bbox_height
-
-                # Minimum separation (sum of half-widths + spacing)
-                min_dx = (w1 + w2) / 2 + min_spacing
-                min_dy = (h1 + h2) / 2 + min_spacing
-
-                # Check if overlapping
-                if abs(dx) < min_dx and abs(dy) < min_dy:
-                    # Calculate repulsive force
-                    distance = np.sqrt(dx**2 + dy**2)
-                    if distance < 1e-6:
-                        # Avoid division by zero
-                        distance = 1e-6
-                        dx = np.random.randn() * 0.1
-                        dy = np.random.randn() * 0.1
-
-                    # Repulsion inversely proportional to distance
-                    force = repulsion_strength / distance
-
-                    # Apply force in direction away from overlap
-                    fx -= force * dx / distance
-                    fy -= force * dy / distance
-
-            # Apply forces with damping (priority affects inertia)
-            damping = 0.5
-            priority_factor = 1.0 - placed[i].annotation.priority
-
-            # Higher priority annotations move less
-            step_size = damping * priority_factor
-
-            new_x = placed[i].display_x + fx * step_size
-            new_y = placed[i].display_y + fy * step_size
-
-            # Clamp to display bounds
-            new_x = np.clip(new_x, 0, display_width)
-            new_y = np.clip(new_y, 0, display_height)
-
-            # Update if moved significantly
-            if abs(new_x - placed[i].display_x) > 0.1 or abs(new_y - placed[i].display_y) > 0.1:
-                placed[i] = PlacedAnnotation(
-                    annotation=placed[i].annotation,
-                    display_x=new_x,
-                    display_y=new_y,
-                    needs_leader=False,
-                    leader_points=None,
-                )
-                moved = True
+        moved = _apply_force_iteration(
+            placed, display_width, display_height, min_spacing, repulsion_strength
+        )
 
         # Converged if nothing moved
         if not moved:
             break
 
-    # Determine which annotations need leader lines
-    # (displaced beyond threshold from original position)
-    leader_threshold = 20.0  # pixels
-
-    for i, p in enumerate(placed):
-        anchor_x = p.annotation.x
-        anchor_y = p.annotation.y
-
-        displacement = np.sqrt((p.display_x - anchor_x) ** 2 + (p.display_y - anchor_y) ** 2)
-
-        if displacement > leader_threshold:
-            # Generate simple orthogonal leader line
-            leader_points = _generate_leader_line(
-                (anchor_x, anchor_y),
-                (p.display_x, p.display_y),
-            )
-
-            placed[i] = PlacedAnnotation(
-                annotation=p.annotation,
-                display_x=p.display_x,
-                display_y=p.display_y,
-                needs_leader=True,
-                leader_points=leader_points,
-            )
+    # Annotation - add leader lines for displaced annotations
+    _add_leader_lines(placed, leader_threshold=20.0)
 
     return placed
-
-
-def _generate_leader_line(
-    anchor: tuple[float, float],
-    label: tuple[float, float],
-) -> list[tuple[float, float]]:
-    """Generate orthogonal leader line from anchor to label.
-
-    Args:
-        anchor: Anchor point (x, y)
-        label: Label position (x, y)
-
-    Returns:
-        List of points for leader line
-    """
-    ax, ay = anchor
-    lx, ly = label
-
-    # Simple L-shaped leader: anchor -> midpoint -> label
-    # Choose horizontal-then-vertical or vertical-then-horizontal
-    # based on which dimension has larger displacement
-
-    dx = abs(lx - ax)
-    dy = abs(ly - ay)
-
-    if dx > dy:
-        # Horizontal-first
-        mid = (lx, ay)
-    else:
-        # Vertical-first
-        mid = (ax, ly)
-
-    return [anchor, mid, label]
 
 
 __all__ = [

@@ -87,9 +87,22 @@ class FormatStandards:
         References:
             REPORT-001: Professional Formatting Standards
         """
+        root_vars = self._generate_css_variables()
+        base_styles = self._generate_css_base_styles()
+        component_styles = self._generate_css_component_styles()
+        print_styles = self._generate_css_print_styles()
+
         return f"""
 /* Oscura Professional Report Styles - REPORT-001 */
-:root {{
+{root_vars}
+{base_styles}
+{component_styles}
+{print_styles}
+"""
+
+    def _generate_css_variables(self) -> str:
+        """Generate CSS custom properties."""
+        return f""":root {{
     --heading-font: {self.heading_font};
     --body-font: {self.body_font};
     --code-font: {self.code_font};
@@ -109,158 +122,186 @@ class FormatStandards:
     --color-critical-bg: #ffebee;
     --color-warning-bg: #fff3e0;
     --color-info-bg: #e3f2fd;
-}}
+}}"""
 
-body {{
+    def _generate_css_base_styles(self) -> str:
+        """Generate base body and typography CSS."""
+        return """
+body {
     font-family: var(--body-font);
     font-size: var(--body-size);
     line-height: var(--line-spacing);
     margin: var(--margin);
     max-width: 8.5in;
     color: #333;
-}}
+}
 
-h1, h2, h3, h4 {{
+h1, h2, h3, h4 {
     font-family: var(--heading-font);
     line-height: 1.2;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
-}}
+}
 
-h1 {{ font-size: var(--h1-size); }}
-h2 {{ font-size: var(--h2-size); }}
-h3 {{ font-size: var(--h3-size); }}
+h1 { font-size: var(--h1-size); }
+h2 { font-size: var(--h2-size); }
+h3 { font-size: var(--h3-size); }
 
-.report-title {{
+.report-title {
     font-size: var(--title-size);
     text-align: center;
     margin-bottom: 2em;
-}}
+}
 
-code, pre {{
+code, pre {
     font-family: var(--code-font);
     font-size: 0.9em;
     background-color: #f5f5f5;
     padding: 2px 4px;
     border-radius: 3px;
-}}
+}"""
 
+    def _generate_css_component_styles(self) -> str:
+        """Generate component CSS (tables, severity, etc)."""
+        tables = self._generate_css_tables()
+        indicators = self._generate_css_indicators()
+        callouts = self._generate_css_callouts()
+        summary = self._generate_css_executive_summary()
+        watermark = self._generate_css_watermark()
+
+        return f"{tables}\n{indicators}\n{callouts}\n{summary}\n{watermark}"
+
+    def _generate_css_tables(self) -> str:
+        """Generate table CSS."""
+        return """
 /* Table styles */
-table {{
+table {
     border-collapse: collapse;
     width: 100%;
     margin: 1em 0;
-}}
+}
 
-th, td {{
+th, td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
-}}
+}
 
-th {{
+th {
     background-color: #f2f2f2;
     font-weight: bold;
-}}
+}
 
-tr:nth-child(even) {{
+tr:nth-child(even) {
     background-color: #f9f9f9;
-}}
+}"""
 
+    def _generate_css_indicators(self) -> str:
+        """Generate pass/fail and severity indicator CSS."""
+        return """
 /* Pass/Fail indicators (REPORT-002) */
-.pass {{
+.pass {
     color: var(--color-pass);
-}}
+}
 
-.fail {{
+.fail {
     color: var(--color-fail);
-}}
+}
 
-.warning {{
+.warning {
     color: var(--color-warning);
-}}
+}
 
 /* Severity indicators (REPORT-002) */
-.severity-critical {{
+.severity-critical {
     background-color: var(--color-critical-bg);
     border-left: 4px solid var(--color-fail);
     padding: 10px;
     margin: 10px 0;
-}}
+}
 
-.severity-warning {{
+.severity-warning {
     background-color: var(--color-warning-bg);
     border-left: 4px solid var(--color-warning);
     padding: 10px;
     margin: 10px 0;
-}}
+}
 
-.severity-info {{
+.severity-info {
     background-color: var(--color-info-bg);
     border-left: 4px solid var(--color-info);
     padding: 10px;
     margin: 10px 0;
-}}
+}"""
 
+    def _generate_css_callouts(self) -> str:
+        """Generate callout box CSS."""
+        return """
 /* Callout box (REPORT-002) */
-.callout {{
+.callout {
     border: 1px solid #ddd;
     border-radius: 4px;
     padding: 15px;
     margin: 15px 0;
     background-color: #fafafa;
-}}
+}
 
-.callout.key-finding {{
+.callout.key-finding {
     border-color: var(--color-info);
     background-color: var(--color-info-bg);
-}}
+}
 
 /* Highlighting for out-of-spec values */
-.out-of-spec {{
+.out-of-spec {
     background-color: rgba(255, 235, 59, 0.15);
     padding: 2px 4px;
     border-radius: 2px;
-}}
+}"""
 
+    def _generate_css_executive_summary(self) -> str:
+        """Generate executive summary CSS."""
+        return """
 /* Executive summary styles (REPORT-004) */
-.executive-summary {{
+.executive-summary {
     background-color: #f5f5f5;
     padding: 20px;
     margin: 20px 0;
     border-radius: 4px;
-}}
+}
 
-.executive-summary h2 {{
+.executive-summary h2 {
     margin-top: 0;
-}}
+}
 
-.key-findings {{
+.key-findings {
     list-style-type: none;
     padding-left: 0;
-}}
+}
 
-.key-findings li {{
+.key-findings li {
     padding: 5px 0;
     padding-left: 25px;
     position: relative;
-}}
+}
 
-.key-findings li::before {{
+.key-findings li::before {
     content: "";
     position: absolute;
     left: 0;
     top: 8px;
     width: 16px;
     height: 16px;
-}}
+}
 
-.key-findings li.critical::before {{
+.key-findings li.critical::before {
     content: "!";
     color: var(--color-fail);
     font-weight: bold;
-}}
+}"""
 
+    def _generate_css_watermark(self) -> str:
+        """Generate watermark CSS."""
+        return f"""
 /* Watermark */
 .watermark {{
     position: fixed;
@@ -271,21 +312,23 @@ tr:nth-child(even) {{
     color: rgba(0, 0, 0, {self.watermark_opacity});
     pointer-events: none;
     z-index: 1000;
-}}
+}}"""
 
+    def _generate_css_print_styles(self) -> str:
+        """Generate print media query CSS."""
+        return """
 /* Print styles */
-@media print {{
-    body {{
+@media print {
+    body {
         margin: 0;
-    }}
-    .page-break {{
+    }
+    .page-break {
         page-break-before: always;
-    }}
-    .no-print {{
+    }
+    .no-print {
         display: none;
-    }}
-}}
-"""
+    }
+}"""
 
 
 @dataclass

@@ -172,18 +172,18 @@ class ProtocolDecoder(ABC):
     license: str = "MIT"
 
     # Input/output types
-    inputs: list[str] = ["logic"]  # noqa: RUF012
-    outputs: list[str] = ["packets"]  # noqa: RUF012
+    inputs: list[str] = ["logic"]
+    outputs: list[str] = ["packets"]
 
     # Channel definitions
-    channels: list[ChannelDef] = []  # noqa: RUF012
-    optional_channels: list[ChannelDef] = []  # noqa: RUF012
+    channels: list[ChannelDef] = []
+    optional_channels: list[ChannelDef] = []
 
     # Options
-    options: list[OptionDef] = []  # noqa: RUF012
+    options: list[OptionDef] = []
 
     # Annotation definitions (override in subclass)
-    annotations: list[tuple[str, str]] = []  # noqa: RUF012
+    annotations: list[tuple[str, str]] = []
 
     def __init__(self, **options: Any) -> None:
         """Initialize decoder with options.

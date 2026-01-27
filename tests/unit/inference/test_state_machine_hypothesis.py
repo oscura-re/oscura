@@ -94,7 +94,7 @@ class TestFiniteAutomatonProperties:
         dot_str = automaton.to_dot()
 
         # Check format
-        assert "digraph finite_automaton" in dot_str
+        assert "digraph" in dot_str
         assert "s0" in dot_str
         assert "s1" in dot_str
         assert "s0 -> s1" in dot_str
@@ -347,7 +347,7 @@ class TestAutomatonExportProperties:
         dot_str = automaton.to_dot()
 
         # Should be valid DOT format
-        assert dot_str.startswith("digraph finite_automaton {")
+        assert dot_str.startswith("digraph StateMachine {")
         assert dot_str.endswith("}")
         assert "rankdir=LR" in dot_str
 

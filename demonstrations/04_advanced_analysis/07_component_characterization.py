@@ -30,7 +30,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from demonstrations.common import BaseDemo
-from oscura.component import (
+from oscura.utils.component import (
     discontinuity_analysis,
     extract_impedance,
     extract_parasitics,

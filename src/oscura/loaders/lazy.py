@@ -188,7 +188,7 @@ class LazyWaveformTrace:
 
                 metadata = TraceMetadata(
                     sample_rate=self._sample_rate,
-                    **self._metadata,  # type: ignore[arg-type]
+                    **self._metadata,
                 )
                 return WaveformTrace(data=sliced_data, metadata=metadata)  # type: ignore[return-value]
 
@@ -221,7 +221,7 @@ class LazyWaveformTrace:
 
         metadata = TraceMetadata(
             sample_rate=self._sample_rate,
-            **self._metadata,  # type: ignore[arg-type]
+            **self._metadata,
         )
         return WaveformTrace(data=self.data, metadata=metadata)
 
@@ -299,72 +299,105 @@ def load_trace_lazy(
     if not file_path.exists():
         raise LoaderError(f"File not found: {file_path}")
 
-    # Determine format
+    if sample_rate is None:
+        raise LoaderError("sample_rate is required")
+
+    # Determine format and extract metadata
     suffix = file_path.suffix.lower()
 
     if suffix == ".npy":
-        # NumPy format - can read shape and dtype without loading data
-        with open(file_path, "rb") as f:
-            # Read NumPy header
-            import numpy.lib.format as npf
-
-            npf.read_magic(f)  # type: ignore[no-untyped-call]
-            shape, _fortran_order, dtype = npf.read_array_header_1_0(f)  # type: ignore[no-untyped-call]
-            offset = f.tell()
-
-        if not isinstance(shape, tuple) or len(shape) != 1:
-            raise LoaderError(f"Expected 1D array, got shape {shape}")
-
-        length = shape[0]
-
-        # Get sample rate from metadata or argument
-        if sample_rate is None:
-            raise LoaderError("sample_rate is required for .npy files")
-
-        if lazy:
-            return LazyWaveformTrace(
-                file_path=file_path,
-                sample_rate=sample_rate,
-                length=length,
-                dtype=dtype,
-                offset=offset,
-            )
-        else:
-            # Load eagerly
-            from oscura.core.types import TraceMetadata, WaveformTrace
-
-            data = np.load(file_path).astype(np.float64)
-            metadata = TraceMetadata(sample_rate=sample_rate)
-            return WaveformTrace(data=data, metadata=metadata)
-
+        length, dtype, offset = _extract_npy_metadata(file_path)
     else:
-        # Raw binary - need sample rate and dtype
-        if sample_rate is None:
-            raise LoaderError("sample_rate is required for raw binary files")
+        length, dtype, offset = _extract_raw_metadata(file_path, kwargs)
 
-        dtype = kwargs.get("dtype", np.float64)
-        offset = kwargs.get("offset", 0)
+    # Return lazy or eager trace
+    if lazy:
+        return LazyWaveformTrace(
+            file_path=file_path,
+            sample_rate=sample_rate,
+            length=length,
+            dtype=dtype,
+            offset=offset,
+        )
+    else:
+        return _load_eager_trace(file_path, sample_rate, length, dtype, offset, suffix == ".npy")
 
-        # Compute length from file size
-        file_size = file_path.stat().st_size - offset
-        dtype_size = np.dtype(dtype).itemsize
-        length = file_size // dtype_size
 
-        if lazy:
-            return LazyWaveformTrace(
-                file_path=file_path,
-                sample_rate=sample_rate,
-                length=length,
-                dtype=dtype,
-                offset=offset,
-            )
-        else:
-            # Load eagerly
-            from oscura.core.types import TraceMetadata, WaveformTrace
+def _extract_npy_metadata(file_path: Path) -> tuple[int, DTypeLike, int]:
+    """Extract metadata from NumPy file without loading data.
 
-            data = np.fromfile(file_path, dtype=dtype, count=length, offset=offset)
-            metadata = TraceMetadata(sample_rate=sample_rate)
-            return WaveformTrace(data=data.astype(np.float64), metadata=metadata)
+    Args:
+        file_path: Path to .npy file.
+
+    Returns:
+        Tuple of (length, dtype, offset).
+
+    Raises:
+        LoaderError: If file format is invalid.
+    """
+    with open(file_path, "rb") as f:
+        import numpy.lib.format as npf
+
+        npf.read_magic(f)  # type: ignore[no-untyped-call]
+        shape, _fortran_order, dtype = npf.read_array_header_1_0(f)  # type: ignore[no-untyped-call]
+        offset = f.tell()
+
+    if not isinstance(shape, tuple) or len(shape) != 1:
+        raise LoaderError(f"Expected 1D array, got shape {shape}")
+
+    return shape[0], dtype, offset
+
+
+def _extract_raw_metadata(file_path: Path, kwargs: dict[str, Any]) -> tuple[int, DTypeLike, int]:
+    """Extract metadata from raw binary file.
+
+    Args:
+        file_path: Path to raw binary file.
+        kwargs: Additional arguments (dtype, offset).
+
+    Returns:
+        Tuple of (length, dtype, offset).
+    """
+    dtype = kwargs.get("dtype", np.float64)
+    offset = kwargs.get("offset", 0)
+
+    file_size = file_path.stat().st_size - offset
+    dtype_size = np.dtype(dtype).itemsize
+    length = file_size // dtype_size
+
+    return length, dtype, offset
+
+
+def _load_eager_trace(
+    file_path: Path,
+    sample_rate: float,
+    length: int,
+    dtype: DTypeLike,
+    offset: int,
+    is_npy: bool,
+) -> WaveformTrace:
+    """Load trace data eagerly into memory.
+
+    Args:
+        file_path: Path to trace file.
+        sample_rate: Sample rate in Hz.
+        length: Number of samples.
+        dtype: Data type.
+        offset: Byte offset in file.
+        is_npy: True if .npy format, False if raw binary.
+
+    Returns:
+        WaveformTrace with data loaded.
+    """
+    from oscura.core.types import TraceMetadata, WaveformTrace
+
+    if is_npy:
+        data = np.load(file_path).astype(np.float64)
+    else:
+        data = np.fromfile(file_path, dtype=dtype, count=length, offset=offset).astype(np.float64)
+
+    metadata = TraceMetadata(sample_rate=sample_rate)
+    return WaveformTrace(data=data, metadata=metadata)
 
 
 __all__ = ["LazyWaveformTrace", "load_trace_lazy"]

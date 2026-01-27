@@ -441,7 +441,7 @@ def test_cli_help(runner: CliRunner) -> None:
 
     assert result.exit_code == 0
     assert "Oscura" in result.output
-    assert "Signal Analysis Framework" in result.output
+    assert "Hardware Reverse Engineering Framework" in result.output
 
 
 @pytest.mark.unit
@@ -451,7 +451,7 @@ def test_cli_version(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["--version"])
 
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert "0.6.0" in result.output
     assert "oscura" in result.output.lower()
 
 
@@ -620,7 +620,7 @@ def test_tutorial_command_no_args_shows_list(runner: CliRunner) -> None:
 @pytest.mark.cli
 def test_tutorial_command_run_specific(runner: CliRunner) -> None:
     """Test tutorial command runs specific tutorial."""
-    with patch("oscura.onboarding.run_tutorial") as mock_run:
+    with patch("oscura.cli.onboarding.run_tutorial") as mock_run:
         result = runner.invoke(tutorial, ["getting_started"])
 
         mock_run.assert_called_once_with("getting_started", interactive=True)
@@ -634,7 +634,7 @@ def test_tutorial_command_via_cli(runner: CliRunner) -> None:
         {"id": "test", "title": "Test", "difficulty": "beginner", "steps": 1},
     ]
 
-    with patch("oscura.onboarding.list_tutorials", return_value=mock_tutorials):
+    with patch("oscura.cli.onboarding.list_tutorials", return_value=mock_tutorials):
         result = runner.invoke(cli, ["tutorial", "--list"], obj={})
 
         assert result.exit_code == 0
@@ -930,7 +930,7 @@ def test_cli_mixed_v_and_verbose(runner: CliRunner) -> None:
 @pytest.mark.cli
 def test_tutorial_empty_list(runner: CliRunner) -> None:
     """Test tutorial list with no tutorials available."""
-    with patch("oscura.onboarding.tutorials.list_tutorials", return_value=[]):
+    with patch("oscura.cli.onboarding.tutorials.list_tutorials", return_value=[]):
         result = runner.invoke(tutorial, ["--list"])
 
         assert result.exit_code == 0

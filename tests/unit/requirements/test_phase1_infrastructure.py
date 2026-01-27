@@ -3,7 +3,6 @@
 Tests for:
 - EXT-001 through EXT-006: Extension Points
 - CFG-003 through CFG-018: Configuration Architecture
-- PLUG-004 through PLUG-008: Plugin Lifecycle
 """
 
 import tempfile
@@ -21,7 +20,7 @@ class TestExtensionPoints:
     @pytest.fixture(autouse=True)
     def clear_registry(self):
         """Clear registry before each test to ensure isolation."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
         # Clear all algorithms and hooks registered during tests
@@ -37,7 +36,7 @@ class TestExtensionPoints:
 
     def test_ext001_extension_point_registry(self):
         """Test EXT-001: Extension Point Registry."""
-        from oscura.extensibility.extensions import (
+        from oscura.core.extensibility.extensions import (
             ExtensionPointSpec,
             get_registry,
         )
@@ -66,7 +65,7 @@ class TestExtensionPoints:
 
     def test_ext002_algorithm_registration(self):
         """Test EXT-002: Algorithm Registration."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 
@@ -89,7 +88,7 @@ class TestExtensionPoints:
 
     def test_ext003_algorithm_selection(self):
         """Test EXT-003: Algorithm Selection."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 
@@ -124,7 +123,7 @@ class TestExtensionPoints:
 
     def test_ext004_priority_system(self):
         """Test EXT-004: Priority System."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 
@@ -155,7 +154,7 @@ class TestExtensionPoints:
 
     def test_ext005_hook_system(self):
         """Test EXT-005: Hook System."""
-        from oscura.extensibility.extensions import (
+        from oscura.core.extensibility.extensions import (
             HookContext,
             get_registry,
         )
@@ -190,7 +189,7 @@ class TestExtensionPoints:
 
     def test_ext006_custom_decoder_registration(self):
         """Test EXT-006: Custom Decoder Registration."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 
@@ -222,7 +221,7 @@ class TestConfigurationArchitecture:
     @pytest.fixture(autouse=True)
     def reset_threshold_overrides(self):
         """Reset threshold overrides before each test to ensure isolation."""
-        from oscura.config.thresholds import get_threshold_registry
+        from oscura.core.config.thresholds import get_threshold_registry
 
         registry = get_threshold_registry()
         registry.reset_overrides()
@@ -231,7 +230,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg003_protocol_registry(self):
         """Test CFG-003: Protocol Definition Registry."""
-        from oscura.config.protocol import (
+        from oscura.core.config.protocol import (
             get_protocol_registry,
         )
 
@@ -251,7 +250,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg004_protocol_inheritance(self):
         """Test CFG-004: Protocol Inheritance."""
-        from oscura.config.protocol import (
+        from oscura.core.config.protocol import (
             ProtocolDefinition,
             get_protocol_registry,
             resolve_inheritance,
@@ -277,7 +276,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg005_logic_family_config(self):
         """Test CFG-005: Logic Family Config Files."""
-        from oscura.config.thresholds import get_threshold_registry
+        from oscura.core.config.thresholds import get_threshold_registry
 
         registry = get_threshold_registry()
 
@@ -293,7 +292,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg006_threshold_override(self):
         """Test CFG-006: Threshold Override."""
-        from oscura.config.thresholds import get_threshold_registry
+        from oscura.core.config.thresholds import get_threshold_registry
 
         registry = get_threshold_registry()
 
@@ -311,7 +310,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg007_custom_logic_family(self):
         """Test CFG-007: Custom Logic Family Definitions."""
-        from oscura.config.thresholds import (
+        from oscura.core.config.thresholds import (
             LogicFamily,
             get_threshold_registry,
         )
@@ -333,7 +332,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg008_threshold_profiles(self):
         """Test CFG-008: Threshold Profiles."""
-        from oscura.config.thresholds import get_threshold_registry
+        from oscura.core.config.thresholds import get_threshold_registry
 
         registry = get_threshold_registry()
 
@@ -350,7 +349,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg009_pipeline_definition(self):
         """Test CFG-009: Pipeline Definition Files."""
-        from oscura.config.pipeline import PipelineDefinition, PipelineStep
+        from oscura.core.config.pipeline import PipelineDefinition, PipelineStep
 
         step = PipelineStep(name="load", type="input.file", params={"path": "trace.bin"})
 
@@ -362,7 +361,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg010_pipeline_loader(self):
         """Test CFG-010: Pipeline Loader."""
-        from oscura.config.pipeline import Pipeline, load_pipeline
+        from oscura.core.config.pipeline import Pipeline, load_pipeline
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             yaml.dump(
@@ -386,7 +385,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg011_pipeline_templates(self):
         """Test CFG-011: Pipeline Templates."""
-        from oscura.config.pipeline import _substitute_variables
+        from oscura.core.config.pipeline import _substitute_variables
 
         template = "path: ${INPUT_FILE}, rate: ${SAMPLE_RATE}"
         variables = {"INPUT_FILE": "trace.bin", "SAMPLE_RATE": "1e9"}
@@ -396,7 +395,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg012_pipeline_composition(self):
         """Test CFG-012: Pipeline Composition."""
-        from oscura.config.pipeline import PipelineDefinition
+        from oscura.core.config.pipeline import PipelineDefinition
 
         pipeline = PipelineDefinition(name="main", steps=[], includes=["common/base.yaml"])
 
@@ -404,7 +403,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg013_conditional_steps(self):
         """Test CFG-013: Conditional Pipeline Steps."""
-        from oscura.config.pipeline import Pipeline, PipelineDefinition, PipelineStep
+        from oscura.core.config.pipeline import Pipeline, PipelineDefinition, PipelineStep
 
         step = PipelineStep(
             name="conditional", type="analysis.statistics", condition="confidence > 0.8"
@@ -421,7 +420,7 @@ class TestConfigurationArchitecture:
 
     def test_cfg018_preferences_persistence(self):
         """Test CFG-018: Preferences Persistence."""
-        from oscura.config.preferences import (
+        from oscura.core.config.preferences import (
             PreferencesManager,
             UserPreferences,
         )
@@ -442,168 +441,13 @@ class TestConfigurationArchitecture:
             assert loaded.defaults.sample_rate == 2e9
 
 
-class TestPluginLifecycle:
-    """Tests for PLUG-004 through PLUG-008."""
-
-    def test_plug004_lifecycle_states(self):
-        """Test PLUG-004: Plugin Lifecycle (enable/disable/reload)."""
-        from oscura.plugins.lifecycle import PluginState
-
-        # All states should be defined
-        assert PluginState.DISCOVERED
-        assert PluginState.LOADING
-        assert PluginState.LOADED
-        assert PluginState.CONFIGURED
-        assert PluginState.ENABLED
-        assert PluginState.DISABLED
-        assert PluginState.ERROR
-        assert PluginState.UNLOADING
-
-    def test_plug005_dependency_resolution(self):
-        """Test PLUG-005: Dependency Resolution."""
-        from oscura.plugins.lifecycle import DependencyGraph
-
-        graph = DependencyGraph()
-
-        graph.add_plugin("core")
-        graph.add_plugin("decoder")
-        graph.add_plugin("ui")
-
-        graph.add_dependency("decoder", "core")
-        graph.add_dependency("ui", "decoder")
-
-        order = graph.resolve_order()
-
-        # Core must come before decoder, decoder before ui
-        assert order.index("core") < order.index("decoder")
-        assert order.index("decoder") < order.index("ui")
-
-    def test_plug005_circular_dependency_detection(self):
-        """Test PLUG-005: Circular dependency detection."""
-        from oscura.plugins.lifecycle import DependencyGraph
-
-        graph = DependencyGraph()
-
-        graph.add_dependency("a", "b")
-        graph.add_dependency("b", "c")
-        graph.add_dependency("c", "a")  # Circular!
-
-        with pytest.raises(ValueError, match="Circular"):
-            graph.resolve_order()
-
-    def test_plug006_graceful_degradation(self):
-        """Test PLUG-006: Graceful Degradation."""
-        from oscura.plugins.base import PluginMetadata
-        from oscura.plugins.lifecycle import (
-            PluginHandle,
-            PluginLifecycleManager,
-            PluginLoadError,
-            PluginState,
-        )
-
-        manager = PluginLifecycleManager()
-
-        # Add a failed plugin handle
-        handle = PluginHandle(
-            metadata=PluginMetadata(name="failed_plugin", version="1.0.0"),
-            state=PluginState.ERROR,
-            errors=[
-                PluginLoadError(
-                    plugin_name="failed_plugin",
-                    error=ImportError("Test error"),
-                    recoverable=True,
-                )
-            ],
-        )
-        manager._handles["failed_plugin"] = handle
-
-        # Get degradation info
-        info = manager.graceful_degradation("failed_plugin")
-        assert info["status"] == "degraded"
-        assert info["recoverable"] is True
-
-    def test_plug007_lazy_loading(self):
-        """Test PLUG-007: Lazy Loading."""
-        from oscura.plugins.lifecycle import PluginLifecycleManager, PluginState
-
-        manager = PluginLifecycleManager()
-
-        # Register a lazy loader
-        loaded = [False]
-
-        def lazy_loader():
-            loaded[0] = True
-            from oscura.plugins.base import PluginBase
-
-            class TestPlugin(PluginBase):
-                name = "lazy_test"
-                version = "1.0.0"
-
-            return TestPlugin()
-
-        from oscura.plugins.base import PluginMetadata
-        from oscura.plugins.lifecycle import PluginHandle
-
-        handle = PluginHandle(
-            metadata=PluginMetadata(name="lazy_test", version="1.0.0"),
-            state=PluginState.DISCOVERED,
-        )
-        manager._handles["lazy_test"] = handle
-        manager._lazy_loaders["lazy_test"] = lazy_loader
-
-        # Not loaded yet
-        assert loaded[0] is False
-
-        # Load triggers lazy loader
-        manager.load_plugin("lazy_test")
-        assert loaded[0] is True
-
-    def test_plug008_hot_reload(self):
-        """Test PLUG-008: Plugin Hot Reload."""
-        from oscura.plugins.lifecycle import PluginLifecycleManager
-
-        manager = PluginLifecycleManager()
-
-        # check_for_changes should return empty list with no watched files
-        changed = manager.check_for_changes()
-        assert changed == []
-
-
 class TestRequirementsPhase1InfrastructureIntegration:
     """Integration tests for Phase 1."""
 
-    def test_extension_and_plugin_integration(self):
-        """Test extension points work with plugins."""
-        from oscura.extensibility.extensions import get_registry
-        from oscura.plugins.base import PluginBase, PluginCapability
-
-        registry = get_registry()
-
-        # Simulate plugin registering at extension point
-        class TestPlugin(PluginBase):
-            name = "test_integration"
-            version = "1.0.0"
-            capabilities = [PluginCapability.ALGORITHM]
-
-            def on_load(self):
-                def my_algo(data):
-                    return data * 2
-
-                registry.register_algorithm(
-                    name="plugin_algo", func=my_algo, category="plugin_test"
-                )
-
-        plugin = TestPlugin()
-        plugin.on_load()
-
-        # Algorithm should be available
-        algo = registry.get_algorithm("plugin_test", "plugin_algo")
-        assert algo.func([1, 2]) == [1, 2, 1, 2]  # list * 2
-
     def test_config_and_extension_integration(self):
         """Test configuration works with extensions."""
-        from oscura.config.protocol import get_protocol_registry
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.config.protocol import get_protocol_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         ext_registry = get_registry()
         proto_registry = get_protocol_registry()

@@ -8,14 +8,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oscura.comparison.limits import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.limits import (
     LimitSpec,
     LimitTestResult,
     check_limits,
     create_limit_spec,
     margin_analysis,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

@@ -6,7 +6,7 @@ for domain-specific sessions (CAN, Serial, BlackBox, etc.).
 
 Example:
     >>> from oscura.sessions import AnalysisSession
-    >>> from oscura.acquisition import FileSource, HardwareSource
+    >>> from oscura.hardware.acquisition import FileSource, HardwareSource
     >>>
     >>> # Domain-specific sessions extend AnalysisSession
     >>> class CANSession(AnalysisSession):
@@ -52,8 +52,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from oscura.acquisition import Source
     from oscura.core.types import Trace
+    from oscura.hardware.acquisition import Source
 
 
 @dataclass
@@ -154,7 +154,7 @@ class AnalysisSession(ABC):
             ValueError: If name already exists.
 
         Example:
-            >>> from oscura.acquisition import FileSource
+            >>> from oscura.hardware.acquisition import FileSource
             >>> session.add_recording("baseline", FileSource("idle.blf"))
             >>> session.add_recording("active", FileSource("running.blf"))
         """

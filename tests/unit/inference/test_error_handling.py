@@ -134,7 +134,6 @@ class TestStateMachineInferenceErrors:
         try:
             import networkx  # noqa: F401
 
-            pytest.skip("Test requires networkx to NOT be installed")
         except ImportError:
             pass
 
@@ -461,37 +460,11 @@ class TestProtocolDSLErrors:
 @pytest.mark.unit
 @pytest.mark.inference
 class TestProtocolInferenceErrors:
-    """Test error handling in protocol inference."""
+    """Test error handling in protocol inference.
 
-    # NOTE: Commented out - ProtocolInference class and infer_protocol function don't exist
-    # def test_protocol_inference_insufficient_data(self) -> None:
-    #     """Test ProtocolInference with insufficient data."""
-    #     inference = ProtocolInference()
-    #
-    #     # Only 1 packet when we need multiple for analysis
-    #     packets = [
-    #         np.array([0x01, 0x02, 0x03], dtype=np.uint8),
-    #     ]
-    #
-    #     with pytest.raises(AnalysisError):
-    #         inference.infer(packets)
-    #
-    # def test_protocol_inference_empty_packets_list(self) -> None:
-    #     """Test ProtocolInference with empty packets list."""
-    #     inference = ProtocolInference()
-    #
-    #     with pytest.raises(AnalysisError):
-    #         inference.infer([])
-    #
-    # def test_infer_protocol_single_packet(self) -> None:
-    #     """Test infer_protocol with only one packet."""
-    #     packets = [
-    #         np.array([0x01, 0x02, 0x03], dtype=np.uint8),
-    #     ]
-    #
-    #     with pytest.raises(AnalysisError):
-    #         infer_protocol(packets)
-    # Placeholder
+    NOTE: ProtocolInference class and infer_protocol function don't exist yet.
+    This test class is a placeholder for future protocol inference functionality.
+    """
 
 
 # =============================================================================

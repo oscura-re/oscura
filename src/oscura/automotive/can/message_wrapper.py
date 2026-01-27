@@ -180,94 +180,28 @@ class CANMessageWrapper:
             >>> print(result.summary())
         """
         # Create signal definition
-        definition = SignalDefinition(
-            name=signal_name,
-            start_bit=start_byte * 8,
-            length=bit_length,
-            byte_order=byte_order,
-            value_type=value_type,
-            scale=scale,
-            offset=offset,
-            unit=unit,
+        definition = _create_signal_definition(
+            signal_name, start_byte, bit_length, byte_order, value_type, scale, offset, unit
         )
 
-        # Get all messages with this ID
-        filtered = self._session._messages.filter_by_id(self._arbitration_id)
-
         # Decode all values
-        decoded_values = []
-        for msg in filtered.messages:
-            try:
-                value = definition.decode(msg.data)
-                decoded_values.append(value)
-            except Exception:
-                # Skip messages that can't be decoded
-                pass
+        decoded_values = _decode_hypothesis_values(self._session, self._arbitration_id, definition)
 
+        # Handle no decoded values
         if not decoded_values:
-            return HypothesisResult(
-                signal_name=signal_name,
-                definition=definition,
-                values=[],
-                min_value=0.0,
-                max_value=0.0,
-                mean=0.0,
-                std=0.0,
-                is_valid=False,
-                confidence=0.0,
-                feedback="Failed to decode any messages with this definition",
-            )
+            return _create_failed_hypothesis_result(signal_name, definition)
 
         # Calculate statistics
-        arr = np.array(decoded_values)
-        min_val = float(np.min(arr))
-        max_val = float(np.max(arr))
-        mean_val = float(np.mean(arr))
-        std_val = float(np.std(arr))
+        stats = _calculate_hypothesis_statistics(decoded_values)
 
         # Validate hypothesis
-        is_valid = True
-        confidence = 1.0
-        feedback_parts = []
-
-        # Check expected range if provided
-        if expected_min is not None and min_val < expected_min:
-            is_valid = False
-            confidence *= 0.5
-            feedback_parts.append(f"Min value {min_val:.2f} below expected {expected_min:.2f}")
-
-        if expected_max is not None and max_val > expected_max:
-            is_valid = False
-            confidence *= 0.5
-            feedback_parts.append(f"Max value {max_val:.2f} above expected {expected_max:.2f}")
-
-        # Check for reasonable value distribution
-        if std_val == 0:
-            confidence *= 0.7
-            feedback_parts.append("Warning: All values are identical - might be a constant field")
-
-        # Check for extremely large range (might indicate wrong scaling)
-        value_range = max_val - min_val
-        if value_range > 1e6:
-            confidence *= 0.6
-            feedback_parts.append("Warning: Very large value range - check scaling factor")
-
-        # Positive feedback
-        if is_valid and not feedback_parts:
-            feedback_parts.append(f"Values in expected range [{min_val:.2f}, {max_val:.2f}]")
-            if std_val > 0:
-                feedback_parts.append("Signal shows variation - likely represents real data")
-
-        feedback = "; ".join(feedback_parts) if feedback_parts else "Hypothesis test passed"
+        is_valid, confidence, feedback = _validate_hypothesis(stats, expected_min, expected_max)
 
         return HypothesisResult(
             signal_name=signal_name,
             definition=definition,
             values=decoded_values,
-            min_value=min_val,
-            max_value=max_val,
-            mean=mean_val,
-            std=std_val,
+            **stats,
             is_valid=is_valid,
             confidence=confidence,
             feedback=feedback,
@@ -373,3 +307,116 @@ class CANMessageWrapper:
     def __repr__(self) -> str:
         """Human-readable representation."""
         return f"CANMessageWrapper(id=0x{self._arbitration_id:03X}, documented_signals={len(self._documented_signals)})"
+
+
+def _create_signal_definition(
+    signal_name: str,
+    start_byte: int,
+    bit_length: int,
+    byte_order: Literal["big_endian", "little_endian"],
+    value_type: Literal["unsigned", "signed", "float"],
+    scale: float,
+    offset: float,
+    unit: str,
+) -> SignalDefinition:
+    """Create signal definition from parameters."""
+    return SignalDefinition(
+        name=signal_name,
+        start_bit=start_byte * 8,
+        length=bit_length,
+        byte_order=byte_order,
+        value_type=value_type,
+        scale=scale,
+        offset=offset,
+        unit=unit,
+    )
+
+
+def _decode_hypothesis_values(
+    session: CANSession, arbitration_id: int, definition: SignalDefinition
+) -> list[float]:
+    """Decode all values using signal definition."""
+
+    filtered = session._messages.filter_by_id(arbitration_id)
+    decoded_values = []
+    for msg in filtered.messages:
+        try:
+            value = definition.decode(msg.data)
+            decoded_values.append(value)
+        except Exception:
+            pass
+    return decoded_values
+
+
+def _create_failed_hypothesis_result(
+    signal_name: str, definition: SignalDefinition
+) -> HypothesisResult:
+    """Create result for failed decoding."""
+    return HypothesisResult(
+        signal_name=signal_name,
+        definition=definition,
+        values=[],
+        min_value=0.0,
+        max_value=0.0,
+        mean=0.0,
+        std=0.0,
+        is_valid=False,
+        confidence=0.0,
+        feedback="Failed to decode any messages with this definition",
+    )
+
+
+def _calculate_hypothesis_statistics(decoded_values: list[float]) -> dict[str, float]:
+    """Calculate statistics for decoded values."""
+    arr = np.array(decoded_values)
+    return {
+        "min_value": float(np.min(arr)),
+        "max_value": float(np.max(arr)),
+        "mean": float(np.mean(arr)),
+        "std": float(np.std(arr)),
+    }
+
+
+def _validate_hypothesis(
+    stats: dict[str, float], expected_min: float | None, expected_max: float | None
+) -> tuple[bool, float, str]:
+    """Validate hypothesis and generate feedback."""
+    is_valid = True
+    confidence = 1.0
+    feedback_parts = []
+
+    # Check expected range
+    if expected_min is not None and stats["min_value"] < expected_min:
+        is_valid = False
+        confidence *= 0.5
+        feedback_parts.append(
+            f"Min value {stats['min_value']:.2f} below expected {expected_min:.2f}"
+        )
+
+    if expected_max is not None and stats["max_value"] > expected_max:
+        is_valid = False
+        confidence *= 0.5
+        feedback_parts.append(
+            f"Max value {stats['max_value']:.2f} above expected {expected_max:.2f}"
+        )
+
+    # Check value distribution
+    if stats["std"] == 0:
+        confidence *= 0.7
+        feedback_parts.append("Warning: All values are identical - might be a constant field")
+
+    value_range = stats["max_value"] - stats["min_value"]
+    if value_range > 1e6:
+        confidence *= 0.6
+        feedback_parts.append("Warning: Very large value range - check scaling factor")
+
+    # Positive feedback
+    if is_valid and not feedback_parts:
+        feedback_parts.append(
+            f"Values in expected range [{stats['min_value']:.2f}, {stats['max_value']:.2f}]"
+        )
+        if stats["std"] > 0:
+            feedback_parts.append("Signal shows variation - likely represents real data")
+
+    feedback = "; ".join(feedback_parts) if feedback_parts else "Hypothesis test passed"
+    return is_valid, confidence, feedback

@@ -10,6 +10,7 @@ Provides signal analysis functionality including:
 - Eye diagram analysis (height, width, Q-factor)
 - Signal integrity (S-parameters, equalization)
 - Side-channel analysis (DPA, CPA, timing attacks)
+- Machine learning classification (automatic protocol detection)
 """
 
 # Import measurements module as namespace for DSL compatibility
@@ -18,6 +19,7 @@ from oscura.analyzers import (
     eye,
     jitter,
     measurements,
+    ml,
     protocols,
     side_channel,
     signal_integrity,
@@ -31,6 +33,7 @@ __all__ = [
     "eye",
     "jitter",
     "measurements",
+    "ml",
     "protocols",
     "side_channel",
     "signal_integrity",

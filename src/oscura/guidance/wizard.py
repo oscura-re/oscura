@@ -181,6 +181,262 @@ class AnalysisWizard:
         """
         self._predefined_answers = answers
 
+    def _execute_characterization_step(self, preview_callback: Callable[[Any], None] | None) -> Any:
+        """Execute signal characterization step.
+
+        Args:
+            preview_callback: Optional callback for step preview.
+
+        Returns:
+            Characterization result object with signal_type and confidence.
+
+        Example:
+            >>> result = wizard._execute_characterization_step(None)
+            >>> print(result.signal_type)
+        """
+        from oscura.discovery import characterize_signal
+
+        step = WizardStep(
+            number=1,
+            id="characterization",
+            question="What type of signal are you analyzing?",
+            options=[
+                "Serial data (UART, SPI, I2C)",
+                "PWM / Motor control",
+                "Analog sensor output",
+                "Not sure - auto-detect",
+            ],
+            default="Not sure - auto-detect",
+            skip_if_confident=False,
+        )
+
+        char_result = characterize_signal(self.trace)
+        step.confidence_before = 0.0
+        step.confidence_after = char_result.confidence
+        self._current_state["characterization"] = char_result
+
+        if self.interactive and char_result.confidence < self.auto_detect_threshold:
+            step.user_response = self._predefined_answers.get("signal_type", step.default)
+            self.questions_asked += 1
+        else:
+            signal_type = getattr(char_result, "signal_type", "Unknown")
+            step.user_response = f"Auto-detected: {signal_type}"
+            self.questions_skipped += 1
+
+        self.step_history.append(step)
+        self.steps_completed += 1
+
+        if preview_callback and self.enable_preview:
+            preview_callback(char_result)
+
+        return char_result
+
+    def _execute_quality_assessment_step(
+        self, char_result: Any, preview_callback: Callable[[Any], None] | None
+    ) -> Any:
+        """Execute data quality assessment step.
+
+        Args:
+            char_result: Result from characterization step.
+            preview_callback: Optional callback for step preview.
+
+        Returns:
+            Quality assessment result with status and confidence.
+
+        Example:
+            >>> quality = wizard._execute_quality_assessment_step(char_result, None)
+            >>> print(quality.status)
+        """
+        from oscura.discovery import assess_data_quality
+
+        step = WizardStep(
+            number=2,
+            id="quality",
+            question="Check data quality?",
+            options=["Yes", "No"],
+            default="Yes",
+            skip_if_confident=True,
+        )
+
+        quality = assess_data_quality(self.trace)
+        step.confidence_before = char_result.confidence
+        step.confidence_after = quality.confidence
+        self._current_state["quality"] = quality
+
+        if self.interactive and self.questions_asked < self.max_questions:
+            step.user_response = self._predefined_answers.get("check_quality", "Yes")
+            if step.user_response == "Yes":
+                self.questions_asked += 1
+        else:
+            step.user_response = "Skipped (auto-assessed)"
+            self.questions_skipped += 1
+
+        self.step_history.append(step)
+        self.steps_completed += 1
+
+        if preview_callback and self.enable_preview:
+            preview_callback(quality)
+
+        return quality
+
+    def _execute_protocol_decode_step(
+        self, char_result: Any, preview_callback: Callable[[Any], None] | None
+    ) -> Any | None:
+        """Execute protocol decoding step if applicable.
+
+        Args:
+            char_result: Result from characterization step.
+            preview_callback: Optional callback for step preview.
+
+        Returns:
+            Decode result if protocol detected, None otherwise.
+
+        Example:
+            >>> decode = wizard._execute_protocol_decode_step(char_result, None)
+            >>> if decode:
+            ...     print(len(decode.data))
+        """
+        from oscura.discovery import decode_protocol
+
+        decode_result = None
+
+        if not (hasattr(char_result, "signal_type") and char_result.confidence >= 0.7):
+            return decode_result
+
+        signal_type = char_result.signal_type.lower()
+        if not any(proto in signal_type for proto in ["uart", "spi", "i2c", "can"]):
+            return decode_result
+
+        step = WizardStep(
+            number=3,
+            id="decode",
+            question=f"Auto-detected {char_result.signal_type}. Decode data?",
+            options=["Yes", "No"],
+            default="Yes",
+            skip_if_confident=True,
+        )
+
+        if self.interactive and self.questions_asked < self.max_questions:
+            step.user_response = self._predefined_answers.get("decode_data", "Yes")
+            if step.user_response == "Yes":
+                decode_result = decode_protocol(self.trace)
+                self._current_state["decode"] = decode_result
+                self.questions_asked += 1
+        else:
+            decode_result = decode_protocol(self.trace)
+            self._current_state["decode"] = decode_result
+            step.user_response = "Auto-decoded"
+            self.questions_skipped += 1
+
+        step.confidence_before = char_result.confidence
+        step.confidence_after = decode_result.overall_confidence if decode_result else 0.0
+
+        self.step_history.append(step)
+        self.steps_completed += 1
+
+        if preview_callback and self.enable_preview and decode_result:
+            preview_callback(decode_result)
+
+        return decode_result
+
+    def _execute_anomaly_detection_step(
+        self, quality: Any, preview_callback: Callable[[Any], None] | None
+    ) -> Any | None:
+        """Execute anomaly detection step if quality issues exist.
+
+        Args:
+            quality: Result from quality assessment step.
+            preview_callback: Optional callback for step preview.
+
+        Returns:
+            Anomaly detection results if quality issues found, None otherwise.
+
+        Example:
+            >>> anomalies = wizard._execute_anomaly_detection_step(quality, None)
+            >>> if anomalies:
+            ...     print(len(anomalies))
+        """
+        from oscura.discovery import find_anomalies
+
+        anomalies = None
+
+        if quality.status not in ["WARNING", "FAIL"]:
+            return anomalies
+
+        step = WizardStep(
+            number=self.steps_completed + 1,
+            id="anomalies",
+            question="Quality concerns detected. Check for anomalies?",
+            options=["Yes", "No"],
+            default="Yes",
+        )
+
+        if self.interactive and self.questions_asked < self.max_questions:
+            step.user_response = self._predefined_answers.get("check_anomalies", "Yes")
+            if step.user_response == "Yes":
+                anomalies = find_anomalies(self.trace)
+                self._current_state["anomalies"] = anomalies
+                self.questions_asked += 1
+        else:
+            anomalies = find_anomalies(self.trace)
+            self._current_state["anomalies"] = anomalies
+            step.user_response = "Auto-checked"
+            self.questions_skipped += 1
+
+        self.step_history.append(step)
+        self.steps_completed += 1
+
+        if preview_callback and self.enable_preview and anomalies:
+            preview_callback(anomalies)
+
+        return anomalies
+
+    def _build_summary(
+        self, char_result: Any, quality: Any, decode_result: Any | None, anomalies: Any | None
+    ) -> str:
+        """Build wizard result summary from analysis steps.
+
+        Args:
+            char_result: Characterization result.
+            quality: Quality assessment result.
+            decode_result: Protocol decode result (optional).
+            anomalies: Anomaly detection results (optional).
+
+        Returns:
+            Multi-line summary string.
+
+        Example:
+            >>> summary = wizard._build_summary(char, quality, decode, anomalies)
+            >>> print(summary)
+            Signal type: UART
+            Quality: Good
+            Decoded: 1024 bytes
+        """
+        summary_parts = []
+
+        if hasattr(char_result, "signal_type") and char_result.signal_type:
+            summary_parts.append(f"Signal type: {char_result.signal_type}")
+            if hasattr(char_result, "parameters"):
+                summary_parts.append(f"Parameters: {_format_params(char_result.parameters)}")
+
+        if quality.status == "PASS":
+            summary_parts.append("Quality: Good")
+        elif quality.status == "WARNING":
+            summary_parts.append("Quality: Fair (some concerns)")
+        else:
+            summary_parts.append("Quality: Poor (issues detected)")
+
+        if decode_result:
+            byte_count = len(decode_result.data) if hasattr(decode_result, "data") else 0
+            summary_parts.append(f"Decoded: {byte_count} bytes")
+
+        if anomalies and len(anomalies) > 0:
+            critical = sum(1 for a in anomalies if a.severity == "CRITICAL")
+            if critical > 0:
+                summary_parts.append(f"Anomalies: {critical} critical issues")
+
+        return "\n".join(summary_parts)
+
     def run(
         self,
         *,
@@ -205,181 +461,21 @@ class AnalysisWizard:
         References:
             DISC-006: Interactive Analysis Wizard
         """
-        from oscura.discovery import (
-            assess_data_quality,
-            characterize_signal,
-            decode_protocol,
-            find_anomalies,
-        )
         from oscura.guidance import suggest_next_steps
 
-        # Step 1: Auto-characterization
-        step1 = WizardStep(
-            number=1,
-            id="characterization",
-            question="What type of signal are you analyzing?",
-            options=[
-                "Serial data (UART, SPI, I2C)",
-                "PWM / Motor control",
-                "Analog sensor output",
-                "Not sure - auto-detect",
-            ],
-            default="Not sure - auto-detect",
-            skip_if_confident=False,
-        )
+        # Execute analysis steps
+        char_result = self._execute_characterization_step(preview_callback)
+        quality = self._execute_quality_assessment_step(char_result, preview_callback)
+        decode_result = self._execute_protocol_decode_step(char_result, preview_callback)
+        anomalies = self._execute_anomaly_detection_step(quality, preview_callback)
 
-        # Always do auto-characterization first
-        char_result = characterize_signal(self.trace)
-        step1.confidence_before = 0.0
-        step1.confidence_after = char_result.confidence
-        self._current_state["characterization"] = char_result
-
-        if self.interactive and char_result.confidence < self.auto_detect_threshold:
-            # Ask user to confirm
-            step1.user_response = self._predefined_answers.get("signal_type", step1.default)
-            self.questions_asked += 1
-        else:
-            # Auto-detected with high confidence
-            signal_type = getattr(char_result, "signal_type", "Unknown")
-            step1.user_response = f"Auto-detected: {signal_type}"
-            self.questions_skipped += 1
-
-        self.step_history.append(step1)
-        self.steps_completed += 1
-
-        # Preview callback
-        if preview_callback and self.enable_preview:
-            preview_callback(char_result)
-
-        # Step 2: Quality assessment
-        step2 = WizardStep(
-            number=2,
-            id="quality",
-            question="Check data quality?",
-            options=["Yes", "No"],
-            default="Yes",
-            skip_if_confident=True,
-        )
-
-        quality = assess_data_quality(self.trace)
-        step2.confidence_before = char_result.confidence
-        step2.confidence_after = quality.confidence
-        self._current_state["quality"] = quality
-
-        if self.interactive and self.questions_asked < self.max_questions:
-            step2.user_response = self._predefined_answers.get("check_quality", "Yes")
-            if step2.user_response == "Yes":
-                self.questions_asked += 1
-        else:
-            step2.user_response = "Skipped (auto-assessed)"
-            self.questions_skipped += 1
-
-        self.step_history.append(step2)
-        self.steps_completed += 1
-
-        if preview_callback and self.enable_preview:
-            preview_callback(quality)
-
-        # Step 3: Protocol decode (if applicable)
-        decode_result = None
-        if hasattr(char_result, "signal_type") and char_result.confidence >= 0.7:
-            signal_type = char_result.signal_type.lower()
-
-            if any(proto in signal_type for proto in ["uart", "spi", "i2c", "can"]):
-                step3 = WizardStep(
-                    number=3,
-                    id="decode",
-                    question=f"Auto-detected {char_result.signal_type}. Decode data?",
-                    options=["Yes", "No"],
-                    default="Yes",
-                    skip_if_confident=True,
-                )
-
-                if self.interactive and self.questions_asked < self.max_questions:
-                    step3.user_response = self._predefined_answers.get("decode_data", "Yes")
-                    if step3.user_response == "Yes":
-                        decode_result = decode_protocol(self.trace)
-                        self._current_state["decode"] = decode_result
-                        self.questions_asked += 1
-                else:
-                    # Auto-decode
-                    decode_result = decode_protocol(self.trace)
-                    self._current_state["decode"] = decode_result
-                    step3.user_response = "Auto-decoded"
-                    self.questions_skipped += 1
-
-                step3.confidence_before = char_result.confidence
-                step3.confidence_after = decode_result.overall_confidence if decode_result else 0.0
-
-                self.step_history.append(step3)
-                self.steps_completed += 1
-
-                if preview_callback and self.enable_preview and decode_result:
-                    preview_callback(decode_result)
-
-        # Step 4: Anomaly detection (if quality issues)
-        anomalies = None
-        if quality.status in ["WARNING", "FAIL"]:
-            step4 = WizardStep(
-                number=self.steps_completed + 1,
-                id="anomalies",
-                question="Quality concerns detected. Check for anomalies?",
-                options=["Yes", "No"],
-                default="Yes",
-            )
-
-            if self.interactive and self.questions_asked < self.max_questions:
-                step4.user_response = self._predefined_answers.get("check_anomalies", "Yes")
-                if step4.user_response == "Yes":
-                    anomalies = find_anomalies(self.trace)
-                    self._current_state["anomalies"] = anomalies
-                    self.questions_asked += 1
-            else:
-                # Auto-check
-                anomalies = find_anomalies(self.trace)
-                self._current_state["anomalies"] = anomalies
-                step4.user_response = "Auto-checked"
-                self.questions_skipped += 1
-
-            self.step_history.append(step4)
-            self.steps_completed += 1
-
-            if preview_callback and self.enable_preview and anomalies:
-                preview_callback(anomalies)
-
-        # Get recommendations for next steps
+        # Generate recommendations and results
         recommendations = suggest_next_steps(
             self.trace,
             current_state=self._current_state,
         )
 
-        # Build summary
-        summary_parts = []
-
-        if hasattr(char_result, "signal_type") and char_result.signal_type:
-            summary_parts.append(f"Signal type: {char_result.signal_type}")
-            if hasattr(char_result, "parameters"):
-                summary_parts.append(f"Parameters: {_format_params(char_result.parameters)}")
-
-        if quality.status == "PASS":
-            summary_parts.append("Quality: Good")
-        elif quality.status == "WARNING":
-            summary_parts.append("Quality: Fair (some concerns)")
-        else:
-            summary_parts.append("Quality: Poor (issues detected)")
-
-        if decode_result:
-            byte_count = len(decode_result.data) if hasattr(decode_result, "data") else 0
-            summary_parts.append(f"Decoded: {byte_count} bytes")
-
-        if anomalies and len(anomalies) > 0:
-            critical = sum(1 for a in anomalies if a.severity == "CRITICAL")
-            if critical > 0:
-                summary_parts.append(f"Anomalies: {critical} critical issues")
-
-        summary = "\n".join(summary_parts)
-
-        # Session duration
+        summary = self._build_summary(char_result, quality, decode_result, anomalies)
         self.session_duration_seconds = (datetime.now() - self._start_time).total_seconds()
 
         return WizardResult(

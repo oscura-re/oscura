@@ -1,6 +1,6 @@
 # Expert/Extensibility API Reference
 
-> **Version**: 0.5.1 | **Last Updated**: 2026-01-19
+> **Version**: 0.6.0 | **Last Updated**: 2026-01-25
 
 Comprehensive API documentation for extending Oscura with custom algorithms, measurements, and plugins.
 
@@ -116,7 +116,7 @@ osc.register_algorithm(
 
 # Use in edge detection
 trace = osc.load("capture.wfm")
-edges = osc.find_edges(trace, method='schmitt_trigger', low_threshold=0.2, high_threshold=0.8)
+edges = osc.detect_edges(trace, method='schmitt_trigger', low_threshold=0.2, high_threshold=0.8)
 ```
 
 #### `get_algorithm()`
@@ -946,7 +946,7 @@ osc.register_algorithm(
 
 # Use in edge detection
 trace = osc.load("digital_signal.wfm")
-edges = osc.find_edges(
+edges = osc.detect_edges(
     trace,
     method='hysteresis',
     low_threshold=0.2,

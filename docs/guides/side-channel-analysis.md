@@ -1,7 +1,7 @@
 # Side-Channel Analysis Guide
 
-**Version**: 0.5.1
-**Last Updated**: 2026-01-20
+**Version**: 0.6.0
+**Last Updated**: 2026-01-25
 
 Guide to power analysis, timing attacks, and electromagnetic analysis using Oscura.
 
@@ -59,7 +59,8 @@ Statistical attack correlating power consumption with data values.
 
 ```python
 from oscura.sessions import BlackBoxSession
-from oscura.acquisition import FileSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 import numpy as np
 
 # Setup session for DPA
@@ -459,7 +460,7 @@ key = dpa_attack(aligned, byte_position=0, hypothesis=sbox_output)
 Improve signal quality through averaging and filtering.
 
 ```python
-from oscura.filtering import low_pass, moving_average
+from oscura.utils.filtering import low_pass, moving_average
 
 def preprocess_traces(session):
     """
@@ -552,7 +553,8 @@ Complete DPA attack on AES implementation.
 
 ```python
 from oscura.sessions import BlackBoxSession
-from oscura.acquisition import FileSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 # Setup
 session = BlackBoxSession(name="AES-128 Key Recovery")

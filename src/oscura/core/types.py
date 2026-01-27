@@ -44,6 +44,7 @@ class CalibrationInfo:
         coupling: Input coupling ("DC", "AC", "GND") (optional).
         bandwidth_limit: Bandwidth limit in Hz, None if disabled (optional).
         vertical_resolution: ADC resolution in bits (optional).
+        timebase_accuracy: Timebase accuracy in ppm (parts per million) (optional).
 
     Example:
         >>> from datetime import datetime
@@ -74,6 +75,7 @@ class CalibrationInfo:
     coupling: str | None = None
     bandwidth_limit: float | None = None
     vertical_resolution: int | None = None
+    timebase_accuracy: float | None = None
 
     def __post_init__(self) -> None:
         """Validate calibration info after initialization."""
@@ -85,6 +87,8 @@ class CalibrationInfo:
             raise ValueError(
                 f"vertical_resolution must be positive, got {self.vertical_resolution}"
             )
+        if self.timebase_accuracy is not None and self.timebase_accuracy <= 0:
+            raise ValueError(f"timebase_accuracy must be positive, got {self.timebase_accuracy}")
 
     @property
     def is_calibration_current(self) -> bool | None:

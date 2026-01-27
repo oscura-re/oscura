@@ -18,10 +18,10 @@ inputs:
     description: "Extra dependencies to install (--all-extras, --dev, etc.)"
     required: false
     default: "--all-extras"
-  install-optional:
-    description: "Install all optional dependencies for comprehensive testing"
+  dev-group:
+    description: "Install dev dependency group (adds --group dev)"
     required: false
-    default: "false"
+    default: "true"
 
 runs:
   using: "composite"
@@ -38,15 +38,14 @@ runs:
 
     - name: Install dependencies
       if: inputs.install-deps == 'true'
-      run: uv sync ${{ inputs.extras }}
-      shell: bash
-
-    - name: Install optional dependencies
-      if: inputs.install-optional == 'true'
       run: |
-        echo "Installing all optional dependencies for comprehensive testing..."
-        uv pip install ".[all]"
-        echo "✓ All optional dependencies installed"
+        # Build sync command with extras and dev group
+        SYNC_CMD="uv sync ${{ inputs.extras }}"
+        if [ "${{ inputs.dev-group }}" == "true" ]; then
+          SYNC_CMD="$SYNC_CMD --group dev"
+        fi
+        echo "Running: $SYNC_CMD"
+        $SYNC_CMD
       shell: bash
 
     - name: Verify installation

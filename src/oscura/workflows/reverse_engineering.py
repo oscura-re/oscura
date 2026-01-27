@@ -166,82 +166,58 @@ def reverse_engineer_signal(
         >>> for frame in result.frames[:5]:
         ...     print(f"  {frame.raw_bytes.hex()}")
     """
-    if expected_baud_rates is None:
-        expected_baud_rates = [9600, 19200, 38400, 57600, 115200, 230400, 460800]
-
-    if checksum_types is None:
-        checksum_types = ["xor", "sum8", "crc8", "crc16"]
+    expected_baud_rates = expected_baud_rates or [
+        9600,
+        19200,
+        38400,
+        57600,
+        115200,
+        230400,
+        460800,
+    ]
+    checksum_types = checksum_types or ["xor", "sum8", "crc8", "crc16"]
 
     warnings: list[str] = []
     data = trace.data
     sample_rate = trace.metadata.sample_rate
 
-    # ========== Step 1: Signal Characterization ==========
+    # ========== Step 1-3: Signal Analysis ==========
     characterization = _characterize_signal(data, sample_rate)
-
-    # ========== Step 2: Clock Recovery ==========
     baud_rate, baud_confidence = _detect_baud_rate(
         data, sample_rate, expected_baud_rates, characterization["threshold"]
     )
-    if baud_confidence < 0.7:
-        warnings.append(f"Low baud rate confidence: {baud_confidence:.2f}")
+    _validate_baud_confidence(baud_confidence, warnings)
 
-    # ========== Step 3: Bit Stream Extraction ==========
     bit_stream = _extract_bit_stream(data, sample_rate, baud_rate, characterization["threshold"])
+    _validate_bit_stream(bit_stream, warnings)
 
-    if len(bit_stream) < 100:
-        warnings.append("Short bit stream extracted")
-
-    # ========== Step 4: Byte Extraction ==========
+    # ========== Step 4-5: Byte and Sync Analysis ==========
     byte_positions, byte_stream = _extract_bytes(bit_stream)
+    _validate_byte_stream(byte_stream, warnings)
 
-    if len(byte_stream) < 10:
-        warnings.append("Few bytes extracted")
-
-    # ========== Step 5: Sync Pattern Detection ==========
     sync_pattern, sync_positions, sync_confidence = _detect_sync_pattern(
         byte_stream, max_frame_length
     )
 
-    # ========== Step 6: Frame Extraction ==========
+    # ========== Step 6-8: Frame and Protocol Analysis ==========
     frames = _extract_frames(bit_stream, byte_stream, byte_positions, sync_positions, sync_pattern)
+    _validate_frame_count(frames, min_frames, warnings)
 
-    if len(frames) < min_frames:
-        warnings.append(f"Only {len(frames)} frames found (minimum {min_frames})")
-
-    # ========== Step 7: Field Analysis ==========
     field_specs = _infer_fields(frames, sync_pattern)
-
-    # ========== Step 8: Checksum Analysis ==========
     checksum_type, checksum_pos, checksum_confidence = _detect_checksum(frames, checksum_types)
+    _validate_frame_checksums(frames, checksum_type, checksum_pos)
 
-    if checksum_type:
-        # Validate frames with checksum
-        for frame in frames:
-            frame.checksum_valid = _verify_checksum(frame.raw_bytes, checksum_type, checksum_pos)
-
-    # ========== Build Protocol Specification ==========
-    frame_lengths = [len(f.raw_bytes) for f in frames]
-    frame_length = int(np.median(frame_lengths)) if len(set(frame_lengths)) == 1 else None
-
-    # Calculate overall confidence
-    overall_confidence = (
-        baud_confidence * 0.3
-        + sync_confidence * 0.3
-        + checksum_confidence * 0.2
-        + min(len(frames) / 10, 1.0) * 0.2
-    )
-
-    protocol_spec = ProtocolSpec(
-        name="Unknown Protocol (Inferred)",
-        baud_rate=baud_rate,
-        frame_format="8N1",  # Most common
-        sync_pattern=sync_pattern.hex() if sync_pattern else "",
-        frame_length=frame_length,
-        fields=field_specs,
-        checksum_type=checksum_type,
-        checksum_position=checksum_pos,
-        confidence=overall_confidence,
+    # ========== Build Results ==========
+    protocol_spec = _build_protocol_spec(
+        baud_rate,
+        sync_pattern,
+        frames,
+        field_specs,
+        checksum_type,
+        checksum_pos,
+        baud_confidence,
+        sync_confidence,
+        checksum_confidence,
     )
 
     return ReverseEngineeringResult(
@@ -252,8 +228,120 @@ def reverse_engineer_signal(
         byte_stream=byte_stream,
         sync_positions=sync_positions,
         characterization=characterization,
-        confidence=overall_confidence,
+        confidence=protocol_spec.confidence,
         warnings=warnings,
+    )
+
+
+def _validate_baud_confidence(baud_confidence: float, warnings: list[str]) -> None:
+    """Validate baud rate confidence and add warning if low.
+
+    Args:
+        baud_confidence: Confidence score for baud rate detection.
+        warnings: List to append warnings to.
+    """
+    if baud_confidence < 0.7:
+        warnings.append(f"Low baud rate confidence: {baud_confidence:.2f}")
+
+
+def _validate_bit_stream(bit_stream: str, warnings: list[str]) -> None:
+    """Validate bit stream length and add warning if short.
+
+    Args:
+        bit_stream: Extracted bit stream.
+        warnings: List to append warnings to.
+    """
+    if len(bit_stream) < 100:
+        warnings.append("Short bit stream extracted")
+
+
+def _validate_byte_stream(byte_stream: bytes, warnings: list[str]) -> None:
+    """Validate byte stream length and add warning if short.
+
+    Args:
+        byte_stream: Extracted byte stream.
+        warnings: List to append warnings to.
+    """
+    if len(byte_stream) < 10:
+        warnings.append("Few bytes extracted")
+
+
+def _validate_frame_count(
+    frames: list[InferredFrame], min_frames: int, warnings: list[str]
+) -> None:
+    """Validate frame count and add warning if insufficient.
+
+    Args:
+        frames: List of extracted frames.
+        min_frames: Minimum required frames.
+        warnings: List to append warnings to.
+    """
+    if len(frames) < min_frames:
+        warnings.append(f"Only {len(frames)} frames found (minimum {min_frames})")
+
+
+def _validate_frame_checksums(
+    frames: list[InferredFrame], checksum_type: str | None, checksum_pos: int | None
+) -> None:
+    """Validate checksums for all frames.
+
+    Args:
+        frames: List of frames to validate.
+        checksum_type: Detected checksum type.
+        checksum_pos: Position of checksum in frame.
+    """
+    if checksum_type:
+        for frame in frames:
+            frame.checksum_valid = _verify_checksum(frame.raw_bytes, checksum_type, checksum_pos)
+
+
+def _build_protocol_spec(
+    baud_rate: float,
+    sync_pattern: bytes,
+    frames: list[InferredFrame],
+    field_specs: list[FieldSpec],
+    checksum_type: str | None,
+    checksum_pos: int | None,
+    baud_confidence: float,
+    sync_confidence: float,
+    checksum_confidence: float,
+) -> ProtocolSpec:
+    """Build protocol specification from analysis results.
+
+    Args:
+        baud_rate: Detected baud rate.
+        sync_pattern: Detected sync pattern.
+        frames: List of extracted frames.
+        field_specs: List of field specifications.
+        checksum_type: Detected checksum type.
+        checksum_pos: Position of checksum.
+        baud_confidence: Baud rate detection confidence.
+        sync_confidence: Sync pattern detection confidence.
+        checksum_confidence: Checksum detection confidence.
+
+    Returns:
+        Complete protocol specification.
+    """
+    frame_lengths = [len(f.raw_bytes) for f in frames]
+    frame_length = int(np.median(frame_lengths)) if len(set(frame_lengths)) == 1 else None
+
+    overall_confidence = (
+        baud_confidence * 0.3
+        + sync_confidence * 0.3
+        + checksum_confidence * 0.2
+        + min(len(frames) / 10, 1.0) * 0.2
+    )
+
+    return ProtocolSpec(
+        name="Unknown Protocol (Inferred)",
+        baud_rate=baud_rate,
+        frame_format="8N1",
+        sync_pattern=sync_pattern.hex() if sync_pattern else "",
+        frame_length=frame_length,
+        fields=field_specs,
+        checksum_type=checksum_type,
+        checksum_position=checksum_pos,
+        confidence=overall_confidence,
     )
 
 
@@ -371,13 +459,39 @@ def _detect_sync_pattern(
     byte_stream: bytes,
     max_frame_length: int,
 ) -> tuple[bytes, list[int], float]:
-    """Detect sync pattern by finding repeated byte sequences."""
+    """Detect sync pattern by finding repeated byte sequences.
+
+    Args:
+        byte_stream: Stream of bytes to analyze.
+        max_frame_length: Maximum expected frame length.
+
+    Returns:
+        Tuple of (pattern, positions, confidence).
+    """
     if len(byte_stream) < 20:
         return b"", [], 0.0
 
-    list(byte_stream)
-
     # Try common sync patterns first
+    best_pattern, best_positions, best_confidence = _find_common_sync_patterns(byte_stream)
+
+    # If no common pattern found, try to find repeating sequences
+    if best_confidence < 0.5:
+        pattern, positions, confidence = _find_repeating_patterns(byte_stream)
+        if confidence > best_confidence:
+            best_pattern, best_positions, best_confidence = pattern, positions, confidence
+
+    return best_pattern, best_positions, best_confidence
+
+
+def _find_common_sync_patterns(byte_stream: bytes) -> tuple[bytes, list[int], float]:
+    """Search for common sync patterns.
+
+    Args:
+        byte_stream: Stream of bytes to analyze.
+
+    Returns:
+        Tuple of (best_pattern, positions, confidence).
+    """
     common_patterns = [
         bytes([0xAA, 0x55]),
         bytes([0x55, 0xAA]),
@@ -392,45 +506,83 @@ def _detect_sync_pattern(
     best_confidence = 0.0
 
     for pattern in common_patterns:
-        positions = []
-        for i in range(len(byte_stream) - len(pattern)):
-            if byte_stream[i : i + len(pattern)] == pattern:
-                positions.append(i)
+        positions = _find_pattern_positions(byte_stream, pattern)
 
         if len(positions) >= 3:
-            # Check for regular spacing
-            spacings = np.diff(positions)
-            if len(spacings) > 0:
-                median_spacing = np.median(spacings)
-                regularity = 1.0 - np.std(spacings) / (median_spacing + 1)
+            confidence = _calculate_pattern_confidence(positions)
 
-                confidence = min(len(positions) / 10, 1.0) * max(regularity, 0)
-
-                if confidence > best_confidence:
-                    best_pattern = pattern
-                    best_positions = positions
-                    best_confidence = confidence
-
-    # If no common pattern found, try to find repeating sequences
-    if best_confidence < 0.5:
-        for pattern_len in range(1, 4):
-            for start in range(min(50, len(byte_stream) - pattern_len)):
-                pattern = byte_stream[start : start + pattern_len]
-                positions = []
-                for i in range(len(byte_stream) - pattern_len):
-                    if byte_stream[i : i + pattern_len] == pattern:
-                        positions.append(i)
-
-                if len(positions) >= 5:
-                    spacings = np.diff(positions)
-                    if len(spacings) > 0 and np.std(spacings) / (np.median(spacings) + 1) < 0.2:
-                        confidence = min(len(positions) / 10, 1.0)
-                        if confidence > best_confidence:
-                            best_pattern = pattern
-                            best_positions = positions
-                            best_confidence = confidence
+            if confidence > best_confidence:
+                best_pattern = pattern
+                best_positions = positions
+                best_confidence = confidence
 
     return best_pattern, best_positions, best_confidence
+
+
+def _find_repeating_patterns(byte_stream: bytes) -> tuple[bytes, list[int], float]:
+    """Search for repeating byte sequences.
+
+    Args:
+        byte_stream: Stream of bytes to analyze.
+
+    Returns:
+        Tuple of (best_pattern, positions, confidence).
+    """
+    best_pattern = b""
+    best_positions: list[int] = []
+    best_confidence = 0.0
+
+    for pattern_len in range(1, 4):
+        for start in range(min(50, len(byte_stream) - pattern_len)):
+            pattern = byte_stream[start : start + pattern_len]
+            positions = _find_pattern_positions(byte_stream, pattern)
+
+            if len(positions) >= 5:
+                spacings = np.diff(positions)
+                if len(spacings) > 0 and np.std(spacings) / (np.median(spacings) + 1) < 0.2:
+                    confidence = min(len(positions) / 10, 1.0)
+                    if confidence > best_confidence:
+                        best_pattern = pattern
+                        best_positions = positions
+                        best_confidence = confidence
+
+    return best_pattern, best_positions, best_confidence
+
+
+def _find_pattern_positions(byte_stream: bytes, pattern: bytes) -> list[int]:
+    """Find all positions where pattern occurs in byte stream.
+
+    Args:
+        byte_stream: Stream to search.
+        pattern: Pattern to find.
+
+    Returns:
+        List of byte positions where pattern occurs.
+    """
+    positions = []
+    for i in range(len(byte_stream) - len(pattern)):
+        if byte_stream[i : i + len(pattern)] == pattern:
+            positions.append(i)
+    return positions
+
+
+def _calculate_pattern_confidence(positions: list[int]) -> float:
+    """Calculate confidence score for pattern regularity.
+
+    Args:
+        positions: List of pattern positions.
+
+    Returns:
+        Confidence score (0.0 to 1.0).
+    """
+    spacings = np.diff(positions)
+    if len(spacings) == 0:
+        return 0.0
+
+    median_spacing = float(np.median(spacings))
+    regularity = 1.0 - float(np.std(spacings)) / (median_spacing + 1)
+
+    return min(len(positions) / 10, 1.0) * max(regularity, 0)
 
 
 def _extract_frames(
@@ -481,70 +633,105 @@ def _infer_fields(frames: list[InferredFrame], sync_pattern: bytes) -> list[Fiel
     fields: list[FieldSpec] = []
     sync_len = len(sync_pattern)
 
-    # Sync field
-    if sync_len > 0:
+    _add_sync_field(fields, sync_pattern)
+    length_offset = _try_add_length_field(fields, frames, sync_len)
+    _add_data_field(fields, frames, length_offset, sync_len)
+    _add_checksum_field(fields)
+
+    return fields
+
+
+def _add_sync_field(fields: list[FieldSpec], sync_pattern: bytes) -> None:
+    """Add sync field if pattern exists.
+
+    Args:
+        fields: Field list to append to.
+        sync_pattern: Sync pattern bytes.
+    """
+    if len(sync_pattern) > 0:
         fields.append(
             FieldSpec(
                 name="sync",
                 offset=0,
-                size=sync_len,
+                size=len(sync_pattern),
                 field_type="constant",
                 value=sync_pattern.hex(),
             )
         )
 
-    # Analyze remaining bytes
+
+def _try_add_length_field(
+    fields: list[FieldSpec], frames: list[InferredFrame], sync_len: int
+) -> int:
+    """Try to detect and add length field.
+
+    Args:
+        fields: Field list to append to.
+        frames: Frame list to analyze.
+        sync_len: Length of sync pattern.
+
+    Returns:
+        Offset after length field (or sync_len if no length detected).
+    """
     frame_lengths = [len(f.raw_bytes) for f in frames]
     min_len = min(frame_lengths)
-
-    # Check for length field (common at offset 2 or after sync)
     length_offset = sync_len
-    if min_len > length_offset:
-        length_values = [
-            f.raw_bytes[length_offset] for f in frames if len(f.raw_bytes) > length_offset
-        ]
-        frame_lens = [len(f.raw_bytes) for f in frames]
 
-        # Check if value correlates with frame length
-        if len(length_values) > 2:
-            correlation = (
-                np.corrcoef(length_values, frame_lens)[0, 1] if len(set(length_values)) > 1 else 0
-            )
-            if correlation > 0.8 or (
-                len(set(length_values)) == 1 and length_values[0] == frame_lens[0]
-            ):
-                fields.append(
-                    FieldSpec(
-                        name="length",
-                        offset=length_offset,
-                        size=1,
-                        field_type="uint8",
-                    )
-                )
-                length_offset += 1
+    if min_len <= length_offset:
+        return length_offset
 
-    # Assume remaining bytes are data + checksum
+    length_values = [f.raw_bytes[length_offset] for f in frames if len(f.raw_bytes) > length_offset]
+
+    if len(length_values) <= 2:
+        return length_offset
+
+    # Check correlation
+    if len(set(length_values)) > 1:
+        correlation = np.corrcoef(length_values, frame_lengths)[0, 1]
+    else:
+        correlation = 0
+
+    if correlation > 0.8 or (len(set(length_values)) == 1 and length_values[0] == frame_lengths[0]):
+        fields.append(FieldSpec(name="length", offset=length_offset, size=1, field_type="uint8"))
+        return length_offset + 1
+
+    return length_offset
+
+
+def _add_data_field(
+    fields: list[FieldSpec],
+    frames: list[InferredFrame],
+    length_offset: int,
+    sync_len: int,
+) -> None:
+    """Add data field for payload.
+
+    Args:
+        fields: Field list to append to.
+        frames: Frame list.
+        length_offset: Offset after length field.
+        sync_len: Length of sync pattern.
+    """
+    min_len = min(len(f.raw_bytes) for f in frames)
+
     if min_len > length_offset + 1:
         fields.append(
             FieldSpec(
                 name="data",
                 offset=length_offset,
-                size="length - sync_len - 2",  # Variable
+                size="length - sync_len - 2",
                 field_type="bytes",
             )
         )
 
-    # Last byte likely checksum
-    fields.append(
-        FieldSpec(
-            name="checksum",
-            offset=-1,
-            size=1,
-            field_type="checksum",
-        )
-    )
 
-    return fields
+def _add_checksum_field(fields: list[FieldSpec]) -> None:
+    """Add checksum field at end.
+
+    Args:
+        fields: Field list to append to.
+    """
+    fields.append(FieldSpec(name="checksum", offset=-1, size=1, field_type="checksum"))
 
 
 def _detect_checksum(
@@ -589,40 +776,54 @@ def _detect_checksum(
 
 def _calculate_checksum(data: bytes, checksum_type: str) -> int:
     """Calculate checksum using specified algorithm."""
-    if checksum_type == "xor":
-        result = 0
-        for b in data:
-            result ^= b
-        return result
+    checksum_funcs = {
+        "xor": _checksum_xor,
+        "sum8": _checksum_sum8,
+        "crc8": _checksum_crc8,
+        "crc16": _checksum_crc16,
+    }
 
-    elif checksum_type == "sum8":
-        return sum(data) & 0xFF
+    func = checksum_funcs.get(checksum_type)
+    return func(data) if func else 0
 
-    elif checksum_type == "crc8":
-        # Simple CRC-8
-        crc = 0
-        for b in data:
-            crc ^= b
-            for _ in range(8):
-                if crc & 0x80:
-                    crc = ((crc << 1) ^ 0x07) & 0xFF
-                else:
-                    crc = (crc << 1) & 0xFF
-        return crc
 
-    elif checksum_type == "crc16":
-        # CRC-16-CCITT (return low byte only for single-byte comparison)
-        crc = 0xFFFF
-        for b in data:
-            crc ^= b << 8
-            for _ in range(8):
-                if crc & 0x8000:
-                    crc = ((crc << 1) ^ 0x1021) & 0xFFFF
-                else:
-                    crc = (crc << 1) & 0xFFFF
-        return crc & 0xFF  # Return low byte
+def _checksum_xor(data: bytes) -> int:
+    """Calculate XOR checksum."""
+    result = 0
+    for b in data:
+        result ^= b
+    return result
 
-    return 0
+
+def _checksum_sum8(data: bytes) -> int:
+    """Calculate 8-bit sum checksum."""
+    return sum(data) & 0xFF
+
+
+def _checksum_crc8(data: bytes) -> int:
+    """Calculate simple CRC-8."""
+    crc = 0
+    for b in data:
+        crc ^= b
+        for _ in range(8):
+            if crc & 0x80:
+                crc = ((crc << 1) ^ 0x07) & 0xFF
+            else:
+                crc = (crc << 1) & 0xFF
+    return crc
+
+
+def _checksum_crc16(data: bytes) -> int:
+    """Calculate CRC-16-CCITT (return low byte only)."""
+    crc = 0xFFFF
+    for b in data:
+        crc ^= b << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+            else:
+                crc = (crc << 1) & 0xFFFF
+    return crc & 0xFF
 
 
 def _verify_checksum(data: bytes, checksum_type: str, checksum_pos: int | None) -> bool:

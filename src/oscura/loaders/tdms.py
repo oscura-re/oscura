@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 from oscura.core.exceptions import FormatError, LoaderError
 from oscura.core.types import TraceMetadata, WaveformTrace
@@ -112,6 +113,17 @@ def _load_with_nptdms(
         FormatError: If file is not valid TDMS format or has no data.
         LoaderError: If channel or group not found.
     """
+    tdms_file = _parse_tdms_file(path)
+    target_group = _select_tdms_group(tdms_file, group, path)
+    target_channel = _select_tdms_channel(target_group, channel, path)
+    data = _extract_channel_data(target_channel, path)
+    metadata = _build_tdms_metadata(target_channel, target_group, tdms_file, path)
+
+    return WaveformTrace(data=data, metadata=metadata)
+
+
+def _parse_tdms_file(path: Path) -> Any:
+    """Parse TDMS file and validate structure."""
     try:
         tdms_file = TdmsFile.read(str(path))
     except Exception as e:
@@ -121,33 +133,37 @@ def _load_with_nptdms(
             expected="Valid NI TDMS format",
         ) from e
 
-    # Get available groups
     groups = list(tdms_file.groups())
-
     if not groups:
         raise FormatError(
             "No groups found in TDMS file",
             file_path=str(path),
         )
 
-    # Select group
-    if group is not None:
-        target_group = None
-        for g in groups:
-            if g.name == group:
-                target_group = g
-                break
-        if target_group is None:
-            available_groups = [g.name for g in groups]
-            raise LoaderError(
-                f"Group '{group}' not found",
-                file_path=str(path),
-                details=f"Available groups: {available_groups}",
-            )
-    else:
-        target_group = groups[0]
+    return tdms_file
 
-    # Get channels in group
+
+def _select_tdms_group(tdms_file: Any, group: str | None, path: Path) -> Any:
+    """Select target group from TDMS file."""
+    groups = list(tdms_file.groups())
+
+    if group is None:
+        return groups[0]
+
+    for g in groups:
+        if g.name == group:
+            return g
+
+    available_groups = [g.name for g in groups]
+    raise LoaderError(
+        f"Group '{group}' not found",
+        file_path=str(path),
+        details=f"Available groups: {available_groups}",
+    )
+
+
+def _select_tdms_channel(target_group: Any, channel: str | int | None, path: Path) -> Any:
+    """Select target channel from TDMS group."""
     channels = list(target_group.channels())
 
     if not channels:
@@ -156,35 +172,44 @@ def _load_with_nptdms(
             file_path=str(path),
         )
 
-    # Select channel
-    if channel is not None:
-        if isinstance(channel, int):
-            if channel < 0 or channel >= len(channels):
-                raise LoaderError(
-                    f"Channel index {channel} out of range",
-                    file_path=str(path),
-                    details=f"Available channels: 0-{len(channels) - 1}",
-                )
-            target_channel = channels[channel]
-        elif isinstance(channel, str):
-            target_channel = None
-            for ch in channels:
-                if ch.name == channel:
-                    target_channel = ch
-                    break
-            if target_channel is None:
-                available_channels = [ch.name for ch in channels]
-                raise LoaderError(
-                    f"Channel '{channel}' not found",
-                    file_path=str(path),
-                    details=f"Available channels: {available_channels}",
-                )
-        else:
-            target_channel = channels[0]  # type: ignore[unreachable]
-    else:
-        target_channel = channels[0]
+    if channel is None:
+        return channels[0]
 
-    # Get channel data
+    if isinstance(channel, int):
+        return _select_channel_by_index(channels, channel, path)
+    elif isinstance(channel, str):
+        return _select_channel_by_name(channels, channel, path)
+    else:
+        return channels[0]  # type: ignore[unreachable]
+
+
+def _select_channel_by_index(channels: list[Any], channel: int, path: Path) -> Any:
+    """Select channel by index."""
+    if channel < 0 or channel >= len(channels):
+        raise LoaderError(
+            f"Channel index {channel} out of range",
+            file_path=str(path),
+            details=f"Available channels: 0-{len(channels) - 1}",
+        )
+    return channels[channel]
+
+
+def _select_channel_by_name(channels: list[Any], channel: str, path: Path) -> Any:
+    """Select channel by name."""
+    for ch in channels:
+        if ch.name == channel:
+            return ch
+
+    available_channels = [ch.name for ch in channels]
+    raise LoaderError(
+        f"Channel '{channel}' not found",
+        file_path=str(path),
+        details=f"Available channels: {available_channels}",
+    )
+
+
+def _extract_channel_data(target_channel: Any, path: Path) -> NDArray[np.float64]:
+    """Extract and validate channel data."""
     data = target_channel.data
     if data is None or len(data) == 0:
         raise FormatError(
@@ -192,21 +217,21 @@ def _load_with_nptdms(
             file_path=str(path),
         )
 
-    # Convert to float64
-    data = np.asarray(data, dtype=np.float64)
+    return np.asarray(data, dtype=np.float64)
 
-    # Extract sample rate from properties
+
+def _build_tdms_metadata(
+    target_channel: Any,
+    target_group: Any,
+    tdms_file: Any,
+    path: Path,
+) -> TraceMetadata:
+    """Build metadata from TDMS channel properties."""
     sample_rate = _get_sample_rate(target_channel, target_group, tdms_file)
-
-    # Extract other metadata
     vertical_scale = target_channel.properties.get("NI_Scale[0]_Linear_Slope")
     vertical_offset = target_channel.properties.get("NI_Scale[0]_Linear_Y_Intercept")
 
-    # Get units if available
-    target_channel.properties.get("unit_string", None)
-
-    # Build metadata
-    metadata = TraceMetadata(
+    return TraceMetadata(
         sample_rate=sample_rate,
         vertical_scale=float(vertical_scale) if vertical_scale is not None else None,
         vertical_offset=float(vertical_offset) if vertical_offset is not None else None,
@@ -214,8 +239,6 @@ def _load_with_nptdms(
         channel_name=target_channel.name,
         trigger_info=_extract_tdms_properties(target_channel),
     )
-
-    return WaveformTrace(data=data, metadata=metadata)
 
 
 def _get_sample_rate(

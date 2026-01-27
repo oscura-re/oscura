@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 import oscura as osc
-from oscura.builders import SignalBuilder
+from oscura.utils.builders import SignalBuilder
 
 pytestmark = pytest.mark.unit
 

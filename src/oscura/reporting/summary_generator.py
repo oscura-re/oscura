@@ -215,6 +215,111 @@ def _format_frequency(freq_hz: float) -> str:
         return f"{freq_hz:.1f} Hz"
 
 
+def _build_findings(
+    signal_type: str,
+    type_confidence: float,
+    quality_level: str,
+    quality_issues: list[str],
+    trace: WaveformTrace,
+) -> list[Finding]:
+    """Build findings list from analysis results."""
+    findings = []
+
+    findings.append(
+        Finding(
+            title="Signal Type",
+            description=f"Identified as {signal_type}",
+            confidence=type_confidence,
+            severity="INFO",
+        )
+    )
+
+    quality_desc = f"Signal quality is {quality_level}"
+    if quality_issues:
+        quality_desc += f" with {len(quality_issues)} issue(s) noted"
+
+    findings.append(
+        Finding(
+            title="Signal Quality",
+            description=quality_desc,
+            confidence=0.85,
+            severity="WARNING" if quality_issues else "INFO",
+        )
+    )
+
+    v_min = float(np.min(trace.data))
+    v_max = float(np.max(trace.data))
+    v_range = v_max - v_min
+
+    findings.append(
+        Finding(
+            title="Voltage Range",
+            description=f"Signal ranges from {v_min:.3f}V to {v_max:.3f}V (swing: {v_range:.3f}V)",
+            confidence=1.0,
+            severity="INFO",
+        )
+    )
+
+    return findings
+
+
+def _build_recommendations(signal_type: str, quality_issues: list[str]) -> list[str]:
+    """Build recommendations from analysis results."""
+    recommendations = []
+
+    if "very short" in str(quality_issues).lower():
+        recommendations.append("Capture a longer duration to enable more detailed analysis")
+
+    if "noise" in str(quality_issues).lower():
+        recommendations.append(
+            "Check signal integrity and consider using better probes or shielding"
+        )
+
+    if "clipping" in str(quality_issues).lower():
+        recommendations.append("Adjust voltage range to prevent signal clipping and data loss")
+
+    if signal_type == "digital" and not recommendations:
+        recommendations.append("Signal appears clean and suitable for digital protocol analysis")
+    elif signal_type in ["analog", "periodic analog"] and not recommendations:
+        recommendations.append("Consider spectral analysis to identify frequency components")
+
+    return recommendations
+
+
+def _build_summary_text(
+    overview: str,
+    findings: list[Finding],
+    recommendations: list[str],
+    include_sections: list[str],
+    max_words: int,
+) -> str:
+    """Build complete summary text from components."""
+    summary_parts = []
+
+    if "overview" in include_sections:
+        summary_parts.append(overview)
+
+    if "findings" in include_sections and findings:
+        key_findings = findings[:3]
+        findings_text = " ".join(
+            [f"{finding.title}: {finding.description}." for finding in key_findings]
+        )
+        summary_parts.append(findings_text)
+
+    if "recommendations" in include_sections and recommendations:
+        rec_text = "Recommended next steps: " + "; ".join(recommendations[:2]) + "."
+        summary_parts.append(rec_text)
+
+    full_text = " ".join(summary_parts)
+
+    words = full_text.split()
+    if len(words) > max_words:
+        words = words[:max_words]
+        full_text = " ".join(words) + "..."
+
+    return full_text
+
+
 def generate_summary(
     trace: WaveformTrace,
     *,
@@ -250,104 +355,19 @@ def generate_summary(
     context = context or {}
     include_sections = include_sections or ["overview", "findings", "recommendations"]
 
-    # Characterize signal type
     signal_type, type_confidence = _characterize_signal_type(trace)
-
-    # Assess quality
     quality_level, quality_issues = _assess_quality(trace)
 
-    # Build overview
     sample_rate = trace.metadata.sample_rate
     duration_ms = len(trace.data) / sample_rate * 1000
-
     overview = f"This is a {signal_type} signal captured at {_format_frequency(sample_rate)} sample rate for {duration_ms:.1f} milliseconds."
 
-    # Build findings
-    findings = []
+    findings = _build_findings(signal_type, type_confidence, quality_level, quality_issues, trace)
+    recommendations = _build_recommendations(signal_type, quality_issues)
 
-    # Signal type finding
-    findings.append(
-        Finding(
-            title="Signal Type",
-            description=f"Identified as {signal_type}",
-            confidence=type_confidence,
-            severity="INFO",
-        )
+    full_text = _build_summary_text(
+        overview, findings, recommendations, include_sections, max_words
     )
-
-    # Quality finding
-    quality_desc = f"Signal quality is {quality_level}"
-    if quality_issues:
-        quality_desc += f" with {len(quality_issues)} issue(s) noted"
-
-    findings.append(
-        Finding(
-            title="Signal Quality",
-            description=quality_desc,
-            confidence=0.85,
-            severity="WARNING" if quality_issues else "INFO",
-        )
-    )
-
-    # Voltage levels
-    v_min = float(np.min(trace.data))
-    v_max = float(np.max(trace.data))
-    v_range = v_max - v_min
-
-    findings.append(
-        Finding(
-            title="Voltage Range",
-            description=f"Signal ranges from {v_min:.3f}V to {v_max:.3f}V (swing: {v_range:.3f}V)",
-            confidence=1.0,
-            severity="INFO",
-        )
-    )
-
-    # Build recommendations
-    recommendations = []
-
-    if "very short" in str(quality_issues).lower():
-        recommendations.append("Capture a longer duration to enable more detailed analysis")
-
-    if "noise" in str(quality_issues).lower():
-        recommendations.append(
-            "Check signal integrity and consider using better probes or shielding"
-        )
-
-    if "clipping" in str(quality_issues).lower():
-        recommendations.append("Adjust voltage range to prevent signal clipping and data loss")
-
-    if signal_type == "digital" and not recommendations:
-        recommendations.append("Signal appears clean and suitable for digital protocol analysis")
-    elif signal_type in ["analog", "periodic analog"] and not recommendations:
-        recommendations.append("Consider spectral analysis to identify frequency components")
-
-    # Build complete summary text
-    summary_parts = []
-
-    if "overview" in include_sections:
-        summary_parts.append(overview)
-
-    if "findings" in include_sections and findings:
-        key_findings = findings[:3]  # Top 3 findings
-        findings_text = " ".join(
-            [f"{finding.title}: {finding.description}." for finding in key_findings]
-        )
-        summary_parts.append(findings_text)
-
-    if "recommendations" in include_sections and recommendations:
-        rec_text = "Recommended next steps: " + "; ".join(recommendations[:2]) + "."
-        summary_parts.append(rec_text)
-
-    full_text = " ".join(summary_parts)
-
-    # Truncate to max_words if needed
-    words = full_text.split()
-    if len(words) > max_words:
-        words = words[:max_words]
-        full_text = " ".join(words) + "..."
-
-    # Calculate statistics
     word_count = len(full_text.split())
     grade_level = _estimate_grade_level(full_text)
 

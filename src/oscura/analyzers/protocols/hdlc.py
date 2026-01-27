@@ -30,6 +30,7 @@ from oscura.core.types import (
     TraceMetadata,
     WaveformTrace,
 )
+from oscura.utils.bitwise import bits_to_byte
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -60,13 +61,13 @@ class HDLCDecoder(AsyncDecoder):
     longname = "High-Level Data Link Control"
     desc = "HDLC telecom protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("data", "DATA", "HDLC data line", required=True),
     ]
 
-    optional_channels = []  # noqa: RUF012
+    optional_channels = []
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef("baudrate", "Baud rate", "Bits per second", default=1000000, values=None),
         OptionDef(
             "fcs",
@@ -77,7 +78,7 @@ class HDLCDecoder(AsyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("flag", "Flag sequence"),
         ("address", "Address field"),
         ("control", "Control field"),
@@ -103,6 +104,72 @@ class HDLCDecoder(AsyncDecoder):
         super().__init__(baudrate=baudrate, fcs=fcs)
         self._fcs = fcs
         self._fcs_bytes = 2 if fcs == "crc16" else 4
+
+    def _process_frame_bytes(
+        self,
+        unstuffed_bits: list[int],
+    ) -> tuple[list[int], int, int, list[int], list[int]]:
+        """Convert unstuffed bits to bytes and extract frame fields."""
+        field_bytes = []
+        for i in range(0, len(unstuffed_bits), 8):
+            if i + 8 <= len(unstuffed_bits):
+                byte_val = bits_to_byte(unstuffed_bits[i : i + 8], lsb_first=True)
+                field_bytes.append(byte_val)
+
+        address = field_bytes[0]
+        control = field_bytes[1]
+        info_bytes = field_bytes[2 : -self._fcs_bytes]
+        fcs_bytes = field_bytes[-self._fcs_bytes :]
+
+        return field_bytes, address, control, info_bytes, fcs_bytes
+
+    def _validate_fcs(
+        self,
+        frame_data: list[int],
+        fcs_bytes: list[int],
+    ) -> tuple[bool, list[str]]:
+        """Validate Frame Check Sequence and return errors if any."""
+        errors = []
+
+        if self._fcs == "crc16":
+            computed_fcs = self._crc16_ccitt(bytes(frame_data))
+            received_fcs = (fcs_bytes[1] << 8) | fcs_bytes[0]
+        else:
+            computed_fcs = self._crc32(bytes(frame_data))
+            received_fcs = (
+                (fcs_bytes[3] << 24) | (fcs_bytes[2] << 16) | (fcs_bytes[1] << 8) | fcs_bytes[0]
+            )
+
+        if computed_fcs != received_fcs:
+            errors.append("FCS mismatch")
+
+        return computed_fcs == received_fcs, errors
+
+    def _create_hdlc_packet(
+        self,
+        frame_num: int,
+        address: int,
+        control: int,
+        info_bytes: list[int],
+        errors: list[str],
+        start_time: float,
+    ) -> ProtocolPacket:
+        """Create HDLC protocol packet from decoded frame."""
+        annotations = {
+            "frame_num": frame_num,
+            "address": address,
+            "control": control,
+            "info_length": len(info_bytes),
+            "fcs_type": self._fcs,
+        }
+
+        return ProtocolPacket(
+            timestamp=start_time,
+            protocol="hdlc",
+            data=bytes(info_bytes),
+            annotations=annotations,
+            errors=errors,
+        )
 
     def decode(
         self,
@@ -168,38 +235,20 @@ class HDLCDecoder(AsyncDecoder):
                 idx = next_flag_idx + 8
                 continue
 
-            # Extract fields
-            field_bytes = []
-            for i in range(0, len(unstuffed_bits), 8):
-                if i + 8 <= len(unstuffed_bits):
-                    byte_val = self._bits_to_byte(unstuffed_bits[i : i + 8])
-                    field_bytes.append(byte_val)
+            # Extract and process frame fields
+            field_bytes, address, control, info_bytes, fcs_bytes = self._process_frame_bytes(
+                unstuffed_bits
+            )
 
             if len(field_bytes) < 2 + self._fcs_bytes:
                 idx = next_flag_idx + 8
                 continue
 
-            # Split into address, control, info, and FCS
-            address = field_bytes[0]
-            control = field_bytes[1]
-            info_bytes = field_bytes[2 : -self._fcs_bytes]
-            fcs_bytes = field_bytes[-self._fcs_bytes :]
-
             # Validate FCS
             errors = list(stuff_errors)
             frame_data = field_bytes[: -self._fcs_bytes]
-
-            if self._fcs == "crc16":
-                computed_fcs = self._crc16_ccitt(bytes(frame_data))
-                received_fcs = (fcs_bytes[1] << 8) | fcs_bytes[0]
-            else:
-                computed_fcs = self._crc32(bytes(frame_data))
-                received_fcs = (
-                    (fcs_bytes[3] << 24) | (fcs_bytes[2] << 16) | (fcs_bytes[1] << 8) | fcs_bytes[0]
-                )
-
-            if computed_fcs != received_fcs:
-                errors.append("FCS mismatch")
+            _, fcs_errors = self._validate_fcs(frame_data, fcs_bytes)
+            errors.extend(fcs_errors)
 
             # Calculate timing
             start_time = (flag_idx * bit_period) / sample_rate
@@ -213,23 +262,10 @@ class HDLCDecoder(AsyncDecoder):
                 f"Addr: 0x{address:02X}, Ctrl: 0x{control:02X}",
             )
 
-            # Create packet
-            annotations = {
-                "frame_num": frame_num,
-                "address": address,
-                "control": control,
-                "info_length": len(info_bytes),
-                "fcs_type": self._fcs,
-            }
-
-            packet = ProtocolPacket(
-                timestamp=start_time,
-                protocol="hdlc",
-                data=bytes(info_bytes),
-                annotations=annotations,
-                errors=errors,
+            # Create and yield packet
+            packet = self._create_hdlc_packet(
+                frame_num, address, control, info_bytes, errors, start_time
             )
-
             yield packet
 
             frame_num += 1
@@ -313,20 +349,6 @@ class HDLCDecoder(AsyncDecoder):
 
         return unstuffed, errors
 
-    def _bits_to_byte(self, bits: list[int]) -> int:
-        """Convert 8 bits to byte (LSB first).
-
-        Args:
-            bits: List of 8 bits.
-
-        Returns:
-            Byte value.
-        """
-        value = 0
-        for i in range(min(8, len(bits))):
-            value |= bits[i] << i
-        return value
-
     def _crc16_ccitt(self, data: bytes) -> int:
         """Compute CRC-16-CCITT.
 
@@ -361,6 +383,19 @@ class HDLCDecoder(AsyncDecoder):
                 else:
                     crc >>= 1
         return crc ^ 0xFFFFFFFF
+
+    def _bits_to_byte(self, bits: list[int]) -> int:
+        """Convert bit list to byte value (LSB first).
+
+        Wrapper for bitwise.bits_to_byte utility.
+
+        Args:
+            bits: List of bits (up to 8).
+
+        Returns:
+            Byte value (0-255).
+        """
+        return bits_to_byte(bits)
 
 
 def decode_hdlc(

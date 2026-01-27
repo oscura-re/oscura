@@ -18,7 +18,7 @@ References:
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from scipy import signal as sp_signal
@@ -190,57 +190,127 @@ def fft(
             analysis_type="fft",
         )
 
-    # Detrend
-    if detrend == "mean":
-        data_processed = data - np.mean(data)
-    elif detrend == "linear":
-        data_processed = sp_signal.detrend(data, type="linear")
-    else:
-        data_processed = data
-
-    # Determine FFT length
-    nfft_computed = int(2 ** np.ceil(np.log2(n))) if nfft is None else max(nfft, n)
-
+    data_processed = _apply_detrend(data, detrend)
+    nfft_computed = _compute_nfft(n, nfft)
     sample_rate = trace.metadata.sample_rate
 
-    # Use cache if enabled
     if use_cache:
-        # Convert to bytes for cache key (hashable)
-        data_bytes = data_processed.tobytes()
-
-        # Call cached implementation
-        freq, magnitude_db, phase = _compute_fft_cached(
-            data_bytes,
-            n,
-            window,
-            nfft_computed,
-            detrend,
-            sample_rate,
+        return _fft_cached_path(
+            data_processed, n, window, nfft_computed, detrend, sample_rate, return_phase
         )
-        _fft_cache_stats["hits"] += 1
+    else:
+        return _fft_direct_path(data_processed, n, window, nfft_computed, sample_rate, return_phase)
 
-        if return_phase:
-            return freq, magnitude_db, phase
-        else:
-            return freq, magnitude_db
 
-    # Non-cached path
+def _apply_detrend(
+    data: NDArray[np.float64], detrend: Literal["none", "mean", "linear"]
+) -> NDArray[np.float64]:
+    """Apply detrending to data.
+
+    Args:
+        data: Input data.
+        detrend: Detrend method.
+
+    Returns:
+        Detrended data.
+    """
+    if detrend == "mean":
+        detrended: NDArray[np.float64] = data - np.mean(data)
+        return detrended
+    elif detrend == "linear":
+        linear_detrend: NDArray[np.float64] = np.asarray(
+            sp_signal.detrend(data, type="linear"), dtype=np.float64
+        )
+        return linear_detrend
+    else:
+        return data
+
+
+def _compute_nfft(n: int, nfft: int | None) -> int:
+    """Compute FFT length.
+
+    Args:
+        n: Data length.
+        nfft: Requested FFT length or None.
+
+    Returns:
+        Computed FFT length (power of 2 or max of nfft and n).
+    """
+    return int(2 ** np.ceil(np.log2(n))) if nfft is None else max(nfft, n)
+
+
+def _fft_cached_path(
+    data_processed: NDArray[np.float64],
+    n: int,
+    window: str,
+    nfft_computed: int,
+    detrend: str,
+    sample_rate: float,
+    return_phase: bool,
+) -> (
+    tuple[NDArray[np.float64], NDArray[np.float64]]
+    | tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
+):
+    """Execute cached FFT computation path.
+
+    Args:
+        data_processed: Preprocessed data.
+        n: Data length.
+        window: Window function name.
+        nfft_computed: FFT length.
+        detrend: Detrend method string.
+        sample_rate: Sample rate.
+        return_phase: Whether to return phase.
+
+    Returns:
+        FFT results (with or without phase).
+    """
+    data_bytes = data_processed.tobytes()
+    freq, magnitude_db, phase = _compute_fft_cached(
+        data_bytes, n, window, nfft_computed, detrend, sample_rate
+    )
+    _fft_cache_stats["hits"] += 1
+
+    if return_phase:
+        return freq, magnitude_db, phase
+    else:
+        return freq, magnitude_db
+
+
+def _fft_direct_path(
+    data_processed: NDArray[np.float64],
+    n: int,
+    window: str,
+    nfft_computed: int,
+    sample_rate: float,
+    return_phase: bool,
+) -> (
+    tuple[NDArray[np.float64], NDArray[np.float64]]
+    | tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
+):
+    """Execute non-cached FFT computation path.
+
+    Args:
+        data_processed: Preprocessed data.
+        n: Data length.
+        window: Window function name.
+        nfft_computed: FFT length.
+        sample_rate: Sample rate.
+        return_phase: Whether to return phase.
+
+    Returns:
+        FFT results (with or without phase).
+    """
     _fft_cache_stats["misses"] += 1
 
-    # Apply window
     w = get_window(window, n)
     data_windowed = data_processed * w
-
-    # Compute FFT
     spectrum = np.fft.rfft(data_windowed, n=nfft_computed)
-
-    # Frequency axis
     freq = np.fft.rfftfreq(nfft_computed, d=1.0 / sample_rate)
 
-    # Magnitude in dB (normalized by window coherent gain)
+    # Magnitude in dB
     window_gain = np.sum(w) / n
     magnitude = np.abs(spectrum) / (n * window_gain)
-    # Avoid log(0)
     magnitude = np.maximum(magnitude, 1e-20)
     magnitude_db = 20 * np.log10(magnitude)
 
@@ -613,7 +683,7 @@ def thd(
     _fund_idx, fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0 or fund_freq == 0:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Find harmonics
     harmonic_indices = _find_harmonic_indices(freq, fund_freq, n_harmonics)
@@ -629,7 +699,7 @@ def thd(
 
     if return_db:
         if thd_ratio <= 0:
-            return -np.inf  # type: ignore[no-any-return]
+            return -np.inf
         return float(20 * np.log10(thd_ratio))
     else:
         return float(thd_ratio * 100)
@@ -663,59 +733,108 @@ def snr(
     References:
         IEEE 1241-2010 Section 4.1.4.1
     """
-    # Use data length as NFFT to avoid zero-padding that breaks coherence
     if nfft is None:
         nfft = len(trace.data)
 
-    result = fft(trace, window=window, nfft=nfft, detrend="mean")
-    freq, mag_db = result[0], result[1]
-    magnitude = 10 ** (mag_db / 20)
-
-    # Find fundamental
+    freq, magnitude = _compute_magnitude_spectrum(trace, window, nfft)
     fund_idx, fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0 or fund_freq == 0:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
-    # Find harmonics to exclude
     harmonic_indices = _find_harmonic_indices(freq, fund_freq, n_harmonics)
+    exclude_indices = _build_exclusion_set(fund_idx, harmonic_indices, len(magnitude))
 
-    # Build exclusion set: DC, fundamental, and harmonics
-    # Also exclude bins adjacent to fundamental and harmonics (spectral leakage)
+    signal_power = _compute_signal_power(magnitude, fund_idx)
+    noise_power = _compute_noise_power(magnitude, exclude_indices)
+
+    if noise_power <= 0:
+        return np.inf
+
+    return float(10 * np.log10(signal_power / noise_power))
+
+
+def _compute_magnitude_spectrum(
+    trace: WaveformTrace, window: str, nfft: int
+) -> tuple[NDArray[np.floating[Any]], NDArray[np.floating[Any]]]:
+    """Compute magnitude spectrum from FFT.
+
+    Args:
+        trace: Input waveform.
+        window: Window function name.
+        nfft: FFT length.
+
+    Returns:
+        Tuple of (frequency array, magnitude array).
+    """
+    result = fft(trace, window=window, nfft=nfft, detrend="mean")
+    freq, mag_db = result[0], result[1]
+    magnitude = 10 ** (mag_db / 20)
+    return freq, magnitude
+
+
+def _build_exclusion_set(fund_idx: int, harmonic_indices: list[int], n_bins: int) -> set[int]:
+    """Build set of frequency bins to exclude from noise.
+
+    Args:
+        fund_idx: Fundamental frequency bin index.
+        harmonic_indices: Harmonic bin indices.
+        n_bins: Total number of bins.
+
+    Returns:
+        Set of bin indices to exclude.
+    """
     exclude_indices = {0}  # DC
 
-    # Exclude fundamental and adjacent bins
-    for offset in range(-3, 4):  # +/- 3 bins around fundamental
+    # Exclude fundamental +/- 3 bins
+    for offset in range(-3, 4):
         idx = fund_idx + offset
-        if 0 <= idx < len(magnitude):
+        if 0 <= idx < n_bins:
             exclude_indices.add(idx)
 
-    # Exclude harmonics and adjacent bins
+    # Exclude harmonics +/- 3 bins
     for h_idx in harmonic_indices:
-        for offset in range(-3, 4):  # +/- 3 bins around each harmonic
+        for offset in range(-3, 4):
             idx = h_idx + offset
-            if 0 <= idx < len(magnitude):
+            if 0 <= idx < n_bins:
                 exclude_indices.add(idx)
 
-    # Signal power (fundamental only, using single bin or small window)
-    # Use 3-bin sum around fundamental for better estimate
+    return exclude_indices
+
+
+def _compute_signal_power(magnitude: NDArray[np.floating[Any]], fund_idx: int) -> float:
+    """Compute signal power from fundamental.
+
+    Args:
+        magnitude: Magnitude spectrum.
+        fund_idx: Fundamental bin index.
+
+    Returns:
+        Signal power (3-bin sum around fundamental).
+    """
     signal_power = 0.0
     for offset in range(-1, 2):
         idx = fund_idx + offset
         if 0 <= idx < len(magnitude):
             signal_power += magnitude[idx] ** 2
+    return signal_power
 
-    # Noise power (all bins except excluded ones)
+
+def _compute_noise_power(magnitude: NDArray[np.floating[Any]], exclude_indices: set[int]) -> float:
+    """Compute noise power from non-excluded bins.
+
+    Args:
+        magnitude: Magnitude spectrum.
+        exclude_indices: Bins to exclude.
+
+    Returns:
+        Noise power.
+    """
     noise_power = 0.0
     for i in range(len(magnitude)):
         if i not in exclude_indices:
             noise_power += magnitude[i] ** 2
-
-    if noise_power <= 0:
-        return np.inf  # type: ignore[no-any-return]
-
-    snr_ratio = signal_power / noise_power
-    return float(10 * np.log10(snr_ratio))
+    return noise_power
 
 
 def sinad(
@@ -756,7 +875,7 @@ def sinad(
     fund_idx, _fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Signal power: use 3-bin window around fundamental to capture spectral leakage
     signal_power = 0.0
@@ -772,7 +891,7 @@ def sinad(
     nad_power = total_power - signal_power
 
     if nad_power <= 0:
-        return np.inf  # type: ignore[no-any-return]
+        return np.inf
 
     sinad_ratio = signal_power / nad_power
     return float(10 * np.log10(sinad_ratio))
@@ -806,7 +925,7 @@ def enob(
     sinad_db = sinad(trace, window=window, nfft=nfft)
 
     if np.isnan(sinad_db) or sinad_db <= 0:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     return float((sinad_db - 1.76) / 6.02)
 
@@ -849,7 +968,7 @@ def sfdr(
     fund_idx, _fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0:
-        return np.nan  # type: ignore[no-any-return]
+        return np.nan
 
     # Create mask for spurs (exclude fundamental and DC)
     spur_mask = np.ones(len(magnitude), dtype=bool)
@@ -868,12 +987,12 @@ def sfdr(
     # Find largest spur
     spur_magnitudes = magnitude[spur_mask]
     if len(spur_magnitudes) == 0:
-        return np.inf  # type: ignore[no-any-return]
+        return np.inf
 
     max_spur = np.max(spur_magnitudes)
 
     if max_spur <= 0:
-        return np.inf  # type: ignore[no-any-return]
+        return np.inf
 
     sfdr_ratio = fund_mag / max_spur
     return float(20 * np.log10(sfdr_ratio))
@@ -1041,9 +1160,7 @@ def dwt(
     try:
         import pywt
     except ImportError:
-        raise ImportError(  # noqa: B904
-            "DWT requires PyWavelets library. Install with: pip install PyWavelets"
-        )
+        raise ImportError("DWT requires PyWavelets library. Install with: pip install PyWavelets")
 
     data = trace.data
 
@@ -1065,7 +1182,7 @@ def dwt(
         # Perform multi-level DWT
         coeffs = pywt.wavedec(data, wavelet, mode=mode, level=level)
     except ValueError as e:
-        raise AnalysisError(f"DWT decomposition failed: {e}", analysis_type="dwt")  # noqa: B904
+        raise AnalysisError(f"DWT decomposition failed: {e}", analysis_type="dwt")
 
     # Package into dictionary
     result = {"cA": coeffs[0]}  # Approximation coefficients
@@ -1108,9 +1225,7 @@ def idwt(
     try:
         import pywt
     except ImportError:
-        raise ImportError(  # noqa: B904
-            "IDWT requires PyWavelets library. Install with: pip install PyWavelets"
-        )
+        raise ImportError("IDWT requires PyWavelets library. Install with: pip install PyWavelets")
 
     # Reconstruct coefficient list
     cA = coeffs["cA"]
@@ -1128,7 +1243,7 @@ def idwt(
     try:
         reconstructed = pywt.waverec(coeff_list, wavelet, mode=mode)
     except ValueError as e:
-        raise AnalysisError(f"IDWT reconstruction failed: {e}", analysis_type="idwt")  # noqa: B904
+        raise AnalysisError(f"IDWT reconstruction failed: {e}", analysis_type="idwt")
 
     return np.asarray(reconstructed, dtype=np.float64)
 
@@ -1304,7 +1419,6 @@ def spectrogram_chunked(
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Compute spectrogram for very large signals using chunked processing.
 
-
     Processes signal in chunks with overlap to handle files larger than RAM.
     Stitches STFT results from overlapping chunks to create continuous spectrogram.
 
@@ -1313,59 +1427,95 @@ def spectrogram_chunked(
         chunk_size: Maximum samples per chunk (default 100M).
         window: Window function name.
         nperseg: Segment length for STFT. If None, auto-selected.
-        noverlap: Overlap between STFT segments. If None, uses nperseg - nperseg // 8.
+        noverlap: Overlap between STFT segments.
         nfft: FFT length per segment.
-        overlap_factor: Overlap factor between chunks (default 2.0 = 2*nperseg overlap).
+        overlap_factor: Overlap factor between chunks (default 2.0).
 
     Returns:
-        (times, frequencies, magnitude_db) - Time axis, frequency axis,
-        and magnitude in dB as 2D array.
+        (times, frequencies, magnitude_db) as 2D spectrogram.
 
     Example:
-        >>> # Process 10 GB file in 50M sample chunks
-        >>> t, f, Sxx = spectrogram_chunked(trace, chunk_size=50_000_000, nperseg=4096)
-        >>> print(f"Spectrogram shape: {Sxx.shape}")
-
-    References:
-        scipy.signal.stft documentation
+        >>> t, f, Sxx = spectrogram_chunked(trace, chunk_size=50_000_000)
     """
     data = trace.data
     n = len(data)
     sample_rate = trace.metadata.sample_rate
 
-    # Set default parameters
-    if nperseg is None:
-        nperseg = min(256, n // 4)
-        nperseg = max(nperseg, 16)
-
-    if noverlap is None:
-        noverlap = nperseg - nperseg // 8
-
-    # Calculate chunk overlap (overlap_factor * nperseg on each boundary)
+    nperseg, noverlap = _set_spectrogram_defaults(nperseg, noverlap, n)
     chunk_overlap = int(overlap_factor * nperseg)
 
-    # If data fits in one chunk, use standard spectrogram
     if n <= chunk_size:
         return spectrogram(trace, window=window, nperseg=nperseg, noverlap=noverlap, nfft=nfft)
 
-    # Process chunks
+    chunks_stft, chunks_times, freq = _process_spectrogram_chunks(
+        data, n, chunk_size, chunk_overlap, sample_rate, window, nperseg, noverlap, nfft
+    )
+
+    Sxx = np.concatenate(chunks_stft, axis=1)
+    times = np.concatenate(chunks_times)
+
+    Sxx = np.maximum(Sxx, 1e-20)
+    Sxx_db: NDArray[np.float64] = np.asarray(10 * np.log10(Sxx), dtype=np.float64)
+
+    return times, freq, Sxx_db
+
+
+def _set_spectrogram_defaults(nperseg: int | None, noverlap: int | None, n: int) -> tuple[int, int]:
+    """Set default spectrogram parameters.
+
+    Args:
+        nperseg: Segment length or None.
+        noverlap: Overlap or None.
+        n: Data length.
+
+    Returns:
+        Tuple of (nperseg, noverlap).
+    """
+    if nperseg is None:
+        nperseg = min(256, n // 4)
+        nperseg = max(nperseg, 16)
+    if noverlap is None:
+        noverlap = nperseg - nperseg // 8
+    return nperseg, noverlap
+
+
+def _process_spectrogram_chunks(
+    data: NDArray[np.float64],
+    n: int,
+    chunk_size: int,
+    chunk_overlap: int,
+    sample_rate: float,
+    window: str,
+    nperseg: int,
+    noverlap: int,
+    nfft: int | None,
+) -> tuple[list[NDArray[np.float64]], list[NDArray[np.float64]], NDArray[np.float64]]:
+    """Process all spectrogram chunks.
+
+    Args:
+        data: Signal data.
+        n: Data length.
+        chunk_size: Chunk size in samples.
+        chunk_overlap: Overlap between chunks.
+        sample_rate: Sampling rate.
+        window: Window function.
+        nperseg: Segment length.
+        noverlap: Segment overlap.
+        nfft: FFT length.
+
+    Returns:
+        Tuple of (chunks_stft, chunks_times, freq).
+    """
     chunks_stft = []
     chunks_times = []
     chunk_start = 0
+    freq: NDArray[np.float64] | None = None
 
     while chunk_start < n:
-        # Determine chunk end with overlap
         chunk_end = min(chunk_start + chunk_size, n)
+        chunk_data = _extract_spectrogram_chunk(data, chunk_start, chunk_end, chunk_overlap, n)
 
-        # Extract chunk with overlap on both sides
-        chunk_data_start = chunk_start - chunk_overlap if chunk_start > 0 else 0
-
-        chunk_data_end = chunk_end + chunk_overlap if chunk_end < n else n
-
-        chunk_data = data[chunk_data_start:chunk_data_end]
-
-        # Compute STFT for chunk
-        freq, times_chunk, Sxx_chunk = sp_signal.spectrogram(
+        freq_local, times_chunk, Sxx_chunk = sp_signal.spectrogram(
             chunk_data,
             fs=sample_rate,
             window=window,
@@ -1375,48 +1525,117 @@ def spectrogram_chunked(
             scaling="spectrum",
         )
 
-        # Adjust time offset for chunk position
-        time_offset = chunk_data_start / sample_rate
-        times_chunk_adjusted = times_chunk + time_offset
+        if freq is None:
+            freq = freq_local
 
-        # For overlapping chunks, trim overlap regions
-        if chunk_start > 0 and chunk_end < n:
-            # Middle chunk: trim both sides
-            valid_time_start = chunk_start / sample_rate
-            valid_time_end = chunk_end / sample_rate
-            valid_mask = (times_chunk_adjusted >= valid_time_start) & (
-                times_chunk_adjusted < valid_time_end
-            )
-            Sxx_chunk = Sxx_chunk[:, valid_mask]
-            times_chunk_adjusted = times_chunk_adjusted[valid_mask]
-        elif chunk_start > 0:
-            # Last chunk: trim left overlap
-            valid_time_start = chunk_start / sample_rate
-            valid_mask = times_chunk_adjusted >= valid_time_start
-            Sxx_chunk = Sxx_chunk[:, valid_mask]
-            times_chunk_adjusted = times_chunk_adjusted[valid_mask]
-        elif chunk_end < n:
-            # First chunk: trim right overlap
-            valid_time_end = chunk_end / sample_rate
-            valid_mask = times_chunk_adjusted < valid_time_end
-            Sxx_chunk = Sxx_chunk[:, valid_mask]
-            times_chunk_adjusted = times_chunk_adjusted[valid_mask]
+        times_adjusted = _adjust_chunk_times(
+            times_chunk, chunk_data, data, chunk_start, chunk_end, chunk_overlap, sample_rate
+        )
+        Sxx_trimmed, times_trimmed = _trim_chunk_overlap(
+            Sxx_chunk, times_adjusted, chunk_start, chunk_end, n, sample_rate
+        )
 
-        chunks_stft.append(Sxx_chunk)
-        chunks_times.append(times_chunk_adjusted)
-
-        # Move to next chunk
+        chunks_stft.append(Sxx_trimmed)
+        chunks_times.append(times_trimmed)
         chunk_start += chunk_size
 
-    # Concatenate all chunks
-    Sxx = np.concatenate(chunks_stft, axis=1)
-    times = np.concatenate(chunks_times)
+    if freq is None:
+        raise ValueError("No chunks processed - data length too small")
 
-    # Convert to dB
-    Sxx = np.maximum(Sxx, 1e-20)
-    Sxx_db = 10 * np.log10(Sxx)
+    return chunks_stft, chunks_times, freq
 
-    return times, freq, Sxx_db
+
+def _extract_spectrogram_chunk(
+    data: NDArray[np.float64],
+    chunk_start: int,
+    chunk_end: int,
+    chunk_overlap: int,
+    n: int,
+) -> NDArray[np.float64]:
+    """Extract chunk data with overlap.
+
+    Args:
+        data: Full data array.
+        chunk_start: Chunk start index.
+        chunk_end: Chunk end index.
+        chunk_overlap: Overlap size.
+        n: Total data length.
+
+    Returns:
+        Chunk data array.
+    """
+    chunk_data_start = chunk_start - chunk_overlap if chunk_start > 0 else 0
+    chunk_data_end = chunk_end + chunk_overlap if chunk_end < n else n
+    return data[chunk_data_start:chunk_data_end]
+
+
+def _adjust_chunk_times(
+    times_chunk: NDArray[np.float64],
+    chunk_data: NDArray[np.float64],
+    data: NDArray[np.float64],
+    chunk_start: int,
+    chunk_end: int,
+    chunk_overlap: int,
+    sample_rate: float,
+) -> NDArray[np.float64]:
+    """Adjust chunk times for global position.
+
+    Args:
+        times_chunk: Local chunk times.
+        chunk_data: Chunk data array.
+        data: Full data array.
+        chunk_start: Chunk start index.
+        chunk_end: Chunk end index.
+        chunk_overlap: Overlap size.
+        sample_rate: Sampling rate.
+
+    Returns:
+        Adjusted time array.
+    """
+    chunk_data_start = chunk_start - chunk_overlap if chunk_start > 0 else 0
+    time_offset = chunk_data_start / sample_rate
+    return times_chunk + time_offset
+
+
+def _trim_chunk_overlap(
+    Sxx_chunk: NDArray[np.float64],
+    times_adjusted: NDArray[np.float64],
+    chunk_start: int,
+    chunk_end: int,
+    n: int,
+    sample_rate: float,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Trim overlap regions from chunk.
+
+    Args:
+        Sxx_chunk: Chunk spectrogram.
+        times_adjusted: Adjusted times.
+        chunk_start: Chunk start index.
+        chunk_end: Chunk end index.
+        n: Total data length.
+        sample_rate: Sampling rate.
+
+    Returns:
+        Tuple of (trimmed spectrogram, trimmed times).
+    """
+    if chunk_start > 0 and chunk_end < n:
+        # Middle chunk: trim both sides
+        valid_time_start = chunk_start / sample_rate
+        valid_time_end = chunk_end / sample_rate
+        valid_mask = (times_adjusted >= valid_time_start) & (times_adjusted < valid_time_end)
+    elif chunk_start > 0:
+        # Last chunk: trim left overlap
+        valid_time_start = chunk_start / sample_rate
+        valid_mask = times_adjusted >= valid_time_start
+    elif chunk_end < n:
+        # First chunk: trim right overlap
+        valid_time_end = chunk_end / sample_rate
+        valid_mask = times_adjusted < valid_time_end
+    else:
+        # Single chunk
+        return Sxx_chunk, times_adjusted
+
+    return Sxx_chunk[:, valid_mask], times_adjusted[valid_mask]
 
 
 def psd_chunked(
@@ -1469,51 +1688,74 @@ def psd_chunked(
     sample_rate = trace.metadata.sample_rate
 
     # Set default parameters
-    if nperseg is None:
-        nperseg = max(256, min(n // 8, chunk_size // 8))
-        nperseg = min(nperseg, n)
-
-    if noverlap is None:
-        noverlap = nperseg // 2
-
-    if nfft is None:
-        nfft = nperseg
+    nperseg, noverlap, nfft = _set_psd_defaults(nperseg, noverlap, nfft, n, chunk_size)
 
     # If data fits in one chunk, use standard PSD
     if n <= chunk_size:
         return psd(
-            trace,
-            window=window,
-            nperseg=nperseg,
-            noverlap=noverlap,
-            nfft=nfft,
-            scaling=scaling,
+            trace, window=window, nperseg=nperseg, noverlap=noverlap, nfft=nfft, scaling=scaling
         )
 
-    # Calculate chunk overlap to ensure proper segment handling at boundaries
-    # Overlap should be at least nperseg to ensure no gaps in segment coverage
-    chunk_overlap = nperseg
+    # Process chunks and accumulate
+    psd_sum, total_segments, freq = _process_psd_chunks(
+        data, sample_rate, chunk_size, nperseg, noverlap, nfft, window, scaling, n
+    )
 
-    # Accumulate PSD estimates
+    # Fallback if processing failed
+    if psd_sum is None or total_segments == 0 or freq is None:
+        return psd(
+            trace, window=window, nperseg=nperseg, noverlap=noverlap, nfft=nfft, scaling=scaling
+        )
+
+    # Average and convert to dB
+    psd_avg = psd_sum / total_segments
+    psd_avg = np.maximum(psd_avg, 1e-20)
+    psd_db = 10 * np.log10(psd_avg)
+
+    return freq, psd_db
+
+
+def _set_psd_defaults(
+    nperseg: int | None,
+    noverlap: int | None,
+    nfft: int | None,
+    n: int,
+    chunk_size: int,
+) -> tuple[int, int, int]:
+    """Set default PSD parameters."""
+    if nperseg is None:
+        nperseg = max(256, min(n // 8, chunk_size // 8))
+        nperseg = min(nperseg, n)
+    if noverlap is None:
+        noverlap = nperseg // 2
+    if nfft is None:
+        nfft = nperseg
+    return nperseg, noverlap, nfft
+
+
+def _process_psd_chunks(
+    data: NDArray[np.float64],
+    sample_rate: float,
+    chunk_size: int,
+    nperseg: int,
+    noverlap: int,
+    nfft: int,
+    window: str,
+    scaling: str,
+    n: int,
+) -> tuple[NDArray[np.float64] | None, int, NDArray[np.float64] | None]:
+    """Process chunks and accumulate PSD estimates."""
+    chunk_overlap = nperseg
     psd_sum: NDArray[np.float64] | None = None
     total_segments = 0
     freq: NDArray[np.float64] | None = None
-
     chunk_start = 0
+
     while chunk_start < n:
-        # Determine chunk boundaries with overlap
-        chunk_data_start = max(0, chunk_start - chunk_overlap)
-        chunk_end = min(chunk_start + chunk_size, n)
-        chunk_data_end = min(chunk_end + chunk_overlap, n)
-
-        # Extract chunk
-        chunk_data = data[chunk_data_start:chunk_data_end]
-
+        chunk_data = _extract_chunk_with_overlap(data, chunk_start, chunk_size, chunk_overlap, n)
         if len(chunk_data) < nperseg:
-            # Last chunk too small, skip
             break
 
-        # Compute Welch PSD for chunk
         f, psd_linear = sp_signal.welch(
             chunk_data,
             fs=sample_rate,
@@ -1525,9 +1767,7 @@ def psd_chunked(
             detrend="constant",
         )
 
-        # Count number of segments in this chunk
-        hop = nperseg - noverlap
-        num_segments = max(1, (len(chunk_data) - noverlap) // hop)
+        num_segments = max(1, (len(chunk_data) - noverlap) // (nperseg - noverlap))
 
         if psd_sum is None:
             psd_sum = psd_linear * num_segments
@@ -1536,29 +1776,23 @@ def psd_chunked(
             psd_sum += psd_linear * num_segments
 
         total_segments += num_segments
-
-        # Move to next chunk
         chunk_start += chunk_size
 
-    if psd_sum is None or total_segments == 0 or freq is None:
-        # Fallback to standard PSD if something went wrong
-        return psd(
-            trace,
-            window=window,
-            nperseg=nperseg,
-            noverlap=noverlap,
-            nfft=nfft,
-            scaling=scaling,
-        )
+    return psd_sum, total_segments, freq
 
-    # Average across all segments
-    psd_avg = psd_sum / total_segments
 
-    # Convert to dB
-    psd_avg = np.maximum(psd_avg, 1e-20)
-    psd_db = 10 * np.log10(psd_avg)
-
-    return freq, psd_db
+def _extract_chunk_with_overlap(
+    data: NDArray[np.float64],
+    chunk_start: int,
+    chunk_size: int,
+    chunk_overlap: int,
+    n: int,
+) -> NDArray[np.float64]:
+    """Extract chunk with overlap on both sides."""
+    chunk_data_start = max(0, chunk_start - chunk_overlap)
+    chunk_end = min(chunk_start + chunk_size, n)
+    chunk_data_end = min(chunk_end + chunk_overlap, n)
+    return data[chunk_data_start:chunk_data_end]
 
 
 def fft_chunked(
@@ -1571,7 +1805,6 @@ def fft_chunked(
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Compute FFT for very long signals using segmented processing.
 
-
     Divides signal into overlapping segments, computes FFT for each,
     and averages the magnitude spectra to reduce variance.
 
@@ -1583,15 +1816,13 @@ def fft_chunked(
         nfft: FFT length. If None, uses segment_size.
 
     Returns:
-        (frequencies, magnitude_db) - Frequency axis and averaged magnitude in dB.
+        (frequencies, magnitude_db) - Averaged magnitude spectrum in dB.
 
     Raises:
         AnalysisError: If no segments were processed (empty trace).
 
     Example:
-        >>> # Process 1 GB signal in 1M sample segments with 50% overlap
-        >>> freq, mag = fft_chunked(trace, segment_size=1_000_000, overlap_pct=50)
-        >>> print(f"Frequency resolution: {freq[1] - freq[0]:.3f} Hz")
+        >>> freq, mag = fft_chunked(trace, segment_size=1_000_000)
 
     References:
         Welch's method for spectral estimation
@@ -1601,47 +1832,65 @@ def fft_chunked(
     sample_rate = trace.metadata.sample_rate
 
     if n < segment_size:
-        # Use standard FFT if data fits in one segment
         result = fft(trace, window=window, nfft=nfft)
-        return result[0], result[1]  # type: ignore[return-value]
+        return result[0], result[1]
 
-    # Calculate overlap
     overlap_samples = int(segment_size * overlap_pct / 100.0)
     hop = segment_size - overlap_samples
-
-    # Determine number of segments
     num_segments = max(1, (n - overlap_samples) // hop)
 
     if nfft is None:
         nfft = int(2 ** np.ceil(np.log2(segment_size)))
 
-    # Accumulate magnitude spectra
+    freq, magnitude_sum = _accumulate_fft_segments(
+        data, n, num_segments, hop, segment_size, window, nfft, sample_rate
+    )
+
+    magnitude_avg = magnitude_sum / num_segments
+    magnitude_avg = np.maximum(magnitude_avg, 1e-20)
+    magnitude_db = 20 * np.log10(magnitude_avg)
+
+    return freq, magnitude_db
+
+
+def _accumulate_fft_segments(
+    data: NDArray[np.float64],
+    n: int,
+    num_segments: int,
+    hop: int,
+    segment_size: int,
+    window: str,
+    nfft: int,
+    sample_rate: float,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Accumulate FFT magnitudes from all segments.
+
+    Args:
+        data: Signal data.
+        n: Data length.
+        num_segments: Number of segments.
+        hop: Hop size between segments.
+        segment_size: Size of each segment.
+        window: Window function name.
+        nfft: FFT length.
+        sample_rate: Sampling rate.
+
+    Returns:
+        Tuple of (freq, magnitude_sum).
+
+    Raises:
+        AnalysisError: If no segments processed.
+    """
     freq: NDArray[np.float64] | None = None
     magnitude_sum: NDArray[np.float64] | None = None
     w = get_window(window, segment_size)
     window_gain = np.sum(w) / segment_size
 
     for i in range(num_segments):
-        start = i * hop
-        end = min(start + segment_size, n)
-
-        if end - start < segment_size:
-            # Last segment might be shorter, pad with zeros
-            segment = np.zeros(segment_size)
-            segment[: end - start] = data[start:end]
-        else:
-            segment = data[start:end]
-
-        # Detrend
+        segment = _extract_fft_segment(data, i, hop, segment_size, n)
         segment = segment - np.mean(segment)
-
-        # Window
         segment_windowed = segment * w
-
-        # FFT
         spectrum = np.fft.rfft(segment_windowed, n=nfft)
-
-        # Magnitude
         magnitude = np.abs(spectrum) / (segment_size * window_gain)
 
         if magnitude_sum is None:
@@ -1650,18 +1899,41 @@ def fft_chunked(
         else:
             magnitude_sum += magnitude
 
-    # Average
-    if magnitude_sum is None:
+    if magnitude_sum is None or freq is None:
         raise AnalysisError("No segments were processed - input trace may be empty")
-    if freq is None:
-        raise AnalysisError("Frequency array was not initialized - internal error")
-    magnitude_avg = magnitude_sum / num_segments
 
-    # Convert to dB
-    magnitude_avg = np.maximum(magnitude_avg, 1e-20)
-    magnitude_db = 20 * np.log10(magnitude_avg)
+    return freq, magnitude_sum
 
-    return freq, magnitude_db
+
+def _extract_fft_segment(
+    data: NDArray[np.float64],
+    segment_idx: int,
+    hop: int,
+    segment_size: int,
+    n: int,
+) -> NDArray[np.float64]:
+    """Extract segment for FFT processing.
+
+    Args:
+        data: Full data array.
+        segment_idx: Segment index.
+        hop: Hop size.
+        segment_size: Segment size.
+        n: Total data length.
+
+    Returns:
+        Segment data (padded if needed).
+    """
+    start = segment_idx * hop
+    end = min(start + segment_size, n)
+
+    if end - start < segment_size:
+        segment = np.zeros(segment_size)
+        segment[: end - start] = data[start:end]
+    else:
+        segment = data[start:end]
+
+    return segment
 
 
 __all__ = [

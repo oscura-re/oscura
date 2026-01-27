@@ -303,7 +303,7 @@ def show_palette(
             ax.set_xticklabels(["0", "0.25", "0.5", "0.75", "1.0"])
             ax.set_title(f"Colormap: {name}")
         except ValueError:
-            raise ValueError(f"Unknown palette or colormap: {name}")  # noqa: B904
+            raise ValueError(f"Unknown palette or colormap: {name}")
 
     plt.tight_layout()
 

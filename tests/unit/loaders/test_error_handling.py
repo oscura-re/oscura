@@ -286,7 +286,9 @@ class TestHDF5LoaderErrors:
         try:
             import h5py
         except ImportError:
-            pytest.skip("h5py not available")
+            # SKIP: Valid - Optional h5py dependency
+            # Only skip if h5py not installed (pip install oscura[hdf5])
+            pytest.skip("h5py not installed")
 
         h5_path = tmp_path / "no_datasets.hdf5"
         with h5py.File(h5_path, "w") as f:
@@ -301,7 +303,9 @@ class TestHDF5LoaderErrors:
         try:
             import h5py
         except ImportError:
-            pytest.skip("h5py not available")
+            # SKIP: Valid - Optional h5py dependency
+            # Only skip if h5py not installed (pip install oscura[hdf5])
+            pytest.skip("h5py not installed")
 
         h5_path = tmp_path / "wrong_dtype.hdf5"
         with h5py.File(h5_path, "w") as f:
@@ -332,7 +336,9 @@ class TestTDMSLoaderErrors:
         try:
             import nptdms  # noqa: F401
         except ImportError:
-            pytest.skip("npTDMS not available")
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: nptdms not available
+            pytest.skip("nptdms not available")
 
         tdms_path = tmp_path / "invalid.tdms"
         tdms_path.write_bytes(b"INVALID_TDMS_DATA" + b"\x00" * 100)

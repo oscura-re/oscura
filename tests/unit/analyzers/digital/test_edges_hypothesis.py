@@ -20,6 +20,10 @@ class TestEdgeDetectionProperties:
         try:
             from oscura.analyzers.digital.edges import detect_edges
         except ImportError:
+            # SKIP: Valid - Optional Numba-accelerated edge detection
+            # Only skip if numba not installed (pip install oscura[performance])
+            # SKIP: Valid - Optional Numba-accelerated edge detection
+            # Only skip if numba not installed (pip install oscura[performance])
             pytest.skip("edges module not available")
 
         edges = detect_edges(signal, threshold=1.65)
@@ -55,6 +59,10 @@ class TestEdgeDetectionProperties:
         try:
             from oscura.analyzers.digital.edges import detect_edges
         except ImportError:
+            # SKIP: Valid - Optional Numba-accelerated edge detection
+            # Only skip if numba not installed (pip install oscura[performance])
+            # SKIP: Valid - Optional Numba-accelerated edge detection
+            # Only skip if numba not installed (pip install oscura[performance])
             pytest.skip("edges module not available")
 
         edges = detect_edges(signal, threshold=1.65)

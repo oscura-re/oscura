@@ -117,10 +117,10 @@ python demonstrations/validate_all.py
 
 **Capabilities**:
 
-- `oscura.exploratory.signal_detection` - Auto signal type detection
-- `oscura.exploratory.type_classification` - Signal classification
-- `oscura.exploratory.pattern_recognition` - Pattern identification
-- `oscura.exploratory.feature_extraction` - Key feature extraction
+- `oscura.discovery.signal_detector` - Auto signal type detection
+- `oscura.inference.signal_intelligence` - Signal classification
+- `oscura.analyzers.patterns` - Pattern identification
+- `oscura.analyzers.statistical` - Key feature extraction
 
 **Related Demos**:
 

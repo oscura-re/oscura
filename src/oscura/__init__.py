@@ -46,7 +46,15 @@ Example:
 For more information, see https://github.com/oscura-re/oscura
 """
 
-__version__ = "0.5.1"
+# Version dynamically imported from package metadata (SSOT: pyproject.toml)
+try:
+    from importlib.metadata import version
+
+    __version__ = version("oscura")
+except Exception:
+    # Fallback for development/testing when package not installed
+    __version__ = "0.6.0"
+
 __author__ = "Oscura Contributors"
 
 # Core types
@@ -155,67 +163,9 @@ from oscura.analyzers.waveform.spectral import (
     thd,
 )
 
-# Signal builders (top-level convenience access)
-from oscura.builders import (
-    SignalBuilder,
-)
-
-# Comparison and limit testing
-from oscura.comparison.compare import (
-    compare_traces,
-    correlation,
-    difference,
-    similarity_score,
-)
-from oscura.comparison.golden import (
-    GoldenReference,
-    compare_to_golden,
-    create_golden,
-)
-from oscura.comparison.limits import (
-    LimitSpec,
-    check_limits,
-    create_limit_spec,
-    margin_analysis,
-)
-from oscura.comparison.mask import (
-    Mask,
-    create_mask,
-    eye_mask,
-    mask_test,
-)
-
-# EMC Compliance (EMC-001, EMC-002, EMC-003)
-from oscura.compliance import (
-    AVAILABLE_MASKS,
-    ComplianceReportFormat,
-    ComplianceResult,
-    ComplianceViolation,
-    DetectorType,
-    LimitMask,
-    check_compliance,
-    create_custom_mask,
-    generate_compliance_report,
-    load_limit_mask,
-)
-
-# Component analysis
-from oscura.component.impedance import (
-    discontinuity_analysis,
-    extract_impedance,
-    impedance_profile,
-)
-from oscura.component.reactive import (
-    extract_parasitics,
-    measure_capacitance,
-    measure_inductance,
-)
-from oscura.component.transmission_line import (
-    characteristic_impedance,
-    propagation_delay,
-    transmission_line_analysis,
-    velocity_factor,
-)
+# Automotive - CAN analysis and DBC generation
+from oscura.automotive.can.session import CANSession
+from oscura.automotive.dbc.generator import DBCGenerator
 
 # Convenience functions (one-call analysis)
 from oscura.convenience import (
@@ -256,6 +206,31 @@ from oscura.core.exceptions import (
     SampleRateError,
     UnsupportedFormatError,
     ValidationError,
+)
+
+# Expert API - Extensibility (API-006, API-007, API-008, PLUG-008)
+from oscura.core.extensibility import (
+    AlgorithmRegistry,
+    MeasurementDefinition,
+    MeasurementRegistry,
+    PluginError,
+    PluginManager,
+    PluginMetadata,
+    PluginTemplate,
+    PluginType,
+    generate_plugin_template,
+    get_algorithm,
+    get_algorithms,
+    get_measurement_registry,
+    get_plugin_manager,
+    list_measurements,
+    list_plugins,
+    load_plugin,
+    register_algorithm,
+    register_measurement,
+)
+from oscura.core.extensibility import (
+    measure as measure_custom,
 )
 
 # Logging
@@ -301,58 +276,8 @@ from oscura.discovery import (
     decode_protocol as discovery_decode_protocol,
 )
 
-# Data Export (top-level convenience access)
-from oscura.exporters import (
-    export_csv,
-    export_hdf5,
-    export_json,
-    export_mat,
-)
-
-# Expert API - Extensibility (API-006, API-007, API-008, PLUG-008)
-from oscura.extensibility import (
-    AlgorithmRegistry,
-    MeasurementDefinition,
-    MeasurementRegistry,
-    PluginError,
-    PluginManager,
-    PluginMetadata,
-    PluginTemplate,
-    PluginType,
-    generate_plugin_template,
-    get_algorithm,
-    get_algorithms,
-    get_measurement_registry,
-    get_plugin_manager,
-    list_measurements,
-    list_plugins,
-    load_plugin,
-    register_algorithm,
-    register_measurement,
-)
-from oscura.extensibility import (
-    measure as measure_custom,
-)
-
-# Filtering (top-level convenience access)
-from oscura.filtering.convenience import (
-    band_pass,
-    band_stop,
-    high_pass,
-    low_pass,
-    median_filter,
-    moving_average,
-    notch_filter,
-    savgol_filter,
-)
-from oscura.filtering.design import (
-    BandPassFilter,
-    BandStopFilter,
-    HighPassFilter,
-    LowPassFilter,
-    design_filter,
-)
-
+# Data Export - Removed legacy exports
+# Use oscura.export.* modules directly for protocol export functionality
 # Auto-Inference (INF-001 to INF-009)
 from oscura.inference import (
     AnalysisRecommendation,
@@ -370,38 +295,6 @@ from oscura.inference import (
 # Loaders (including multi-channel support)
 from oscura.loaders import get_supported_formats, load, load_all_channels
 
-# Math/arithmetic operations (top-level convenience access)
-from oscura.math.arithmetic import (
-    absolute,
-    add,
-    differentiate,
-    divide,
-    integrate,
-    invert,
-    math_expression,
-    multiply,
-    offset,
-    scale,
-    subtract,
-)
-from oscura.math.interpolation import (
-    align_traces,
-    downsample,
-    interpolate,
-    resample,
-)
-
-# Expert API - Pipeline and Composition (API-001, API-002, API-004)
-from oscura.pipeline import (
-    Composable,
-    Pipeline,
-    TraceTransformer,
-    compose,
-    curry,
-    make_composable,
-    pipe,
-)
-
 # Reporting
 from oscura.reporting.core import (
     Report,
@@ -415,33 +308,95 @@ from oscura.reporting.formatting import (
     format_with_units,
 )
 
-# Session Management (SESS-001, SESS-002, SESS-003)
-from oscura.session import (
-    Annotation,
-    AnnotationLayer,
-    AnnotationType,
-    HistoryEntry,
-    OperationHistory,
-    Session,
-    load_session,
+# Session Management - Use new AnalysisSession API
+from oscura.sessions import BlackBoxSession, GenericSession
+
+# Signal builders (top-level convenience access)
+from oscura.utils.builders import (
+    SignalBuilder,
 )
 
-# Expert API - Streaming (API-003)
-from oscura.streaming import (
-    StreamingAnalyzer,
-    load_trace_chunks,
+# Comparison and limit testing
+from oscura.utils.comparison.compare import (
+    compare_traces,
+    correlation,
+    difference,
+    similarity_score,
+)
+from oscura.utils.comparison.golden import (
+    GoldenReference,
+    compare_to_golden,
+    create_golden,
+)
+from oscura.utils.comparison.limits import (
+    LimitSpec,
+    check_limits,
+    create_limit_spec,
+    margin_analysis,
+)
+from oscura.utils.comparison.mask import (
+    Mask,
+    create_mask,
+    eye_mask,
+    mask_test,
 )
 
-# Triggering (top-level convenience access)
-from oscura.triggering import (
-    EdgeTrigger,
-    PulseWidthTrigger,
-    find_falling_edges,
-    find_glitches,
-    find_pulses,
-    find_rising_edges,
-    find_runt_pulses,
-    find_triggers,
+# Component analysis
+from oscura.utils.component.impedance import (
+    discontinuity_analysis,
+    extract_impedance,
+    impedance_profile,
+)
+from oscura.utils.component.reactive import (
+    extract_parasitics,
+    measure_capacitance,
+    measure_inductance,
+)
+from oscura.utils.component.transmission_line import (
+    characteristic_impedance,
+    propagation_delay,
+    transmission_line_analysis,
+    velocity_factor,
+)
+
+# Filtering (top-level convenience access)
+from oscura.utils.filtering.convenience import (
+    band_pass,
+    band_stop,
+    high_pass,
+    low_pass,
+    median_filter,
+    moving_average,
+    notch_filter,
+    savgol_filter,
+)
+from oscura.utils.filtering.design import (
+    BandPassFilter,
+    BandStopFilter,
+    HighPassFilter,
+    LowPassFilter,
+    design_filter,
+)
+
+# Math/arithmetic operations (top-level convenience access)
+from oscura.utils.math.arithmetic import (
+    absolute,
+    add,
+    differentiate,
+    divide,
+    integrate,
+    invert,
+    math_expression,
+    multiply,
+    offset,
+    scale,
+    subtract,
+)
+from oscura.utils.math.interpolation import (
+    align_traces,
+    downsample,
+    interpolate,
+    resample,
 )
 
 # Memory management
@@ -452,6 +407,49 @@ from oscura.utils.memory import (
     get_available_memory,
     get_memory_pressure,
     get_total_memory,
+)
+
+# Expert API - Pipeline and Composition (API-001, API-002, API-004)
+from oscura.utils.pipeline import (
+    Composable,
+    Pipeline,
+    TraceTransformer,
+    compose,
+    curry,
+    make_composable,
+    pipe,
+)
+
+# Expert API - Streaming (API-003)
+from oscura.utils.streaming import (
+    StreamingAnalyzer,
+    load_trace_chunks,
+)
+
+# Triggering (top-level convenience access)
+from oscura.utils.triggering import (
+    EdgeTrigger,
+    PulseWidthTrigger,
+    find_falling_edges,
+    find_glitches,
+    find_pulses,
+    find_rising_edges,
+    find_runt_pulses,
+    find_triggers,
+)
+
+# EMC Compliance (EMC-001, EMC-002, EMC-003)
+from oscura.validation.compliance import (
+    AVAILABLE_MASKS,
+    ComplianceReportFormat,
+    ComplianceResult,
+    ComplianceViolation,
+    DetectorType,
+    LimitMask,
+    check_compliance,
+    create_custom_mask,
+    generate_compliance_report,
+    load_limit_mask,
 )
 
 # Visualization (top-level convenience access)
@@ -487,10 +485,6 @@ __all__ = [
     "AnalysisRecommendation",
     # Expert API - Results (API-005)
     "AnalysisResult",
-    # Session Management (SESS-002)
-    "Annotation",
-    "AnnotationLayer",
-    "AnnotationType",
     # Discovery
     "Anomaly",
     # Audit trail (LOG-009)
@@ -498,11 +492,16 @@ __all__ = [
     "AuditTrail",
     "BandPassFilter",
     "BandStopFilter",
+    # Session Management
+    "BlackBoxSession",
+    "CANSession",
     "ComplianceReportFormat",
     "ComplianceResult",
     "ComplianceViolation",
     "Composable",
     "ConfigurationError",
+    # Automotive
+    "DBCGenerator",
     # Discovery
     "DataQuality",
     # Convenience functions
@@ -516,12 +515,11 @@ __all__ = [
     "FieldSpec",
     "FilterResult",
     "FormatError",
+    "GenericSession",
     # Signal quality (QUAL-005)
     "Glitch",
     "GoldenReference",
     "HighPassFilter",
-    # Session Management (SESS-003)
-    "HistoryEntry",
     # Reverse engineering workflow
     "InferredFrame",
     "InsufficientDataError",
@@ -539,7 +537,6 @@ __all__ = [
     # Signal quality (QUAL-001)
     "NoiseMarginResult",
     "NumberFormatter",
-    "OperationHistory",
     # Exceptions
     "OscuraError",
     # Signal quality (QUAL-007)
@@ -561,8 +558,6 @@ __all__ = [
     # Reverse engineering workflow
     "ReverseEngineeringResult",
     "SampleRateError",
-    # Session Management (SESS-001)
-    "Session",
     # Signal builders
     "SignalBuilder",
     # Discovery
@@ -668,11 +663,8 @@ __all__ = [
     "enob",
     # Memory management
     "estimate_memory",
-    # Export functions
-    "export_csv",
-    "export_hdf5",
-    "export_json",
-    "export_mat",
+    # Export functions - removed legacy exports
+    # Use oscura.export.wireshark, kaitai_struct, scapy_layer instead
     # Component analysis
     "extract_impedance",
     "extract_parasitics",
@@ -728,8 +720,8 @@ __all__ = [
     "load_config",
     "load_limit_mask",
     "load_plugin",
-    # Session Management
-    "load_session",
+    # Session Management - removed legacy load_session
+    # Use AnalysisSession API instead
     # Expert API - Streaming (API-003)
     "load_trace_chunks",
     # Filtering

@@ -1,7 +1,7 @@
 # Comparison and Limits API Reference
 
-> **Version**: 0.5.1
-> **Last Updated**: 2026-01-19
+> **Version**: 0.6.0
+> **Last Updated**: 2026-01-25
 
 ## Overview
 
@@ -11,32 +11,35 @@ Oscura provides comprehensive waveform comparison and limit testing capabilities
 
 ```python
 import oscura as osc
-from oscura.comparison import (
-    compare_traces, similarity_score,
-    create_golden, compare_to_golden,
-    create_limit_spec, check_limits, margin_analysis,
-    eye_mask, mask_test
-)
+
+# All comparison functions available at top-level
+# Or import explicitly:
+# from oscura.utils.comparison import (
+#     compare_traces, similarity_score,
+#     create_golden, compare_to_golden,
+#     create_limit_spec, check_limits, margin_analysis,
+#     eye_mask, mask_test
+# )
 
 # Load waveforms
 measured = osc.load("measured.wfm")
 reference = osc.load("reference.wfm")
 
 # Basic comparison
-result = compare_traces(measured, reference, tolerance=0.01)
+result = osc.compare_traces(measured, reference, tolerance=0.01)
 print(f"Match: {result.match}, Similarity: {result.similarity:.1%}")
 
 # Golden reference testing
-golden = create_golden(reference, tolerance_pct=5)
-test_result = compare_to_golden(measured, golden)
+golden = osc.create_golden(reference, tolerance_pct=5)
+test_result = osc.compare_to_golden(measured, golden)
 
 # Limit testing
-spec = create_limit_spec(upper=3.3, lower=0.0, guardband_pct=10)
-limit_result = check_limits(measured, spec)
+spec = osc.create_limit_spec(upper=3.3, lower=0.0, guardband_pct=10)
+limit_result = osc.check_limits(measured, spec)
 
 # Eye diagram mask testing
-mask = eye_mask(eye_width=0.5, eye_height=0.4)
-mask_result = mask_test(eye_trace, mask)
+mask = osc.eye_mask(eye_width=0.5, eye_height=0.4)
+mask_result = osc.mask_test(eye_trace, mask)
 ```
 
 ## Trace Comparison
@@ -46,7 +49,8 @@ mask_result = mask_test(eye_trace, mask)
 Comprehensive comparison of two waveforms with difference analysis, correlation, and match determination.
 
 ```python
-from oscura.comparison import compare_traces
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import compare_traces
 
 result = compare_traces(
     trace1,              # First trace (typically measured)
@@ -101,7 +105,8 @@ if result.difference_trace:
 Compute element-wise difference between two traces.
 
 ```python
-from oscura.comparison import difference
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import difference
 
 diff = difference(
     trace1,                  # First trace
@@ -131,7 +136,8 @@ print(f"Max error: {np.max(np.abs(diff_pct.data)):.2f}%")
 Compute cross-correlation between two traces for pattern matching and delay detection.
 
 ```python
-from oscura.comparison import correlation
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import correlation
 
 lags, corr_values = correlation(
     trace1,
@@ -170,7 +176,8 @@ plt.show()
 Compute similarity score between two traces using various metrics.
 
 ```python
-from oscura.comparison import similarity_score
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import similarity_score
 
 # Correlation-based similarity (default)
 score = similarity_score(trace1, trace2, method="correlation")
@@ -254,7 +261,8 @@ A golden reference waveform with tolerance bounds for pass/fail testing.
 Create a golden reference from a trace with tolerance bounds.
 
 ```python
-from oscura.comparison import create_golden
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import create_golden
 
 # Create with percentage tolerance
 golden = create_golden(
@@ -305,7 +313,8 @@ golden = GoldenReference.load("golden_references/power_3v3.json")
 Compare a measured trace to a golden reference for pass/fail testing.
 
 ```python
-from oscura.comparison import compare_to_golden
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import compare_to_golden
 
 result = compare_to_golden(
     measured_trace,
@@ -357,7 +366,8 @@ print(f"Lower violations: {len(result.lower_violations) if result.lower_violatio
 **Example - Batch testing:**
 
 ```python
-from oscura.comparison import batch_compare_to_golden
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import batch_compare_to_golden
 
 # Test multiple units
 results = batch_compare_to_golden(measured_traces, golden)
@@ -374,7 +384,8 @@ print(f"Worst case margin: {worst.margin_percentage:.1f}%")
 **Example - Creating golden from multiple samples:**
 
 ```python
-from oscura.comparison import golden_from_average
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import golden_from_average
 
 # Average multiple good samples
 golden = golden_from_average(
@@ -409,7 +420,8 @@ Specification limit definition with upper/lower bounds and guardbands.
 Create a limit specification with convenient notation support.
 
 ```python
-from oscura.comparison import create_limit_spec
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import create_limit_spec
 
 # Simple upper/lower limits
 spec = create_limit_spec(
@@ -465,7 +477,8 @@ spec = create_limit_spec(
 Check if trace data is within specification limits.
 
 ```python
-from oscura.comparison import check_limits
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import check_limits
 
 # Simple check with direct limits
 result = check_limits(
@@ -530,7 +543,8 @@ else:
 Analyze margins to specification limits for design validation.
 
 ```python
-from oscura.comparison import margin_analysis
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import margin_analysis
 
 spec = create_limit_spec(upper=3.465, lower=3.135)
 margins = margin_analysis(
@@ -607,7 +621,8 @@ A mask definition consisting of one or more polygon regions.
 Create a custom mask from region definitions.
 
 ```python
-from oscura.comparison import create_mask
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import create_mask
 
 # Define custom mask regions
 mask = create_mask(
@@ -659,7 +674,8 @@ mask.add_region(
 Create a standard eye diagram mask for high-speed serial testing.
 
 ```python
-from oscura.comparison import eye_mask
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import eye_mask
 
 # Standard eye mask (50% width, 40% height)
 mask = eye_mask(
@@ -699,7 +715,8 @@ mask = eye_mask(
 Test a waveform against a mask for pass/fail determination.
 
 ```python
-from oscura.comparison import mask_test, eye_mask
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import mask_test, eye_mask
 
 # Create mask
 mask = eye_mask(eye_width=0.5, eye_height=0.4)
@@ -764,7 +781,8 @@ if result.violation_points:
 
 ```python
 import oscura as osc
-from oscura.comparison import compare_traces, difference, similarity_score
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import compare_traces, difference, similarity_score
 import matplotlib.pyplot as plt
 
 # Load waveforms
@@ -819,7 +837,8 @@ if sim < 0.90:
 
 ```python
 import oscura as osc
-from oscura.comparison import create_golden, compare_to_golden, GoldenReference
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import create_golden, compare_to_golden, GoldenReference
 
 # === Setup: Create golden reference from good sample ===
 reference_trace = osc.load("validated_good_sample.wfm")
@@ -881,7 +900,8 @@ for r in test_results:
 
 ```python
 import oscura as osc
-from oscura.comparison import create_limit_spec, check_limits, margin_analysis
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import create_limit_spec, check_limits, margin_analysis
 import numpy as np
 
 # Load power rail trace
@@ -973,7 +993,8 @@ plt.show()
 
 ```python
 import oscura as osc
-from oscura.comparison import eye_mask, mask_test
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import eye_mask, mask_test
 from oscura.analyzers.eye import create_eye_diagram
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1123,7 +1144,8 @@ if margins.margin_status == "warning":
 ## Error Handling
 
 ```python
-from oscura.comparison import compare_traces, create_golden, check_limits
+# Functions available at top-level: osc.function_name()
+# Or import from oscura.utils.comparison import compare_traces, create_golden, check_limits
 from oscura.core.exceptions import AnalysisError, LoaderError
 
 try:

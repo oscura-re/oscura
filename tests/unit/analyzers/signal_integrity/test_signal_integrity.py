@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.core.types import WaveformTrace
+from tests.utils.factories import make_waveform_trace
 
 if TYPE_CHECKING:
     from oscura.analyzers.signal_integrity.sparams import SParameterData
@@ -23,12 +24,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.analyzer]
 
 
 # Helper functions
-def make_waveform_trace(data: np.ndarray, sample_rate: float = 1e9) -> WaveformTrace:
-    """Create a WaveformTrace from raw data for testing."""
-    metadata = TraceMetadata(sample_rate=sample_rate)
-    return WaveformTrace(data=data.astype(np.float64), metadata=metadata)
-
-
 def make_s_parameter_data(
     n_freq: int = 100,
     n_ports: int = 2,

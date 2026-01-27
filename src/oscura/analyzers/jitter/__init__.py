@@ -24,6 +24,10 @@ from oscura.analyzers.jitter.ber import (
     q_factor_from_ber,
     tj_at_ber,
 )
+from oscura.analyzers.jitter.classification import (
+    JitterClassificationResult,
+    JitterComponentEstimate,
+)
 from oscura.analyzers.jitter.decomposition import (
     DataDependentJitterResult,
     DeterministicJitterResult,
@@ -51,16 +55,14 @@ from oscura.analyzers.jitter.spectrum import (
 )
 
 __all__ = [
-    # BER
     "BathtubCurveResult",
-    # Measurements
     "CycleJitterResult",
     "DataDependentJitterResult",
     "DeterministicJitterResult",
     "DutyCycleDistortionResult",
-    # Decomposition
+    "JitterClassificationResult",
+    "JitterComponentEstimate",
     "JitterDecomposition",
-    # Spectrum
     "JitterSpectrumResult",
     "PeriodicJitterResult",
     "RandomJitterResult",

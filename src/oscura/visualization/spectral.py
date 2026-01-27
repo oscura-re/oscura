@@ -16,7 +16,7 @@ References:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -37,6 +37,157 @@ if TYPE_CHECKING:
     from oscura.core.types import WaveformTrace
 
 
+def _get_fft_data(
+    trace: WaveformTrace,
+    fft_result: tuple[Any, Any] | None,
+    window: str,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Get FFT data, either from cache or by computing.
+
+    Args:
+        trace: Waveform trace.
+        fft_result: Pre-computed FFT result.
+        window: Window function name.
+
+    Returns:
+        Tuple of (frequencies, magnitudes_db).
+    """
+    if fft_result is not None:
+        return fft_result
+
+    from oscura.analyzers.waveform.spectral import fft
+
+    return fft(trace, window=window)  # type: ignore[return-value]
+
+
+def _scale_frequencies(
+    freq: NDArray[np.float64], freq_unit: str
+) -> tuple[NDArray[np.float64], float, str]:
+    """Scale frequencies to appropriate unit.
+
+    Args:
+        freq: Frequency array in Hz.
+        freq_unit: Requested unit or "auto".
+
+    Returns:
+        Tuple of (scaled_frequencies, divisor, unit_name).
+    """
+    if freq_unit == "auto":
+        max_freq = freq[-1]
+        freq_unit = _auto_select_freq_unit(max_freq)
+
+    freq_divisors = {"Hz": 1.0, "kHz": 1e3, "MHz": 1e6, "GHz": 1e9}
+    divisor = freq_divisors.get(freq_unit, 1.0)
+    return freq / divisor, divisor, freq_unit
+
+
+def _set_auto_ylimits(ax: Axes, mag_db: NDArray[np.float64]) -> None:
+    """Set reasonable y-axis limits based on data.
+
+    Args:
+        ax: Matplotlib axes.
+        mag_db: Magnitude data in dB.
+    """
+    valid_db = mag_db[np.isfinite(mag_db)]
+    if len(valid_db) == 0:
+        return
+
+    y_max = np.max(valid_db)
+    y_min = max(np.min(valid_db), y_max - 120)  # Limit dynamic range
+    ax.set_ylim(y_min, y_max + 5)
+
+
+def _apply_axis_limits(
+    ax: Axes,
+    divisor: float,
+    freq_range: tuple[float, float] | None,
+    xlim: tuple[float, float] | None,
+    ylim: tuple[float, float] | None,
+) -> None:
+    """Apply custom axis limits if specified.
+
+    Args:
+        ax: Matplotlib axes.
+        divisor: Frequency divisor for unit conversion.
+        freq_range: Frequency range in Hz (will be converted to display units).
+        xlim: X-axis limits in display units.
+        ylim: Y-axis limits.
+    """
+    if freq_range is not None and len(freq_range) == 2:
+        # freq_range is in Hz, convert to display units
+        freq_min = freq_range[0] / divisor
+        freq_max = freq_range[1] / divisor
+
+        # For log scale, ensure minimum is positive (avoid 0 on log axis)
+        if ax.get_xscale() == "log" and freq_min <= 0:
+            freq_min = freq_max / 1000  # Use a small positive value
+
+        ax.set_xlim(freq_min, freq_max)
+    elif xlim is not None:
+        ax.set_xlim(xlim)
+
+    if ylim is not None:
+        ax.set_ylim(ylim)
+
+
+def _prepare_spectrum_data(
+    trace: WaveformTrace,
+    fft_result: tuple[Any, Any] | None,
+    window: str,
+    db_ref: float | None,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Prepare spectrum data with FFT and dB scaling.
+
+    Args:
+        trace: Waveform trace to analyze.
+        fft_result: Pre-computed FFT result or None.
+        window: Window function name.
+        db_ref: Reference for dB scaling or None.
+
+    Returns:
+        Tuple of (frequencies, magnitudes_db).
+    """
+    freq, mag_db = _get_fft_data(trace, fft_result, window)
+
+    # Adjust dB reference if specified
+    if db_ref is not None:
+        mag_db = mag_db - db_ref
+
+    return freq, mag_db
+
+
+def _render_spectrum_plot(
+    ax: Axes,
+    freq_scaled: NDArray[np.float64],
+    mag_db: NDArray[np.float64],
+    freq_unit: str,
+    color: str,
+    title: str | None,
+    log_scale: bool,
+    show_grid: bool,
+) -> None:
+    """Render spectrum plot on axes.
+
+    Args:
+        ax: Matplotlib axes to plot on.
+        freq_scaled: Scaled frequency array.
+        mag_db: Magnitude array in dB.
+        freq_unit: Frequency unit string.
+        color: Line color.
+        title: Plot title.
+        log_scale: Use logarithmic frequency scale.
+        show_grid: Show grid lines.
+    """
+    ax.plot(freq_scaled, mag_db, color=color, linewidth=0.8)
+    ax.set_xlabel(f"Frequency ({freq_unit})")
+    ax.set_ylabel("Magnitude (dB)")
+    ax.set_xscale("log" if log_scale else "linear")
+    ax.set_title(title if title else "Magnitude Spectrum")
+
+    if show_grid:
+        ax.grid(True, alpha=0.3, which="both")
+
+
 def plot_spectrum(
     trace: WaveformTrace,
     *,
@@ -48,7 +199,6 @@ def plot_spectrum(
     color: str = "C0",
     title: str | None = None,
     window: str = "hann",
-    xscale: Literal["linear", "log"] = "log",
     show: bool = True,
     save_path: str | None = None,
     figsize: tuple[float, float] = (10, 6),
@@ -56,7 +206,6 @@ def plot_spectrum(
     ylim: tuple[float, float] | None = None,
     fft_result: tuple[Any, Any] | None = None,
     log_scale: bool = True,
-    db_scale: bool | None = None,
 ) -> Figure:
     """Plot magnitude spectrum.
 
@@ -70,7 +219,6 @@ def plot_spectrum(
         color: Line color.
         title: Plot title.
         window: Window function for FFT.
-        xscale: X-axis scale ("linear" or "log"). Deprecated, use log_scale instead.
         show: If True, call plt.show() to display the plot.
         save_path: Path to save the figure. If None, figure is not saved.
         figsize: Figure size (width, height) in inches. Only used if ax is None.
@@ -78,7 +226,6 @@ def plot_spectrum(
         ylim: Y-axis limits (min, max) in dB.
         fft_result: Pre-computed FFT result (frequencies, magnitudes). If None, computes FFT.
         log_scale: Use logarithmic scale for frequency axis (default True).
-        db_scale: Deprecated alias for log_scale. If provided, overrides log_scale.
 
     Returns:
         Matplotlib Figure object.
@@ -100,12 +247,7 @@ def plot_spectrum(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
-    # Handle deprecated db_scale parameter
-    if db_scale is not None:
-        log_scale = db_scale
-
-    from oscura.analyzers.waveform.spectral import fft
-
+    # Figure/axes creation
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
@@ -114,77 +256,217 @@ def plot_spectrum(
             raise ValueError("Axes must have an associated figure")
         fig = cast("Figure", fig_temp)
 
-    # Compute FFT if not provided
-    if fft_result is not None:
-        freq, mag_db = fft_result
-    else:
-        freq, mag_db = fft(trace, window=window)  # type: ignore[misc]
+    # Data preparation
+    freq, mag_db = _prepare_spectrum_data(trace, fft_result, window, db_ref)
 
-    # Auto-select frequency unit
-    if freq_unit == "auto":
-        max_freq = freq[-1]
-        if max_freq >= 1e9:
-            freq_unit = "GHz"
-        elif max_freq >= 1e6:
-            freq_unit = "MHz"
-        elif max_freq >= 1e3:
-            freq_unit = "kHz"
-        else:
-            freq_unit = "Hz"
+    # Unit/scale selection
+    freq_scaled, divisor, freq_unit = _scale_frequencies(freq, freq_unit)
 
-    freq_divisors = {"Hz": 1.0, "kHz": 1e3, "MHz": 1e6, "GHz": 1e9}
-    divisor = freq_divisors.get(freq_unit, 1.0)
-    freq_scaled = freq / divisor
+    # Plotting/rendering
+    _render_spectrum_plot(ax, freq_scaled, mag_db, freq_unit, color, title, log_scale, show_grid)
 
-    # Adjust dB reference if specified
-    if db_ref is not None:
-        mag_db = mag_db - db_ref
+    # Set limits
+    _set_auto_ylimits(ax, mag_db)
+    _apply_axis_limits(ax, divisor, freq_range, xlim, ylim)
 
-    # Plot
-    ax.plot(freq_scaled, mag_db, color=color, linewidth=0.8)
-
-    ax.set_xlabel(f"Frequency ({freq_unit})")
-    ax.set_ylabel("Magnitude (dB)")
-
-    # Use log_scale parameter, fall back to xscale for backward compatibility
-    # Note: xscale is Literal["linear", "log"] so can never be "log" at this point
-    ax.set_xscale("log" if log_scale else "linear")
-
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("Magnitude Spectrum")
-
-    if show_grid:
-        ax.grid(True, alpha=0.3, which="both")
-
-    # Set reasonable y-limits
-    valid_db = mag_db[np.isfinite(mag_db)]
-    if len(valid_db) > 0:
-        y_max = np.max(valid_db)
-        y_min = max(np.min(valid_db), y_max - 120)  # Limit dynamic range
-        ax.set_ylim(y_min, y_max + 5)
-
-    # Apply custom limits if specified
-    if freq_range is not None:
-        ax.set_xlim(freq_range[0] / divisor, freq_range[1] / divisor)
-    elif xlim is not None:
-        ax.set_xlim(xlim)
-
-    if ylim is not None:
-        ax.set_ylim(ylim)
-
+    # Layout/formatting
     fig.tight_layout()
 
-    # Save if path provided
     if save_path is not None:
         fig.savefig(save_path, dpi=300, bbox_inches="tight")
 
-    # Show if requested
     if show:
         plt.show()
 
     return fig
+
+
+def _auto_select_time_unit(max_time: float) -> str:
+    """Select appropriate time unit based on maximum time value.
+
+    Args:
+        max_time: Maximum time value in seconds.
+
+    Returns:
+        Time unit string ("s", "ms", "us", or "ns").
+    """
+    if max_time < 1e-6:
+        return "ns"
+    elif max_time < 1e-3:
+        return "us"
+    elif max_time < 1:
+        return "ms"
+    else:
+        return "s"
+
+
+def _auto_select_freq_unit(max_freq: float) -> str:
+    """Select appropriate frequency unit based on maximum frequency.
+
+    Args:
+        max_freq: Maximum frequency in Hz.
+
+    Returns:
+        Frequency unit string ("Hz", "kHz", "MHz", or "GHz").
+    """
+    if max_freq >= 1e9:
+        return "GHz"
+    elif max_freq >= 1e6:
+        return "MHz"
+    elif max_freq >= 1e3:
+        return "kHz"
+    else:
+        return "Hz"
+
+
+def _get_unit_multipliers() -> tuple[dict[str, float], dict[str, float]]:
+    """Get time and frequency unit multipliers.
+
+    Returns:
+        Tuple of (time_multipliers, freq_divisors).
+    """
+    time_mult = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}
+    freq_div = {"Hz": 1.0, "kHz": 1e3, "MHz": 1e6, "GHz": 1e9}
+    return time_mult, freq_div
+
+
+def _auto_color_limits(
+    data: NDArray[np.float64], vmin: float | None, vmax: float | None
+) -> tuple[float | None, float | None]:
+    """Automatically determine color limits for spectrogram.
+
+    Args:
+        data: Spectrogram data in dB.
+        vmin: Minimum dB value (if None, auto-computed).
+        vmax: Maximum dB value (if None, auto-computed).
+
+    Returns:
+        Tuple of (vmin, vmax).
+    """
+    if vmin is not None and vmax is not None:
+        return vmin, vmax
+
+    valid_db = data[np.isfinite(data)]
+    if len(valid_db) == 0:
+        return vmin, vmax
+
+    if vmax is None:
+        vmax = np.max(valid_db)
+    if vmin is None:
+        vmin = max(np.min(valid_db), vmax - 80)
+
+    return vmin, vmax
+
+
+def _compute_spectrogram_data(
+    trace: WaveformTrace,
+    window: str,
+    nperseg: int | None,
+    nfft: int | None,
+    overlap: float | None,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Compute spectrogram data using STFT.
+
+    Args:
+        trace: Waveform trace to analyze.
+        window: Window function name.
+        nperseg: Segment length for STFT.
+        nfft: FFT length (overrides nperseg if specified).
+        overlap: Overlap fraction (0.0 to 1.0).
+
+    Returns:
+        Tuple of (times, frequencies, Sxx_db).
+    """
+    from oscura.analyzers.waveform.spectral import spectrogram
+
+    if nfft is not None:
+        nperseg = nfft
+    noverlap = int(nperseg * overlap) if overlap is not None and nperseg is not None else None
+
+    return spectrogram(trace, window=window, nperseg=nperseg, noverlap=noverlap)
+
+
+def _scale_spectrogram_axes(
+    times: NDArray[np.float64],
+    freq: NDArray[np.float64],
+    time_unit: str,
+    freq_unit: str,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], str, str]:
+    """Scale time and frequency axes to appropriate units.
+
+    Args:
+        times: Time array in seconds.
+        freq: Frequency array in Hz.
+        time_unit: Time unit ("auto" or specific).
+        freq_unit: Frequency unit ("auto" or specific).
+
+    Returns:
+        Tuple of (times_scaled, freq_scaled, time_unit, freq_unit).
+    """
+    if time_unit == "auto":
+        max_time = times[-1] if len(times) > 0 else 0
+        time_unit = _auto_select_time_unit(max_time)
+
+    if freq_unit == "auto":
+        max_freq = freq[-1] if len(freq) > 0 else 0
+        freq_unit = _auto_select_freq_unit(max_freq)
+
+    time_multipliers, freq_divisors = _get_unit_multipliers()
+    times_scaled = times * time_multipliers.get(time_unit, 1.0)
+    freq_scaled = freq / freq_divisors.get(freq_unit, 1.0)
+
+    return times_scaled, freq_scaled, time_unit, freq_unit
+
+
+def _render_spectrogram_plot(
+    ax: Axes,
+    times_scaled: NDArray[np.float64],
+    freq_scaled: NDArray[np.float64],
+    Sxx_db: NDArray[np.float64],
+    time_unit: str,
+    freq_unit: str,
+    cmap: str,
+    vmin: float | None,
+    vmax: float | None,
+    title: str | None,
+) -> None:
+    """Render spectrogram plot on axes.
+
+    Args:
+        ax: Matplotlib axes to plot on.
+        times_scaled: Scaled time array.
+        freq_scaled: Scaled frequency array.
+        Sxx_db: Spectrogram data in dB.
+        time_unit: Time unit string.
+        freq_unit: Frequency unit string.
+        cmap: Colormap name.
+        vmin: Minimum dB value for color scaling.
+        vmax: Maximum dB value for color scaling.
+        title: Plot title.
+    """
+    # Auto color limits
+    vmin, vmax = _auto_color_limits(Sxx_db, vmin, vmax)
+
+    # Plot
+    pcm = ax.pcolormesh(
+        times_scaled,
+        freq_scaled,
+        Sxx_db,
+        shading="auto",
+        cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
+    )
+
+    ax.set_xlabel(f"Time ({time_unit})")
+    ax.set_ylabel(f"Frequency ({freq_unit})")
+    ax.set_title(title if title else "Spectrogram")
+
+    # Colorbar
+    fig = ax.get_figure()
+    if fig is not None:
+        cbar = fig.colorbar(pcm, ax=ax)
+        cbar.set_label("Magnitude (dB)")
 
 
 def plot_spectrogram(
@@ -232,8 +514,7 @@ def plot_spectrogram(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
-    from oscura.analyzers.waveform.spectral import spectrogram
-
+    # Figure/axes creation
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     else:
@@ -242,80 +523,20 @@ def plot_spectrogram(
             raise ValueError("Axes must have an associated figure")
         fig = cast("Figure", fig_temp)
 
-    # Handle nfft as alias for nperseg
-    if nfft is not None:
-        nperseg = nfft
+    # Data preparation/computation
+    times, freq, Sxx_db = _compute_spectrogram_data(trace, window, nperseg, nfft, overlap)
 
-    # Compute spectrogram with optional overlap
-    noverlap = None
-    if overlap is not None and nperseg is not None:
-        noverlap = int(nperseg * overlap)
-    times, freq, Sxx_db = spectrogram(trace, window=window, nperseg=nperseg, noverlap=noverlap)
-
-    # Auto-select units
-    if time_unit == "auto":
-        max_time = times[-1] if len(times) > 0 else 0
-        if max_time < 1e-6:
-            time_unit = "ns"
-        elif max_time < 1e-3:
-            time_unit = "us"
-        elif max_time < 1:
-            time_unit = "ms"
-        else:
-            time_unit = "s"
-
-    if freq_unit == "auto":
-        max_freq = freq[-1] if len(freq) > 0 else 0
-        if max_freq >= 1e9:
-            freq_unit = "GHz"
-        elif max_freq >= 1e6:
-            freq_unit = "MHz"
-        elif max_freq >= 1e3:
-            freq_unit = "kHz"
-        else:
-            freq_unit = "Hz"
-
-    time_multipliers = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}
-    freq_divisors = {"Hz": 1.0, "kHz": 1e3, "MHz": 1e6, "GHz": 1e9}
-
-    time_mult = time_multipliers.get(time_unit, 1.0)
-    freq_div = freq_divisors.get(freq_unit, 1.0)
-
-    times_scaled = times * time_mult
-    freq_scaled = freq / freq_div
-
-    # Auto color limits
-    if vmin is None or vmax is None:
-        valid_db = Sxx_db[np.isfinite(Sxx_db)]
-        if len(valid_db) > 0:
-            if vmax is None:
-                vmax = np.max(valid_db)
-            if vmin is None:
-                vmin = max(np.min(valid_db), vmax - 80)
-
-    # Plot
-    pcm = ax.pcolormesh(
-        times_scaled,
-        freq_scaled,
-        Sxx_db,
-        shading="auto",
-        cmap=cmap,
-        vmin=vmin,
-        vmax=vmax,
+    # Unit/scale selection
+    times_scaled, freq_scaled, time_unit, freq_unit = _scale_spectrogram_axes(
+        times, freq, time_unit, freq_unit
     )
 
-    ax.set_xlabel(f"Time ({time_unit})")
-    ax.set_ylabel(f"Frequency ({freq_unit})")
+    # Plotting/rendering
+    _render_spectrogram_plot(
+        ax, times_scaled, freq_scaled, Sxx_db, time_unit, freq_unit, cmap, vmin, vmax, title
+    )
 
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title("Spectrogram")
-
-    # Colorbar
-    cbar = fig.colorbar(pcm, ax=ax)
-    cbar.set_label("Magnitude (dB)")
-
+    # Layout/formatting
     fig.tight_layout()
     return fig
 
@@ -329,7 +550,7 @@ def plot_psd(
     color: str = "C0",
     title: str | None = None,
     window: str = "hann",
-    xscale: Literal["linear", "log"] = "log",
+    log_scale: bool = True,
 ) -> Figure:
     """Plot Power Spectral Density.
 
@@ -341,7 +562,7 @@ def plot_psd(
         color: Line color.
         title: Plot title.
         window: Window function.
-        xscale: X-axis scale.
+        log_scale: Use logarithmic scale for frequency axis (default True).
 
     Returns:
         Matplotlib Figure object.
@@ -391,7 +612,7 @@ def plot_psd(
 
     ax.set_xlabel(f"Frequency ({freq_unit})")
     ax.set_ylabel("PSD (dB/Hz)")
-    ax.set_xscale(xscale)
+    ax.set_xscale("log" if log_scale else "linear")
 
     if title:
         ax.set_title(title)
@@ -472,17 +693,10 @@ def plot_fft(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
-    # Create figure if needed
-    if ax is None:
-        fig, ax = plt.subplots(figsize=figsize)
-    else:
-        fig_temp = ax.get_figure()
-        if fig_temp is None:
-            raise ValueError("Axes must have an associated figure")
-        fig = cast("Figure", fig_temp)
+    # Setup figure and axes
+    fig, ax = _setup_plot_figure(ax, figsize)
 
-    # Use plot_spectrum to do the actual plotting
-    xscale_value: Literal["linear", "log"] = "log" if log_scale else "linear"
+    # Plot spectrum using main plotting function
     plot_spectrum(
         trace,
         ax=ax,
@@ -491,12 +705,47 @@ def plot_fft(
         color=color,
         title=title if title else "FFT Magnitude Spectrum",
         window=window,
-        xscale=xscale_value,
+        log_scale=log_scale,
     )
 
-    # Apply custom labels if different from defaults
+    # Apply custom labels and limits
+    _apply_custom_labels(ax, xlabel, ylabel)
+    _apply_axis_limits_simple(ax, xlim, ylim)
+
+    # Output handling
+    _handle_plot_output(fig, save_path, show)
+
+    return fig
+
+
+def _setup_plot_figure(ax: Axes | None, figsize: tuple[float, float]) -> tuple[Figure, Axes]:
+    """Setup figure and axes for plotting.
+
+    Args:
+        ax: Existing axes or None.
+        figsize: Figure size if creating new.
+
+    Returns:
+        Tuple of (Figure, Axes).
+    """
+    if ax is None:
+        return plt.subplots(figsize=figsize)
+
+    fig_temp = ax.get_figure()
+    if fig_temp is None:
+        raise ValueError("Axes must have an associated figure")
+    return cast("Figure", fig_temp), ax
+
+
+def _apply_custom_labels(ax: Axes, xlabel: str, ylabel: str) -> None:
+    """Apply custom labels to plot axes.
+
+    Args:
+        ax: Matplotlib axes.
+        xlabel: X-axis label.
+        ylabel: Y-axis label.
+    """
     if xlabel != "Frequency":
-        # Get current label to preserve unit
         current_label = ax.get_xlabel()
         if "(" in current_label and ")" in current_label:
             unit = current_label[current_label.find("(") : current_label.find(")") + 1]
@@ -507,22 +756,123 @@ def plot_fft(
     if ylabel != "Magnitude (dB)":
         ax.set_ylabel(ylabel)
 
-    # Apply custom limits if specified
+
+def _apply_axis_limits_simple(
+    ax: Axes, xlim: tuple[float, float] | None, ylim: tuple[float, float] | None
+) -> None:
+    """Apply axis limits if specified.
+
+    Args:
+        ax: Matplotlib axes.
+        xlim: X-axis limits.
+        ylim: Y-axis limits.
+    """
     if xlim is not None:
         ax.set_xlim(xlim)
-
     if ylim is not None:
         ax.set_ylim(ylim)
 
-    # Save if path provided
+
+def _handle_plot_output(fig: Figure, save_path: str | None, show: bool) -> None:
+    """Handle plot output (save and/or show).
+
+    Args:
+        fig: Matplotlib figure.
+        save_path: Path to save figure.
+        show: Whether to display plot.
+    """
     if save_path is not None:
         fig.savefig(save_path, dpi=300, bbox_inches="tight")
-
-    # Show if requested
     if show:
         plt.show()
 
-    return fig
+
+def _create_harmonic_labels(
+    n_harmonics: int,
+    fundamental_freq: float | None,
+) -> list[str]:
+    """Create x-axis labels for harmonics.
+
+    Args:
+        n_harmonics: Number of harmonics.
+        fundamental_freq: Fundamental frequency in Hz or None.
+
+    Returns:
+        List of label strings.
+    """
+    if fundamental_freq is not None:
+        labels = [
+            f"H{i + 1}\n({(i + 1) * fundamental_freq / 1e3:.1f} kHz)"
+            if fundamental_freq >= 1000
+            else f"H{i + 1}\n({(i + 1) * fundamental_freq:.0f} Hz)"
+            for i in range(n_harmonics)
+        ]
+        labels[0] = (
+            f"Fund\n({fundamental_freq / 1e3:.1f} kHz)"
+            if fundamental_freq >= 1000
+            else f"Fund\n({fundamental_freq:.0f} Hz)"
+        )
+    else:
+        labels = [f"H{i + 1}" for i in range(n_harmonics)]
+        labels[0] = "Fund"
+
+    return labels
+
+
+def _assign_harmonic_colors(
+    harmonic_magnitudes: NDArray[np.floating[Any]],
+) -> list[str]:
+    """Assign colors to harmonics based on magnitude.
+
+    Args:
+        harmonic_magnitudes: Array of harmonic magnitudes in dB.
+
+    Returns:
+        List of color strings.
+    """
+    colors = []
+    for i, mag in enumerate(harmonic_magnitudes):
+        if i == 0:
+            colors.append("#3498DB")  # Blue for fundamental
+        elif mag > -30:
+            colors.append("#E74C3C")  # Red for significant harmonics
+        elif mag > -50:
+            colors.append("#F39C12")  # Orange for moderate
+        else:
+            colors.append("#95A5A6")  # Gray for low
+
+    return colors
+
+
+def _add_thd_annotation(
+    ax: Axes,
+    thd_value: float | None,
+    show_thd: bool,
+) -> None:
+    """Add THD annotation to plot.
+
+    Args:
+        ax: Matplotlib axes to annotate.
+        thd_value: THD value in dB or %.
+        show_thd: Show annotation flag.
+    """
+    if show_thd and thd_value is not None:
+        if thd_value > 0:
+            thd_text = f"THD: {thd_value:.2f}%"
+        else:
+            thd_text = f"THD: {thd_value:.1f} dB"
+
+        ax.text(
+            0.98,
+            0.98,
+            thd_text,
+            transform=ax.transAxes,
+            fontsize=12,
+            fontweight="bold",
+            ha="right",
+            va="top",
+            bbox={"boxstyle": "round,pad=0.5", "facecolor": "wheat", "alpha": 0.9},
+        )
 
 
 def plot_thd_bars(
@@ -571,6 +921,7 @@ def plot_thd_bars(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
+    # Figure/axes creation
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
@@ -579,76 +930,27 @@ def plot_thd_bars(
             raise ValueError("Axes must have an associated figure")
         fig = cast("Figure", fig_temp)
 
+    # Data preparation
     n_harmonics = len(harmonic_magnitudes)
-
-    # Create x-positions for harmonics
     x_pos = np.arange(n_harmonics)
+    labels = _create_harmonic_labels(n_harmonics, fundamental_freq)
+    colors = _assign_harmonic_colors(harmonic_magnitudes)
 
-    # Create labels
-    if fundamental_freq is not None:
-        labels = [
-            f"H{i + 1}\n({(i + 1) * fundamental_freq / 1e3:.1f} kHz)"
-            if fundamental_freq >= 1000
-            else f"H{i + 1}\n({(i + 1) * fundamental_freq:.0f} Hz)"
-            for i in range(n_harmonics)
-        ]
-        labels[0] = (
-            f"Fund\n({fundamental_freq / 1e3:.1f} kHz)"
-            if fundamental_freq >= 1000
-            else f"Fund\n({fundamental_freq:.0f} Hz)"
-        )
-    else:
-        labels = [f"H{i + 1}" for i in range(n_harmonics)]
-        labels[0] = "Fund"
-
-    # Color code: fundamental in blue, harmonics in orange/red based on magnitude
-    colors = []
-    for i, mag in enumerate(harmonic_magnitudes):
-        if i == 0:
-            colors.append("#3498DB")  # Blue for fundamental
-        elif mag > -30:
-            colors.append("#E74C3C")  # Red for significant harmonics
-        elif mag > -50:
-            colors.append("#F39C12")  # Orange for moderate
-        else:
-            colors.append("#95A5A6")  # Gray for low
-
-    # Plot bars
+    # Plotting/rendering
     ax.bar(
         x_pos, harmonic_magnitudes - reference_db, color=colors, edgecolor="black", linewidth=0.5
     )
-
-    # Reference line at fundamental level
     ax.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7)
 
-    # THD annotation
-    if show_thd and thd_value is not None:
-        # Position in upper right
-        if thd_value > 0:
-            thd_text = f"THD: {thd_value:.2f}%"
-        else:
-            thd_text = f"THD: {thd_value:.1f} dB"
-
-        ax.text(
-            0.98,
-            0.98,
-            thd_text,
-            transform=ax.transAxes,
-            fontsize=12,
-            fontweight="bold",
-            ha="right",
-            va="top",
-            bbox={"boxstyle": "round,pad=0.5", "facecolor": "wheat", "alpha": 0.9},
-        )
-
-    # Labels
+    # Annotation/labeling
+    _add_thd_annotation(ax, thd_value, show_thd)
     ax.set_xticks(x_pos)
     ax.set_xticklabels(labels, fontsize=9)
     ax.set_xlabel("Harmonic", fontsize=11)
     ax.set_ylabel("Magnitude (dB rel. to fundamental)", fontsize=11)
     ax.grid(True, axis="y", alpha=0.3)
 
-    # Y-axis limits
+    # Layout/formatting
     min_mag = min(harmonic_magnitudes) - reference_db
     ax.set_ylim(min(min_mag - 10, -80), 10)
 
@@ -706,42 +1008,122 @@ def plot_quality_summary(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
-    if ax is None:
-        fig, ax = plt.subplots(figsize=figsize)
-    else:
-        fig_temp = ax.get_figure()
-        if fig_temp is None:
-            raise ValueError("Axes must have an associated figure")
-        fig = cast("Figure", fig_temp)
+    # Setup figure and axes
+    fig, ax = _setup_quality_plot_axes(ax, figsize)
 
-    # Define metric display info
-    metric_info = {
-        "snr": {"name": "SNR", "unit": "dB", "higher_better": True},
-        "sinad": {"name": "SINAD", "unit": "dB", "higher_better": True},
-        "thd": {
-            "name": "THD",
-            "unit": "dB",
-            "higher_better": False,
-        },  # Lower (more negative) is better
-        "enob": {"name": "ENOB", "unit": "bits", "higher_better": True},
-        "sfdr": {"name": "SFDR", "unit": "dBc", "higher_better": True},
-    }
+    # Define metric metadata
+    metric_info = _get_metric_info()
 
     # Filter to available metrics
     available_metrics = [(k, v) for k, v in metrics.items() if k in metric_info]
-    n_metrics = len(available_metrics)
 
-    if n_metrics == 0:
+    if len(available_metrics) == 0:
         ax.text(0.5, 0.5, "No metrics available", ha="center", va="center", fontsize=14)
         ax.axis("off")
         return fig
 
-    # Create horizontal bar chart
+    # Plot metrics with pass/fail coloring
+    _plot_quality_bars(ax, available_metrics, metric_info, show_specs)
+
+    # Add value labels and spec markers
+    _add_quality_labels(ax, available_metrics, metric_info)
+    _add_spec_markers(ax, available_metrics, show_specs)
+
+    # Configure axes
+    _configure_quality_axes(ax, available_metrics, metric_info, title)
+
+    fig.tight_layout()
+
+    if save_path is not None:
+        fig.savefig(save_path, dpi=300, bbox_inches="tight")
+
+    if show:
+        plt.show()
+
+    return fig
+
+
+def _setup_quality_plot_axes(
+    ax: Axes | None,
+    figsize: tuple[float, float],
+) -> tuple[Figure, Axes]:
+    """Setup figure and axes for quality summary plot.
+
+    Args:
+        ax: Existing axes or None.
+        figsize: Figure size if creating new figure.
+
+    Returns:
+        Tuple of (Figure, Axes).
+
+    Raises:
+        ValueError: If provided axes has no associated figure.
+    """
+    if ax is None:
+        fig, ax_obj = plt.subplots(figsize=figsize)
+        return fig, ax_obj
+    else:
+        fig_temp = ax.get_figure()
+        if fig_temp is None:
+            raise ValueError("Axes must have an associated figure")
+        return cast("Figure", fig_temp), ax
+
+
+def _get_metric_info() -> dict[str, dict[str, Any]]:
+    """Get metric display information.
+
+    Returns:
+        Dictionary mapping metric keys to display info (name, unit, higher_better).
+    """
+    return {
+        "snr": {"name": "SNR", "unit": "dB", "higher_better": True},
+        "sinad": {"name": "SINAD", "unit": "dB", "higher_better": True},
+        "thd": {"name": "THD", "unit": "dB", "higher_better": False},
+        "enob": {"name": "ENOB", "unit": "bits", "higher_better": True},
+        "sfdr": {"name": "SFDR", "unit": "dBc", "higher_better": True},
+    }
+
+
+def _plot_quality_bars(
+    ax: Axes,
+    available_metrics: list[tuple[str, float]],
+    metric_info: dict[str, dict[str, Any]],
+    show_specs: dict[str, float] | None,
+) -> None:
+    """Plot horizontal bars for quality metrics.
+
+    Args:
+        ax: Matplotlib axes.
+        available_metrics: List of (key, value) tuples for available metrics.
+        metric_info: Metric display information.
+        show_specs: Specification values for pass/fail coloring.
+    """
+    n_metrics = len(available_metrics)
     y_pos = np.arange(n_metrics)
     values = [v for _, v in available_metrics]
-    names = [metric_info[k]["name"] for k, _ in available_metrics]
 
     # Determine colors based on pass/fail
+    colors = _determine_bar_colors(available_metrics, metric_info, show_specs)
+
+    # Plot horizontal bars
+    ax.barh(y_pos, values, color=colors, edgecolor="black", linewidth=0.5)
+
+
+def _determine_bar_colors(
+    available_metrics: list[tuple[str, float]],
+    metric_info: dict[str, dict[str, Any]],
+    show_specs: dict[str, float] | None,
+) -> list[str]:
+    """Determine bar colors based on pass/fail status.
+
+    Args:
+        available_metrics: List of (key, value) tuples.
+        metric_info: Metric display information.
+        show_specs: Specification values.
+
+    Returns:
+        List of color strings (hex codes).
+    """
     colors = []
     for key, value in available_metrics:
         if show_specs and key in show_specs:
@@ -755,11 +1137,21 @@ def plot_quality_summary(
             colors.append("#27AE60" if passed else "#E74C3C")
         else:
             colors.append("#3498DB")
+    return colors
 
-    # Plot horizontal bars
-    ax.barh(y_pos, values, color=colors, edgecolor="black", linewidth=0.5)
 
-    # Add value labels
+def _add_quality_labels(
+    ax: Axes,
+    available_metrics: list[tuple[str, float]],
+    metric_info: dict[str, dict[str, Any]],
+) -> None:
+    """Add value labels to quality metric bars.
+
+    Args:
+        ax: Matplotlib axes.
+        available_metrics: List of (key, value) tuples.
+        metric_info: Metric display information.
+    """
     for i, (key, value) in enumerate(available_metrics):
         unit = metric_info[key]["unit"]
         label_text = f"{value:.1f} {unit}"
@@ -773,13 +1165,46 @@ def plot_quality_summary(
             fontweight="bold",
         )
 
-    # Add spec markers
-    if show_specs:
-        for i, (key, _) in enumerate(available_metrics):
-            if key in show_specs:
-                spec = show_specs[key]
-                ax.plot(spec, i, "k|", markersize=20, markeredgewidth=2)
-                ax.text(spec, i + 0.3, f"Spec: {spec}", fontsize=8, ha="center")
+
+def _add_spec_markers(
+    ax: Axes,
+    available_metrics: list[tuple[str, float]],
+    show_specs: dict[str, float] | None,
+) -> None:
+    """Add specification markers to quality plot.
+
+    Args:
+        ax: Matplotlib axes.
+        available_metrics: List of (key, value) tuples.
+        show_specs: Specification values.
+    """
+    if not show_specs:
+        return
+
+    for i, (key, _) in enumerate(available_metrics):
+        if key in show_specs:
+            spec = show_specs[key]
+            ax.plot(spec, i, "k|", markersize=20, markeredgewidth=2)
+            ax.text(spec, i + 0.3, f"Spec: {spec}", fontsize=8, ha="center")
+
+
+def _configure_quality_axes(
+    ax: Axes,
+    available_metrics: list[tuple[str, float]],
+    metric_info: dict[str, dict[str, Any]],
+    title: str | None,
+) -> None:
+    """Configure axes for quality summary plot.
+
+    Args:
+        ax: Matplotlib axes.
+        available_metrics: List of (key, value) tuples.
+        metric_info: Metric display information.
+        title: Plot title.
+    """
+    n_metrics = len(available_metrics)
+    y_pos = np.arange(n_metrics)
+    names = [metric_info[k]["name"] for k, _ in available_metrics]
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels([str(name) for name in names], fontsize=11)
@@ -791,16 +1216,6 @@ def plot_quality_summary(
         ax.set_title(title, fontsize=12, fontweight="bold")
     else:
         ax.set_title("Signal Quality Summary (IEEE 1241-2010)", fontsize=12, fontweight="bold")
-
-    fig.tight_layout()
-
-    if save_path is not None:
-        fig.savefig(save_path, dpi=300, bbox_inches="tight")
-
-    if show:
-        plt.show()
-
-    return fig
 
 
 __all__ = [

@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
     from oscura.core.types import WaveformTrace
 
 
@@ -260,40 +262,66 @@ def get_valid_measurements(trace: WaveformTrace) -> list[str]:
         ...     func = getattr(tk, meas_name)
         ...     result = func(trace)
     """
-    valid = []
+    valid: list[str] = []
 
-    # These almost always work (just need data)
+    _add_basic_measurements(valid, trace)
+    _add_edge_measurements(valid, trace)
+    _add_frequency_measurements(valid, trace)
+    _add_pulse_measurements(valid, trace)
+    _add_overshoot_measurements(valid, trace)
+    _add_slew_rate_measurement(valid)
+
+    return valid
+
+
+def _add_basic_measurements(valid: list[str], trace: WaveformTrace) -> None:
+    """Add basic measurements that almost always work.
+
+    Args:
+        valid: List to append to.
+        trace: Input trace.
+    """
     if len(trace.data) > 0:
         valid.extend(["mean", "rms"])
-
     if len(trace.data) >= 2:
         valid.append("amplitude")
 
-    # Check edge-based measurements
-    suitable, _ = is_suitable_for_rise_time_measurement(trace)
-    if suitable:
-        valid.append("rise_time")
 
-    suitable, _ = is_suitable_for_fall_time_measurement(trace)
-    if suitable:
+def _add_edge_measurements(valid: list[str], trace: WaveformTrace) -> None:
+    """Add edge-based measurements.
+
+    Args:
+        valid: List to append to.
+        trace: Input trace.
+    """
+    if is_suitable_for_rise_time_measurement(trace)[0]:
+        valid.append("rise_time")
+    if is_suitable_for_fall_time_measurement(trace)[0]:
         valid.append("fall_time")
 
-    # Check frequency/period
-    suitable, _ = is_suitable_for_frequency_measurement(trace)
-    if suitable:
+
+def _add_frequency_measurements(valid: list[str], trace: WaveformTrace) -> None:
+    """Add frequency/period measurements.
+
+    Args:
+        valid: List to append to.
+        trace: Input trace.
+    """
+    if is_suitable_for_frequency_measurement(trace)[0]:
         valid.extend(["frequency", "period"])
-
-    # Check duty cycle
-    suitable, _ = is_suitable_for_duty_cycle_measurement(trace)
-    if suitable:
+    if is_suitable_for_duty_cycle_measurement(trace)[0]:
         valid.append("duty_cycle")
-
-    # Check jitter
-    suitable, _ = is_suitable_for_jitter_measurement(trace)
-    if suitable:
+    if is_suitable_for_jitter_measurement(trace)[0]:
         valid.extend(["rms_jitter", "peak_to_peak_jitter"])
 
-    # Pulse width - needs edges but not necessarily periodic
+
+def _add_pulse_measurements(valid: list[str], trace: WaveformTrace) -> None:
+    """Add pulse width measurements.
+
+    Args:
+        valid: List to append to.
+        trace: Input trace.
+    """
     from oscura.analyzers.waveform.measurements import _find_edges
 
     rising = _find_edges(trace, "rising")
@@ -302,7 +330,14 @@ def get_valid_measurements(trace: WaveformTrace) -> list[str]:
     if len(rising) > 0 and len(falling) > 0:
         valid.append("pulse_width")
 
-    # Overshoot/undershoot - check amplitude
+
+def _add_overshoot_measurements(valid: list[str], trace: WaveformTrace) -> None:
+    """Add overshoot/undershoot measurements.
+
+    Args:
+        valid: List to append to.
+        trace: Input trace.
+    """
     from oscura.analyzers.waveform.measurements import _find_levels
 
     if len(trace.data) >= 3:
@@ -310,11 +345,15 @@ def get_valid_measurements(trace: WaveformTrace) -> list[str]:
         if high - low > 0:
             valid.extend(["overshoot", "undershoot", "preshoot"])
 
-    # Slew rate - similar to rise/fall time
+
+def _add_slew_rate_measurement(valid: list[str]) -> None:
+    """Add slew rate if edge measurements available.
+
+    Args:
+        valid: List to check and append to.
+    """
     if "rise_time" in valid or "fall_time" in valid:
         valid.append("slew_rate")
-
-    return valid
 
 
 def analyze_signal_characteristics(trace: WaveformTrace) -> dict[str, bool | int | str | list[str]]:
@@ -327,59 +366,75 @@ def analyze_signal_characteristics(trace: WaveformTrace) -> dict[str, bool | int
         trace: Input waveform trace.
 
     Returns:
-        Dictionary containing:
-            - sufficient_samples: bool - at least 16 samples
-            - has_amplitude: bool - signal has variation
-            - has_variation: bool - standard deviation > 0
-            - has_edges: bool - rising or falling edges detected
-            - is_periodic: bool - signal appears periodic
-            - edge_count: int - total edges (rising + falling)
-            - rising_edge_count: int - number of rising edges
-            - falling_edge_count: int - number of falling edges
-            - signal_type: str - classified type (dc, periodic_digital, etc.)
-            - recommended_measurements: list[str] - suggested measurements
+        Dictionary containing signal characteristics including sufficient_samples,
+        has_amplitude, has_variation, edge counts, periodicity, signal_type.
 
     Example:
         >>> chars = analyze_signal_characteristics(trace)
         >>> if chars['is_periodic']:
         ...     print("Signal is periodic")
-        ...     print(f"Frequency measurement recommended: {'frequency' in chars['recommended_measurements']}")
     """
     from oscura.analyzers.waveform.measurements import _find_edges
 
     data = trace.data
-    n = len(data)
-
-    characteristics: dict[str, bool | int | str | list[str]] = {
-        "sufficient_samples": n >= 16,
-        "has_amplitude": False,
-        "has_variation": False,
-        "has_edges": False,
-        "is_periodic": False,
-        "edge_count": 0,
-        "rising_edge_count": 0,
-        "falling_edge_count": 0,
-        "signal_type": "unknown",
-        "recommended_measurements": [],
-    }
-
-    # Check variation
-    std = np.std(data)
-    characteristics["has_variation"] = std > 1e-12
-
-    # Check amplitude
-    amplitude = np.max(data) - np.min(data)
-    characteristics["has_amplitude"] = amplitude > 1e-12
+    characteristics = _init_characteristics(data)
 
     if not characteristics["has_variation"]:
         characteristics["signal_type"] = "dc"
         characteristics["recommended_measurements"] = ["mean", "rms"]
         return characteristics
 
-    # Count edges
     rising_edges = _find_edges(trace, "rising")
     falling_edges = _find_edges(trace, "falling")
+    _update_edge_counts(characteristics, rising_edges, falling_edges)
+    _check_periodicity(characteristics, rising_edges)
+    _classify_signal_type(characteristics, data, len(data))
 
+    characteristics["recommended_measurements"] = get_valid_measurements(trace)
+
+    return characteristics
+
+
+def _init_characteristics(data: NDArray[np.float64]) -> dict[str, bool | int | str | list[str]]:
+    """Initialize characteristics dictionary with basic signal properties.
+
+    Args:
+        data: Signal data array.
+
+    Returns:
+        Dictionary with initial characteristics.
+    """
+    n = len(data)
+    std = np.std(data)
+    amplitude = np.max(data) - np.min(data)
+
+    characteristics: dict[str, int | str | list[str]] = {
+        "sufficient_samples": int(n >= 16),
+        "has_amplitude": int(amplitude > 1e-12),
+        "has_variation": int(std > 1e-12),
+        "has_edges": int(False),
+        "is_periodic": int(False),
+        "edge_count": 0,
+        "rising_edge_count": 0,
+        "falling_edge_count": 0,
+        "signal_type": "unknown",
+        "recommended_measurements": [],
+    }
+    return characteristics
+
+
+def _update_edge_counts(
+    characteristics: dict[str, bool | int | str | list[str]],
+    rising_edges: NDArray[np.float64],
+    falling_edges: NDArray[np.float64],
+) -> None:
+    """Update edge count statistics in characteristics dictionary.
+
+    Args:
+        characteristics: Dictionary to update.
+        rising_edges: Array of rising edge indices.
+        falling_edges: Array of falling edge indices.
+    """
     rising_edge_count = len(rising_edges)
     falling_edge_count = len(falling_edges)
     edge_count = rising_edge_count + falling_edge_count
@@ -389,7 +444,16 @@ def analyze_signal_characteristics(trace: WaveformTrace) -> dict[str, bool | int
     characteristics["edge_count"] = edge_count
     characteristics["has_edges"] = edge_count > 0
 
-    # Check periodicity
+
+def _check_periodicity(
+    characteristics: dict[str, bool | int | str | list[str]], rising_edges: NDArray[np.float64]
+) -> None:
+    """Check if signal is periodic based on edge spacing.
+
+    Args:
+        characteristics: Dictionary to update.
+        rising_edges: Array of rising edge indices.
+    """
     if len(rising_edges) >= 3:
         periods = np.diff(rising_edges)
         period_cv = np.std(periods) / np.mean(periods) if np.mean(periods) > 0 else float("inf")
@@ -397,30 +461,45 @@ def analyze_signal_characteristics(trace: WaveformTrace) -> dict[str, bool | int
         if period_cv < 0.2:  # Less than 20% variation
             characteristics["is_periodic"] = True
 
-    # Classify signal type
-    if not characteristics["has_edges"]:
-        # No edges - check if analog periodic
-        if n >= 16:
-            fft_result = np.abs(np.fft.rfft(data - np.mean(data)))
-            peak_power = np.max(fft_result[1:]) if len(fft_result) > 1 else 0
-            avg_power = np.mean(fft_result[1:]) if len(fft_result) > 1 else 0
 
-            if peak_power > 10 * avg_power:
-                characteristics["signal_type"] = "periodic_analog"
-            else:
-                characteristics["signal_type"] = "noise"
-        else:
-            characteristics["signal_type"] = "unknown"
+def _classify_signal_type(
+    characteristics: dict[str, bool | int | str | list[str]], data: NDArray[np.float64], n: int
+) -> None:
+    """Classify signal type based on characteristics.
+
+    Args:
+        characteristics: Dictionary to update.
+        data: Signal data array.
+        n: Number of samples.
+    """
+    if not characteristics["has_edges"]:
+        characteristics["signal_type"] = _classify_no_edge_signal(data, n)
     elif characteristics["is_periodic"]:
         characteristics["signal_type"] = "periodic_digital"
     else:
         characteristics["signal_type"] = "aperiodic_digital"
 
-    # Recommend measurements
-    recommended = get_valid_measurements(trace)
-    characteristics["recommended_measurements"] = recommended
 
-    return characteristics
+def _classify_no_edge_signal(data: NDArray[np.float64], n: int) -> str:
+    """Classify signal without edges (analog or noise).
+
+    Args:
+        data: Signal data array.
+        n: Number of samples.
+
+    Returns:
+        Signal type classification string.
+    """
+    if n >= 16:
+        fft_result = np.abs(np.fft.rfft(data - np.mean(data)))
+        peak_power = np.max(fft_result[1:]) if len(fft_result) > 1 else 0
+        avg_power = np.mean(fft_result[1:]) if len(fft_result) > 1 else 0
+
+        if peak_power > 10 * avg_power:
+            return "periodic_analog"
+        else:
+            return "noise"
+    return "unknown"
 
 
 def get_measurement_requirements(measurement_name: str) -> dict[str, str | int | list[str]]:
@@ -442,7 +521,24 @@ def get_measurement_requirements(measurement_name: str) -> dict[str, str | int |
         >>> print(f"Minimum samples: {reqs['min_samples']}")
         >>> print(f"Required features: {', '.join(reqs['required_features'])}")
     """
-    requirements = {
+    requirements = _get_all_measurement_requirements()
+    default = _get_default_measurement_requirements()
+    return requirements.get(measurement_name, default)
+
+
+def _get_all_measurement_requirements() -> dict[str, dict[str, str | int | list[str]]]:
+    """Get complete measurement requirements dictionary."""
+    timing_reqs = _get_timing_measurement_requirements()
+    amplitude_reqs = _get_amplitude_measurement_requirements()
+    jitter_reqs = _get_jitter_measurement_requirements()
+    statistical_reqs = _get_statistical_measurement_requirements()
+
+    return {**timing_reqs, **amplitude_reqs, **jitter_reqs, **statistical_reqs}
+
+
+def _get_timing_measurement_requirements() -> dict[str, dict[str, str | int | list[str]]]:
+    """Get requirements for timing-related measurements."""
+    return {
         "frequency": {
             "description": "Measures the repetition rate of a periodic signal",
             "min_samples": 3,
@@ -509,26 +605,25 @@ def get_measurement_requirements(measurement_name: str) -> dict[str, str | int |
                 "Incomplete pulses",
             ],
         },
+        "slew_rate": {
+            "description": "Measures dV/dt during transitions",
+            "min_samples": 3,
+            "required_signal_types": ["periodic_digital", "aperiodic_digital"],
+            "required_features": ["edges", "amplitude"],
+            "common_nan_causes": ["No edges", "No amplitude", "DC signal"],
+        },
+    }
+
+
+def _get_amplitude_measurement_requirements() -> dict[str, dict[str, str | int | list[str]]]:
+    """Get requirements for amplitude-related measurements."""
+    return {
         "amplitude": {
             "description": "Measures peak-to-peak voltage",
             "min_samples": 2,
             "required_signal_types": ["all"],
             "required_features": [],
             "common_nan_causes": ["Fewer than 2 samples"],
-        },
-        "mean": {
-            "description": "Calculates DC level (average voltage)",
-            "min_samples": 1,
-            "required_signal_types": ["all"],
-            "required_features": [],
-            "common_nan_causes": ["No data"],
-        },
-        "rms": {
-            "description": "Calculates root-mean-square voltage",
-            "min_samples": 1,
-            "required_signal_types": ["all"],
-            "required_features": [],
-            "common_nan_causes": ["No data"],
         },
         "overshoot": {
             "description": "Measures overshoot above high level",
@@ -544,13 +639,12 @@ def get_measurement_requirements(measurement_name: str) -> dict[str, str | int |
             "required_features": ["amplitude"],
             "common_nan_causes": ["No amplitude", "DC signal"],
         },
-        "slew_rate": {
-            "description": "Measures dV/dt during transitions",
-            "min_samples": 3,
-            "required_signal_types": ["periodic_digital", "aperiodic_digital"],
-            "required_features": ["edges", "amplitude"],
-            "common_nan_causes": ["No edges", "No amplitude", "DC signal"],
-        },
+    }
+
+
+def _get_jitter_measurement_requirements() -> dict[str, dict[str, str | int | list[str]]]:
+    """Get requirements for jitter measurements."""
+    return {
         "rms_jitter": {
             "description": "Measures timing uncertainty (RMS)",
             "min_samples": 3,
@@ -575,15 +669,36 @@ def get_measurement_requirements(measurement_name: str) -> dict[str, str | int |
         },
     }
 
-    default = {
+
+def _get_statistical_measurement_requirements() -> dict[str, dict[str, str | int | list[str]]]:
+    """Get requirements for statistical measurements."""
+    return {
+        "mean": {
+            "description": "Calculates DC level (average voltage)",
+            "min_samples": 1,
+            "required_signal_types": ["all"],
+            "required_features": [],
+            "common_nan_causes": ["No data"],
+        },
+        "rms": {
+            "description": "Calculates root-mean-square voltage",
+            "min_samples": 1,
+            "required_signal_types": ["all"],
+            "required_features": [],
+            "common_nan_causes": ["No data"],
+        },
+    }
+
+
+def _get_default_measurement_requirements() -> dict[str, str | int | list[str]]:
+    """Get default requirements for undocumented measurements."""
+    return {
         "description": "Measurement not documented",
         "min_samples": 1,
         "required_signal_types": ["unknown"],
         "required_features": [],
         "common_nan_causes": ["Check measurement documentation"],
     }
-
-    return requirements.get(measurement_name, default)  # type: ignore[return-value]
 
 
 __all__ = [

@@ -197,3 +197,167 @@ class TestMessageWrapper:
         assert sig.name == "rpm"
         assert sig.unit == "rpm"
         assert sig.value > 0  # RPM should be positive
+
+
+@pytest.mark.unit
+class TestCANSessionCRC:
+    """Tests for CRC integration in CANSession."""
+
+    def test_auto_crc_disabled(self, sample_can_messages):
+        """Test that CRC recovery can be disabled."""
+        session = CANSession(name="Test", auto_crc=False)
+        session._messages = sample_can_messages
+
+        # Analyze without CRC recovery
+        results = session.analyze()
+
+        # No CRC params should be recovered
+        assert len(session._crc_params) == 0
+        assert len(session.crc_info) == 0
+
+    def test_auto_crc_insufficient_messages(self):
+        """Test that CRC recovery requires minimum messages."""
+        from oscura.automotive.can.models import CANMessage, CANMessageList
+
+        session = CANSession(name="Test", auto_crc=True, crc_min_messages=20)
+
+        # Add only 5 messages (less than minimum)
+        messages = [
+            CANMessage(arbitration_id=0x123, data=bytes([0x01, 0x02, 0x03]), timestamp=i * 0.01)
+            for i in range(5)
+        ]
+        session._messages = CANMessageList(messages=messages)
+
+        # Analyze
+        results = session.analyze()
+
+        # CRC should not be recovered (not enough messages)
+        assert len(session._crc_params) == 0
+
+    def test_auto_crc_recovery_with_known_crc(self):
+        """Test CRC recovery with CAN messages containing known CRC."""
+        from oscura.automotive.can.models import CANMessage, CANMessageList
+        from oscura.inference.crc_reverse import CRCReverser
+
+        session = CANSession(name="Test", auto_crc=True, crc_min_messages=4)
+
+        # Generate CAN messages with CRC-8
+        reverser = CRCReverser()
+        messages = []
+        for i in range(10):
+            # 3 bytes data + 1 byte CRC
+            data_bytes = bytes([0x01, 0x02, i])
+            crc = reverser._calculate_crc(
+                data=data_bytes,
+                poly=0x07,
+                width=8,
+                init=0x00,
+                xor_out=0x00,
+                refin=False,
+                refout=False,
+            )
+            full_data = bytes(list(data_bytes) + [crc])
+            messages.append(CANMessage(arbitration_id=0x123, data=full_data, timestamp=i * 0.01))
+
+        session._messages = CANMessageList(messages=messages)
+
+        # Analyze to trigger CRC recovery
+        results = session.analyze()
+
+        # CRC should be recovered
+        if 0x123 in session._crc_params:
+            params = session._crc_params[0x123]
+            assert params.polynomial == 0x07
+            assert params.width == 8
+            assert params.confidence > 0.8
+
+    def test_crc_validation(self):
+        """Test CRC validation on messages."""
+        from oscura.automotive.can.models import CANMessage
+        from oscura.inference.crc_reverse import CRCParameters, CRCReverser
+
+        session = CANSession(name="Test", auto_crc=False, crc_validate=True)
+
+        # Manually set CRC params
+        session._crc_params[0x123] = CRCParameters(
+            polynomial=0x07,
+            width=8,
+            init=0x00,
+            xor_out=0x00,
+            reflect_in=False,
+            reflect_out=False,
+            confidence=1.0,
+        )
+
+        # Create message with valid CRC
+        reverser = CRCReverser()
+        data_bytes = bytes([0x01, 0x02, 0x03])
+        crc = reverser._calculate_crc(
+            data=data_bytes, poly=0x07, width=8, init=0x00, xor_out=0x00, refin=False, refout=False
+        )
+        valid_msg = CANMessage(
+            arbitration_id=0x123, data=bytes(list(data_bytes) + [crc]), timestamp=1.0
+        )
+
+        # Validate should pass
+        assert session._validate_crc(valid_msg) is True
+
+        # Create message with invalid CRC
+        invalid_msg = CANMessage(
+            arbitration_id=0x123, data=bytes([0x01, 0x02, 0x03, 0xFF]), timestamp=2.0
+        )
+
+        # Validate should fail (with warning logged)
+        assert session._validate_crc(invalid_msg) is False
+
+    def test_crc_info_property(self):
+        """Test crc_info property returns correct format."""
+        from oscura.inference.crc_reverse import CRCParameters
+
+        session = CANSession(name="Test")
+
+        # Manually set CRC params
+        session._crc_params[0x123] = CRCParameters(
+            polynomial=0x1021,
+            width=16,
+            init=0xFFFF,
+            xor_out=0x0000,
+            reflect_in=False,
+            reflect_out=False,
+            confidence=0.95,
+            algorithm_name="CRC-16-CCITT",
+        )
+
+        crc_info = session.crc_info
+
+        assert 0x123 in crc_info
+        assert crc_info[0x123]["polynomial"] == "0x1021"
+        assert crc_info[0x123]["width"] == 16
+        assert crc_info[0x123]["confidence"] == 0.95
+        assert crc_info[0x123]["algorithm_name"] == "CRC-16-CCITT"
+
+    def test_crc_validation_disabled(self):
+        """Test that CRC validation can be disabled."""
+        from oscura.automotive.can.models import CANMessage
+        from oscura.inference.crc_reverse import CRCParameters
+
+        session = CANSession(name="Test", auto_crc=False, crc_validate=False)
+
+        # Set CRC params
+        session._crc_params[0x123] = CRCParameters(
+            polynomial=0x07,
+            width=8,
+            init=0x00,
+            xor_out=0x00,
+            reflect_in=False,
+            reflect_out=False,
+            confidence=1.0,
+        )
+
+        # Create message with invalid CRC
+        invalid_msg = CANMessage(
+            arbitration_id=0x123, data=bytes([0x01, 0x02, 0x03, 0xFF]), timestamp=1.0
+        )
+
+        # Should return True (validation disabled)
+        assert session._validate_crc(invalid_msg) is True

@@ -43,83 +43,36 @@ def debug_protocol(
     Args:
         trace: Signal to decode.
         protocol: Protocol type override ('UART', 'SPI', 'I2C', 'CAN', 'auto').
-                  If None or 'auto', auto-detected.
-        context_samples: Number of samples to include before/after errors.
-        error_types: List of error types to detect. If None, detects all.
+        context_samples: Number of samples before/after errors.
+        error_types: Error types to detect. If None, detects all.
         decode_all: If True, decode all packets. If False, focus on errors.
 
     Returns:
-        Dictionary containing:
-        - protocol: Detected or specified protocol type
-        - baud_rate: Detected baud/clock rate (if applicable)
-        - packets: List of decoded ProtocolPacket objects
-        - errors: List of error dictionaries with context
-        - config: Protocol configuration used
-        - statistics: Decoding statistics (total packets, error count, etc.)
+        Dictionary with protocol, baud_rate, packets, errors, config, statistics.
 
     Raises:
         AnalysisError: If protocol cannot be detected or decoded.
 
     Example:
-        >>> trace = osc.load('uart_data.wfm')
         >>> result = osc.debug_protocol(trace)
         >>> print(f"Protocol: {result['protocol']}")
-        >>> print(f"Baud Rate: {result['baud_rate']}")
-        >>> for error in result['errors']:
-        ...     print(f"Error at {error['timestamp']}: {error['type']}")
 
     References:
-        sigrok Protocol Decoder API
-        UART: TIA-232-F (Serial communication)
-        I2C: NXP UM10204 (I2C-bus specification)
+        sigrok Protocol Decoder API, UART: TIA-232-F, I2C: NXP UM10204
     """
-    from oscura.inference.protocol import detect_protocol
-
-    # Convert to digital if needed
     digital_trace = _to_digital(trace)
+    protocol, config, confidence = _detect_or_use_protocol(protocol, trace)
 
-    # Auto-detect protocol if not specified
-    if protocol is None or protocol.lower() == "auto":
-        detection = detect_protocol(trace, min_confidence=0.5, return_candidates=True)  # type: ignore[arg-type]
-        protocol = detection["protocol"]
-        config = detection["config"]
-        confidence = detection["confidence"]
-    else:
-        confidence = 1.0
-        config = _get_default_protocol_config(protocol.upper())
+    packets, errors = _decode_protocol(
+        protocol, digital_trace, config, context_samples, error_types, trace
+    )
 
-    protocol = protocol.upper()
-
-    # Decode based on protocol type
-    packets: list[ProtocolPacket] = []
-    errors: list[dict[str, Any]] = []
-
-    if protocol == "UART":
-        packets, errors = _decode_uart(digital_trace, config, context_samples, error_types, trace)
-    elif protocol == "SPI":
-        packets, errors = _decode_spi(digital_trace, config, context_samples, error_types, trace)
-    elif protocol == "I2C":
-        packets, errors = _decode_i2c(digital_trace, config, context_samples, error_types, trace)
-    elif protocol == "CAN":
-        packets, errors = _decode_can(digital_trace, config, context_samples, error_types, trace)
-    else:
-        raise AnalysisError(f"Unsupported protocol: {protocol}")
-
-    # Filter to error packets if not decoding all
     if not decode_all:
         packets = [p for p in packets if p.errors]
 
-    # Calculate statistics
-    total_packets = len(packets)
-    error_count = len(errors)
-    statistics = {
-        "total_packets": total_packets,
-        "error_count": error_count,
-        "error_rate": error_count / total_packets if total_packets > 0 else 0,
-        "confidence": confidence,
-    }
+    statistics = _compute_protocol_statistics(packets, errors, confidence)
 
-    result = {
+    return {
         "protocol": protocol,
         "baud_rate": config.get("baud_rate") or config.get("clock_rate"),
         "packets": packets,
@@ -128,7 +81,87 @@ def debug_protocol(
         "statistics": statistics,
     }
 
-    return result
+
+def _detect_or_use_protocol(
+    protocol: str | None, trace: WaveformTrace | DigitalTrace
+) -> tuple[str, dict[str, Any], float]:
+    """Detect protocol or use specified protocol.
+
+    Args:
+        protocol: Protocol name or None for auto-detection.
+        trace: Input trace.
+
+    Returns:
+        Tuple of (protocol_name, config, confidence).
+    """
+    from oscura.inference.protocol import detect_protocol
+
+    if protocol is None or protocol.lower() == "auto":
+        detection = detect_protocol(trace, min_confidence=0.5, return_candidates=True)  # type: ignore[arg-type]
+        return detection["protocol"], detection["config"], detection["confidence"]
+    else:
+        config = _get_default_protocol_config(protocol.upper())
+        return protocol.upper(), config, 1.0
+
+
+def _decode_protocol(
+    protocol: str,
+    digital_trace: DigitalTrace,
+    config: dict[str, Any],
+    context_samples: int,
+    error_types: list[str] | None,
+    trace: WaveformTrace | DigitalTrace,
+) -> tuple[list[ProtocolPacket], list[dict[str, Any]]]:
+    """Decode protocol based on type.
+
+    Args:
+        protocol: Protocol type (UART, SPI, I2C, CAN).
+        digital_trace: Digital trace to decode.
+        config: Protocol configuration.
+        context_samples: Context sample count.
+        error_types: Error types to detect.
+        trace: Original trace for context.
+
+    Returns:
+        Tuple of (packets, errors).
+
+    Raises:
+        AnalysisError: If protocol is unsupported.
+    """
+    if protocol == "UART":
+        return _decode_uart(digital_trace, config, context_samples, error_types, trace)
+    elif protocol == "SPI":
+        return _decode_spi(digital_trace, config, context_samples, error_types, trace)
+    elif protocol == "I2C":
+        return _decode_i2c(digital_trace, config, context_samples, error_types, trace)
+    elif protocol == "CAN":
+        return _decode_can(digital_trace, config, context_samples, error_types, trace)
+    else:
+        raise AnalysisError(f"Unsupported protocol: {protocol}")
+
+
+def _compute_protocol_statistics(
+    packets: list[ProtocolPacket], errors: list[dict[str, Any]], confidence: float
+) -> dict[str, float | int]:
+    """Compute protocol decoding statistics.
+
+    Args:
+        packets: Decoded packets list.
+        errors: Error list.
+        confidence: Detection confidence.
+
+    Returns:
+        Dictionary with statistics.
+    """
+    total_packets = len(packets)
+    error_count = len(errors)
+
+    return {
+        "total_packets": total_packets,
+        "error_count": error_count,
+        "error_rate": error_count / total_packets if total_packets > 0 else 0,
+        "confidence": confidence,
+    }
 
 
 def _to_digital(trace: WaveformTrace | DigitalTrace) -> DigitalTrace:

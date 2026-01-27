@@ -111,13 +111,13 @@ def soa_analysis(
     if pulse_width is None:
         pulse_width = np.inf
 
-    applicable_limits = [l for l in limits if l.pulse_width >= pulse_width]  # noqa: E741
+    applicable_limits = [l for l in limits if l.pulse_width >= pulse_width]
     if not applicable_limits:
         applicable_limits = limits  # Use all if none match
 
     # Build SOA boundary (interpolate between limit points)
     # Sort by voltage
-    sorted_limits = sorted(applicable_limits, key=lambda l: l.v_max)  # noqa: E741
+    sorted_limits = sorted(applicable_limits, key=lambda l: l.v_max)
 
     violations: list[SOAViolation] = []
     margins: list[float] = []
@@ -171,7 +171,7 @@ def _interpolate_soa_limit(voltage: float, limits: list[SOALimit]) -> float:
         Interpolated current limit in Amps
     """
     if len(limits) == 0:
-        return np.inf  # type: ignore[no-any-return]
+        return np.inf
 
     if len(limits) == 1:
         if voltage <= limits[0].v_max:
@@ -259,9 +259,9 @@ def plot_soa(
     fig, ax = plt.subplots(figsize=figsize)
 
     # Plot SOA boundary
-    sorted_limits = sorted(limits, key=lambda l: l.v_max)  # noqa: E741
-    v_boundary = [l.v_max for l in sorted_limits]  # noqa: E741
-    i_boundary = [l.i_max for l in sorted_limits]  # noqa: E741
+    sorted_limits = sorted(limits, key=lambda l: l.v_max)
+    v_boundary = [l.v_max for l in sorted_limits]
+    i_boundary = [l.i_max for l in sorted_limits]
 
     # Add corner points for closed boundary
     v_boundary = [0, *v_boundary, v_boundary[-1], 0]

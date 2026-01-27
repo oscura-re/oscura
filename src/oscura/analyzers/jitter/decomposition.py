@@ -220,7 +220,7 @@ def _extract_rj_tail_fit(tie_data: NDArray[np.float64]) -> RandomJitterResult:
     n = len(sorted_data)
 
     # Use percentiles to estimate Gaussian parameters
-    # For a Gaussian: P16 = μ - σ, P50 = μ, P84 = μ + σ  # noqa: RUF003
+    # For a Gaussian: P16 = μ - σ, P50 = μ, P84 = μ + σ
     p16 = np.percentile(sorted_data, 16)
     p50 = np.percentile(sorted_data, 50)
     p84 = np.percentile(sorted_data, 84)
@@ -339,6 +339,98 @@ def _extract_rj_q_scale(tie_data: NDArray[np.float64]) -> RandomJitterResult:
     )
 
 
+def _prepare_dj_histogram(
+    valid_data: NDArray[np.float64],
+) -> tuple[NDArray[np.int_], NDArray[np.float64]]:
+    """Create histogram for DJ analysis.
+
+    Args:
+        valid_data: Valid TIE data array.
+
+    Returns:
+        Tuple of (histogram, bin_centers).
+    """
+    n_bins = min(100, len(valid_data) // 50)
+    hist, bin_edges = np.histogram(valid_data, bins=n_bins, density=False)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    return hist, bin_centers
+
+
+def _detect_bimodal_peaks(hist: NDArray[np.int_], bin_centers: NDArray[np.float64]) -> float | None:
+    """Detect bimodal peaks in histogram for DJ estimation.
+
+    Args:
+        hist: Histogram counts.
+        bin_centers: Bin center positions.
+
+    Returns:
+        Peak separation distance or None if not bimodal.
+    """
+    from scipy.ndimage import gaussian_filter1d
+    from scipy.signal import find_peaks
+
+    if len(hist) < 5:
+        return None
+
+    hist_smooth = gaussian_filter1d(hist.astype(float), sigma=2)
+    peaks, properties = find_peaks(hist_smooth, prominence=np.max(hist_smooth) * 0.1)
+
+    if len(peaks) >= 2:
+        prominences = properties.get("prominences", np.ones(len(peaks)))
+        sorted_peak_idx = np.argsort(prominences)[::-1][:2]
+        top_peaks = peaks[sorted_peak_idx]
+        top_peaks = np.sort(top_peaks)
+        peak_positions = bin_centers[top_peaks]
+        separation: float = float(abs(peak_positions[1] - peak_positions[0]))
+        return separation
+
+    return None
+
+
+def _calculate_dj_from_quantiles(sorted_data: NDArray[np.float64], rj_rms: float) -> float:
+    """Calculate DJ using quantile-based method.
+
+    Args:
+        sorted_data: Sorted TIE data.
+        rj_rms: Random jitter RMS.
+
+    Returns:
+        DJ peak-to-peak value.
+    """
+    n = len(sorted_data)
+    lower_idx = max(0, int(n * 0.0001))
+    upper_idx = min(n - 1, int(n * 0.9999))
+    tj_at_ber = sorted_data[upper_idx] - sorted_data[lower_idx]
+
+    # For dual-Dirac + RJ: TJ = 2*Q*RJ + DJ at BER = 1e-4 (Q ≈ 3.72)
+    q_factor = 3.72
+    rj_contribution = 2 * q_factor * rj_rms
+    dj_pp: float = float(max(0.0, tj_at_ber - rj_contribution))
+    return dj_pp
+
+
+def _determine_dj_confidence(
+    peak_separation_dj: float | None, dj_pp: float, rj_rms: float, n_peaks: int
+) -> float:
+    """Determine confidence score for DJ extraction.
+
+    Args:
+        peak_separation_dj: Peak separation from histogram.
+        dj_pp: Calculated DJ peak-to-peak.
+        rj_rms: Random jitter RMS.
+        n_peaks: Number of peaks found.
+
+    Returns:
+        Confidence score (0.0 to 1.0).
+    """
+    if peak_separation_dj is not None:
+        return 0.9 if n_peaks == 2 else 0.7
+    elif dj_pp > 2 * rj_rms:
+        return 0.5
+    else:
+        return 0.2
+
+
 def extract_dj(
     tie_data: NDArray[np.float64],
     rj_result: RandomJitterResult | None = None,
@@ -376,83 +468,27 @@ def extract_dj(
             analysis_type="deterministic_jitter_extraction",
         )
 
+    # Setup: prepare data and compute RJ if needed
     valid_data = tie_data[~np.isnan(tie_data)]
-
-    # Get RJ if not provided - use tail fitting for better RJ isolation
     if rj_result is None:
         rj_result = extract_rj(valid_data, method="tail_fit", min_samples=min_samples)
-
     rj_rms = rj_result.rj_rms
 
-    # Create histogram for analysis
-    n_bins = min(100, len(valid_data) // 50)
-    hist, bin_edges = np.histogram(valid_data, bins=n_bins, density=False)
-    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-
-    # DJ extraction using dual-Dirac model:
-    # The dual-Dirac model assumes DJ creates two impulses at ±δ,
-    # each convolved with Gaussian RJ.
-    # Total distribution is: 0.5*N(μ-δ, σ) + 0.5*N(μ+δ, σ)  # noqa: RUF003
-
+    # Processing: analyze histogram and detect peaks
+    hist, bin_centers = _prepare_dj_histogram(valid_data)
+    peak_separation_dj = _detect_bimodal_peaks(hist, bin_centers)
     sorted_data = np.sort(valid_data)
-    n = len(sorted_data)
 
-    # Try to find DJ by detecting bimodal peaks in histogram
-    from scipy.ndimage import gaussian_filter1d
-    from scipy.signal import find_peaks
-
-    dj_pp = 0.0
-    peak_separation_dj = None
-
-    # Smooth histogram for peak detection
-    if len(hist) >= 5:
-        hist_smooth = gaussian_filter1d(hist.astype(float), sigma=2)
-        peaks, properties = find_peaks(hist_smooth, prominence=np.max(hist_smooth) * 0.1)
-
-        # If we find 2 clear peaks, DJ is their separation
-        if len(peaks) >= 2:
-            # Sort peaks by prominence and take top 2
-            prominences = properties.get("prominences", np.ones(len(peaks)))
-            sorted_peak_idx = np.argsort(prominences)[::-1][:2]
-            top_peaks = peaks[sorted_peak_idx]
-            top_peaks = np.sort(top_peaks)
-
-            # Peak separation in the histogram
-            peak_positions = bin_centers[top_peaks]
-            peak_separation_dj = abs(peak_positions[1] - peak_positions[0])
-
-    # If we found peaks, use that as DJ
+    # Result building: calculate DJ and confidence
     if peak_separation_dj is not None and peak_separation_dj > 2 * rj_rms:
         dj_pp = peak_separation_dj
+        n_peaks = 2
     else:
-        # Fallback: use quantile-based method
-        # At BER = 1e-4 (Q ≈ 3.72), we're well into the tails
-        lower_idx = max(0, int(n * 0.0001))
-        upper_idx = min(n - 1, int(n * 0.9999))
+        dj_pp = _calculate_dj_from_quantiles(sorted_data, rj_rms)
+        n_peaks = 0
 
-        tj_at_ber = sorted_data[upper_idx] - sorted_data[lower_idx]
-
-        # For dual-Dirac + RJ: TJ = 2*Q*RJ + DJ
-        # Using Q for BER = 1e-4
-        q_factor = 3.72
-        rj_contribution = 2 * q_factor * rj_rms
-
-        # DJ is what remains after removing RJ contribution
-        dj_pp = max(0.0, tj_at_ber - rj_contribution)
-
-    # Delta is half the DJ peak-to-peak (dual-Dirac separation)
     dj_delta = dj_pp / 2
-
-    # Confidence based on whether we found clear DJ
-    if peak_separation_dj is not None:
-        # Found bimodal peaks
-        confidence = 0.9 if len(peaks) == 2 else 0.7
-    elif dj_pp > 2 * rj_rms:
-        # Significant DJ from quantile method
-        confidence = 0.5
-    else:
-        # Little or no DJ detected
-        confidence = 0.2
+    confidence = _determine_dj_confidence(peak_separation_dj, dj_pp, rj_rms, n_peaks)
 
     return DeterministicJitterResult(
         dj_pp=dj_pp,
@@ -496,20 +532,40 @@ def extract_pj(
         IEEE 2414-2020 Section 6.4
     """
     valid_data = tie_data[~np.isnan(tie_data)]
-    n = len(valid_data)
+    if len(valid_data) < 32:
+        return _empty_pj_result()
 
-    if n < 32:
-        return PeriodicJitterResult(
-            components=[],
-            pj_pp=0.0,
-            dominant_frequency=None,
-            dominant_amplitude=None,
-        )
+    # Compute spectrum
+    frequencies, magnitudes = _compute_pj_spectrum(valid_data, sample_rate)
 
-    # Remove DC offset (mean)
-    data_centered = valid_data - np.mean(valid_data)
+    # Filter frequency range
+    max_frequency = max_frequency or sample_rate / 2
+    valid_freqs, valid_mags = _filter_frequency_range(
+        frequencies, magnitudes, min_frequency, max_frequency
+    )
 
-    # Apply window to reduce spectral leakage
+    if len(valid_mags) < 3:
+        return _empty_pj_result()
+
+    # Extract peaks and create result
+    components = _extract_pj_peaks(valid_freqs, valid_mags, n_components)
+    return _create_pj_result(components)
+
+
+def _empty_pj_result() -> PeriodicJitterResult:
+    """Create empty PJ result for insufficient data."""
+    return PeriodicJitterResult(
+        components=[], pj_pp=0.0, dominant_frequency=None, dominant_amplitude=None
+    )
+
+
+def _compute_pj_spectrum(
+    data: NDArray[np.float64], sample_rate: float
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Compute FFT spectrum of TIE data."""
+    n = len(data)
+    # Remove DC and apply window
+    data_centered = data - np.mean(data)
     window = np.hanning(n)
     data_windowed = data_centered * window
 
@@ -518,53 +574,47 @@ def extract_pj(
     spectrum = np.fft.rfft(data_windowed, n=nfft)
     frequencies = np.fft.rfftfreq(nfft, d=1.0 / sample_rate)
     magnitudes = np.abs(spectrum) * 2 / n  # Scale for amplitude
+    return frequencies, magnitudes
 
-    # Set frequency range
-    if max_frequency is None:
-        max_frequency = sample_rate / 2
 
-    # Find peaks in valid frequency range
-    freq_mask = (frequencies >= min_frequency) & (frequencies <= max_frequency)
-    valid_freqs = frequencies[freq_mask]
-    valid_mags = magnitudes[freq_mask]
+def _filter_frequency_range(
+    frequencies: NDArray[np.float64],
+    magnitudes: NDArray[np.float64],
+    min_freq: float,
+    max_freq: float,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Filter spectrum to valid frequency range."""
+    freq_mask = (frequencies >= min_freq) & (frequencies <= max_freq)
+    return frequencies[freq_mask], magnitudes[freq_mask]
 
-    if len(valid_mags) < 3:
-        return PeriodicJitterResult(
-            components=[],
-            pj_pp=0.0,
-            dominant_frequency=None,
-            dominant_amplitude=None,
-        )
 
-    # Find peaks (local maxima)
+def _extract_pj_peaks(
+    frequencies: NDArray[np.float64], magnitudes: NDArray[np.float64], n_components: int
+) -> list[tuple[float, float]]:
+    """Extract top N periodic jitter peaks from spectrum."""
     from scipy.signal import find_peaks
 
-    # Threshold: peaks must be 3x the median magnitude
-    threshold = 3 * np.median(valid_mags)
-    peak_indices, _properties = find_peaks(
-        valid_mags,
-        height=threshold,
-        distance=3,  # Minimum separation between peaks
-    )
+    threshold = 3 * np.median(magnitudes)
+    peak_indices, _ = find_peaks(magnitudes, height=threshold, distance=3)
+
+    if len(peak_indices) == 0:
+        return []
 
     # Sort by amplitude and take top n_components
-    if len(peak_indices) > 0:
-        peak_heights = valid_mags[peak_indices]
-        sorted_indices = np.argsort(peak_heights)[::-1][:n_components]
-        top_peaks = peak_indices[sorted_indices]
+    peak_heights = magnitudes[peak_indices]
+    sorted_indices = np.argsort(peak_heights)[::-1][:n_components]
+    top_peaks = peak_indices[sorted_indices]
+    return [(float(frequencies[idx]), float(magnitudes[idx])) for idx in top_peaks]
 
-        components = [(float(valid_freqs[idx]), float(valid_mags[idx])) for idx in top_peaks]
 
-        # Calculate total PJ as sum of component amplitudes (peak-to-peak)
-        pj_pp = 2 * sum(amp for _, amp in components)
+def _create_pj_result(components: list[tuple[float, float]]) -> PeriodicJitterResult:
+    """Create PJ result from extracted components."""
+    if not components:
+        return _empty_pj_result()
 
-        dominant_frequency = components[0][0] if components else None
-        dominant_amplitude = components[0][1] if components else None
-    else:
-        components = []
-        pj_pp = 0.0
-        dominant_frequency = None
-        dominant_amplitude = None
+    pj_pp = 2 * sum(amp for _, amp in components)
+    dominant_frequency = components[0][0]
+    dominant_amplitude = components[0][1]
 
     return PeriodicJitterResult(
         components=components,

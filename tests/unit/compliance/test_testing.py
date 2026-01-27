@@ -12,13 +12,13 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from oscura.compliance.testing import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.validation.compliance.testing import (
     ComplianceResult,
     ComplianceViolation,
     DetectorType,
     check_compliance,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

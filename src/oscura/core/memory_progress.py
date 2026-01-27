@@ -131,7 +131,7 @@ class MemoryLogger:
         # Initialize CSV writer if needed
         if self.format == "csv":
             self._csv_writer = csv.DictWriter(
-                self._file_handle,  # type: ignore[arg-type]
+                self._file_handle,
                 fieldnames=[
                     "timestamp",
                     "operation",
@@ -144,9 +144,9 @@ class MemoryLogger:
                     "message",
                 ],
             )
-            self._csv_writer.writeheader()  # type: ignore[attr-defined]
+            self._csv_writer.writeheader()
             if self.auto_flush:
-                self._file_handle.flush()  # type: ignore[attr-defined]
+                self._file_handle.flush()
 
         return self
 
@@ -155,7 +155,7 @@ class MemoryLogger:
         # Note: exc_val and exc_tb intentionally unused but required for Python 3.11+ compatibility
         # Write summary for JSON format
         if self.format == "json" and self._file_handle:
-            summary = {  # type: ignore[unreachable]
+            summary = {
                 "entries": [asdict(entry) for entry in self._entries],
                 "summary": self._get_summary_dict(),
             }
@@ -163,7 +163,7 @@ class MemoryLogger:
 
         # Close file
         if self._file_handle:
-            self._file_handle.close()  # type: ignore[unreachable]
+            self._file_handle.close()
             self._file_handle = None
 
     def log_operation(
@@ -213,8 +213,8 @@ class MemoryLogger:
         self._entries.append(entry)
 
         # Write to file
-        if self._file_handle and self.format == "csv":  # type: ignore[unreachable]
-            self._csv_writer.writerow(asdict(entry))  # type: ignore[unreachable]
+        if self._file_handle and self.format == "csv":
+            self._csv_writer.writerow(asdict(entry))
             if self.auto_flush:
                 self._file_handle.flush()
 

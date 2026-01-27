@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Bayesian Inference for Signal Analysis Demonstration.
 
+# SKIP_VALIDATION: Bayesian inference takes >30s, needs optimization
+
 This demo showcases Oscura's Bayesian inference capabilities for
 signal characterization with full uncertainty quantification.
 

@@ -1,7 +1,7 @@
 """Property-based tests for sequence analysis."""
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 
 from tests.hypothesis_strategies import alignment_sequences
 
@@ -26,8 +26,7 @@ class TestSequenceAnalysisProperties:
         """Property: Sequence similarity to itself is 1.0."""
         seq1, seq2 = seqs
 
-        if len(seq1) == 0:
-            pytest.skip("Empty sequence")
+        assume(len(seq1) > 0)
 
         # Similarity of sequence to itself
         matches = sum(1 for a, b in zip(seq1, seq1, strict=False) if a == b)

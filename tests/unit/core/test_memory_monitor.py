@@ -54,7 +54,7 @@ class TestMemoryMonitor:
         assert monitor.max_memory == 8 * 1024**3
         mock_get_max.assert_called_once()
 
-    @patch("oscura.config.memory._parse_memory_string")
+    @patch("oscura.core.config.memory._parse_memory_string")
     def test_init_string_max_memory(self, mock_parse: MagicMock) -> None:
         """Test initialization with string max_memory."""
         mock_parse.return_value = 4 * 1024**3  # 4 GB

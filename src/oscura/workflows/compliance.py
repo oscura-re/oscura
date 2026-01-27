@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+from numpy.typing import NDArray
 
 from oscura.core.exceptions import AnalysisError
 
@@ -69,19 +70,6 @@ def emc_compliance_test(
         - limit_freq: Frequency array for limit mask
         - limit_mag: Magnitude array for limit mask
 
-    Returns:
-        Dictionary containing:
-        - status: 'PASS' or 'FAIL'
-        - standard: Standard tested against
-        - violations: List of frequency violations
-        - margin_to_limit: Minimum margin in dB (negative if failing)
-        - worst_frequency: Frequency with worst margin
-        - worst_margin: Worst margin value in dB
-        - spectrum_freq: Frequency array for spectrum
-        - spectrum_mag: Magnitude array for spectrum (dBµV or dBm)
-        - limit_freq: Frequency array for limit mask
-        - limit_mag: Magnitude array for limit mask
-
     Example:
         >>> trace = osc.load('radiated_emissions.wfm')
         >>> result = osc.emc_compliance_test(trace, standard='FCC_Part15_ClassB')
@@ -95,65 +83,33 @@ def emc_compliance_test(
         CISPR 22/32 (Information Technology Equipment EMC)
         MIL-STD-461G (Military EMC Requirements)
     """
-    # Import spectral analysis
     from oscura.analyzers.waveform.spectral import fft
 
-    # Calculate spectrum
+    # Calculate spectrum and convert to dBµV
     freq, mag_db = fft(trace)  # type: ignore[misc]
-    # Note: fft() returns magnitude_db (already in dB relative to 1V)
+    spectrum_dbuv = mag_db + 120  # Convert dBV to dBµV
 
-    # Convert to dBµV (typical EMC unit)
-    # mag_db is in dBV, convert to dBµV: dBµV = dBV + 120
-    # (since 1µV = 1e-6 V, and 20*log10(1e6) = 120 dB)
-    spectrum_dbuv = mag_db + 120
-
-    # Load limit mask for standard
+    # Load limit and apply frequency range
     limit_freq, limit_mag = _load_emc_mask(standard)
+    freq, spectrum_dbuv = _apply_frequency_range(freq, spectrum_dbuv, frequency_range)
 
-    # Apply frequency range if specified
-    if frequency_range is not None:
-        f_min, f_max = frequency_range
-        mask = (freq >= f_min) & (freq <= f_max)
-        freq = freq[mask]
-        spectrum_dbuv = spectrum_dbuv[mask]
-
-    # Interpolate limit to spectrum frequencies
+    # Check compliance
     limit_interp = np.interp(freq, limit_freq, limit_mag)
-
-    # Find violations (spectrum exceeds limit)
     margin = limit_interp - spectrum_dbuv
-    violations_mask = margin < 0
-
-    # Build violations list
-    violations = []
-    if np.any(violations_mask):
-        violation_indices = np.where(violations_mask)[0]
-        for idx in violation_indices:
-            violations.append(
-                {
-                    "frequency": freq[idx],
-                    "measured_dbuv": spectrum_dbuv[idx],
-                    "limit_dbuv": limit_interp[idx],
-                    "excess_db": -margin[idx],  # Positive value for excess
-                }
-            )
-
-    # Overall status
+    violations = _build_violations_list(freq, spectrum_dbuv, limit_interp, margin)
     status = "FAIL" if violations else "PASS"
 
     # Margin analysis
     margin_to_limit = np.min(margin)
     worst_idx = np.argmin(margin)
-    worst_frequency = freq[worst_idx]
-    worst_margin = margin[worst_idx]
 
     result = {
         "status": status,
         "standard": standard,
         "violations": violations,
         "margin_to_limit": margin_to_limit,
-        "worst_frequency": worst_frequency,
-        "worst_margin": worst_margin,
+        "worst_frequency": freq[worst_idx],
+        "worst_margin": margin[worst_idx],
         "spectrum_freq": freq,
         "spectrum_mag": spectrum_dbuv,
         "limit_freq": limit_freq,
@@ -161,11 +117,45 @@ def emc_compliance_test(
         "detector": detector,
     }
 
-    # Generate report if requested
     if report is not None:
         _generate_compliance_report(result, report)
 
     return result
+
+
+def _apply_frequency_range(
+    freq: NDArray[Any],
+    spectrum: NDArray[Any],
+    frequency_range: tuple[float, float] | None,
+) -> tuple[NDArray[Any], NDArray[Any]]:
+    """Apply frequency range filter if specified."""
+    if frequency_range is not None:
+        f_min, f_max = frequency_range
+        mask = (freq >= f_min) & (freq <= f_max)
+        return freq[mask], spectrum[mask]
+    return freq, spectrum
+
+
+def _build_violations_list(
+    freq: NDArray[Any],
+    spectrum_dbuv: NDArray[Any],
+    limit_interp: NDArray[Any],
+    margin: NDArray[Any],
+) -> list[dict[str, float]]:
+    """Build list of compliance violations."""
+    violations = []
+    violations_mask = margin < 0
+    if np.any(violations_mask):
+        for idx in np.where(violations_mask)[0]:
+            violations.append(
+                {
+                    "frequency": freq[idx],
+                    "measured_dbuv": spectrum_dbuv[idx],
+                    "limit_dbuv": limit_interp[idx],
+                    "excess_db": -margin[idx],
+                }
+            )
+    return violations
 
 
 def _load_emc_mask(

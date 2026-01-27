@@ -10,9 +10,10 @@ Author: Oscura Development Team
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 def cluster_messages(
@@ -212,68 +213,12 @@ def cluster_by_hamming(
     dist_matrix = compute_distance_matrix(patterns, metric="hamming")
 
     # Perform clustering using simple threshold-based approach
-    labels = np.full(n, -1, dtype=int)
-    cluster_id = 0
-
-    for i in range(n):
-        if labels[i] != -1:
-            continue  # Already assigned
-
-        # Start new cluster
-        cluster_members = [i]
-        labels[i] = cluster_id
-
-        # Find all patterns within threshold
-        for j in range(i + 1, n):
-            if labels[j] != -1:
-                continue
-
-            # Check if j is close to all members of current cluster
-            max_dist = max(dist_matrix[j, m] for m in cluster_members)
-            if max_dist <= threshold:
-                cluster_members.append(j)
-                labels[j] = cluster_id
-
-        # Only keep cluster if large enough
-        if len(cluster_members) < min_cluster_size:
-            for m in cluster_members:
-                labels[m] = -1
-        else:
-            cluster_id += 1
-
-    # Assign singleton patterns to noise cluster (-1)
-    num_clusters = cluster_id
+    labels, num_clusters = _perform_threshold_clustering(
+        dist_matrix, n, threshold, min_cluster_size
+    )
 
     # Build cluster results
-    clusters = []
-    for cid in range(num_clusters):
-        cluster_indices = np.where(labels == cid)[0]
-        cluster_patterns = [patterns[i] for i in cluster_indices]
-
-        # Compute centroid (majority vote per byte)
-        centroid = _compute_centroid_hamming([pattern_arrays[i] for i in cluster_indices])
-
-        # Analyze common vs variable bytes
-        common, variable = _analyze_pattern_variance([pattern_arrays[i] for i in cluster_indices])
-
-        # Compute within-cluster variance
-        variance = (
-            np.mean([dist_matrix[i, j] for i in cluster_indices for j in cluster_indices if i < j])
-            if len(cluster_indices) > 1
-            else 0.0
-        )
-
-        clusters.append(
-            ClusterResult(
-                cluster_id=cid,
-                patterns=cluster_patterns,
-                centroid=bytes(centroid) if isinstance(patterns[0], bytes) else centroid,
-                size=len(cluster_patterns),
-                variance=float(variance),
-                common_bytes=common,
-                variable_bytes=variable,
-            )
-        )
+    clusters = _build_cluster_results(num_clusters, labels, patterns, pattern_arrays, dist_matrix)
 
     # Compute silhouette score
     silhouette = _compute_silhouette_score(dist_matrix, labels) if num_clusters > 1 else 0.0
@@ -312,12 +257,23 @@ def cluster_by_edit_distance(
             clusters=[], labels=np.array([]), num_clusters=0, silhouette_score=0.0
         )
 
-    n = len(patterns)
-
-    # Compute distance matrix
     dist_matrix = compute_distance_matrix(patterns, metric="levenshtein")
+    labels, num_clusters = _cluster_by_threshold(
+        len(patterns), dist_matrix, threshold, min_cluster_size
+    )
 
-    # Threshold-based clustering
+    clusters = _build_edit_clusters(patterns, labels, num_clusters, dist_matrix)
+    silhouette = _compute_silhouette_score(dist_matrix, labels) if num_clusters > 1 else 0.0
+
+    return ClusteringResult(
+        clusters=clusters, labels=labels, num_clusters=num_clusters, silhouette_score=silhouette
+    )
+
+
+def _cluster_by_threshold(
+    n: int, dist_matrix: NDArray[np.float64], threshold: float, min_cluster_size: int
+) -> tuple[NDArray[np.int_], int]:
+    """Perform threshold-based clustering."""
     labels = np.full(n, -1, dtype=int)
     cluster_id = 0
 
@@ -325,18 +281,12 @@ def cluster_by_edit_distance(
         if labels[i] != -1:
             continue
 
-        # Start new cluster
         cluster_members = [i]
         labels[i] = cluster_id
 
         # Find similar patterns
         for j in range(i + 1, n):
-            if labels[j] != -1:
-                continue
-
-            # Check distance to cluster members
-            max_dist = max(dist_matrix[j, m] for m in cluster_members)
-            if max_dist <= threshold:
+            if labels[j] == -1 and max(dist_matrix[j, m] for m in cluster_members) <= threshold:
                 cluster_members.append(j)
                 labels[j] = cluster_id
 
@@ -347,24 +297,28 @@ def cluster_by_edit_distance(
         else:
             cluster_id += 1
 
-    num_clusters = cluster_id
+    return labels, cluster_id
 
-    # Build cluster results
+
+def _build_edit_clusters(
+    patterns: list[bytes | np.ndarray[tuple[int], np.dtype[np.uint8]]],
+    labels: NDArray[np.int_],
+    num_clusters: int,
+    dist_matrix: NDArray[np.float64],
+) -> list[ClusterResult]:
+    """Build cluster results from labels."""
     clusters = []
     for cid in range(num_clusters):
         cluster_indices = np.where(labels == cid)[0]
         cluster_patterns = [patterns[i] for i in cluster_indices]
 
-        # Use most common pattern as centroid
         centroid = _compute_centroid_edit(cluster_patterns)
 
-        # For variable-length patterns, analysis is limited
-        # Pad to common length for analysis
+        # Pad and analyze variance
         max_len = max(len(p) for p in cluster_patterns)
         padded = [_to_array(p, target_length=max_len) for p in cluster_patterns]
         common, variable = _analyze_pattern_variance(padded)
 
-        # Compute variance
         variance = (
             np.mean([dist_matrix[i, j] for i in cluster_indices for j in cluster_indices if i < j])
             if len(cluster_indices) > 1
@@ -383,12 +337,7 @@ def cluster_by_edit_distance(
             )
         )
 
-    # Compute silhouette score
-    silhouette = _compute_silhouette_score(dist_matrix, labels) if num_clusters > 1 else 0.0
-
-    return ClusteringResult(
-        clusters=clusters, labels=labels, num_clusters=num_clusters, silhouette_score=silhouette
-    )
+    return clusters
 
 
 def cluster_hierarchical(
@@ -427,38 +376,48 @@ def cluster_hierarchical(
             clusters=[], labels=np.array([]), num_clusters=0, silhouette_score=0.0
         )
 
-    # Normalize method name
-    if method == "upgma":
-        method = "average"
-
-    _n = len(patterns)
-
-    # Compute distance matrix
+    # Normalize method and compute distance matrix
+    method = "average" if method == "upgma" else method
     dist_matrix = compute_distance_matrix(patterns, metric="hamming")
 
-    # Perform hierarchical clustering
+    # Perform clustering
     labels = _hierarchical_clustering(
         dist_matrix, method=method, num_clusters=num_clusters, distance_threshold=distance_threshold
     )
 
-    # Count actual clusters
+    # Build clusters
     unique_labels = set(labels[labels >= 0])
-    num_clusters_actual = len(unique_labels)
+    clusters = _build_hierarchical_clusters(patterns, labels, unique_labels, dist_matrix)
 
-    # Build cluster results
+    # Compute silhouette
+    silhouette = _compute_silhouette_score(dist_matrix, labels) if len(unique_labels) > 1 else 0.0
+
+    return ClusteringResult(
+        clusters=clusters,
+        labels=labels,
+        num_clusters=len(unique_labels),
+        silhouette_score=silhouette,
+    )
+
+
+def _build_hierarchical_clusters(
+    patterns: list[bytes | np.ndarray[tuple[int], np.dtype[np.uint8]]],
+    labels: NDArray[np.int_],
+    unique_labels: set[int],
+    dist_matrix: NDArray[np.float64],
+) -> list[ClusterResult]:
+    """Build cluster results from hierarchical clustering labels."""
     clusters = []
     for cid in sorted(unique_labels):
         cluster_indices = np.where(labels == cid)[0]
         cluster_patterns = [patterns[i] for i in cluster_indices]
 
-        # Compute centroid
+        # Compute centroid based on pattern type
         pattern_arrays = [_to_array(p) for p in cluster_patterns]
         if len({len(p) for p in pattern_arrays}) == 1:
-            # Fixed length - use majority vote
             centroid_array = _compute_centroid_hamming(pattern_arrays)
             centroid = bytes(centroid_array) if isinstance(patterns[0], bytes) else centroid_array
         else:
-            # Variable length - use most common
             centroid = _compute_centroid_edit(cluster_patterns)
 
         # Analyze variance
@@ -466,7 +425,6 @@ def cluster_hierarchical(
         padded = [_to_array(p, target_length=max_len) for p in pattern_arrays]
         common, variable = _analyze_pattern_variance(padded)
 
-        # Variance
         variance = (
             np.mean([dist_matrix[i, j] for i in cluster_indices for j in cluster_indices if i < j])
             if len(cluster_indices) > 1
@@ -485,15 +443,7 @@ def cluster_hierarchical(
             )
         )
 
-    # Silhouette score
-    silhouette = _compute_silhouette_score(dist_matrix, labels) if num_clusters_actual > 1 else 0.0
-
-    return ClusteringResult(
-        clusters=clusters,
-        labels=labels,
-        num_clusters=num_clusters_actual,
-        silhouette_score=silhouette,
-    )
+    return clusters
 
 
 def analyze_cluster(cluster: ClusterResult) -> dict[str, list[int] | list[float] | bytes]:
@@ -710,6 +660,107 @@ def _jaccard_distance(
 
     # Jaccard distance = 1 - Jaccard similarity
     return 1.0 - (intersection / union)
+
+
+def _perform_threshold_clustering(
+    dist_matrix: NDArray[np.float64],
+    n: int,
+    threshold: float,
+    min_cluster_size: int,
+) -> tuple[NDArray[np.int_], int]:
+    """Perform threshold-based clustering on distance matrix.
+
+    Args:
+        dist_matrix: Pairwise distance matrix.
+        n: Number of patterns.
+        threshold: Maximum distance within cluster.
+        min_cluster_size: Minimum patterns per cluster.
+
+    Returns:
+        Tuple of (labels, num_clusters).
+    """
+    labels = np.full(n, -1, dtype=int)
+    cluster_id = 0
+
+    for i in range(n):
+        if labels[i] != -1:
+            continue  # Already assigned
+
+        # Start new cluster
+        cluster_members = [i]
+        labels[i] = cluster_id
+
+        # Find all patterns within threshold
+        for j in range(i + 1, n):
+            if labels[j] != -1:
+                continue
+
+            # Check if j is close to all members of current cluster
+            max_dist = max(dist_matrix[j, m] for m in cluster_members)
+            if max_dist <= threshold:
+                cluster_members.append(j)
+                labels[j] = cluster_id
+
+        # Only keep cluster if large enough
+        if len(cluster_members) < min_cluster_size:
+            for m in cluster_members:
+                labels[m] = -1
+        else:
+            cluster_id += 1
+
+    return labels, cluster_id
+
+
+def _build_cluster_results(
+    num_clusters: int,
+    labels: NDArray[np.int_],
+    patterns: list[bytes | NDArray[Any]],
+    pattern_arrays: list[NDArray[Any]],
+    dist_matrix: NDArray[np.float64],
+) -> list[ClusterResult]:
+    """Build ClusterResult objects from clustering labels.
+
+    Args:
+        num_clusters: Number of clusters found.
+        labels: Cluster labels for each pattern.
+        patterns: Original patterns (bytes or arrays).
+        pattern_arrays: Patterns as numpy arrays.
+        dist_matrix: Pairwise distance matrix.
+
+    Returns:
+        List of ClusterResult objects.
+    """
+    clusters = []
+    for cid in range(num_clusters):
+        cluster_indices = np.where(labels == cid)[0]
+        cluster_patterns = [patterns[i] for i in cluster_indices]
+
+        # Compute centroid (majority vote per byte)
+        centroid = _compute_centroid_hamming([pattern_arrays[i] for i in cluster_indices])
+
+        # Analyze common vs variable bytes
+        common, variable = _analyze_pattern_variance([pattern_arrays[i] for i in cluster_indices])
+
+        # Compute within-cluster variance
+        variance = (
+            np.mean([dist_matrix[i, j] for i in cluster_indices for j in cluster_indices if i < j])
+            if len(cluster_indices) > 1
+            else 0.0
+        )
+
+        clusters.append(
+            ClusterResult(
+                cluster_id=cid,
+                patterns=cluster_patterns,
+                centroid=bytes(centroid) if isinstance(patterns[0], bytes) else centroid,
+                size=len(cluster_patterns),
+                variance=float(variance),
+                common_bytes=common,
+                variable_bytes=variable,
+            )
+        )
+
+    return clusters
 
 
 def _compute_centroid_hamming(

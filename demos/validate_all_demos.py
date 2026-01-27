@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run all demos with validation enabled.
 
+# SKIP_VALIDATION: Meta-validator runs all demos, would timeout
+
 This script runs all Oscura demos and verifies their outputs,
 serving as living integration tests for the codebase.
 

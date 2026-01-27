@@ -17,8 +17,14 @@ import numpy as np
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-# Oscura version (in production would import from __version__)
-OSCURA_VERSION = "0.1.0"
+# Oscura version dynamically imported from package metadata (SSOT: pyproject.toml)
+try:
+    from importlib.metadata import version
+
+    OSCURA_VERSION = version("oscura")
+except Exception:
+    # Fallback for development/testing when package not installed
+    OSCURA_VERSION = "0.0.0+dev"
 
 
 @dataclass

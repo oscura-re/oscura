@@ -11,8 +11,8 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from oscura.config import thresholds as config_thresholds
-from oscura.config.thresholds import (
+from oscura.core.config import thresholds as config_thresholds
+from oscura.core.config.thresholds import (
     LogicFamily,
     ThresholdProfile,
     ThresholdRegistry,
@@ -531,7 +531,7 @@ description: Custom TTL variant
 """
         )
 
-        with patch("oscura.config.schema.validate_against_schema"):
+        with patch("oscura.core.config.schema.validate_against_schema"):
             family = load_logic_family(family_file)
 
         assert family.name == "Custom_TTL"
@@ -555,7 +555,7 @@ temperature_range:
 """
         )
 
-        with patch("oscura.config.schema.validate_against_schema"):
+        with patch("oscura.core.config.schema.validate_against_schema"):
             family = load_logic_family(family_file)
 
         assert family.temperature_range == (-40, 85)
@@ -575,7 +575,7 @@ noise_margin_low: 0.5
 """
         )
 
-        with patch("oscura.config.schema.validate_against_schema"):
+        with patch("oscura.core.config.schema.validate_against_schema"):
             family = load_logic_family(family_file)
 
         assert family.noise_margin_high == 0.5
@@ -594,7 +594,7 @@ VOL: 0.4
 """
         )
 
-        with patch("oscura.config.schema.validate_against_schema"):
+        with patch("oscura.core.config.schema.validate_against_schema"):
             family = load_logic_family(family_file)
 
         assert family.name == "Minimal"
@@ -690,7 +690,7 @@ VOL: 0.3
 
         monkeypatch.setattr(config_thresholds, "get_user_logic_families_dir", mock_get_dir)
 
-        with patch("oscura.config.schema.validate_against_schema"):
+        with patch("oscura.core.config.schema.validate_against_schema"):
             families = load_user_logic_families()
 
         assert len(families) == 2
@@ -728,7 +728,7 @@ VOL: 0.4
 
         monkeypatch.setattr(config_thresholds, "get_user_logic_families_dir", mock_get_dir)
 
-        with patch("oscura.config.schema.validate_against_schema"):
+        with patch("oscura.core.config.schema.validate_against_schema"):
             families = load_user_logic_families()
 
         # Should load valid file only

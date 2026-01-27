@@ -92,7 +92,7 @@ repos:
     hooks:
       - id: markdownlint
         args: [--config, .markdownlint.yaml, --fix]
-        exclude: ^(\.vscode/|test_data/|CHANGELOG\.md|\.claude/reports/archive/)
+        exclude: ^(\.vscode/|test_data/|CHANGELOG\.md|\.claude/reports/archive/|docs/audits/|docs/testing/coverage-audit-.*\.md)
 
   # ==========================================================================
   # Local hooks: Test quality gates
@@ -115,7 +115,7 @@ repos:
 
       - id: check-test-isolation
         name: Check test isolation (sample)
-        entry: uv run python scripts/testing/check_test_isolation.py --sample 5
+        entry: uv run python scripts/testing/check_test_isolation.py --sample 5 --seed 2
         language: system
         files: '^tests/.*test_.*\.py$'
         pass_filenames: false

@@ -20,7 +20,7 @@ Use cases:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from oscura.inference.state_machine import FiniteAutomaton, StateMachineInferrer
 
@@ -152,7 +152,8 @@ class CANStateMachine:
             )
 
         # Learn state machine using RPNI
-        automaton = self._inferrer.infer_rpni(positive_traces=traces)
+        # Cast: list[list[str]] is compatible with list[list[str | int]] at runtime
+        automaton = self._inferrer.infer_rpni(positive_traces=cast("list[list[str | int]]", traces))
 
         return automaton
 
@@ -275,7 +276,9 @@ class CANStateMachine:
             )
 
         # Learn state machine
-        automaton = self._inferrer.infer_rpni(positive_traces=state_sequences)
+        # Cast: list[list[str]] is compatible with list[list[str | int]] at runtime
+        state_sequences_union: list[list[str | int]] = state_sequences  # type: ignore[assignment]
+        automaton = self._inferrer.infer_rpni(positive_traces=state_sequences_union)
 
         return automaton
 

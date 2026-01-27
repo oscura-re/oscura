@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -233,7 +233,13 @@ class PatternAnalyzer:
         Raises:
             ValueError: If max_sequence_length is invalid (<2 or >10) or
                 min_support is not in range [0.0, 1.0].
+
+        Example:
+            >>> from oscura.automotive.can import CANSession
+            >>> session = CANSession()
+            >>> sequences = PatternAnalyzer.find_message_sequences(session, max_sequence_length=3)
         """
+        # Validate parameters
         if max_sequence_length < 2:
             raise ValueError("max_sequence_length must be at least 2")
         if max_sequence_length > 10:
@@ -242,25 +248,61 @@ class PatternAnalyzer:
             raise ValueError("min_support must be between 0.0 and 1.0")
 
         time_window_s = time_window_ms / 1000.0
-
-        # Get all messages sorted by timestamp
         all_messages = sorted(session._messages.messages, key=lambda m: m.timestamp)
 
         if not all_messages:
             return []
 
-        # Find maximum message frequency (for support calculation)
-        id_counts: dict[int, int] = defaultdict(int)
-        for msg in all_messages:
-            id_counts[msg.arbitration_id] += 1
-        max_count = max(id_counts.values()) if id_counts else 1
+        # Calculate maximum message frequency for support calculation
+        max_count = PatternAnalyzer._calculate_max_message_frequency(all_messages)
 
-        # Mine sequences of increasing length
+        # Mine sequences from message stream
+        sequences = PatternAnalyzer._mine_sequences(
+            all_messages, max_sequence_length, time_window_s
+        )
+
+        # Build and filter result objects
+        result = PatternAnalyzer._build_sequence_results(sequences, max_count, min_support)
+
+        # Sort by support (descending), then by occurrences
+        result.sort(key=lambda s: (s.support, s.occurrences), reverse=True)
+
+        return result
+
+    @staticmethod
+    def _calculate_max_message_frequency(messages: list[Any]) -> int:
+        """Calculate maximum message frequency for support calculation.
+
+        Args:
+            messages: List of CAN messages.
+
+        Returns:
+            Maximum frequency of any message ID.
+        """
+        id_counts: dict[int, int] = defaultdict(int)
+        for msg in messages:
+            id_counts[msg.arbitration_id] += 1
+        return max(id_counts.values()) if id_counts else 1
+
+    @staticmethod
+    def _mine_sequences(
+        all_messages: list[Any],
+        max_sequence_length: int,
+        time_window_s: float,
+    ) -> dict[tuple[int, ...], list[list[float]]]:
+        """Mine message sequences from CAN message stream.
+
+        Args:
+            all_messages: Sorted list of CAN messages.
+            max_sequence_length: Maximum sequence length.
+            time_window_s: Time window in seconds.
+
+        Returns:
+            Dictionary mapping sequence IDs to timing lists.
+        """
         sequences: dict[tuple[int, ...], list[list[float]]] = defaultdict(list)
 
-        # Start with 2-message sequences
         for i, msg_a in enumerate(all_messages):
-            # Look forward in time window
             sequence_start = msg_a.timestamp
             current_sequence = [msg_a.arbitration_id]
             timing = []
@@ -276,6 +318,8 @@ class PatternAnalyzer:
                 # Record sequences of desired length
                 if 2 <= len(current_sequence) <= max_sequence_length:
                     seq_key = tuple(current_sequence)
+                    # NECESSARY COPY: timing list reused across iterations.
+                    # Without .copy(), all sequences would reference final state.
                     sequences[seq_key].append(timing.copy())
 
                 # Update for next iteration
@@ -283,7 +327,24 @@ class PatternAnalyzer:
                 if len(current_sequence) >= max_sequence_length:
                     break
 
-        # Build MessageSequence objects
+        return sequences
+
+    @staticmethod
+    def _build_sequence_results(
+        sequences: dict[tuple[int, ...], list[list[float]]],
+        max_count: int,
+        min_support: float,
+    ) -> list[MessageSequence]:
+        """Build MessageSequence objects from mined sequences.
+
+        Args:
+            sequences: Dictionary mapping sequence IDs to timing lists.
+            max_count: Maximum message frequency (for support calculation).
+            min_support: Minimum support threshold.
+
+        Returns:
+            List of MessageSequence objects that meet support threshold.
+        """
         result = []
         for seq_ids, timing_lists in sequences.items():
             occurrences = len(timing_lists)
@@ -291,14 +352,7 @@ class PatternAnalyzer:
 
             if support >= min_support:
                 # Calculate average timing between consecutive messages
-                avg_timing = []
-                if timing_lists:
-                    # timing_lists[i] has len(seq_ids) - 1 elements
-                    num_gaps = len(seq_ids) - 1
-                    for gap_idx in range(num_gaps):
-                        gap_times = [t[gap_idx] for t in timing_lists if gap_idx < len(t)]
-                        if gap_times:
-                            avg_timing.append(float(np.mean(gap_times)))
+                avg_timing = PatternAnalyzer._calculate_average_timing(seq_ids, timing_lists)
 
                 result.append(
                     MessageSequence(
@@ -309,10 +363,33 @@ class PatternAnalyzer:
                     )
                 )
 
-        # Sort by support (descending), then by occurrences
-        result.sort(key=lambda s: (s.support, s.occurrences), reverse=True)
-
         return result
+
+    @staticmethod
+    def _calculate_average_timing(
+        seq_ids: tuple[int, ...],
+        timing_lists: list[list[float]],
+    ) -> list[float]:
+        """Calculate average timing between consecutive messages in sequence.
+
+        Args:
+            seq_ids: Sequence of message IDs.
+            timing_lists: List of timing lists for each occurrence.
+
+        Returns:
+            List of average timings for each gap in sequence.
+        """
+        avg_timing: list[float] = []
+        if not timing_lists:
+            return avg_timing
+
+        num_gaps = len(seq_ids) - 1
+        for gap_idx in range(num_gaps):
+            gap_times = [t[gap_idx] for t in timing_lists if gap_idx < len(t)]
+            if gap_times:
+                avg_timing.append(float(np.mean(gap_times)))
+
+        return avg_timing
 
     @staticmethod
     def find_temporal_correlations(

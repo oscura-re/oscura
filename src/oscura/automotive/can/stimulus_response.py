@@ -17,9 +17,10 @@ This allows answering questions like:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy import stats
 
 if TYPE_CHECKING:
@@ -262,14 +263,12 @@ class StimulusResponseAnalyzer:
         Returns:
             List of ByteChange objects for changed bytes.
         """
-        # Get messages for this ID from both sessions
         baseline_msgs = baseline_session._messages.filter_by_id(message_id)
         stimulus_msgs = stimulus_session._messages.filter_by_id(message_id)
 
         if not baseline_msgs.messages or not stimulus_msgs.messages:
             return []
 
-        # Determine max DLC
         max_dlc = max(
             max(msg.dlc for msg in baseline_msgs.messages),
             max(msg.dlc for msg in stimulus_msgs.messages),
@@ -277,81 +276,104 @@ class StimulusResponseAnalyzer:
 
         changes = []
         for byte_pos in range(max_dlc):
-            # Extract byte values from both sessions
-            baseline_values = [
-                msg.data[byte_pos] for msg in baseline_msgs.messages if len(msg.data) > byte_pos
-            ]
-            stimulus_values = [
-                msg.data[byte_pos] for msg in stimulus_msgs.messages if len(msg.data) > byte_pos
-            ]
-
-            if not baseline_values or not stimulus_values:
-                continue
-
-            # Analyze changes
-            baseline_set = set(baseline_values)
-            stimulus_set = set(stimulus_values)
-
-            # Skip if not enough unique values
-            if len(baseline_set) < byte_threshold and len(stimulus_set) < byte_threshold:
-                continue
-
-            # Calculate statistics
-            baseline_arr = np.array(baseline_values)
-            stimulus_arr = np.array(stimulus_values)
-
-            baseline_mean = float(np.mean(baseline_arr))
-            stimulus_mean = float(np.mean(stimulus_arr))
-            mean_change = stimulus_mean - baseline_mean
-
-            baseline_range = float(np.max(baseline_arr) - np.min(baseline_arr))
-            stimulus_range = float(np.max(stimulus_arr) - np.min(stimulus_arr))
-            value_range_change = stimulus_range - baseline_range
-
-            # Calculate normalized change magnitude using multiple factors
-            # 1. Mean change (normalized by full byte range)
-            mean_change_norm = abs(mean_change) / 255.0
-
-            # 2. Range change (normalized by full byte range)
-            range_change_norm = abs(value_range_change) / 255.0
-
-            # 3. Set difference (Jaccard distance)
-            union_size = len(baseline_set | stimulus_set)
-            intersection_size = len(baseline_set & stimulus_set)
-            if union_size > 0:
-                jaccard_dist = 1.0 - (intersection_size / union_size)
-            else:
-                jaccard_dist = 0.0
-
-            # 4. Distribution change (Kolmogorov-Smirnov test)
-            try:
-                ks_stat, _ = stats.ks_2samp(baseline_arr, stimulus_arr)
-                ks_change_norm = float(ks_stat)
-            except Exception:
-                ks_change_norm = 0.0
-
-            # Combine factors (weighted average)
-            change_magnitude = (
-                0.3 * mean_change_norm
-                + 0.2 * range_change_norm
-                + 0.3 * jaccard_dist
-                + 0.2 * ks_change_norm
+            change = self._analyze_byte_change(
+                baseline_msgs, stimulus_msgs, byte_pos, byte_threshold
             )
-
-            # Only report if there's a meaningful change
-            if change_magnitude > 0.0:
-                changes.append(
-                    ByteChange(
-                        byte_position=byte_pos,
-                        baseline_values=baseline_set,
-                        stimulus_values=stimulus_set,
-                        change_magnitude=change_magnitude,
-                        value_range_change=value_range_change,
-                        mean_change=mean_change,
-                    )
-                )
+            if change:
+                changes.append(change)
 
         return changes
+
+    def _analyze_byte_change(
+        self, baseline_msgs: Any, stimulus_msgs: Any, byte_pos: int, byte_threshold: int
+    ) -> ByteChange | None:
+        """Analyze change for a single byte position."""
+        # Extract byte values
+        baseline_values = [
+            msg.data[byte_pos] for msg in baseline_msgs.messages if len(msg.data) > byte_pos
+        ]
+        stimulus_values = [
+            msg.data[byte_pos] for msg in stimulus_msgs.messages if len(msg.data) > byte_pos
+        ]
+
+        if not baseline_values or not stimulus_values:
+            return None
+
+        baseline_set, stimulus_set = set(baseline_values), set(stimulus_values)
+
+        # Skip if not enough unique values
+        if len(baseline_set) < byte_threshold and len(stimulus_set) < byte_threshold:
+            return None
+
+        # Calculate statistics and change magnitude
+        baseline_arr, stimulus_arr = np.array(baseline_values), np.array(stimulus_values)
+        mean_change, value_range_change = self._compute_byte_stats(baseline_arr, stimulus_arr)
+        change_magnitude = self._compute_change_magnitude(
+            baseline_arr, stimulus_arr, baseline_set, stimulus_set, mean_change, value_range_change
+        )
+
+        if change_magnitude <= 0.0:
+            return None
+
+        return ByteChange(
+            byte_position=byte_pos,
+            baseline_values=baseline_set,
+            stimulus_values=stimulus_set,
+            change_magnitude=change_magnitude,
+            value_range_change=value_range_change,
+            mean_change=mean_change,
+        )
+
+    def _compute_byte_stats(
+        self, baseline_arr: NDArray[np.int_], stimulus_arr: NDArray[np.int_]
+    ) -> tuple[float, float]:
+        """Compute mean and range changes for byte values."""
+        baseline_mean, stimulus_mean = float(np.mean(baseline_arr)), float(np.mean(stimulus_arr))
+        mean_change = stimulus_mean - baseline_mean
+
+        baseline_range = float(np.max(baseline_arr) - np.min(baseline_arr))
+        stimulus_range = float(np.max(stimulus_arr) - np.min(stimulus_arr))
+        value_range_change = stimulus_range - baseline_range
+
+        return mean_change, value_range_change
+
+    def _compute_change_magnitude(
+        self,
+        baseline_arr: NDArray[np.int_],
+        stimulus_arr: NDArray[np.int_],
+        baseline_set: set[int],
+        stimulus_set: set[int],
+        mean_change: float,
+        value_range_change: float,
+    ) -> float:
+        """Compute normalized change magnitude using multiple factors."""
+        # 1. Mean change (normalized by full byte range)
+        mean_change_norm = abs(mean_change) / 255.0
+
+        # 2. Range change (normalized by full byte range)
+        range_change_norm = abs(value_range_change) / 255.0
+
+        # 3. Set difference (Jaccard distance)
+        union_size, intersection_size = (
+            len(baseline_set | stimulus_set),
+            len(baseline_set & stimulus_set),
+        )
+        jaccard_dist = 1.0 - (intersection_size / union_size) if union_size > 0 else 0.0
+
+        # 4. Distribution change (Kolmogorov-Smirnov test)
+        try:
+            ks_stat, _ = stats.ks_2samp(baseline_arr, stimulus_arr)
+            ks_change_norm = float(ks_stat)
+        except Exception:
+            ks_change_norm = 0.0
+
+        # Combine factors (weighted average)
+        return (
+            0.3 * mean_change_norm
+            + 0.2 * range_change_norm
+            + 0.3 * jaccard_dist
+            + 0.2 * ks_change_norm
+        )
 
     def find_responsive_messages(
         self,

@@ -74,6 +74,7 @@ class BaseDemo(ABC):
         self.end_time: float = 0.0
         self.results: dict[str, Any] = {}
         self.errors: list[str] = []
+        self.data_file: Path | None = None  # Optional CLI override for data file
 
     def execute(self) -> bool:
         """Execute the demonstration with full framework.
@@ -275,6 +276,18 @@ class BaseDemo(ABC):
         """
         return Path(__file__).parent.parent / "data"
 
+    def find_default_data_file(self, filename: str) -> Path | None:
+        """Find a default data file in the data directory.
+
+        Args:
+            filename: Name of file to look for (e.g., "signal.npz")
+
+        Returns:
+            Path to file if it exists, None otherwise
+        """
+        data_file_path = self.get_data_dir() / filename
+        return data_file_path if data_file_path.exists() else None
+
     def get_output_dir(self) -> Path:
         """Get path to demonstration output directory.
 
@@ -286,3 +299,31 @@ class BaseDemo(ABC):
         output_dir = self.get_data_dir() / "outputs" / self.name
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
+
+
+def run_demo_main(demo_class: type[BaseDemo], *args: Any, **kwargs: Any) -> int:
+    """Run demonstration main entry point.
+
+    Args:
+        demo_class: BaseDemo subclass to instantiate and run
+        *args: Positional arguments to pass to demo constructor
+        **kwargs: Keyword arguments to pass to demo constructor
+
+    Returns:
+        Exit code (0 for success, 1 for failure)
+
+    Example:
+        if __name__ == "__main__":
+            sys.exit(run_demo_main(MyDemo))
+    """
+    try:
+        demo = demo_class(*args, **kwargs)
+        success = demo.execute()
+        return 0 if success else 1
+    except Exception as e:
+        print(f"\n✗ Demo failed with exception: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return 1
+
+
+__all__ = ["BaseDemo", "run_demo_main"]

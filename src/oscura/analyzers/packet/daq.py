@@ -349,68 +349,17 @@ def detect_gaps_by_samples(
         PKT-008: DAQ Gap Detection
     """
     if len(data) < 2:
-        return DAQGapAnalysis(
-            gaps=[],
-            total_gaps=0,
-            total_missing_samples=0,
-            total_gap_duration=0.0,
-            acquisition_efficiency=1.0,
-            sample_rate=sample_rate,
-            discontinuities=[],
-        )
+        return _empty_daq_gap_analysis(sample_rate)
 
-    if expected_interval is None:
-        expected_interval = 1.0 / sample_rate
-
-    gaps: list[DAQGap] = []
-    discontinuities: list[int] = []
-
-    if check_discontinuities:
-        # Analyze for sudden value jumps (potential gaps)
-        diff = np.abs(np.diff(data))
-        median_diff = float(np.median(diff))
-        std_diff = float(np.std(diff))
-
-        # Threshold for discontinuity
-        threshold = median_diff + 5 * std_diff
-
-        # Find discontinuity points
-        disc_mask = diff > threshold
-        disc_indices = np.where(disc_mask)[0]
-
-        for idx in disc_indices:
-            # Estimate gap size based on value jump
-            jump_size = diff[idx]
-
-            # Assume linear trend, estimate missing samples
-            if median_diff > 0:
-                estimated_missing = max(1, int(jump_size / median_diff) - 1)
-            else:
-                estimated_missing = min_gap_samples
-
-            if estimated_missing >= min_gap_samples:
-                start_time = idx / sample_rate
-                end_time = (idx + 1) / sample_rate
-                gap_duration = estimated_missing * expected_interval
-
-                gap = DAQGap(
-                    start_index=int(idx),
-                    end_index=int(idx) + 1,
-                    start_time=start_time,
-                    end_time=end_time,
-                    duration=gap_duration,
-                    expected_samples=estimated_missing + 1,
-                    missing_samples=estimated_missing,
-                    gap_type="discontinuity",
-                )
-                gaps.append(gap)
-                discontinuities.append(int(idx))
+    expected_interval = expected_interval or 1.0 / sample_rate
+    gaps, discontinuities = _detect_discontinuity_gaps(
+        data, sample_rate, expected_interval, min_gap_samples, check_discontinuities
+    )
 
     # Calculate totals
     total_missing = sum(g.missing_samples for g in gaps)
     total_gap_duration = sum(g.duration for g in gaps)
-    total_expected = len(data) + total_missing
-    efficiency = len(data) / total_expected if total_expected > 0 else 1.0
+    efficiency = len(data) / (len(data) + total_missing) if total_missing > 0 else 1.0
 
     return DAQGapAnalysis(
         gaps=gaps,
@@ -426,6 +375,73 @@ def detect_gaps_by_samples(
             "tolerance": tolerance,
             "check_discontinuities": check_discontinuities,
         },
+    )
+
+
+def _empty_daq_gap_analysis(sample_rate: float) -> DAQGapAnalysis:
+    """Create empty DAQ gap analysis for insufficient data."""
+    return DAQGapAnalysis(
+        gaps=[],
+        total_gaps=0,
+        total_missing_samples=0,
+        total_gap_duration=0.0,
+        acquisition_efficiency=1.0,
+        sample_rate=sample_rate,
+        discontinuities=[],
+    )
+
+
+def _detect_discontinuity_gaps(
+    data: NDArray[np.float64],
+    sample_rate: float,
+    expected_interval: float,
+    min_gap_samples: int,
+    check_discontinuities: bool,
+) -> tuple[list[DAQGap], list[int]]:
+    """Detect gaps from discontinuities in data."""
+    if not check_discontinuities:
+        return [], []
+
+    diff = np.abs(np.diff(data))
+    median_diff, std_diff = float(np.median(diff)), float(np.std(diff))
+    threshold = median_diff + 5 * std_diff
+
+    disc_indices = np.where(diff > threshold)[0]
+    gaps, discontinuities = [], []
+
+    for idx in disc_indices:
+        estimated_missing = _estimate_missing_samples(diff[idx], median_diff, min_gap_samples)
+        if estimated_missing >= min_gap_samples:
+            gap = _create_daq_gap(idx, estimated_missing, sample_rate, expected_interval)
+            gaps.append(gap)
+            discontinuities.append(int(idx))
+
+    return gaps, discontinuities
+
+
+def _estimate_missing_samples(jump_size: float, median_diff: float, min_gap: int) -> int:
+    """Estimate missing samples from value jump."""
+    if median_diff > 0:
+        return max(1, int(jump_size / median_diff) - 1)
+    return min_gap
+
+
+def _create_daq_gap(
+    idx: int, estimated_missing: int, sample_rate: float, expected_interval: float
+) -> DAQGap:
+    """Create DAQGap object from discontinuity."""
+    start_time, end_time = idx / sample_rate, (idx + 1) / sample_rate
+    gap_duration = estimated_missing * expected_interval
+
+    return DAQGap(
+        start_index=int(idx),
+        end_index=int(idx) + 1,
+        start_time=start_time,
+        end_time=end_time,
+        duration=gap_duration,
+        expected_samples=estimated_missing + 1,
+        missing_samples=estimated_missing,
+        gap_type="discontinuity",
     )
 
 
@@ -527,6 +543,70 @@ def _extract_bits(data: NDArray[np.uint8], bit_offset: int, num_bits: int) -> in
 # =============================================================================
 
 
+def _try_recover_packet_with_next_sync(
+    data: NDArray[np.uint8],
+    byte_offset: int,
+    next_sync_byte: int,
+    max_packet_length: int,
+    match: FuzzyMatch,
+) -> dict[str, Any] | None:
+    """Try to recover packet using next sync boundary.
+
+    Args:
+        data: Binary data
+        byte_offset: Current packet start
+        next_sync_byte: Next sync position
+        max_packet_length: Maximum allowed packet length
+        match: Sync match information
+
+    Returns:
+        Recovered packet dict or None if recovery failed
+    """
+    inferred_length = next_sync_byte - byte_offset
+
+    if 0 < inferred_length <= max_packet_length:
+        packet_data = bytes(data[byte_offset : byte_offset + inferred_length])
+        return {
+            "offset": byte_offset,
+            "length": inferred_length,
+            "data": packet_data,
+            "sync_errors": match.bit_errors,
+            "length_corrupted": True,
+        }
+    return None
+
+
+def _extract_valid_packet(
+    data: NDArray[np.uint8],
+    byte_offset: int,
+    length_offset: int,
+    length: int,
+    match: FuzzyMatch,
+) -> dict[str, Any] | None:
+    """Extract packet with valid length field.
+
+    Args:
+        data: Binary data
+        byte_offset: Packet start offset
+        length_offset: Offset to length field
+        length: Packet length
+        match: Sync match information
+
+    Returns:
+        Packet dict or None if extraction failed
+    """
+    packet_end = byte_offset + length_offset + 1 + length
+    if packet_end <= len(data):
+        packet_data = bytes(data[byte_offset:packet_end])
+        return {
+            "offset": byte_offset,
+            "length": length,
+            "data": packet_data,
+            "sync_errors": match.bit_errors,
+        }
+    return None
+
+
 def robust_packet_parse(
     data: bytes | NDArray[np.uint8],
     *,
@@ -562,71 +642,38 @@ def robust_packet_parse(
         data = np.frombuffer(data, dtype=np.uint8)
 
     result = PacketRecoveryResult()
-
-    # Find all sync patterns (fuzzy)
     sync_matches = fuzzy_pattern_search(
         data, sync_pattern, pattern_bits=sync_bits, max_errors=error_tolerance
     )
-
-    # Sort by offset
     sync_matches.sort(key=lambda m: m.offset)
 
-    i = 0
-    while i < len(sync_matches):
-        match = sync_matches[i]
+    for i, match in enumerate(sync_matches):
         byte_offset = match.offset // 8
-
         if byte_offset + length_offset >= len(data):
             break
 
-        # Read length field
         length = data[byte_offset + length_offset]
 
-        # Validate length
+        # Handle corrupted/invalid length
         if length > max_packet_length or length == 0:
-            # Try to find next sync as packet boundary
             if i + 1 < len(sync_matches):
                 next_sync_byte = sync_matches[i + 1].offset // 8
-                inferred_length = next_sync_byte - byte_offset
-
-                if 0 < inferred_length <= max_packet_length:
-                    # Recovered packet with inferred length
-                    packet_data = bytes(data[byte_offset : byte_offset + inferred_length])
-                    result.recovered_packets.append(
-                        {
-                            "offset": byte_offset,
-                            "length": inferred_length,
-                            "data": packet_data,
-                            "sync_errors": match.bit_errors,
-                            "length_corrupted": True,
-                        }
-                    )
+                recovered = _try_recover_packet_with_next_sync(
+                    data, byte_offset, next_sync_byte, max_packet_length, match
+                )
+                if recovered:
+                    result.recovered_packets.append(recovered)
                     result.total_errors += match.bit_errors
                     result.sync_resync_count += 1
-                    i += 1
-                    continue
                 else:
                     result.failed_regions.append((byte_offset, byte_offset + 10))
-                    i += 1
-                    continue
-            else:
-                break
+            continue
 
-        # Valid length - extract packet
-        packet_end = byte_offset + length_offset + 1 + length
-        if packet_end <= len(data):
-            packet_data = bytes(data[byte_offset:packet_end])
-            result.packets.append(
-                {
-                    "offset": byte_offset,
-                    "length": length,
-                    "data": packet_data,
-                    "sync_errors": match.bit_errors,
-                }
-            )
+        # Extract valid packet
+        packet = _extract_valid_packet(data, byte_offset, length_offset, length, match)
+        if packet:
+            result.packets.append(packet)
             result.total_errors += match.bit_errors
-
-        i += 1
 
     return result
 
@@ -669,84 +716,125 @@ def compensate_timestamp_jitter(
 
     n = len(timestamps)
     if n < 2:
-        return JitterCompensationResult(
-            original_timestamps=timestamps,
-            corrected_timestamps=timestamps,
-            jitter_removed_ns=0,
-            clock_drift_ppm=0,
-            correction_method=method,
-        )
+        return _create_null_jitter_result(timestamps, method)
 
-    # Calculate inter-sample intervals
     intervals = np.diff(timestamps)
+    expected_interval = _compute_expected_interval(intervals, expected_rate)
 
-    # Auto-detect expected rate from median interval
+    corrected = _apply_jitter_correction_method(
+        timestamps, intervals, expected_interval, method, cutoff_ratio, signal
+    )
+
+    metrics = _calculate_jitter_metrics(timestamps, intervals, corrected, expected_interval, n)
+
+    return JitterCompensationResult(
+        original_timestamps=timestamps,
+        corrected_timestamps=corrected,
+        jitter_removed_ns=metrics["jitter_removed_ns"],
+        clock_drift_ppm=metrics["clock_drift_ppm"],
+        correction_method=method,
+    )
+
+
+def _create_null_jitter_result(
+    timestamps: NDArray[np.float64], method: str
+) -> JitterCompensationResult:
+    """Create jitter result for insufficient data."""
+    return JitterCompensationResult(
+        original_timestamps=timestamps,
+        corrected_timestamps=timestamps,
+        jitter_removed_ns=0,
+        clock_drift_ppm=0,
+        correction_method=method,
+    )
+
+
+def _compute_expected_interval(
+    intervals: NDArray[np.float64], expected_rate: float | None
+) -> float:
+    """Compute expected interval from rate or auto-detect."""
     if expected_rate is None:
-        expected_interval = np.median(intervals)
-        expected_rate = 1.0 / expected_interval
-    else:
-        expected_interval = 1.0 / expected_rate
+        return float(np.median(intervals))
+    return 1.0 / expected_rate
 
+
+def _apply_jitter_correction_method(
+    timestamps: NDArray[np.float64],
+    intervals: NDArray[np.float64],
+    expected_interval: float,
+    method: str,
+    cutoff_ratio: float,
+    signal: Any,
+) -> NDArray[np.float64]:
+    """Apply jitter correction method to timestamps."""
     if method == "lowpass":
-        # Low-pass filter the intervals to remove high-frequency jitter
-        order = 2
-        cutoff = cutoff_ratio
-        b, a = signal.butter(order, cutoff, btype="low")
+        return _lowpass_correction(timestamps, intervals, cutoff_ratio, signal)
+    if method == "linear":
+        return _linear_correction(timestamps)
+    if method == "pll":
+        return _pll_correction(timestamps, expected_interval)
+    raise ValueError(f"Unknown method: {method}")
 
-        # Apply filter
-        filtered_intervals = signal.filtfilt(b, a, intervals)
 
-        # Reconstruct timestamps
-        corrected = np.zeros_like(timestamps)
-        corrected[0] = timestamps[0]
-        corrected[1:] = timestamps[0] + np.cumsum(filtered_intervals)
+def _lowpass_correction(
+    timestamps: NDArray[np.float64],
+    intervals: NDArray[np.float64],
+    cutoff_ratio: float,
+    signal: Any,
+) -> NDArray[np.float64]:
+    """Apply low-pass filter correction."""
+    b, a = signal.butter(2, cutoff_ratio, btype="low")
+    filtered_intervals = signal.filtfilt(b, a, intervals)
+    corrected = np.zeros_like(timestamps)
+    corrected[0] = timestamps[0]
+    corrected[1:] = timestamps[0] + np.cumsum(filtered_intervals)
+    return corrected
 
-    elif method == "linear":
-        # Simple linear fit (clock drift only)
-        indices = np.arange(n)
-        coeffs = np.polyfit(indices, timestamps, 1)
-        corrected = np.polyval(coeffs, indices)
 
-    elif method == "pll":
-        # PLL-based correction (simplified)
-        # Track expected vs actual and apply proportional correction
-        corrected = np.zeros_like(timestamps)
-        corrected[0] = timestamps[0]
+def _linear_correction(timestamps: NDArray[np.float64]) -> NDArray[np.float64]:
+    """Apply linear fit correction (clock drift only)."""
+    indices = np.arange(len(timestamps))
+    coeffs = np.polyfit(indices, timestamps, 1)
+    return np.polyval(coeffs, indices)
 
-        phase_error = 0.0
-        gain = 0.1  # PLL gain
 
-        for i in range(1, n):
-            expected_time = corrected[i - 1] + expected_interval
-            actual_time = timestamps[i]
+def _pll_correction(
+    timestamps: NDArray[np.float64], expected_interval: float
+) -> NDArray[np.float64]:
+    """Apply PLL-based correction."""
+    corrected = np.zeros_like(timestamps)
+    corrected[0] = timestamps[0]
+    gain = 0.1
 
-            phase_error = actual_time - expected_time
-            correction = gain * phase_error
+    for i in range(1, len(timestamps)):
+        expected_time = corrected[i - 1] + expected_interval
+        phase_error = timestamps[i] - expected_time
+        corrected[i] = expected_time + gain * phase_error
 
-            corrected[i] = expected_time + correction
+    return corrected
 
-    else:
-        raise ValueError(f"Unknown method: {method}")
 
-    # Calculate metrics
+def _calculate_jitter_metrics(
+    timestamps: NDArray[np.float64],
+    intervals: NDArray[np.float64],
+    corrected: NDArray[np.float64],
+    expected_interval: float,
+    n: int,
+) -> dict[str, float]:
+    """Calculate jitter and drift metrics."""
     original_jitter = np.std(intervals - expected_interval)
     corrected_intervals = np.diff(corrected)
     corrected_jitter = np.std(corrected_intervals - expected_interval)
     jitter_removed = original_jitter - corrected_jitter
 
-    # Estimate clock drift
     total_time = timestamps[-1] - timestamps[0]
     expected_total = (n - 1) * expected_interval
     drift_ratio = (total_time - expected_total) / expected_total
-    clock_drift_ppm = drift_ratio * 1e6
 
-    return JitterCompensationResult(
-        original_timestamps=timestamps,
-        corrected_timestamps=corrected,
-        jitter_removed_ns=jitter_removed * 1e9,
-        clock_drift_ppm=clock_drift_ppm,
-        correction_method=method,
-    )
+    return {
+        "jitter_removed_ns": jitter_removed * 1e9,
+        "clock_drift_ppm": drift_ratio * 1e6,
+    }
 
 
 # =============================================================================

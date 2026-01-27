@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Comprehensive WFM Output Validation - ALL Output Types.
 
+# SKIP_VALIDATION: oscura.exporters module removed in v0.6 refactoring
+
 Tests EVERY possible output type supported by Oscura for WFM files:
 - ALL visualization types (30+)
 - ALL export formats (10+)

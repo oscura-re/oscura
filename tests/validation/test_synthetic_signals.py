@@ -369,6 +369,8 @@ class TestClockRecoveryValidation:
             assert clock is not None, "Clock recovery failed"
 
         except ImportError:
+            # SKIP: Valid - Optional clock recovery algorithm
+            # Only skip if clock recovery module not available
             pytest.skip("recover_clock not available")
         except Exception as e:
             pytest.skip(f"Clock recovery requires specific conditions: {e}")
@@ -377,6 +379,8 @@ class TestClockRecoveryValidation:
         """Test clock jitter measurement on square waves."""
         path = square_wave_files.get("1MHz")
         if path is None or not path.exists():
+            # SKIP: Valid - Test signal dependency
+            # Only skip if test signal generator not available
             pytest.skip("1MHz square wave not available")
 
         data = np.load(path, allow_pickle=True)

@@ -6,29 +6,29 @@ Tests requirements:
 import numpy as np
 import pytest
 
-from oscura.comparison.compare import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.compare import (
     compare_traces,
     correlation,
     difference,
     similarity_score,
 )
-from oscura.comparison.golden import (
+from oscura.utils.comparison.golden import (
     compare_to_golden,
     create_golden,
 )
-from oscura.comparison.limits import (
+from oscura.utils.comparison.limits import (
     LimitSpec,
     check_limits,
     create_limit_spec,
     margin_analysis,
 )
-from oscura.comparison.mask import (
+from oscura.utils.comparison.mask import (
     Mask,
     MaskRegion,
     eye_mask,
     mask_test,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

@@ -245,69 +245,24 @@ def estimate_memory(
         >>> estimate = estimate_memory('fft', samples=1e9, nfft=8192)
         >>> print(f"Required: {estimate.total / 1e9:.2f} GB")
     """
-    # Bytes per element
     bytes_per_sample = 4 if dtype == "float32" else 8
-
     samples = int(samples or 0)
 
-    # Calculate based on operation
-    if operation == "fft":
-        nfft = nfft or _next_power_of_2(samples)
-        data_mem = samples * bytes_per_sample * channels
-        # FFT needs complex output (2x) plus work buffer
-        intermediate_mem = nfft * bytes_per_sample * 2 * 2  # complex, work buffer
-        output_mem = (nfft // 2 + 1) * bytes_per_sample * 2 * channels  # complex output
-
-    elif operation == "psd":
-        nperseg = nperseg or 256
-        nfft = nfft or nperseg
-        data_mem = samples * bytes_per_sample * channels
-        # Welch needs segment buffer plus FFT work
-        intermediate_mem = nperseg * bytes_per_sample * 2 + nfft * bytes_per_sample * 2
-        output_mem = (nfft // 2 + 1) * bytes_per_sample * channels
-
-    elif operation == "spectrogram":
-        nperseg = nperseg or 256
-        noverlap = noverlap or nperseg // 2
-        nfft = nfft or nperseg
-        hop = nperseg - noverlap
-        num_segments = max(1, (samples - noverlap) // hop)
-
-        data_mem = samples * bytes_per_sample * channels
-        # STFT needs segment buffer
-        intermediate_mem = nperseg * bytes_per_sample * 2 + nfft * bytes_per_sample * 2
-        # Output: (nfft//2+1) frequencies x num_segments times
-        output_mem = (nfft // 2 + 1) * num_segments * bytes_per_sample * 2 * channels
-
-    elif operation == "eye_diagram":
-        samples_per_ui = kwargs.get("samples_per_ui", 100)
-        num_uis = kwargs.get("num_uis", 1000)
-        data_mem = samples * bytes_per_sample * channels
-        # Eye diagram accumulates traces
-        intermediate_mem = samples_per_ui * num_uis * bytes_per_sample
-        output_mem = samples_per_ui * num_uis * bytes_per_sample
-
-    elif operation == "correlate":
-        data_mem = samples * bytes_per_sample * 2 * channels  # Two signals
-        # FFT-based correlation
-        nfft = _next_power_of_2(samples * 2)
-        intermediate_mem = nfft * bytes_per_sample * 2 * 2  # Two FFTs
-        output_mem = (samples * 2 - 1) * bytes_per_sample * channels
-
-    elif operation == "filter":
-        filter_order = kwargs.get("filter_order", 8)
-        data_mem = samples * bytes_per_sample * channels
-        # Filter state and buffer
-        intermediate_mem = (filter_order + samples) * bytes_per_sample
-        output_mem = samples * bytes_per_sample * channels
-
-    else:
-        # Generic estimate
-        data_mem = samples * bytes_per_sample * channels
-        intermediate_mem = samples * bytes_per_sample
-        output_mem = samples * bytes_per_sample * channels
+    # Dispatch to operation-specific estimator (returns computed params)
+    data_mem, intermediate_mem, output_mem, computed_params = _estimate_for_operation(
+        operation, samples, bytes_per_sample, channels, nfft, nperseg, noverlap, kwargs
+    )
 
     total_mem = data_mem + intermediate_mem + output_mem
+
+    # Merge provided and computed parameters
+    all_params = {
+        "samples": samples,
+        "dtype": dtype,
+        "channels": channels,
+        **computed_params,  # Include computed defaults
+        **kwargs,
+    }
 
     return MemoryEstimate(
         data=data_mem,
@@ -315,16 +270,124 @@ def estimate_memory(
         output=output_mem,
         total=total_mem,
         operation=operation,
-        parameters={
-            "samples": samples,
-            "nfft": nfft,
-            "nperseg": nperseg,
-            "noverlap": noverlap,
-            "dtype": dtype,
-            "channels": channels,
-            **kwargs,
-        },
+        parameters=all_params,
     )
+
+
+def _estimate_for_operation(
+    operation: str,
+    samples: int,
+    bytes_per_sample: int,
+    channels: int,
+    nfft: int | None,
+    nperseg: int | None,
+    noverlap: int | None,
+    kwargs: dict[str, Any],
+) -> tuple[int, int, int, dict[str, Any]]:
+    """Estimate memory for specific operation.
+
+    Returns:
+        Tuple of (data_mem, intermediate_mem, output_mem, computed_params)
+    """
+    if operation == "fft":
+        return _estimate_fft(samples, bytes_per_sample, channels, nfft)
+    elif operation == "psd":
+        return _estimate_psd(samples, bytes_per_sample, channels, nfft, nperseg)
+    elif operation == "spectrogram":
+        return _estimate_spectrogram(samples, bytes_per_sample, channels, nfft, nperseg, noverlap)
+    elif operation == "eye_diagram":
+        return _estimate_eye_diagram(samples, bytes_per_sample, channels, kwargs)
+    elif operation == "correlate":
+        return _estimate_correlate(samples, bytes_per_sample, channels)
+    elif operation == "filter":
+        return _estimate_filter(samples, bytes_per_sample, channels, kwargs)
+    else:
+        # Generic estimate
+        data_mem = samples * bytes_per_sample * channels
+        return data_mem, data_mem, data_mem, {}
+
+
+def _estimate_fft(
+    samples: int, bytes_per_sample: int, channels: int, nfft: int | None
+) -> tuple[int, int, int, dict[str, Any]]:
+    """Estimate memory for FFT operation."""
+    nfft = nfft or _next_power_of_2(samples)
+    data_mem = samples * bytes_per_sample * channels
+    intermediate_mem = nfft * bytes_per_sample * 2 * 2  # complex, work buffer
+    output_mem = (nfft // 2 + 1) * bytes_per_sample * 2 * channels
+    return data_mem, intermediate_mem, output_mem, {"nfft": nfft}
+
+
+def _estimate_psd(
+    samples: int, bytes_per_sample: int, channels: int, nfft: int | None, nperseg: int | None
+) -> tuple[int, int, int, dict[str, Any]]:
+    """Estimate memory for PSD (Welch) operation."""
+    nperseg = nperseg or 256
+    nfft = nfft or nperseg
+    data_mem = samples * bytes_per_sample * channels
+    intermediate_mem = nperseg * bytes_per_sample * 2 + nfft * bytes_per_sample * 2
+    output_mem = (nfft // 2 + 1) * bytes_per_sample * channels
+    return data_mem, intermediate_mem, output_mem, {"nfft": nfft, "nperseg": nperseg}
+
+
+def _estimate_spectrogram(
+    samples: int,
+    bytes_per_sample: int,
+    channels: int,
+    nfft: int | None,
+    nperseg: int | None,
+    noverlap: int | None,
+) -> tuple[int, int, int, dict[str, Any]]:
+    """Estimate memory for spectrogram (STFT) operation."""
+    nperseg = nperseg or 256
+    noverlap = noverlap or nperseg // 2
+    nfft = nfft or nperseg
+    hop = nperseg - noverlap
+    num_segments = max(1, (samples - noverlap) // hop)
+
+    data_mem = samples * bytes_per_sample * channels
+    intermediate_mem = nperseg * bytes_per_sample * 2 + nfft * bytes_per_sample * 2
+    output_mem = (nfft // 2 + 1) * num_segments * bytes_per_sample * 2 * channels
+    return (
+        data_mem,
+        intermediate_mem,
+        output_mem,
+        {"nfft": nfft, "nperseg": nperseg, "noverlap": noverlap},
+    )
+
+
+def _estimate_eye_diagram(
+    samples: int, bytes_per_sample: int, channels: int, kwargs: dict[str, Any]
+) -> tuple[int, int, int, dict[str, Any]]:
+    """Estimate memory for eye diagram generation."""
+    samples_per_ui = kwargs.get("samples_per_ui", 100)
+    num_uis = kwargs.get("num_uis", 1000)
+    data_mem = samples * bytes_per_sample * channels
+    intermediate_mem = samples_per_ui * num_uis * bytes_per_sample
+    output_mem = samples_per_ui * num_uis * bytes_per_sample
+    return data_mem, intermediate_mem, output_mem, {}
+
+
+def _estimate_correlate(
+    samples: int, bytes_per_sample: int, channels: int
+) -> tuple[int, int, int, dict[str, Any]]:
+    """Estimate memory for correlation operation."""
+    data_mem = samples * bytes_per_sample * 2 * channels  # Two signals
+    nfft = _next_power_of_2(samples * 2)
+    intermediate_mem = nfft * bytes_per_sample * 2 * 2  # Two FFTs
+    output_mem = (samples * 2 - 1) * bytes_per_sample * channels
+    return data_mem, intermediate_mem, output_mem, {"nfft": nfft}
+
+
+def _estimate_filter(
+    samples: int, bytes_per_sample: int, channels: int, kwargs: dict[str, Any]
+) -> tuple[int, int, int, dict[str, Any]]:
+    """Estimate memory for filter operation."""
+    filter_order = kwargs.get("filter_order", 8)
+    data_mem = samples * bytes_per_sample * channels
+    intermediate_mem = (filter_order + samples) * bytes_per_sample
+    output_mem = samples * bytes_per_sample * channels
+    return data_mem, intermediate_mem, output_mem, {}
 
 
 def check_memory_available(
@@ -552,7 +615,7 @@ def configure_memory(
         >>> configure_memory(max_memory="4GB", warn_threshold=0.7, critical_threshold=0.9)
         >>> configure_memory(auto_degrade=True)
     """
-    global _memory_config  # noqa: PLW0602
+    global _memory_config
 
     if max_memory is not None:
         if isinstance(max_memory, str):
