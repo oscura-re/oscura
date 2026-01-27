@@ -49,8 +49,7 @@ def analyze(
     Args:
         input_path: Path to input data file (any supported format).
         data: In-memory data (Trace, bytes, list of packets).
-        output_dir: Base directory for output. Default: input file's directory
-                    or current directory for in-memory data.
+        output_dir: Base directory for output.
         config: Analysis configuration. Default: analyze all applicable domains.
         progress_callback: Called with progress updates during analysis.
 
@@ -62,122 +61,288 @@ def analyze(
         ValueError: If neither or both input_path and data are provided.
 
     Examples:
-        # From file
-        result = analyze("capture.wfm")
-        print(result.output_dir)  # 20260101_120000_capture_analysis/
-
-        # From in-memory data
-        result = analyze(data=my_waveform_trace, output_dir="/reports")
-
-        # With configuration
-        config = AnalysisConfig(domains=[AnalysisDomain.SPECTRAL])
-        result = analyze("capture.wfm", config=config)
-
-        # With progress callback
-        def on_progress(info):
-            print(f"{info.domain}: {info.percent}%")
-        result = analyze("capture.wfm", progress_callback=on_progress)
+        >>> result = analyze("capture.wfm")
+        >>> result = analyze(data=my_trace, output_dir="/reports")
+        >>> config = AnalysisConfig(domains=[AnalysisDomain.SPECTRAL])
+        >>> result = analyze("capture.wfm", config=config)
     """
-    # Validate inputs
+    config = config or AnalysisConfig()
+    _validate_inputs(input_path, data)
+    start_time = time.time()
+
+    # Setup and load data
+    output_manager, input_name, input_type, loaded_data, resolved_path = _setup_analysis(
+        input_path, data, output_dir, progress_callback, start_time
+    )
+
+    # Run analysis pipeline
+    engine_result, plot_paths, saved_paths = _run_analysis_pipeline(
+        config,
+        resolved_path,
+        loaded_data,
+        input_name,
+        input_type,
+        output_manager,
+        progress_callback,
+        start_time,
+    )
+
+    # Build and finalize result
+    result = _finalize_result(
+        output_manager,
+        resolved_path,
+        input_type,
+        engine_result,
+        saved_paths,
+        plot_paths,
+        config,
+        progress_callback,
+        start_time,
+    )
+
+    logger.info(f"Analysis complete. Output: {result.output_dir}")
+    return result
+
+
+def _run_analysis_pipeline(
+    config: AnalysisConfig,
+    resolved_path: Path | None,
+    loaded_data: Any,
+    input_name: str,
+    input_type: InputType,
+    output_manager: OutputManager,
+    progress_callback: Callable[[ProgressInfo], None] | None,
+    start_time: float,
+) -> tuple[dict[str, Any], list[Path], dict[str, Any]]:
+    """Run complete analysis pipeline."""
+    engine_result = _run_analysis_engine(
+        config, resolved_path, loaded_data, input_name, input_type, progress_callback
+    )
+    plot_paths = _generate_plots(
+        config, engine_result, output_manager, progress_callback, start_time
+    )
+    saved_paths = _save_all_outputs(
+        output_manager,
+        input_name,
+        input_type,
+        resolved_path,
+        datetime.now(),
+        engine_result,
+        config,
+        start_time,
+    )
+    return engine_result, plot_paths, saved_paths
+
+
+def _finalize_result(
+    output_manager: OutputManager,
+    resolved_path: Path | None,
+    input_type: InputType,
+    engine_result: dict[str, Any],
+    saved_paths: dict[str, Any],
+    plot_paths: list[Path],
+    config: AnalysisConfig,
+    progress_callback: Callable[[ProgressInfo], None] | None,
+    start_time: float,
+) -> AnalysisResult:
+    """Build and finalize analysis result."""
+    partial_result = _build_result(
+        output_manager,
+        resolved_path,
+        input_type,
+        engine_result,
+        saved_paths["summary_json"],
+        saved_paths["summary_yaml"],
+        saved_paths["metadata_json"],
+        saved_paths["config_yaml"],
+        saved_paths["domain_dirs"],
+        plot_paths,
+        saved_paths["error_log"],
+        start_time,
+    )
+    index_paths = _generate_index(
+        output_manager, partial_result, config, progress_callback, start_time
+    )
+    result = _build_final_result(partial_result, index_paths, time.time() - start_time)
+
+    _report_progress(
+        progress_callback,
+        "complete",
+        None,
+        None,
+        100.0,
+        f"Analysis complete: {result.successful_analyses}/{result.total_analyses} successful",
+        time.time() - start_time,
+    )
+    return result
+
+
+def _setup_analysis(
+    input_path: str | Path | None,
+    data: Trace | bytes | list[Any] | None,
+    output_dir: str | Path | None,
+    progress_callback: Callable[[ProgressInfo], None] | None,
+    start_time: float,
+) -> tuple[OutputManager, str, InputType, Any, Path | None]:
+    """Setup analysis environment and load data."""
+    input_name, input_type, loaded_data, resolved_path = _prepare_input(input_path, data)
+    base_dir = _determine_output_dir(resolved_path, output_dir)
+    output_manager = OutputManager(base_dir, input_name, datetime.now())
+    output_manager.create()
+    _report_progress(
+        progress_callback,
+        "initializing",
+        None,
+        None,
+        0.0,
+        "Initializing analysis",
+        time.time() - start_time,
+    )
+    return output_manager, input_name, input_type, loaded_data, resolved_path
+
+
+def _save_all_outputs(
+    output_manager: OutputManager,
+    input_name: str,
+    input_type: InputType,
+    resolved_path: Path | None,
+    timestamp: datetime,
+    engine_result: Any,
+    config: AnalysisConfig,
+    start_time: float,
+) -> dict[str, Any]:
+    """Save all analysis outputs and return paths."""
+    summary_json, summary_yaml = _save_summary(
+        output_manager,
+        input_name,
+        input_type,
+        resolved_path,
+        timestamp,
+        engine_result,
+        config,
+        start_time,
+    )
+    return {
+        "summary_json": summary_json,
+        "summary_yaml": summary_yaml,
+        "metadata_json": _save_metadata(
+            output_manager, resolved_path, input_type, timestamp, engine_result, start_time
+        ),
+        "config_yaml": _save_config(output_manager, config, input_type),
+        "domain_dirs": _save_domain_results(output_manager, engine_result),
+        "error_log": _save_errors(output_manager, engine_result),
+    }
+
+
+def _validate_inputs(input_path: str | Path | None, data: Trace | bytes | list[Any] | None) -> None:
+    """Validate that exactly one input source is provided."""
     if input_path is None and data is None:
         raise ValueError("Either input_path or data must be provided")
     if input_path is not None and data is not None:
         raise ValueError("Provide input_path OR data, not both")
 
-    # Use default config if not provided
-    if config is None:
-        config = AnalysisConfig()
 
-    # Track timing
-    start_time = time.time()
+def _prepare_input(
+    input_path: str | Path | None, data: Trace | bytes | list[Any] | None
+) -> tuple[str, InputType, Any, Path | None]:
+    """Prepare input data and determine type.
 
-    # Determine input name and type
+    Returns:
+        Tuple of (input_name, input_type, loaded_data, resolved_path)
+    """
     if input_path is not None:
-        input_path = Path(input_path)
-        if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_path}")
-        input_name = input_path.stem
-        input_type = _detect_input_type_from_file(input_path)
-        loaded_data = _load_input_file(input_path, input_type)
+        path = Path(input_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Input file not found: {path}")
+        input_name = path.stem
+        input_type = _detect_input_type_from_file(path)
+        loaded_data = _load_input_file(path, input_type)
+        return input_name, input_type, loaded_data, path
     else:
         input_name = "memory_data"
         input_type = _detect_input_type_from_data(data)
         loaded_data = data
+        return input_name, input_type, loaded_data, None
 
-    # Determine output directory
-    if output_dir is None:
-        if input_path is not None:
-            base_dir = input_path.parent
-        else:
-            base_dir = Path.cwd()
-    else:
-        base_dir = Path(output_dir)
 
-    # Create output manager with timestamp
-    timestamp = datetime.now()
-    output_manager = OutputManager(base_dir, input_name, timestamp)
-    output_manager.create()
+def _determine_output_dir(input_path: Path | None, output_dir: str | Path | None) -> Path:
+    """Determine output directory based on input path or override."""
+    if output_dir is not None:
+        return Path(output_dir)
+    if input_path is not None:
+        return input_path.parent
+    return Path.cwd()
 
-    # Report progress: starting
-    _report_progress(
-        progress_callback,
-        phase="initializing",
-        domain=None,
-        function=None,
-        percent=0.0,
-        message="Initializing analysis",
-        elapsed=time.time() - start_time,
-    )
 
-    # Determine applicable domains
+def _run_analysis_engine(
+    config: AnalysisConfig,
+    input_path: Path | None,
+    loaded_data: Any,
+    input_name: str,
+    input_type: InputType,
+    progress_callback: Callable[[ProgressInfo], None] | None,
+) -> dict[str, Any]:
+    """Run analysis engine on data."""
     applicable_domains = get_available_analyses(input_type)
     enabled_domains = [d for d in applicable_domains if config.is_domain_enabled(d)]
 
     logger.info(f"Running analysis on {input_name} ({input_type.value})")
     logger.info(f"Enabled domains: {[d.value for d in enabled_domains]}")
 
-    # Execute analysis engine
     from oscura.reporting.engine import AnalysisEngine
 
     engine = AnalysisEngine(config)
-    engine_result = engine.run(
+    return engine.run(
         input_path=input_path,
         data=loaded_data,
         progress_callback=progress_callback,
     )
 
-    # Generate plots
+
+def _generate_plots(
+    config: AnalysisConfig,
+    engine_result: dict[str, Any],
+    output_manager: OutputManager,
+    progress_callback: Callable[[ProgressInfo], None] | None,
+    start_time: float,
+) -> list[Path]:
+    """Generate plots if configured."""
     plot_paths: list[Path] = []
-    if config.generate_plots:
-        _report_progress(
-            progress_callback,
-            phase="plotting",
-            domain=None,
-            function=None,
-            percent=70.0,
-            message="Generating visualizations",
-            elapsed=time.time() - start_time,
-        )
 
-        from oscura.reporting.plots import PlotGenerator
+    if not config.generate_plots:
+        return plot_paths
 
-        plot_gen = PlotGenerator(config)
-        for domain, results in engine_result["results"].items():
-            domain_plots = plot_gen.generate_plots(domain, results, output_manager)
-            plot_paths.extend(domain_plots)
-
-    # Save data outputs
     _report_progress(
         progress_callback,
-        phase="saving",
-        domain=None,
-        function=None,
-        percent=85.0,
-        message="Saving analysis results",
-        elapsed=time.time() - start_time,
+        "plotting",
+        None,
+        None,
+        70.0,
+        "Generating visualizations",
+        time.time() - start_time,
     )
 
-    # Save summary data
+    from oscura.reporting.plots import PlotGenerator
+
+    plot_gen = PlotGenerator(config)
+    for domain, results in engine_result["results"].items():
+        domain_plots = plot_gen.generate_plots(domain, results, output_manager)
+        plot_paths.extend(domain_plots)
+
+    return plot_paths
+
+
+def _save_summary(
+    output_manager: OutputManager,
+    input_name: str,
+    input_type: InputType,
+    input_path: Path | None,
+    timestamp: datetime,
+    engine_result: dict[str, Any],
+    config: AnalysisConfig,
+    start_time: float,
+) -> tuple[Path, Path | None]:
+    """Save summary data."""
     summary_data = {
         "input": {
             "name": input_name,
@@ -195,7 +360,18 @@ def analyze(
     if "yaml" in config.output_formats:
         summary_yaml = output_manager.save_yaml("summary", summary_data)
 
-    # Save metadata
+    return summary_json, summary_yaml
+
+
+def _save_metadata(
+    output_manager: OutputManager,
+    input_path: Path | None,
+    input_type: InputType,
+    timestamp: datetime,
+    engine_result: dict[str, Any],
+    start_time: float,
+) -> Path:
+    """Save metadata."""
     metadata = {
         "oscura_version": _get_version(),
         "analysis_version": "2.0",
@@ -208,9 +384,16 @@ def analyze(
         "failed": engine_result["stats"]["failed_analyses"],
         "skipped": engine_result["stats"].get("skipped_analyses", 0),
     }
-    metadata_json = output_manager.save_json("metadata", metadata)
+    return output_manager.save_json("metadata", metadata)
 
-    # Save configuration
+
+def _save_config(
+    output_manager: OutputManager, config: AnalysisConfig, input_type: InputType
+) -> Path:
+    """Save configuration."""
+    applicable_domains = get_available_analyses(input_type)
+    enabled_domains = [d for d in applicable_domains if config.is_domain_enabled(d)]
+
     config_data = {
         "domains": [d.value for d in enabled_domains],
         "generate_plots": config.generate_plots,
@@ -219,34 +402,57 @@ def analyze(
         "output_formats": config.output_formats,
         "index_formats": config.index_formats,
     }
-    config_yaml = output_manager.save_yaml("config", config_data)
+    return output_manager.save_yaml("config", config_data)
 
-    # Save domain results
+
+def _save_domain_results(
+    output_manager: OutputManager, engine_result: dict[str, Any]
+) -> dict[AnalysisDomain, Path]:
+    """Save domain-specific results."""
     domain_dirs: dict[AnalysisDomain, Path] = {}
     for domain, results in engine_result["results"].items():
         domain_dir = output_manager.create_domain_dir(domain)
         domain_dirs[domain] = domain_dir
         output_manager.save_json("results", results, subdir=domain.value)
+    return domain_dirs
 
-    # Save errors if any
-    error_log: Path | None = None
+
+def _save_errors(output_manager: OutputManager, engine_result: dict[str, Any]) -> Path | None:
+    """Save error log if errors occurred."""
     errors: list[AnalysisError] = engine_result["errors"]
-    if errors:
-        error_list = [
-            {
-                "domain": e.domain.value,
-                "function": e.function,
-                "error_type": e.error_type,
-                "error_message": e.error_message,
-                "duration_ms": e.duration_ms,
-            }
-            for e in errors
-        ]
-        error_data = {"errors": error_list, "count": len(error_list)}
-        error_log = output_manager.save_json("failed_analyses", error_data, subdir="errors")
+    if not errors:
+        return None
 
-    # Build AnalysisResult for index generation
-    partial_result = AnalysisResult(
+    error_list = [
+        {
+            "domain": e.domain.value,
+            "function": e.function,
+            "error_type": e.error_type,
+            "error_message": e.error_message,
+            "duration_ms": e.duration_ms,
+        }
+        for e in errors
+    ]
+    error_data = {"errors": error_list, "count": len(error_list)}
+    return output_manager.save_json("failed_analyses", error_data, subdir="errors")
+
+
+def _build_result(
+    output_manager: OutputManager,
+    input_path: Path | None,
+    input_type: InputType,
+    engine_result: dict[str, Any],
+    summary_json: Path,
+    summary_yaml: Path | None,
+    metadata_json: Path,
+    config_yaml: Path,
+    domain_dirs: dict[AnalysisDomain, Path],
+    plot_paths: list[Path],
+    error_log: Path | None,
+    start_time: float,
+) -> AnalysisResult:
+    """Build partial AnalysisResult for index generation."""
+    return AnalysisResult(
         output_dir=output_manager.root,
         index_html=None,
         index_md=None,
@@ -266,62 +472,62 @@ def analyze(
         skipped_analyses=engine_result["stats"].get("skipped_analyses", 0),
         duration_seconds=time.time() - start_time,
         domain_summaries=engine_result["results"],
-        errors=errors,
+        errors=engine_result["errors"],
     )
 
-    # Generate index files
+
+def _generate_index(
+    output_manager: OutputManager,
+    partial_result: AnalysisResult,
+    config: AnalysisConfig,
+    progress_callback: Callable[[ProgressInfo], None] | None,
+    start_time: float,
+) -> dict[str, Path]:
+    """Generate index files."""
     _report_progress(
         progress_callback,
-        phase="indexing",
-        domain=None,
-        function=None,
-        percent=95.0,
-        message="Generating index files",
-        elapsed=time.time() - start_time,
+        "indexing",
+        None,
+        None,
+        95.0,
+        "Generating index files",
+        time.time() - start_time,
     )
 
     from oscura.reporting.index import IndexGenerator
 
     index_gen = IndexGenerator(output_manager)
-    index_paths = index_gen.generate(partial_result, config.index_formats)
+    return index_gen.generate(partial_result, config.index_formats)
 
-    # Complete result
-    result = AnalysisResult(
-        output_dir=output_manager.root,
+
+def _build_final_result(
+    partial_result: AnalysisResult,
+    index_paths: dict[str, Path],
+    duration: float,
+) -> AnalysisResult:
+    """Build final AnalysisResult with index paths."""
+    return AnalysisResult(
+        output_dir=partial_result.output_dir,
         index_html=index_paths.get("html"),
         index_md=index_paths.get("md"),
         index_pdf=index_paths.get("pdf"),
-        summary_json=summary_json,
-        summary_yaml=summary_yaml,
-        metadata_json=metadata_json,
-        config_yaml=config_yaml,
-        domain_dirs=domain_dirs,
-        plot_paths=plot_paths,
-        error_log=error_log,
-        input_file=str(input_path) if input_path else None,
-        input_type=input_type,
-        total_analyses=engine_result["stats"]["total_analyses"],
-        successful_analyses=engine_result["stats"]["successful_analyses"],
-        failed_analyses=engine_result["stats"]["failed_analyses"],
-        skipped_analyses=engine_result["stats"].get("skipped_analyses", 0),
-        duration_seconds=time.time() - start_time,
-        domain_summaries=engine_result["results"],
-        errors=errors,
+        summary_json=partial_result.summary_json,
+        summary_yaml=partial_result.summary_yaml,
+        metadata_json=partial_result.metadata_json,
+        config_yaml=partial_result.config_yaml,
+        domain_dirs=partial_result.domain_dirs,
+        plot_paths=partial_result.plot_paths,
+        error_log=partial_result.error_log,
+        input_file=partial_result.input_file,
+        input_type=partial_result.input_type,
+        total_analyses=partial_result.total_analyses,
+        successful_analyses=partial_result.successful_analyses,
+        failed_analyses=partial_result.failed_analyses,
+        skipped_analyses=partial_result.skipped_analyses,
+        duration_seconds=duration,
+        domain_summaries=partial_result.domain_summaries,
+        errors=partial_result.errors,
     )
-
-    # Report completion
-    _report_progress(
-        progress_callback,
-        phase="complete",
-        domain=None,
-        function=None,
-        percent=100.0,
-        message=f"Analysis complete: {result.successful_analyses}/{result.total_analyses} successful",
-        elapsed=time.time() - start_time,
-    )
-
-    logger.info(f"Analysis complete. Output: {result.output_dir}")
-    return result
 
 
 def _detect_input_type_from_file(path: Path) -> InputType:
@@ -398,7 +604,7 @@ def _load_input_file(path: Path, input_type: InputType) -> Any:
 
             return load_pcap(path)
         elif input_type == InputType.SPARAMS:
-            from oscura.analyzers.signal_integrity.sparams import load_touchstone
+            from oscura.loaders.touchstone import load_touchstone
 
             return load_touchstone(path)
         else:

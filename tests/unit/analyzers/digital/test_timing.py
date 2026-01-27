@@ -27,7 +27,8 @@ from oscura.analyzers.digital.timing import (
     time_interval_error,
 )
 from oscura.core.exceptions import InsufficientDataError
-from oscura.core.types import DigitalTrace, TraceMetadata, WaveformTrace
+from oscura.core.types import DigitalTrace, TraceMetadata
+from tests.utils.factories import make_waveform_trace
 
 pytestmark = [pytest.mark.unit, pytest.mark.analyzer, pytest.mark.digital]
 
@@ -35,15 +36,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.analyzer, pytest.mark.digital]
 # =============================================================================
 # Helper Functions
 # =============================================================================
-
-
-def make_waveform_trace(
-    data: np.ndarray,
-    sample_rate: float = 1e6,
-) -> WaveformTrace:
-    """Create a WaveformTrace from raw data for testing."""
-    metadata = TraceMetadata(sample_rate=sample_rate)
-    return WaveformTrace(data=data.astype(np.float64), metadata=metadata)
 
 
 def make_digital_trace(

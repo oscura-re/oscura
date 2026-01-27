@@ -12,7 +12,8 @@ Check `pyproject.toml` [project.version]:
 
 ```bash
 grep "^version = " pyproject.toml
-# Current: version = "0.4.0"
+# Note: Examples below use illustrative version numbers (0.4.x).
+# Check pyproject.toml for the actual current version.
 ```
 
 ---
@@ -271,6 +272,9 @@ The `sync_versions.py` pre-commit hook ensures versions stay synchronized across
 ---
 
 ## Examples
+
+> **Note**: The version numbers in these examples (0.4.x) are illustrative.
+> Always check `pyproject.toml` for the actual current version.
 
 ### Example: Bug Fix PR
 

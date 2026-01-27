@@ -53,7 +53,7 @@ if [[ "${RULESET_COUNT}" -gt 0 ]]; then
   log_info "Found ${RULESET_COUNT} ruleset(s)"
 
   # Export all rulesets summary
-  echo "${RULESETS}" | jq >"${CONFIG_DIR}/rulesets-all.json"
+  echo "${RULESETS}" | jq > "${CONFIG_DIR}/rulesets-all.json"
   log_success "All rulesets summary → ${CONFIG_DIR}/rulesets-all.json"
 
   # Export each ruleset individually
@@ -65,7 +65,7 @@ if [[ "${RULESET_COUNT}" -gt 0 ]]; then
     log_info "Exporting: ${RULESET_NAME} (ID: ${RULESET_ID})"
 
     # Export full ruleset details
-    gh api "/repos/${REPO_FULL}/rulesets/${RULESET_ID}" >"${CONFIG_DIR}/${RULESET_SLUG}.json"
+    gh api "/repos/${REPO_FULL}/rulesets/${RULESET_ID}" > "${CONFIG_DIR}/${RULESET_SLUG}.json"
     log_success "${RULESET_NAME} → ${CONFIG_DIR}/${RULESET_SLUG}.json"
   done
 else
@@ -78,7 +78,7 @@ fi
 
 log_info "Exporting repository settings..."
 
-gh api "/repos/${REPO_FULL}" >"${CONFIG_DIR}/repository-settings.json"
+gh api "/repos/${REPO_FULL}" > "${CONFIG_DIR}/repository-settings.json"
 log_success "Repository settings → ${CONFIG_DIR}/repository-settings.json"
 
 # ============================================================================
@@ -91,7 +91,7 @@ ENVIRONMENTS=$(gh api "/repos/${REPO_FULL}/environments" --jq '.environments // 
 ENV_COUNT=$(echo "${ENVIRONMENTS}" | jq '. | length')
 
 if [[ "${ENV_COUNT}" -gt 0 ]]; then
-  echo "${ENVIRONMENTS}" | jq >"${CONFIG_DIR}/environments.json"
+  echo "${ENVIRONMENTS}" | jq > "${CONFIG_DIR}/environments.json"
   log_success "Environments → ${CONFIG_DIR}/environments.json"
 else
   log_info "No environments found"
@@ -103,11 +103,11 @@ fi
 
 log_info "Exporting tag protection rules..."
 
-TAG_PROTECTION=$(gh api "/repos/${REPO_FULL}/tags/protection" --jq '.' 2>/dev/null || echo '[]')
+TAG_PROTECTION=$(gh api "/repos/${REPO_FULL}/tags/protection" --jq '.' 2> /dev/null || echo '[]')
 TAG_COUNT=$(echo "${TAG_PROTECTION}" | jq '. | length')
 
 if [[ "${TAG_COUNT}" -gt 0 ]]; then
-  echo "${TAG_PROTECTION}" | jq >"${CONFIG_DIR}/tag-protection.json"
+  echo "${TAG_PROTECTION}" | jq > "${CONFIG_DIR}/tag-protection.json"
   log_success "Tag protection → ${CONFIG_DIR}/tag-protection.json"
 else
   log_info "No tag protection rules found"
@@ -123,7 +123,7 @@ LABELS=$(gh api "/repos/${REPO_FULL}/labels?per_page=100" --jq '.')
 LABEL_COUNT=$(echo "${LABELS}" | jq '. | length')
 
 if [[ "${LABEL_COUNT}" -gt 0 ]]; then
-  echo "${LABELS}" | jq >"${CONFIG_DIR}/labels.json"
+  echo "${LABELS}" | jq > "${CONFIG_DIR}/labels.json"
   log_success "Labels (${LABEL_COUNT}) → ${CONFIG_DIR}/labels.json"
 else
   log_info "No labels found"
@@ -139,7 +139,7 @@ TOPICS=$(gh api "/repos/${REPO_FULL}/topics" -H "Accept: application/vnd.github+
 TOPIC_COUNT=$(echo "${TOPICS}" | jq '. | length')
 
 if [[ "${TOPIC_COUNT}" -gt 0 ]]; then
-  echo "${TOPICS}" | jq >"${CONFIG_DIR}/topics.json"
+  echo "${TOPICS}" | jq > "${CONFIG_DIR}/topics.json"
   log_success "Topics (${TOPIC_COUNT}) → ${CONFIG_DIR}/topics.json"
 else
   log_info "No topics found"

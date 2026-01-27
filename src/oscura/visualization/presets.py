@@ -331,6 +331,8 @@ def apply_preset(
         preset_obj = preset
 
     # Build rcParams dictionary
+    # NECESSARY COPY: rc_dict is modified by .update() below.
+    # Copy prevents mutations from affecting original preset.
     rc_dict = preset_obj.style_params.copy()
 
     # Apply overrides

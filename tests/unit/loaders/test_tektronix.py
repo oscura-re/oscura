@@ -68,23 +68,19 @@ class TestTektronixWFMLoader:
 
     def test_load_wfm003_basic(self, tmp_path: Path) -> None:
         """Test loading a basic WFM#003 file."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            # Create test file
-            wfm_file = tmp_path / "test.wfm"
-            self.create_wfm003_file(wfm_file, num_samples=1000, sample_value=100)
+        # Create test file
+        wfm_file = tmp_path / "test.wfm"
+        self.create_wfm003_file(wfm_file, num_samples=1000, sample_value=100)
 
-            # Load file
-            trace = load_tektronix_wfm(wfm_file)
+        # Load file
+        trace = load_tektronix_wfm(wfm_file)
 
-            # Verify
-            assert len(trace.data) == 1000
-            assert trace.metadata.source_file == str(wfm_file)
-            assert trace.metadata.channel_name is not None
-
-        except Exception as e:
-            pytest.skip(f"WFM003 basic test skipped: {e}")
+        # Verify
+        assert len(trace.data) == 1000
+        assert trace.metadata.source_file == str(wfm_file)
+        assert trace.metadata.channel_name is not None
 
     def create_wfm003_file_with_data(
         self,
@@ -114,87 +110,71 @@ class TestTektronixWFMLoader:
 
     def test_load_wfm003_with_varying_data(self, tmp_path: Path) -> None:
         """Test loading WFM#003 file with varying sample data."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            if not TM_DATA_TYPES_AVAILABLE:
-                pytest.skip("tm_data_types required")
+        if not TM_DATA_TYPES_AVAILABLE:
+            pytest.skip("tm_data_types required")
 
-            # Create file with varying data (ramp from -250 to 249)
-            wfm_file = tmp_path / "varying.wfm"
-            ramp_data = np.arange(-250, 250, dtype=np.float64)  # 500 samples
-            self.create_wfm003_file_with_data(wfm_file, ramp_data)
+        # Create file with varying data (ramp from -250 to 249)
+        wfm_file = tmp_path / "varying.wfm"
+        ramp_data = np.arange(-250, 250, dtype=np.float64)  # 500 samples
+        self.create_wfm003_file_with_data(wfm_file, ramp_data)
 
-            # Load and verify
-            trace = load_tektronix_wfm(wfm_file)
-            assert len(trace.data) == 500
-            assert int(round(min(trace.data))) == -250
-            assert int(round(max(trace.data))) == 249
-
-        except Exception as e:
-            pytest.skip(f"WFM003 varying data test skipped: {e}")
+        # Load and verify
+        trace = load_tektronix_wfm(wfm_file)
+        assert len(trace.data) == 500
+        assert int(round(min(trace.data))) == -250
+        assert int(round(max(trace.data))) == 249
 
     def test_load_wfm003_invalid_signature(self, tmp_path: Path) -> None:
         """Test that invalid signature raises FormatError."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            # Create file with wrong signature
-            wfm_file = tmp_path / "invalid.wfm"
-            data = bytearray()
-            data.extend(b"\x0f\x0f:INVALID")  # Wrong signature
-            data.extend(b"\x00" * 1000)
-            wfm_file.write_bytes(data)
+        # Create file with wrong signature
+        wfm_file = tmp_path / "invalid.wfm"
+        data = bytearray()
+        data.extend(b"\x0f\x0f:INVALID")  # Wrong signature
+        data.extend(b"\x00" * 1000)
+        wfm_file.write_bytes(data)
 
-            # Should raise FormatError (caught by the basic loader and retried as legacy)
-            # The legacy loader should also fail, resulting in a LoaderError
-            with pytest.raises((FormatError, LoaderError)):
-                load_tektronix_wfm(wfm_file)
-
-        except Exception as e:
-            pytest.skip(f"Invalid signature test skipped: {e}")
+        # Should raise FormatError (caught by the basic loader and retried as legacy)
+        # The legacy loader should also fail, resulting in a LoaderError
+        with pytest.raises((FormatError, LoaderError)):
+            load_tektronix_wfm(wfm_file)
 
     def test_load_wfm003_too_small(self, tmp_path: Path) -> None:
         """Test that file too small raises FormatError."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            # Create tiny file
-            wfm_file = tmp_path / "tiny.wfm"
-            wfm_file.write_bytes(b"\x0f\x0f:WFM#003")  # Only 10 bytes
+        # Create tiny file
+        wfm_file = tmp_path / "tiny.wfm"
+        wfm_file.write_bytes(b"\x0f\x0f:WFM#003")  # Only 10 bytes
 
-            with pytest.raises((FormatError, LoaderError)):
-                load_tektronix_wfm(wfm_file)
-
-        except Exception as e:
-            pytest.skip(f"Too small file test skipped: {e}")
+        with pytest.raises((FormatError, LoaderError)):
+            load_tektronix_wfm(wfm_file)
 
     def test_load_wfm003_empty_data(self, tmp_path: Path) -> None:
         """Test file with header but no waveform data."""
         import struct
 
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            wfm_file = tmp_path / "empty_data.wfm"
-            data = bytearray()
-            data.extend(struct.pack("<H", 0x0F0F))
-            data.extend(b":WFM#003")
-            data.append(5)
-            data.extend(b"\x00" * 5)
+        wfm_file = tmp_path / "empty_data.wfm"
+        data = bytearray()
+        data.extend(struct.pack("<H", 0x0F0F))
+        data.extend(b":WFM#003")
+        data.append(5)
+        data.extend(b"\x00" * 5)
 
-            # Exactly 838 bytes (header only)
-            while len(data) < 838:
-                data.append(0x00)
+        # Exactly 838 bytes (header only)
+        while len(data) < 838:
+            data.append(0x00)
 
-            wfm_file.write_bytes(data)
+        wfm_file.write_bytes(data)
 
-            # Should raise FormatError for empty data
-            with pytest.raises((FormatError, LoaderError)):
-                load_tektronix_wfm(wfm_file)
-
-        except Exception as e:
-            pytest.skip(f"Empty data test skipped: {e}")
+        # Should raise FormatError for empty data
+        with pytest.raises((FormatError, LoaderError)):
+            load_tektronix_wfm(wfm_file)
 
     def test_load_wfm003_with_tekmeta_footer(self, tmp_path: Path) -> None:
         """Test loading file with tekmeta metadata (via tm_data_types).
@@ -202,93 +182,73 @@ class TestTektronixWFMLoader:
         Note: The tm_data_types library handles metadata internally.
         This test verifies basic file loading still works.
         """
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            if not TM_DATA_TYPES_AVAILABLE:
-                pytest.skip("tm_data_types required")
+        if not TM_DATA_TYPES_AVAILABLE:
+            pytest.skip("tm_data_types required")
 
-            # Create file with 100 samples (ramp data)
-            wfm_file = tmp_path / "with_footer.wfm"
-            ramp_data = np.arange(100, dtype=np.float64)
-            self.create_wfm003_file_with_data(wfm_file, ramp_data)
+        # Create file with 100 samples (ramp data)
+        wfm_file = tmp_path / "with_footer.wfm"
+        ramp_data = np.arange(100, dtype=np.float64)
+        self.create_wfm003_file_with_data(wfm_file, ramp_data)
 
-            # Load and verify - tm_data_types handles metadata internally
-            trace = load_tektronix_wfm(wfm_file)
-            assert len(trace.data) == 100
-
-        except Exception as e:
-            pytest.skip(f"Footer test skipped: {e}")
+        # Load and verify - tm_data_types handles metadata internally
+        trace = load_tektronix_wfm(wfm_file)
+        assert len(trace.data) == 100
 
     def test_load_wfm003_large_file(self, tmp_path: Path) -> None:
         """Test loading a large WFM#003 file."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            if not TM_DATA_TYPES_AVAILABLE:
-                pytest.skip("tm_data_types required")
+        if not TM_DATA_TYPES_AVAILABLE:
+            pytest.skip("tm_data_types required")
 
-            # Create large file (1M samples - reduced for reasonable test time)
-            wfm_file = tmp_path / "large.wfm"
-            large_data = np.ones(1_000_000, dtype=np.float64) * 0.5  # Constant 0.5V
-            self.create_wfm003_file_with_data(wfm_file, large_data)
+        # Create large file (1M samples - reduced for reasonable test time)
+        wfm_file = tmp_path / "large.wfm"
+        large_data = np.ones(1_000_000, dtype=np.float64) * 0.5  # Constant 0.5V
+        self.create_wfm003_file_with_data(wfm_file, large_data)
 
-            # Load and verify
-            trace = load_tektronix_wfm(wfm_file)
-            assert len(trace.data) == 1_000_000
-            # Verify constant value is preserved (approximately)
-            assert abs(trace.data[0] - 0.5) < 0.01
-
-        except Exception as e:
-            pytest.skip(f"Large file test skipped: {e}")
+        # Load and verify
+        trace = load_tektronix_wfm(wfm_file)
+        assert len(trace.data) == 1_000_000
+        # Verify constant value is preserved (approximately)
+        assert abs(trace.data[0] - 0.5) < 0.01
 
     def test_load_nonexistent_file(self, tmp_path: Path) -> None:
         """Test loading non-existent file raises LoaderError."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            wfm_file = tmp_path / "nonexistent.wfm"
+        wfm_file = tmp_path / "nonexistent.wfm"
 
-            with pytest.raises((LoaderError, FileNotFoundError)):
-                load_tektronix_wfm(wfm_file)
-
-        except Exception as e:
-            pytest.skip(f"Nonexistent file test skipped: {e}")
+        with pytest.raises((LoaderError, FileNotFoundError)):
+            load_tektronix_wfm(wfm_file)
 
     def test_load_wfm003_metadata_extraction(self, tmp_path: Path) -> None:
         """Test that metadata is properly extracted from WFM#003 files."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            wfm_file = tmp_path / "metadata.wfm"
-            self.create_wfm003_file(wfm_file)
+        wfm_file = tmp_path / "metadata.wfm"
+        self.create_wfm003_file(wfm_file)
 
-            trace = load_tektronix_wfm(wfm_file)
+        trace = load_tektronix_wfm(wfm_file)
 
-            # Verify metadata fields exist
-            assert trace.metadata is not None
-            # Sample rate and channel name should be present
-            assert trace.metadata.sample_rate is not None or trace.metadata.sample_rate == 0
-            assert trace.metadata.channel_name is not None
-            assert trace.metadata.source_file == str(wfm_file)
-
-        except Exception as e:
-            pytest.skip(f"Metadata extraction test skipped: {e}")
+        # Verify metadata fields exist
+        assert trace.metadata is not None
+        # Sample rate and channel name should be present
+        assert trace.metadata.sample_rate is not None or trace.metadata.sample_rate == 0
+        assert trace.metadata.channel_name is not None
+        assert trace.metadata.source_file == str(wfm_file)
 
     @pytest.mark.parametrize("sample_count", [1, 10, 100, 1000, 10000])
     def test_load_wfm003_various_sizes(self, tmp_path: Path, sample_count: int) -> None:
         """Test loading WFM#003 files with various sample counts."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            wfm_file = tmp_path / f"size_{sample_count}.wfm"
-            self.create_wfm003_file(wfm_file, num_samples=sample_count)
+        wfm_file = tmp_path / f"size_{sample_count}.wfm"
+        self.create_wfm003_file(wfm_file, num_samples=sample_count)
 
-            trace = load_tektronix_wfm(wfm_file)
-            assert len(trace.data) == sample_count
-
-        except Exception as e:
-            pytest.skip(f"Various sizes test skipped: {e}")
+        trace = load_tektronix_wfm(wfm_file)
+        assert len(trace.data) == sample_count
 
 
 class TestDigitalWaveformLoader:
@@ -296,124 +256,104 @@ class TestDigitalWaveformLoader:
 
     def test_load_digital_waveform_function(self) -> None:
         """Test the _load_digital_waveform helper function."""
-        try:
-            from oscura.loaders.tektronix import _load_digital_waveform
+        from oscura.loaders.tektronix import _load_digital_waveform
 
-            # Create a mock digital waveform object with all required attributes
-            class MockDigitalWaveform:
-                def __init__(self):
-                    self.y_axis_byte_values = bytes([0, 1, 0, 1, 1, 0, 1, 0])
-                    self.x_axis_spacing = 1e-9  # 1 GHz sample rate
-                    self.horizontal_spacing = 1e-9  # Fallback attribute
-                    self.source_name = "D1"
-                    self.name = "Digital1"
+        # Create a mock digital waveform object with all required attributes
+        class MockDigitalWaveform:
+            def __init__(self):
+                self.y_axis_byte_values = bytes([0, 1, 0, 1, 1, 0, 1, 0])
+                self.x_axis_spacing = 1e-9  # 1 GHz sample rate
+                self.horizontal_spacing = 1e-9  # Fallback attribute
+                self.source_name = "D1"
+                self.name = "Digital1"
 
-            mock_wfm = MockDigitalWaveform()
-            path = Path("/tmp/test.wfm")
+        mock_wfm = MockDigitalWaveform()
+        path = Path("/tmp/test.wfm")
 
-            trace = _load_digital_waveform(mock_wfm, path, 0)
+        trace = _load_digital_waveform(mock_wfm, path, 0)
 
-            # Verify
-            assert isinstance(trace, DigitalTrace)
-            assert len(trace.data) == 8
-            assert trace.data.dtype == np.bool_
-            assert trace.metadata.sample_rate == 1e9
-            assert trace.metadata.channel_name == "D1"
-
-        except Exception as e:
-            pytest.skip(f"Digital waveform function test skipped: {e}")
+        # Verify
+        assert isinstance(trace, DigitalTrace)
+        assert len(trace.data) == 8
+        assert trace.data.dtype == np.bool_
+        assert trace.metadata.sample_rate == pytest.approx(1e9, rel=1e-6)
+        assert trace.metadata.channel_name == "D1"
 
     def test_digital_trace_boolean_conversion(self) -> None:
         """Test that digital data is properly converted to boolean."""
-        try:
-            from oscura.loaders.tektronix import _load_digital_waveform
+        from oscura.loaders.tektronix import _load_digital_waveform
 
-            class MockDigitalWaveform:
-                def __init__(self):
-                    # Various non-zero values should all be True
-                    self.y_axis_byte_values = bytes([0, 1, 0, 255, 128, 0, 64, 0])
-                    self.x_axis_spacing = 1e-6  # 1 MHz sample rate
-                    self.horizontal_spacing = 1e-6  # Fallback attribute
-                    self.source_name = "D0"
-                    self.name = "Digital0"
+        class MockDigitalWaveform:
+            def __init__(self):
+                # Various non-zero values should all be True
+                self.y_axis_byte_values = bytes([0, 1, 0, 255, 128, 0, 64, 0])
+                self.x_axis_spacing = 1e-6  # 1 MHz sample rate
+                self.horizontal_spacing = 1e-6  # Fallback attribute
+                self.source_name = "D0"
+                self.name = "Digital0"
 
-            mock_wfm = MockDigitalWaveform()
-            path = Path("/tmp/test.wfm")
+        mock_wfm = MockDigitalWaveform()
+        path = Path("/tmp/test.wfm")
 
-            trace = _load_digital_waveform(mock_wfm, path, 0)
+        trace = _load_digital_waveform(mock_wfm, path, 0)
 
-            expected = np.array([False, True, False, True, True, False, True, False])
-            np.testing.assert_array_equal(trace.data, expected)
-
-        except Exception as e:
-            pytest.skip(f"Boolean conversion test skipped: {e}")
+        expected = np.array([False, True, False, True, True, False, True, False])
+        np.testing.assert_array_equal(trace.data, expected)
 
     def test_digital_trace_sample_rate(self) -> None:
         """Test sample rate extraction for digital traces."""
-        try:
-            from oscura.loaders.tektronix import _load_digital_waveform
+        from oscura.loaders.tektronix import _load_digital_waveform
 
-            class MockDigitalWaveform:
-                def __init__(self, spacing: float):
-                    self.y_axis_byte_values = bytes([0, 1, 0, 1])
-                    self.x_axis_spacing = spacing
-                    self.horizontal_spacing = spacing  # Fallback attribute
-                    self.source_name = "D2"
-                    self.name = "Digital2"
+        class MockDigitalWaveform:
+            def __init__(self, spacing: float):
+                self.y_axis_byte_values = bytes([0, 1, 0, 1])
+                self.x_axis_spacing = spacing
+                self.horizontal_spacing = spacing  # Fallback attribute
+                self.source_name = "D2"
+                self.name = "Digital2"
 
-            # Test various sample rates
-            for spacing in [1e-9, 1e-6, 1e-3]:
-                mock_wfm = MockDigitalWaveform(spacing)
-                trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 0)
-                expected_rate = 1.0 / spacing
-                assert trace.metadata.sample_rate == expected_rate
-
-        except Exception as e:
-            pytest.skip(f"Sample rate test skipped: {e}")
+        # Test various sample rates
+        for spacing in [1e-9, 1e-6, 1e-3]:
+            mock_wfm = MockDigitalWaveform(spacing)
+            trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 0)
+            expected_rate = 1.0 / spacing
+            assert trace.metadata.sample_rate == expected_rate
 
     def test_digital_trace_without_source_name(self) -> None:
         """Test digital trace loading when source_name is None."""
-        try:
-            from oscura.loaders.tektronix import _load_digital_waveform
+        from oscura.loaders.tektronix import _load_digital_waveform
 
-            class MockDigitalWaveform:
-                def __init__(self):
-                    self.y_axis_byte_values = bytes([0, 1, 0, 1])
-                    self.x_axis_spacing = 1e-9
-                    self.horizontal_spacing = 1e-9
-                    self.source_name = None  # No source name
-                    self.name = None  # No name
+        class MockDigitalWaveform:
+            def __init__(self):
+                self.y_axis_byte_values = bytes([0, 1, 0, 1])
+                self.x_axis_spacing = 1e-9
+                self.horizontal_spacing = 1e-9
+                self.source_name = None  # No source name
+                self.name = None  # No name
 
-            mock_wfm = MockDigitalWaveform()
-            trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 0)
+        mock_wfm = MockDigitalWaveform()
+        trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 0)
 
-            # Should use default naming "D1" (channel index + 1)
-            assert trace.metadata.channel_name == "D1"
-
-        except Exception as e:
-            pytest.skip(f"Without source name test skipped: {e}")
+        # Should use default naming "D1" (channel index + 1)
+        assert trace.metadata.channel_name == "D1"
 
     def test_digital_trace_with_empty_name(self) -> None:
         """Test digital trace loading when name attributes are empty strings."""
-        try:
-            from oscura.loaders.tektronix import _load_digital_waveform
+        from oscura.loaders.tektronix import _load_digital_waveform
 
-            class MockDigitalWaveform:
-                def __init__(self):
-                    self.y_axis_byte_values = bytes([0, 1, 0, 1])
-                    self.x_axis_spacing = 1e-9
-                    self.horizontal_spacing = 1e-9
-                    self.source_name = ""  # Empty source name
-                    self.name = ""  # Empty name
+        class MockDigitalWaveform:
+            def __init__(self):
+                self.y_axis_byte_values = bytes([0, 1, 0, 1])
+                self.x_axis_spacing = 1e-9
+                self.horizontal_spacing = 1e-9
+                self.source_name = ""  # Empty source name
+                self.name = ""  # Empty name
 
-            mock_wfm = MockDigitalWaveform()
-            trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 2)
+        mock_wfm = MockDigitalWaveform()
+        trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 2)
 
-            # Should use default naming "D3" (channel index 2 + 1)
-            assert trace.metadata.channel_name == "D3"
-
-        except Exception as e:
-            pytest.skip(f"Empty name test skipped: {e}")
+        # Should use default naming "D3" (channel index 2 + 1)
+        assert trace.metadata.channel_name == "D3"
 
 
 class TestMultiChannelLoading:
@@ -421,31 +361,30 @@ class TestMultiChannelLoading:
 
     def test_load_all_channels_returns_dict(self, tmp_path: Path) -> None:
         """Test that load_all_channels returns a dictionary."""
+        from oscura.loaders import load_all_channels
+
+        # Create a test WFM file
+        wfm_file = tmp_path / "test.wfm"
+        TestTektronixWFMLoader().create_wfm003_file(wfm_file)
+
         try:
-            from oscura.loaders import load_all_channels
-
-            # Create a test WFM file
-            wfm_file = tmp_path / "test.wfm"
-            TestTektronixWFMLoader().create_wfm003_file(wfm_file)
-
             result = load_all_channels(wfm_file)
 
             assert isinstance(result, dict)
             assert len(result) > 0
-
-        except Exception as e:
-            pytest.skip(f"Load all channels test skipped: {e}")
+        except (LoaderError, TypeError) as e:
+            # tm_data_types 0.3.0 has a bug where it can't read files it writes
+            # This is a known issue with the library, not our code
+            if "NoneType" in str(e) and "int" in str(e):
+                pytest.skip(f"tm_data_types library bug (version 0.3.0): {e}")
+            raise
 
     def test_load_all_channels_file_not_found(self, tmp_path: Path) -> None:
         """Test load_all_channels with non-existent file."""
-        try:
-            from oscura.loaders import load_all_channels
+        from oscura.loaders import load_all_channels
 
-            with pytest.raises((FileNotFoundError, LoaderError)):
-                load_all_channels(tmp_path / "nonexistent.wfm")
-
-        except Exception as e:
-            pytest.skip(f"File not found test skipped: {e}")
+        with pytest.raises((FileNotFoundError, LoaderError)):
+            load_all_channels(tmp_path / "nonexistent.wfm")
 
 
 class TestEnhancedErrorMessages:
@@ -453,36 +392,28 @@ class TestEnhancedErrorMessages:
 
     def test_file_too_small_error_message(self, tmp_path: Path) -> None:
         """Test error message for files that are too small."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            small_file = tmp_path / "small.wfm"
-            small_file.write_bytes(b"\x00" * 100)  # 100 bytes
+        small_file = tmp_path / "small.wfm"
+        small_file.write_bytes(b"\x00" * 100)  # 100 bytes
 
-            with pytest.raises((FormatError, LoaderError)) as exc_info:
-                load_tektronix_wfm(small_file)
+        with pytest.raises((FormatError, LoaderError)) as exc_info:
+            load_tektronix_wfm(small_file)
 
-            error_msg = str(exc_info.value).lower()
-            # The message should indicate the file is too small or bytes
-            assert (
-                "100" in str(exc_info.value)
-                or "small" in error_msg
-                or "bytes" in error_msg
-                or "size" in error_msg
-            )
-
-        except Exception as e:
-            pytest.skip(f"Error message test skipped: {e}")
+        error_msg = str(exc_info.value).lower()
+        # The message should indicate the file is too small or bytes
+        assert (
+            "100" in str(exc_info.value)
+            or "small" in error_msg
+            or "bytes" in error_msg
+            or "size" in error_msg
+        )
 
     def test_minimum_file_size_constant(self) -> None:
         """Test that minimum file size constant is defined."""
-        try:
-            from oscura.loaders.tektronix import MIN_WFM_FILE_SIZE
+        from oscura.loaders.tektronix import MIN_WFM_FILE_SIZE
 
-            assert MIN_WFM_FILE_SIZE == 512
-
-        except Exception as e:
-            pytest.skip(f"Minimum file size constant test skipped: {e}")
+        assert MIN_WFM_FILE_SIZE == 512
 
 
 class TestLazyLoading:
@@ -490,21 +421,17 @@ class TestLazyLoading:
 
     def test_load_with_lazy_false(self, tmp_path: Path) -> None:
         """Test loading with lazy=False (default behavior)."""
-        try:
-            from oscura.loaders import load
+        from oscura.loaders import load
 
-            # Create test file
-            wfm_file = tmp_path / "test.wfm"
-            TestTektronixWFMLoader().create_wfm003_file(wfm_file)
+        # Create test file
+        wfm_file = tmp_path / "test.wfm"
+        TestTektronixWFMLoader().create_wfm003_file(wfm_file)
 
-            # Load with lazy=False
-            trace = load(wfm_file, lazy=False)
+        # Load with lazy=False
+        trace = load(wfm_file, lazy=False)
 
-            # Should return WaveformTrace, not LazyWaveformTrace
-            assert isinstance(trace, WaveformTrace)
-
-        except Exception as e:
-            pytest.skip(f"Lazy loading test skipped: {e}")
+        # Should return WaveformTrace, not LazyWaveformTrace
+        assert isinstance(trace, WaveformTrace)
 
 
 class TestTektronixWFM003RealFiles:
@@ -517,39 +444,35 @@ class TestTektronixWFM003RealFiles:
         This test is marked as integration and will be skipped if test files
         are not available.
         """
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            # Look for test files
-            test_files = list(Path().rglob("*.wfm"))
+        # Look for test files
+        test_files = list(Path().rglob("*.wfm"))
 
-            if not test_files:
-                pytest.skip("No WFM test files found")
+        if not test_files:
+            pytest.skip("No WFM test files found")
 
-            # Test a subset (to keep test time reasonable)
-            success_count = 0
-            failures = []
-            for wfm_file in test_files[:20]:
-                try:
-                    trace = load_tektronix_wfm(wfm_file)
-                    assert len(trace.data) > 0
-                    assert trace.metadata is not None
-                    success_count += 1
-                except Exception as e:
-                    failures.append((wfm_file.name, str(e)))
+        # Test a subset (to keep test time reasonable)
+        success_count = 0
+        failures = []
+        for wfm_file in test_files[:20]:
+            try:
+                trace = load_tektronix_wfm(wfm_file)
+                assert len(trace.data) > 0
+                assert trace.metadata is not None
+                success_count += 1
+            except Exception as e:
+                failures.append((wfm_file.name, str(e)))
 
-            # Report results
-            print(f"\nLoaded {success_count}/{min(20, len(test_files))} files successfully")
-            if failures:
-                print(f"Failures ({len(failures)}):")
-                for name, error in failures[:5]:
-                    print(f"  {name}: {error[:80]}")
+        # Report results
+        print(f"\nLoaded {success_count}/{min(20, len(test_files))} files successfully")
+        if failures:
+            print(f"Failures ({len(failures)}):")
+            for name, error in failures[:5]:
+                print(f"  {name}: {error[:80]}")
 
-            # At least some files should load (relaxed - even 1 is ok)
-            assert success_count >= 0 or len(test_files) == 0
-
-        except Exception as e:
-            pytest.skip(f"Real WFM files test skipped: {e}")
+        # At least some files should load (relaxed - even 1 is ok)
+        assert success_count >= 0 or len(test_files) == 0
 
     @pytest.mark.integration
     def test_load_all_real_wfm_files(self) -> None:
@@ -557,49 +480,45 @@ class TestTektronixWFM003RealFiles:
 
         Tests both analog and digital waveform loading.
         """
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            # Look for test files in test data directories
-            test_data_dirs = [
-                Path("test_data/real_captures"),
-                Path("oscura_test_data"),
-            ]
+        # Look for test files in test data directories
+        test_data_dirs = [
+            Path("test_data/real_captures"),
+            Path("oscura_test_data"),
+        ]
 
-            test_files = []
-            for test_dir in test_data_dirs:
-                if test_dir.exists():
-                    test_files.extend(test_dir.rglob("*.wfm"))
+        test_files = []
+        for test_dir in test_data_dirs:
+            if test_dir.exists():
+                test_files.extend(test_dir.rglob("*.wfm"))
 
-            if not test_files:
-                pytest.skip("No WFM test files found in test directories")
+        if not test_files:
+            pytest.skip("No WFM test files found in test directories")
 
-            analog_count = 0
-            digital_count = 0
-            failures = []
+        analog_count = 0
+        digital_count = 0
+        failures = []
 
-            for wfm_file in test_files:
-                try:
-                    trace = load_tektronix_wfm(wfm_file)
-                    if isinstance(trace, DigitalTrace):
-                        digital_count += 1
-                    else:
-                        analog_count += 1
-                except Exception as e:
-                    failures.append((wfm_file.name, str(e)))
+        for wfm_file in test_files:
+            try:
+                trace = load_tektronix_wfm(wfm_file)
+                if isinstance(trace, DigitalTrace):
+                    digital_count += 1
+                else:
+                    analog_count += 1
+            except Exception as e:
+                failures.append((wfm_file.name, str(e)))
 
-            total = analog_count + digital_count
-            print(f"\nLoaded {total}/{len(test_files)} files")
-            print(f"  Analog: {analog_count}")
-            print(f"  Digital: {digital_count}")
-            print(f"  Failed: {len(failures)}")
+        total = analog_count + digital_count
+        print(f"\nLoaded {total}/{len(test_files)} files")
+        print(f"  Analog: {analog_count}")
+        print(f"  Digital: {digital_count}")
+        print(f"  Failed: {len(failures)}")
 
-            # At least 50% success rate (relaxed from 80%)
-            min_success = max(1, int(len(test_files) * 0.5))
-            assert total >= min_success or len(test_files) == 0
-
-        except Exception as e:
-            pytest.skip(f"All WFM files test skipped: {e}")
+        # At least 50% success rate (relaxed from 80%)
+        min_success = max(1, int(len(test_files) * 0.5))
+        assert total >= min_success or len(test_files) == 0
 
 
 class TestTraceTypeUnion:
@@ -607,31 +526,23 @@ class TestTraceTypeUnion:
 
     def test_tektronix_trace_type_exported(self) -> None:
         """Test that TektronixTrace type alias is exported."""
-        try:
-            from oscura.loaders.tektronix import TektronixTrace
+        from oscura.loaders.tektronix import TektronixTrace
 
-            # Should be a union type
-            assert TektronixTrace is not None
-
-        except Exception as e:
-            pytest.skip(f"Type export test skipped: {e}")
+        # Should be a union type
+        assert TektronixTrace is not None
 
     def test_return_type_is_union(self, tmp_path: Path) -> None:
         """Test that load function can return either trace type."""
-        try:
-            from oscura.loaders.tektronix import load_tektronix_wfm
+        from oscura.loaders.tektronix import load_tektronix_wfm
 
-            # Create analog file
-            wfm_file = tmp_path / "analog.wfm"
-            TestTektronixWFMLoader().create_wfm003_file(wfm_file)
+        # Create analog file
+        wfm_file = tmp_path / "analog.wfm"
+        TestTektronixWFMLoader().create_wfm003_file(wfm_file)
 
-            trace = load_tektronix_wfm(wfm_file)
+        trace = load_tektronix_wfm(wfm_file)
 
-            # Should be WaveformTrace or DigitalTrace
-            assert isinstance(trace, WaveformTrace | DigitalTrace)
-
-        except Exception as e:
-            pytest.skip(f"Return type test skipped: {e}")
+        # Should be WaveformTrace or DigitalTrace
+        assert isinstance(trace, WaveformTrace | DigitalTrace)
 
 
 class TestIQTrace:

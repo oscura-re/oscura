@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Home - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h1 class="card-title mb-4">
+                    <i class="bi bi-cpu"></i> Protocol Analysis
+                </h1>
+                <p class="lead">
+                    Upload signal capture files for automated protocol reverse engineering.
+                    Supports VCD, WAV, PCAP, and other formats.
+                </p>
+            </div>
+        </div>
+
+        <!-- File Upload -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-4">Upload Capture File</h5>
+
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <!-- Dropzone -->
+                    <div class="dropzone mb-4" id="dropzone">
+                        <i class="bi bi-cloud-upload" style="font-size: 3rem; opacity: 0.5;"></i>
+                        <h5 class="mt-3">Drag & Drop File Here</h5>
+                        <p class="text-muted">or click to browse</p>
+                        <p class="text-muted small">Maximum file size: {{ max_file_size_mb }} MB</p>
+                        <input type="file" id="fileInput" name="file" class="d-none" accept=".vcd,.wav,.pcap,.pcapng,.csv,.bin">
+                    </div>
+
+                    <div id="fileInfo" class="mb-3 d-none">
+                        <div class="alert alert-info">
+                            <i class="bi bi-file-earmark"></i>
+                            <strong>Selected:</strong> <span id="fileName"></span>
+                            (<span id="fileSize"></span>)
+                        </div>
+                    </div>
+
+                    <!-- Analysis Options -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="protocolHint" class="form-label">
+                                <i class="bi bi-hint"></i> Protocol Hint (Optional)
+                            </label>
+                            <select class="form-select" id="protocolHint" name="protocol_hint">
+                                <option value="">Auto-detect</option>
+                                <option value="uart">UART</option>
+                                <option value="spi">SPI</option>
+                                <option value="i2c">I2C</option>
+                                <option value="can">CAN Bus</option>
+                                <option value="usb">USB</option>
+                                <option value="ethernet">Ethernet</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="autoCRC" name="auto_crc" checked>
+                                <label class="form-check-label" for="autoCRC">
+                                    Auto-detect CRC
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="detectCrypto" name="detect_crypto" checked>
+                                <label class="form-check-label" for="detectCrypto">
+                                    Detect Crypto
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="generateTests" name="generate_tests" checked>
+                                <label class="form-check-label" for="generateTests">
+                                    Generate Tests
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100" id="analyzeBtn">
+                        <i class="bi bi-play-circle"></i> Start Analysis
+                    </button>
+                </form>
+
+                <!-- Progress Indicator -->
+                <div id="progressContainer" class="mt-4 d-none">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="progressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="text-center mt-2" id="progressText">Initializing...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="bi bi-clock-history"></i> Quick Actions
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="/sessions" class="btn btn-outline-primary">
+                        <i class="bi bi-list-task"></i> View All Sessions
+                    </a>
+                    <a href="/protocols" class="btn btn-outline-primary">
+                        <i class="bi bi-diagram-3"></i> Browse Protocols
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const uploadForm = document.getElementById('uploadForm');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    // Dropzone click
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('drag-over');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('drag-over');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            updateFileInfo(files[0]);
+        }
+    });
+
+    // File selection
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            updateFileInfo(file);
+        }
+    });
+
+    function updateFileInfo(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.remove('d-none');
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // Form submission
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('Please select a file first');
+            return;
+        }
+
+        // Show progress
+        progressContainer.classList.remove('d-none');
+        analyzeBtn.disabled = true;
+        progressBar.style.width = '10%';
+        progressText.textContent = 'Uploading file...';
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('protocol_hint', document.getElementById('protocolHint').value);
+        formData.append('auto_crc', document.getElementById('autoCRC').checked);
+        formData.append('detect_crypto', document.getElementById('detectCrypto').checked);
+        formData.append('generate_tests', document.getElementById('generateTests').checked);
+
+        try {
+            // Upload file
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Upload failed');
+            }
+
+            const data = await response.json();
+            const sessionId = data.session_id;
+
+            // Update progress
+            progressBar.style.width = '30%';
+            progressText.textContent = 'Analysis started...';
+
+            // Connect WebSocket for real-time updates
+            const ws = new WebSocket(`ws://${window.location.host}/ws/${sessionId}`);
+
+            ws.onmessage = (event) => {
+                const update = JSON.parse(event.data);
+
+                if (update.type === 'status') {
+                    progressBar.style.width = update.progress + '%';
+                    progressText.textContent = update.message;
+
+                    if (update.status === 'complete') {
+                        setTimeout(() => {
+                            window.location.href = `/session/${sessionId}`;
+                        }, 1000);
+                    }
+                } else if (update.type === 'error') {
+                    progressBar.classList.add('bg-danger');
+                    progressText.textContent = 'Error: ' + update.message;
+                    analyzeBtn.disabled = false;
+                }
+            };
+
+            ws.onerror = () => {
+                // Fallback to polling if WebSocket fails
+                pollSessionStatus(sessionId);
+            };
+
+        } catch (error) {
+            alert('Upload failed: ' + error.message);
+            progressContainer.classList.add('d-none');
+            analyzeBtn.disabled = false;
+        }
+    });
+
+    // Fallback polling function
+    async function pollSessionStatus(sessionId) {
+        const interval = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/session/${sessionId}/status`);
+                const data = await response.json();
+
+                progressText.textContent = `Status: ${data.status}`;
+
+                if (data.status === 'complete') {
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    setTimeout(() => {
+                        window.location.href = `/session/${sessionId}`;
+                    }, 1000);
+                } else if (data.status === 'error') {
+                    clearInterval(interval);
+                    progressBar.classList.add('bg-danger');
+                    progressText.textContent = 'Error: ' + data.error;
+                    analyzeBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Poll error:', error);
+            }
+        }, 2000);
+    }
+</script>
+{% endblock %}

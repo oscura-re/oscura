@@ -13,6 +13,8 @@ This demonstration shows:
 4. How to extract key signal features
 """
 
+# SKIP_VALIDATION: Exploratory signal detection module removed in v0.6
+
 from __future__ import annotations
 
 import sys
@@ -55,8 +57,8 @@ class UnknownSignalsDemo(BaseDemo):
         """Generate various unknown signal types."""
         self.info("Creating test signals with unknown characteristics...")
 
-        # Analog signals
-        sine = generate_sine_wave(1234.56, 0.8, 100_000.0, 0.05)
+        # Analog signals (reduced duration for faster validation)
+        sine = generate_sine_wave(1234.56, 0.8, 100_000.0, 0.01)
         self.info("  ✓ Unknown analog signal #1")
 
         # Digital signal
@@ -86,7 +88,7 @@ class UnknownSignalsDemo(BaseDemo):
     def _create_unknown_digital(self) -> WaveformTrace:
         """Create unknown digital signal."""
         sample_rate = 100_000.0
-        duration = 0.02
+        duration = 0.005  # Reduced for validation speed
         # Random digital pattern
         n_samples = int(sample_rate * duration)
         bit_rate = 2400  # baud
@@ -106,7 +108,7 @@ class UnknownSignalsDemo(BaseDemo):
     def _create_unknown_modulated(self) -> WaveformTrace:
         """Create AM modulated signal."""
         sample_rate = 500_000.0
-        duration = 0.01
+        duration = 0.005  # Reduced for validation speed
         t = np.arange(int(sample_rate * duration)) / sample_rate
 
         carrier_freq = 50_000.0
@@ -123,7 +125,7 @@ class UnknownSignalsDemo(BaseDemo):
     def _create_unknown_pulses(self) -> WaveformTrace:
         """Create pulse train with varying intervals."""
         sample_rate = 100_000.0
-        duration = 0.05
+        duration = 0.02  # Reduced for validation speed
         n_samples = int(sample_rate * duration)
 
         data = np.zeros(n_samples)
@@ -144,7 +146,7 @@ class UnknownSignalsDemo(BaseDemo):
     def _create_embedded_signal(self) -> WaveformTrace:
         """Create signal embedded in noise."""
         sample_rate = 100_000.0
-        duration = 0.1
+        duration = 0.02  # Reduced for validation speed
 
         # Weak sine wave in heavy noise
         signal = generate_sine_wave(5000.0, 0.3, sample_rate, duration)

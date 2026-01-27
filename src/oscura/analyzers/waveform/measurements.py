@@ -789,8 +789,17 @@ def _find_levels(data: NDArray[np_floating[Any]]) -> tuple[float, float]:
     if data.dtype == np.bool_:
         data = data.astype(np.float64)
 
+    # Check for all-NaN data
+    if np.all(np.isnan(data)):
+        return float(np.nan), float(np.nan)
+
     # Use percentiles for robust level detection
     p10, p90 = np.percentile(data, [10, 90])
+
+    # Check for constant or near-constant signal
+    data_range = p90 - p10
+    if data_range < 1e-10 or np.isnan(data_range):  # Essentially constant or NaN
+        return float(p10), float(p10)
 
     # Refine using histogram peaks
     hist, bin_edges = np.histogram(data, bins=50)

@@ -284,90 +284,103 @@ def detect_delimiter(
         >>> result = detect_delimiter(data)
         >>> print(f"Delimiter: {result.delimiter!r}")
     """
-    # Combine payloads if list
-    if isinstance(payloads, list | tuple):
-        data: bytes = b"".join(payloads)
-    else:
-        # Type narrowing: payloads is bytes here
-        data = cast("bytes", payloads)
-
+    data = _combine_payloads(payloads)
     if not data:
-        return DelimiterResult(
-            delimiter=b"",
-            delimiter_type="fixed",
-            confidence=0.0,
-            occurrences=0,
-        )
+        return DelimiterResult(delimiter=b"", delimiter_type="fixed", confidence=0.0, occurrences=0)
 
-    # Default candidates
-    if candidates is None:
-        candidates = [
-            b"\r\n",  # CRLF
-            b"\n",  # LF
-            b"\x00",  # Null
-            b"\r",  # CR
-            b"\x0d\x0a",  # CRLF (explicit)
-        ]
+    candidates = candidates or _default_delimiter_candidates()
 
     best_result = None
     best_score = 0.0
 
     for delim in candidates:
-        if len(delim) == 0:
-            continue
-
-        count = data.count(delim)
-        if count < 2:
-            continue
-
-        # Calculate score based on frequency and regularity
-        positions = []
-        pos = 0
-        while True:
-            pos = data.find(delim, pos)
-            if pos == -1:
-                break
-            positions.append(pos)
-            pos += len(delim)
-
-        if len(positions) < 2:
-            continue
-
-        # Calculate interval regularity
-        intervals = [positions[i + 1] - positions[i] for i in range(len(positions) - 1)]
-        if len(intervals) > 0:
-            mean_interval = sum(intervals) / len(intervals)
-            if mean_interval > 0:
-                variance = sum((x - mean_interval) ** 2 for x in intervals) / len(intervals)
-                cv = (variance**0.5) / mean_interval
-                regularity = 1.0 / (1.0 + cv)
-            else:
-                regularity = 0.0
-        else:
-            regularity = 0.0
-
-        # Score combines frequency and regularity
-        score = count * (0.5 + 0.5 * regularity)
-
+        result, score = _evaluate_delimiter_candidate(data, delim)
         if score > best_score:
             best_score = score
-            best_result = DelimiterResult(
-                delimiter=delim,
-                delimiter_type="fixed",
-                confidence=min(1.0, regularity * 0.8 + 0.2 * min(1.0, count / 10)),
-                occurrences=count,
-                positions=positions,
-            )
+            best_result = result
 
-    if best_result is None:
-        return DelimiterResult(
-            delimiter=b"",
-            delimiter_type="fixed",
-            confidence=0.0,
-            occurrences=0,
-        )
+    return best_result or DelimiterResult(
+        delimiter=b"", delimiter_type="fixed", confidence=0.0, occurrences=0
+    )
 
-    return best_result
+
+def _combine_payloads(payloads: Sequence[bytes] | bytes) -> bytes:
+    """Combine payloads into single bytes object."""
+    if isinstance(payloads, list | tuple):
+        return b"".join(payloads)
+    return cast("bytes", payloads)
+
+
+def _default_delimiter_candidates() -> list[bytes]:
+    """Return default delimiter candidates."""
+    return [
+        b"\r\n",  # CRLF
+        b"\n",  # LF
+        b"\x00",  # Null
+        b"\r",  # CR
+        b"\x0d\x0a",  # CRLF (explicit)
+    ]
+
+
+def _evaluate_delimiter_candidate(
+    data: bytes, delim: bytes
+) -> tuple[DelimiterResult | None, float]:
+    """Evaluate a delimiter candidate and return result with score."""
+    if len(delim) == 0:
+        return None, 0.0
+
+    count = data.count(delim)
+    if count < 2:
+        return None, 0.0
+
+    positions = _find_delimiter_positions(data, delim)
+    if len(positions) < 2:
+        return None, 0.0
+
+    regularity = _calculate_interval_regularity(positions)
+    score = count * (0.5 + 0.5 * regularity)
+    confidence = min(1.0, regularity * 0.8 + 0.2 * min(1.0, count / 10))
+
+    result = DelimiterResult(
+        delimiter=delim,
+        delimiter_type="fixed",
+        confidence=confidence,
+        occurrences=count,
+        positions=positions,
+    )
+    return result, score
+
+
+def _find_delimiter_positions(data: bytes, delim: bytes) -> list[int]:
+    """Find all positions of delimiter in data."""
+    positions = []
+    pos = 0
+    while True:
+        pos = data.find(delim, pos)
+        if pos == -1:
+            break
+        positions.append(pos)
+        pos += len(delim)
+    return positions
+
+
+def _calculate_interval_regularity(positions: list[int]) -> float:
+    """Calculate regularity score from delimiter positions."""
+    if len(positions) < 2:
+        return 0.0
+
+    intervals = [positions[i + 1] - positions[i] for i in range(len(positions) - 1)]
+    if len(intervals) == 0:
+        return 0.0
+
+    mean_interval = sum(intervals) / len(intervals)
+    if mean_interval <= 0:
+        return 0.0
+
+    variance = sum((x - mean_interval) ** 2 for x in intervals) / len(intervals)
+    cv = (variance**0.5) / mean_interval
+    regularity: float = 1.0 / (1.0 + cv)
+    return regularity
 
 
 def detect_length_prefix(

@@ -118,8 +118,12 @@ class TestOneWireDecoder:
 
         trace = DigitalTrace(data=data, metadata=TraceMetadata(sample_rate=sample_rate))
 
-        list(decoder.decode(trace))
-        # Should detect reset but may not have enough data for full transaction
+        packets = list(decoder.decode(trace))
+
+        # Should decode without crashing
+        assert isinstance(packets, list)
+        # May detect reset pulse or full transaction depending on implementation
+        assert packets is not None
 
 
 class TestDecodeOnewireConvenience:

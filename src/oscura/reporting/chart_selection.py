@@ -22,6 +22,47 @@ if TYPE_CHECKING:
 ChartType = Literal["line", "scatter", "bar", "histogram", "heatmap", "pie", "spectrum"]
 
 
+def _should_use_pie_chart(data_shape: tuple[int, ...], data: NDArray[np.float64] | None) -> bool:
+    """Check if data is suitable for pie chart.
+
+    Args:
+        data_shape: Shape of data array
+        data: Optional data array
+
+    Returns:
+        True if pie chart is appropriate
+    """
+    if not (len(data_shape) > 0 and data_shape[0] <= 6 and data is not None):
+        return False
+
+    all_non_negative = np.all(data >= 0)
+    if not bool(all_non_negative):
+        return False
+
+    total = np.sum(data)
+    return bool(total > 0 and np.allclose(data / total * 100, data / total * 100))
+
+
+def _select_chart_by_shape(data_shape: tuple[int, ...]) -> ChartType:
+    """Select chart type based on data shape.
+
+    Args:
+        data_shape: Shape of data array
+
+    Returns:
+        Appropriate chart type
+    """
+    if len(data_shape) == 1:
+        return "bar" if data_shape[0] < 20 else "histogram"
+
+    if len(data_shape) == 2:
+        if data_shape[0] > 50 and data_shape[1] > 50:
+            return "heatmap"
+        return "scatter"
+
+    return "line"
+
+
 def auto_select_chart(
     data_type: str,
     data_shape: tuple[int, ...],
@@ -67,62 +108,33 @@ def auto_select_chart(
     References:
         REPORT-028: Automated Chart Type Selection
     """
-    # Time series → line plot
-    if data_type == "time_series":
-        return "line"
+    # Direct type mappings
+    type_map: dict[str, ChartType] = {
+        "time_series": "line",
+        "frequency": "spectrum",
+        "distribution": "histogram",
+        "correlation": "scatter",
+        "matrix": "heatmap",
+        "parts": "pie",
+    }
 
-    # Frequency data → spectrum plot (log scale)
-    if data_type == "frequency":
-        return "spectrum"
+    if data_type in type_map:
+        return type_map[data_type]
 
-    # Distribution → histogram or box plot
-    if data_type == "distribution":
-        return "histogram"
-
-    # Categorical comparison → bar chart
+    # Categorical with possible pie chart
     if data_type == "categorical":
-        # If very few categories, pie chart might be appropriate
-        if len(data_shape) > 0 and data_shape[0] <= 6 and data is not None and np.all(data >= 0):
-            # Check if data represents parts of a whole
-            total = np.sum(data)
-            if total > 0 and np.allclose(data / total * 100, data / total * 100):
-                return "pie"
+        if _should_use_pie_chart(data_shape, data):
+            return "pie"
         return "bar"
 
-    # Comparison (continuous) → scatter plot
+    # Comparison with size-based selection
     if data_type == "comparison":
-        # If 2D data with moderate size, scatter plot
         if len(data_shape) >= 2 and data_shape[0] < 10000:
             return "scatter"
-        # Large comparison data → bar chart
         return "bar"
 
-    # Correlation → scatter plot with potential regression
-    if data_type == "correlation":
-        return "scatter"
-
-    # 2D matrix → heatmap
-    if data_type == "matrix":
-        return "heatmap"
-
-    # Parts-to-whole → pie chart
-    if data_type == "parts":
-        return "pie"
-
     # Default based on shape
-    if len(data_shape) == 1:
-        # 1D data: histogram for distributions, bar for small sets
-        if data_shape[0] < 20:
-            return "bar"
-        return "histogram"
-    elif len(data_shape) == 2:
-        # 2D data: heatmap for square-ish matrices, scatter for point clouds
-        if data_shape[0] > 50 and data_shape[1] > 50:
-            return "heatmap"
-        return "scatter"
-
-    # Fallback to line plot
-    return "line"
+    return _select_chart_by_shape(data_shape)
 
 
 def recommend_chart_with_reasoning(

@@ -9,14 +9,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oscura.comparison.compare import compare_traces, similarity_score
-from oscura.comparison.golden import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.compare import compare_traces, similarity_score
+from oscura.utils.comparison.golden import (
     batch_compare_to_golden,
     create_golden,
     golden_from_average,
 )
-from oscura.comparison.limits import LimitSpec, check_limits
-from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.limits import LimitSpec, check_limits
 
 pytestmark = pytest.mark.unit
 

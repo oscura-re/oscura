@@ -195,91 +195,17 @@ def auto_decode(
     References:
         sigrok Protocol Decoder API
     """
-    from oscura.core.types import WaveformTrace
-    from oscura.inference.protocol import detect_protocol
 
-    # Convert to digital if needed
-    if isinstance(trace, WaveformTrace):
-        from oscura.analyzers.digital.extraction import to_digital
+    # Prepare digital trace
+    digital_trace = _prepare_digital_trace(trace)
 
-        digital_trace = to_digital(trace, threshold="auto")
-    else:
-        digital_trace = trace
+    # Detect or use specified protocol
+    protocol, config, confidence = _detect_or_select_protocol(
+        trace, protocol, min_confidence, digital_trace
+    )
 
-    # Auto-detect protocol if not specified
-    if protocol is None or protocol.lower() == "auto":
-        # detect_protocol only accepts WaveformTrace, use original trace if it's waveform
-        if isinstance(trace, WaveformTrace):
-            detection = detect_protocol(
-                trace, min_confidence=min_confidence, return_candidates=True
-            )
-        else:
-            # For DigitalTrace, we can't auto-detect protocol, use default UART
-            detection = {"protocol": "UART", "config": {}, "confidence": 0.5}
-        protocol = detection.get("protocol", "unknown")
-        config = detection.get("config", {})
-        confidence = detection.get("confidence", 0.0)
-    else:
-        protocol = protocol.upper()
-        confidence = 1.0
-        config = _get_default_protocol_config(protocol)
-
-    # Decode based on protocol
-    frames: list[Any] = []
-    errors: list[str] = []
-
-    try:
-        if protocol == "UART":
-            from oscura.analyzers.protocols.uart import UARTDecoder
-
-            baud_rate = config.get("baud_rate", 115200)
-            decoder = UARTDecoder(
-                baudrate=baud_rate,
-                data_bits=config.get("data_bits", 8),
-                parity=config.get("parity", "none"),
-                stop_bits=config.get("stop_bits", 1),
-            )
-            frames = list(decoder.decode(digital_trace))
-
-        elif protocol == "SPI":
-            from oscura.analyzers.protocols.spi import SPIDecoder
-
-            spi_decoder = SPIDecoder(
-                cpol=config.get("clock_polarity", 0),
-                cpha=config.get("clock_phase", 0),
-            )
-            # Single channel decode - pass trace with channel mapping
-            frames = list(
-                spi_decoder.decode(digital_trace, clk=digital_trace.data, mosi=digital_trace.data)
-            )
-
-        elif protocol == "I2C":
-            from oscura.analyzers.protocols.i2c import I2CDecoder
-
-            i2c_decoder = I2CDecoder()
-            # Single channel - use SDA and create synthetic SCL
-            sda = digital_trace.data
-            edges = np.where(np.diff(sda.astype(int)) != 0)[0]
-            scl = np.ones_like(sda, dtype=bool)
-            for i, edge in enumerate(edges):
-                if i % 2 == 0 and edge + 10 < len(scl):
-                    scl[edge : edge + 10] = False
-            frames = list(i2c_decoder.decode(digital_trace, scl=scl, sda=sda))
-
-        elif protocol == "CAN":
-            from oscura.analyzers.protocols.can import CANDecoder
-
-            can_decoder = CANDecoder(
-                bitrate=config.get("baud_rate", 500000),
-                sample_point=config.get("sample_point", 0.75),
-            )
-            frames = list(can_decoder.decode(digital_trace))
-
-        else:
-            errors.append(f"Unsupported protocol: {protocol}")
-
-    except Exception as e:
-        errors.append(f"Decoding error: {e!s}")
+    # Decode frames
+    frames, errors = _decode_protocol_frames(protocol, config, digital_trace)
 
     # Calculate statistics
     error_frames = sum(1 for f in frames if hasattr(f, "errors") and f.errors)
@@ -298,6 +224,113 @@ def auto_decode(
         errors=errors,
         statistics=statistics,
     )
+
+
+def _prepare_digital_trace(trace: WaveformTrace | DigitalTrace) -> DigitalTrace:
+    """Convert to digital trace if needed."""
+    from oscura.core.types import WaveformTrace
+
+    if isinstance(trace, WaveformTrace):
+        from oscura.analyzers.digital.extraction import to_digital
+
+        return to_digital(trace, threshold="auto")
+    return trace
+
+
+def _detect_or_select_protocol(
+    trace: WaveformTrace | DigitalTrace,
+    protocol: str | None,
+    min_confidence: float,
+    digital_trace: DigitalTrace,
+) -> tuple[str, dict[str, Any], float]:
+    """Detect protocol or use specified one."""
+    from oscura.core.types import WaveformTrace
+
+    if protocol is None or protocol.lower() == "auto":
+        if isinstance(trace, WaveformTrace):
+            from oscura.inference.protocol import detect_protocol
+
+            detection = detect_protocol(
+                trace, min_confidence=min_confidence, return_candidates=True
+            )
+        else:
+            detection = {"protocol": "UART", "config": {}, "confidence": 0.5}
+        return (
+            detection.get("protocol", "unknown"),
+            detection.get("config", {}),
+            detection.get("confidence", 0.0),
+        )
+    else:
+        return protocol.upper(), _get_default_protocol_config(protocol.upper()), 1.0
+
+
+def _decode_protocol_frames(
+    protocol: str, config: dict[str, Any], digital_trace: DigitalTrace
+) -> tuple[list[Any], list[str]]:
+    """Decode frames based on detected protocol."""
+    frames: list[Any] = []
+    errors: list[str] = []
+
+    try:
+        if protocol == "UART":
+            frames = _decode_uart(digital_trace, config)
+        elif protocol == "SPI":
+            frames = _decode_spi(digital_trace, config)
+        elif protocol == "I2C":
+            frames = _decode_i2c(digital_trace, config)
+        elif protocol == "CAN":
+            frames = _decode_can(digital_trace, config)
+        else:
+            errors.append(f"Unsupported protocol: {protocol}")
+    except Exception as e:
+        errors.append(f"Decoding error: {e!s}")
+
+    return frames, errors
+
+
+def _decode_uart(digital_trace: DigitalTrace, config: dict[str, Any]) -> list[Any]:
+    """Decode UART frames."""
+    from oscura.analyzers.protocols.uart import UARTDecoder
+
+    decoder = UARTDecoder(
+        baudrate=config.get("baud_rate", 115200),
+        data_bits=config.get("data_bits", 8),
+        parity=config.get("parity", "none"),
+        stop_bits=config.get("stop_bits", 1),
+    )
+    return list(decoder.decode(digital_trace))
+
+
+def _decode_spi(digital_trace: DigitalTrace, config: dict[str, Any]) -> list[Any]:
+    """Decode SPI frames."""
+    from oscura.analyzers.protocols.spi import SPIDecoder
+
+    decoder = SPIDecoder(cpol=config.get("clock_polarity", 0), cpha=config.get("clock_phase", 0))
+    return list(decoder.decode(digital_trace, clk=digital_trace.data, mosi=digital_trace.data))
+
+
+def _decode_i2c(digital_trace: DigitalTrace, config: dict[str, Any]) -> list[Any]:
+    """Decode I2C frames."""
+    from oscura.analyzers.protocols.i2c import I2CDecoder
+
+    decoder = I2CDecoder()
+    sda = digital_trace.data
+    edges = np.where(np.diff(sda.astype(int)) != 0)[0]
+    scl = np.ones_like(sda, dtype=bool)
+    for i, edge in enumerate(edges):
+        if i % 2 == 0 and edge + 10 < len(scl):
+            scl[edge : edge + 10] = False
+    return list(decoder.decode(digital_trace, scl=scl, sda=sda))
+
+
+def _decode_can(digital_trace: DigitalTrace, config: dict[str, Any]) -> list[Any]:
+    """Decode CAN frames."""
+    from oscura.analyzers.protocols.can import CANDecoder
+
+    decoder = CANDecoder(
+        bitrate=config.get("baud_rate", 500000), sample_point=config.get("sample_point", 0.75)
+    )
+    return list(decoder.decode(digital_trace))
 
 
 def smart_filter(
@@ -330,7 +363,7 @@ def smart_filter(
         >>> # Or auto-detect
         >>> clean = osc.smart_filter(noisy, target="auto")
     """
-    from oscura.filtering.convenience import (
+    from oscura.utils.filtering.convenience import (
         high_pass,
         low_pass,
         median_filter,
@@ -405,11 +438,24 @@ def _detect_noise_type(
     # Get noise floor estimate
     noise_floor = np.median(mag_db[10 : len(mag_db) // 4])
 
-    # Check for power line hum
-    if idx_60 < len(mag_db) and mag_db[idx_60] > noise_floor + 20:
-        return "60hz_hum"
-    if idx_50 < len(mag_db) and mag_db[idx_50] > noise_floor + 20:
-        return "50hz_hum"
+    # Check for power line hum - must be clear peak at exact frequency
+    # Verify it's a local maximum to avoid false positives from spectral leakage
+    if idx_60 < len(mag_db) - 5 and idx_60 > 5 and idx_60 < len(freq):
+        # Must be within 3 Hz of actual 60 Hz (tighter tolerance)
+        if abs(freq[idx_60] - 60) < 3:
+            # Check if it's a local maximum (peak, not leakage)
+            local_max = mag_db[idx_60 - 2 : idx_60 + 3].max()
+            is_peak = mag_db[idx_60] >= local_max - 0.1  # Allow tiny numerical error
+            if is_peak and mag_db[idx_60] > noise_floor + 20:
+                return "60hz_hum"
+    if idx_50 < len(mag_db) - 5 and idx_50 > 5 and idx_50 < len(freq):
+        # Must be within 3 Hz of actual 50 Hz (tighter tolerance)
+        if abs(freq[idx_50] - 50) < 3:
+            # Check if it's a local maximum (peak, not leakage)
+            local_max = mag_db[idx_50 - 2 : idx_50 + 3].max()
+            is_peak = mag_db[idx_50] >= local_max - 0.1  # Allow tiny numerical error
+            if is_peak and mag_db[idx_50] > noise_floor + 20:
+                return "50hz_hum"
 
     # Check frequency distribution
     low_power = np.mean(mag_db[1 : len(mag_db) // 10])

@@ -575,7 +575,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:192
         """
-        from oscura.extensibility.extensions import HookContext
+        from oscura.core.extensibility.extensions import HookContext
 
         ctx = HookContext(data="test", metadata=None)
         assert ctx.metadata == {} or ctx.metadata is None  # Initialized properly
@@ -585,7 +585,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:684
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
         # Register a test algorithm
@@ -603,7 +603,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:729
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
         with pytest.raises(KeyError, match="not found"):
@@ -614,7 +614,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:737
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
         registry.register_algorithm(
@@ -634,7 +634,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:923, 925
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
 
@@ -651,7 +651,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:923, 924 (empty list case)
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
         hooks = registry.list_hooks(hook_point="nonexistent")
@@ -662,7 +662,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:927
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
 
@@ -683,7 +683,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:936
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
 
@@ -702,7 +702,7 @@ class TestExtensionPointRegistry:
 
         Covers: extensions.py:938
         """
-        from oscura.extensibility.extensions import ExtensionPointRegistry
+        from oscura.core.extensibility.extensions import ExtensionPointRegistry
 
         registry = ExtensionPointRegistry()
 
@@ -1170,7 +1170,7 @@ class TestLLMIntegrationEdgeCases:
 
         Covers: llm.py:1808
         """
-        from oscura.integrations.llm import is_provider_available
+        from oscura.api.integrations.llm import is_provider_available
 
         # Should return bool regardless of actual availability
         result = is_provider_available("anthropic")
@@ -1180,37 +1180,6 @@ class TestLLMIntegrationEdgeCases:
 # =============================================================================
 # CSV Exporter Edge Cases (1 line)
 # =============================================================================
-
-
-class TestCSVExporterEdgeCases:
-    """Test CSV exporter edge cases.
-
-    Covers: csv.py:227
-    """
-
-    def test_csv_export_non_float_values(self) -> None:
-        """Test CSV export handles non-float values.
-
-        Covers: exporters/csv.py:227 (str(val) path)
-        """
-        import tempfile
-        from pathlib import Path
-
-        from oscura.exporters.csv import export_csv
-
-        measurements = {
-            "frequency": 1000.0,
-            "name": "test_signal",  # String value
-            "count": 42,  # Integer value
-        }
-
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
-            export_csv(measurements, Path(f.name))
-            # Read back and verify
-            content = Path(f.name).read_text()
-            assert "test_signal" in content
-            assert "42" in content
-            Path(f.name).unlink()  # Clean up
 
 
 # =============================================================================
@@ -1228,7 +1197,7 @@ class TestMiscellaneousCoverage:
         """
         pytest.importorskip("scipy", reason="scipy required")
 
-        from oscura.streaming.realtime import SimulatedSource
+        from oscura.utils.streaming.realtime import SimulatedSource
 
         # Create source that will generate data requiring casting
         source = SimulatedSource(
@@ -1462,7 +1431,7 @@ class TestExtensionRegistryCoverage:
 
     def test_hook_context_none_metadata(self) -> None:
         """Test HookContext with metadata=None triggers __post_init__ (line 192)."""
-        from oscura.extensibility.extensions import HookContext
+        from oscura.core.extensibility.extensions import HookContext
 
         # Explicitly pass None to trigger the __post_init__ check
         context = HookContext(data="test", metadata=None)
@@ -1470,7 +1439,7 @@ class TestExtensionRegistryCoverage:
 
     def test_list_categories(self) -> None:
         """Test list_categories() method (line 684)."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 
@@ -1491,7 +1460,7 @@ class TestExtensionRegistryCoverage:
 
     def test_benchmark_invalid_category(self) -> None:
         """Test benchmark_algorithms() with invalid category (line 729)."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 
@@ -1503,7 +1472,7 @@ class TestExtensionRegistryCoverage:
 
     def test_benchmark_valid_category(self) -> None:
         """Test benchmark_algorithms() with valid category (line 737)."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 
@@ -1530,7 +1499,7 @@ class TestExtensionRegistryCoverage:
 
     def test_list_hooks_specific_point(self) -> None:
         """Test list_hooks() with specific hook_point (lines 923-925)."""
-        from oscura.extensibility.extensions import HookContext, get_registry
+        from oscura.core.extensibility.extensions import HookContext, get_registry
 
         registry = get_registry()
 
@@ -1551,7 +1520,7 @@ class TestExtensionRegistryCoverage:
 
     def test_list_hooks_all_points(self) -> None:
         """Test list_hooks() with no specific hook_point (line 927)."""
-        from oscura.extensibility.extensions import HookContext, get_registry
+        from oscura.core.extensibility.extensions import HookContext, get_registry
 
         registry = get_registry()
 
@@ -1566,7 +1535,7 @@ class TestExtensionRegistryCoverage:
 
     def test_clear_hooks_specific_point(self) -> None:
         """Test clear_hooks() with specific hook_point (line 936)."""
-        from oscura.extensibility.extensions import HookContext, get_registry
+        from oscura.core.extensibility.extensions import HookContext, get_registry
 
         registry = get_registry()
 
@@ -1584,7 +1553,7 @@ class TestExtensionRegistryCoverage:
 
     def test_clear_hooks_all_points(self) -> None:
         """Test clear_hooks() with no specific hook_point (line 938)."""
-        from oscura.extensibility.extensions import get_registry
+        from oscura.core.extensibility.extensions import get_registry
 
         registry = get_registry()
 

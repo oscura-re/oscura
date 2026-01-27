@@ -106,28 +106,30 @@ class TestBasicPlotting:
 
     def test_basic_single_channel_plot(self, sample_power_trace):
         """Test basic single-channel power profile plot."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
         assert fig is not None
-        assert len(fig.axes) >= 1  # At least main power axis
+        assert len(fig.axes) >= 1, "Should have at least main power axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Power axis should contain data"
+        assert len(ax.lines) > 0, "Should have power line plot"
+        assert ax.get_xlabel(), "Should have x-label"
+        assert ax.get_ylabel(), "Should have y-label"
 
     def test_with_time_array(self, sample_power_trace, time_array):
         """Test plot with explicit time array."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, time_array=time_array, show=False)
 
         assert fig is not None
-        assert len(fig.axes) >= 1
+        assert len(fig.axes) >= 1, "Should have at least main power axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Power axis should contain data"
+        assert len(ax.lines) > 0, "Should have power line plot"
 
     def test_multi_channel_stacked(self, multi_channel_power):
         """Test multi-channel stacked layout."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -138,12 +140,14 @@ class TestBasicPlotting:
 
         assert fig is not None
         # Should have 3 channels + 1 energy plot (default show_energy=True)
-        assert len(fig.axes) == 4
+        assert len(fig.axes) == 4, "Should have 3 channel axes + 1 energy axis"
+        # Verify all axes have data
+        for i, ax in enumerate(fig.axes[:3]):  # First 3 are channel axes
+            assert ax.has_data(), f"Channel axis {i} should contain data"
+            assert len(ax.lines) > 0, f"Channel axis {i} should have line plot"
 
     def test_multi_channel_overlay(self, multi_channel_power):
         """Test multi-channel overlay layout."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -154,7 +158,11 @@ class TestBasicPlotting:
 
         assert fig is not None
         # Overlay mode should have fewer axes than stacked
-        assert len(fig.axes) >= 1
+        assert len(fig.axes) >= 1, "Should have at least 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Overlay axis should contain data"
+        # Should have multiple lines for multiple channels
+        assert len(ax.lines) >= 3, "Should have lines for all 3 channels"
 
 
 # =============================================================================
@@ -167,16 +175,12 @@ class TestInputValidation:
 
     def test_missing_sample_rate_and_time_array(self, sample_power_trace):
         """Test that missing both sample_rate and time_array raises error."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         with pytest.raises(ValueError, match="Either time_array or sample_rate must be provided"):
             plot_power_profile(sample_power_trace, show=False)
 
     def test_time_array_length_mismatch(self, sample_power_trace):
         """Test that mismatched time_array length raises error."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         wrong_time_array = np.linspace(0, 1e-3, 500)  # Wrong length
 
@@ -185,8 +189,6 @@ class TestInputValidation:
 
     def test_dict_input_validation(self, multi_channel_power):
         """Test that dict input works correctly."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(multi_channel_power, sample_rate=1e6, show=False)
 
@@ -204,52 +206,50 @@ class TestAnnotations:
 
     def test_show_average_line(self, sample_power_trace):
         """Test average power line annotation."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show_average=True, show=False)
 
         assert fig is not None
         # Check that horizontal line was added
         ax = fig.axes[0]
-        assert len(ax.get_lines()) > 1  # Power line + average line
+        assert len(ax.get_lines()) > 1, "Should have power line + average line"
+        assert ax.has_data(), "Should contain data"
 
     def test_hide_average_line(self, sample_power_trace):
         """Test hiding average power line."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             sample_power_trace, sample_rate=1e6, show_average=False, show=False
         )
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should contain power data"
+        # Should only have main power line (no average line)
+        assert len(ax.get_lines()) >= 1, "Should have at least main power line"
 
     def test_show_peak_marker(self, sample_power_trace):
         """Test peak power marker annotation."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show_peak=True, show=False)
 
         assert fig is not None
         ax = fig.axes[0]
         # Should have multiple plot elements (line + peak marker)
-        assert len(ax.get_lines()) >= 2
+        assert len(ax.get_lines()) >= 2, "Should have power line and peak marker"
+        assert ax.has_data(), "Should contain data"
 
     def test_hide_peak_marker(self, sample_power_trace):
         """Test hiding peak marker."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show_peak=False, show=False)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should contain power data"
 
     def test_show_energy_overlay(self, sample_power_trace):
         """Test cumulative energy overlay."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show_energy=True, show=False)
 
@@ -259,8 +259,6 @@ class TestAnnotations:
 
     def test_hide_energy_overlay(self, sample_power_trace):
         """Test hiding energy overlay."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show_energy=False, show=False)
 
@@ -270,8 +268,6 @@ class TestAnnotations:
 
     def test_all_annotations_disabled(self, sample_power_trace):
         """Test plot with all annotations disabled."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             sample_power_trace,
@@ -296,8 +292,6 @@ class TestStatistics:
 
     def test_with_precomputed_statistics(self, sample_power_trace, sample_statistics):
         """Test using pre-computed statistics."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             sample_power_trace,
@@ -310,8 +304,6 @@ class TestStatistics:
 
     def test_without_statistics(self, sample_power_trace):
         """Test automatic statistics computation."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
@@ -319,8 +311,6 @@ class TestStatistics:
 
     def test_multi_channel_with_statistics(self, multi_channel_power, multi_channel_statistics):
         """Test multi-channel plot with per-channel statistics."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -334,8 +324,6 @@ class TestStatistics:
 
     def test_partial_statistics(self, multi_channel_power):
         """Test with statistics for only some channels."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         partial_stats = {
             "VDD_CORE": {
@@ -366,8 +354,6 @@ class TestTimeScaling:
 
     def test_nanosecond_scale(self):
         """Test time display in nanoseconds."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # Very short trace (100 ns)
         power = np.random.uniform(0.3, 0.5, 100)
@@ -383,8 +369,6 @@ class TestTimeScaling:
 
     def test_microsecond_scale(self):
         """Test time display in microseconds."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # Medium trace (100 µs)
         power = np.random.uniform(0.3, 0.5, 1000)
@@ -399,8 +383,6 @@ class TestTimeScaling:
 
     def test_millisecond_scale(self):
         """Test time display in milliseconds."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # Long trace (10 ms) to ensure millisecond display
         power = np.random.uniform(0.3, 0.5, 10000)
@@ -415,8 +397,6 @@ class TestTimeScaling:
 
     def test_second_scale(self):
         """Test time display in seconds."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # Long trace (10 seconds)
         power = np.random.uniform(0.3, 0.5, 10000)
@@ -440,8 +420,6 @@ class TestMultiChannel:
 
     def test_stacked_layout_structure(self, multi_channel_power):
         """Test stacked layout creates correct number of subplots."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -457,8 +435,6 @@ class TestMultiChannel:
 
     def test_stacked_without_energy(self, multi_channel_power):
         """Test stacked layout without energy plot."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -474,8 +450,6 @@ class TestMultiChannel:
 
     def test_overlay_layout(self, multi_channel_power):
         """Test overlay layout merges channels."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -490,8 +464,6 @@ class TestMultiChannel:
 
     def test_channel_labels(self, multi_channel_power):
         """Test that channel names appear in plot."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -509,8 +481,6 @@ class TestMultiChannel:
 
     def test_single_channel_dict(self):
         """Test single-channel passed as dict."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power_dict = {"Main": np.random.uniform(0.3, 0.5, 1000)}
 
@@ -520,8 +490,6 @@ class TestMultiChannel:
 
     def test_empty_dict_handling(self):
         """Test behavior with empty dict (should use first channel)."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # This should handle gracefully or raise appropriate error
         power_dict = {"Chan1": np.random.uniform(0.3, 0.5, 1000)}
@@ -541,8 +509,6 @@ class TestEnergyCalculation:
 
     def test_energy_with_sample_rate(self, sample_power_trace):
         """Test energy calculation with sample_rate."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show_energy=True, show=False)
 
@@ -552,8 +518,6 @@ class TestEnergyCalculation:
 
     def test_energy_without_sample_rate(self, sample_power_trace, time_array):
         """Test energy calculation with time_array only."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # When only time_array is provided, sample_rate is None
         # Energy plot should still work or be gracefully skipped
@@ -565,8 +529,6 @@ class TestEnergyCalculation:
 
     def test_multi_channel_energy_accumulation(self, multi_channel_power):
         """Test energy accumulation for multi-channel stacked layout."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -593,8 +555,6 @@ class TestCustomization:
 
     def test_custom_title(self, sample_power_trace):
         """Test custom plot title."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         custom_title = "MCU Power Consumption Analysis"
         fig = plot_power_profile(
@@ -607,8 +567,6 @@ class TestCustomization:
 
     def test_default_title_single_channel(self, sample_power_trace):
         """Test default title for single channel."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
@@ -618,8 +576,6 @@ class TestCustomization:
 
     def test_default_title_multi_channel(self, multi_channel_power):
         """Test default title for multi-channel."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(multi_channel_power, sample_rate=1e6, show=False)
 
@@ -631,8 +587,6 @@ class TestCustomization:
 
     def test_custom_figsize(self, sample_power_trace):
         """Test custom figure size."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         custom_figsize = (16, 8)
         fig = plot_power_profile(
@@ -647,8 +601,6 @@ class TestCustomization:
 
     def test_default_figsize(self, sample_power_trace):
         """Test default figure size."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
@@ -669,8 +621,6 @@ class TestFileOperations:
 
     def test_save_to_file(self, sample_power_trace, tmp_path):
         """Test saving plot to file."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         save_path = tmp_path / "power_plot.png"
 
@@ -684,8 +634,6 @@ class TestFileOperations:
 
     def test_save_different_formats(self, sample_power_trace, tmp_path):
         """Test saving in different image formats."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         for ext in ["png", "pdf", "svg", "jpg"]:
             save_path = tmp_path / f"power_plot.{ext}"
@@ -700,8 +648,6 @@ class TestFileOperations:
 
     def test_save_path_as_string(self, sample_power_trace, tmp_path):
         """Test save_path as string."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         save_path = str(tmp_path / "power_plot.png")
 
@@ -714,8 +660,6 @@ class TestFileOperations:
 
     def test_save_path_as_path(self, sample_power_trace, tmp_path):
         """Test save_path as Path object."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         save_path = tmp_path / "power_plot.png"
 
@@ -737,8 +681,6 @@ class TestFigureReturn:
 
     def test_returns_figure_object(self, sample_power_trace):
         """Test that function returns matplotlib Figure."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
@@ -747,8 +689,6 @@ class TestFigureReturn:
 
     def test_figure_has_axes(self, sample_power_trace):
         """Test that returned figure has axes."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
@@ -757,8 +697,6 @@ class TestFigureReturn:
 
     def test_further_customization(self, sample_power_trace):
         """Test that returned figure can be further customized."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
 
@@ -771,8 +709,6 @@ class TestFigureReturn:
 
     def test_show_parameter_false(self, sample_power_trace):
         """Test that show=False prevents display."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # This should not block or display
         fig = plot_power_profile(sample_power_trace, sample_rate=1e6, show=False)
@@ -781,8 +717,6 @@ class TestFigureReturn:
 
     def test_show_parameter_true(self, sample_power_trace, monkeypatch):
         """Test that show=True calls plt.show()."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         # Mock plt.show to avoid blocking
         show_called = []
@@ -808,8 +742,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_very_short_trace(self):
         """Test with very short power trace."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.array([0.5, 0.6, 0.4])
         fig = plot_power_profile(power, sample_rate=1e6, show=False)
@@ -818,8 +750,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_constant_power(self):
         """Test with constant power value."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.full(1000, 0.5)
         fig = plot_power_profile(power, sample_rate=1e6, show=False)
@@ -828,8 +758,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_zero_power(self):
         """Test with all-zero power."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.zeros(1000)
         fig = plot_power_profile(power, sample_rate=1e6, show=False)
@@ -838,8 +766,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_negative_power_values(self):
         """Test with negative power values (e.g., regenerative braking)."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.random.uniform(-0.2, 0.5, 1000)
         fig = plot_power_profile(power, sample_rate=1e6, show=False)
@@ -848,8 +774,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_very_large_values(self):
         """Test with very large power values."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.random.uniform(1000, 2000, 1000)  # kW range
         fig = plot_power_profile(power, sample_rate=1e6, show=False)
@@ -858,8 +782,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_single_sample(self):
         """Test with single sample."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.array([0.5])
         fig = plot_power_profile(power, sample_rate=1e6, show=False)
@@ -868,8 +790,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_nan_values(self):
         """Test with NaN values in power trace."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.random.uniform(0.3, 0.5, 1000)
         power[100:110] = np.nan
@@ -880,8 +800,6 @@ class TestVisualizationPowerEdgeCases:
 
     def test_inf_values(self):
         """Test with infinite values."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         power = np.random.uniform(0.3, 0.5, 1000)
         power[100] = np.inf
@@ -901,8 +819,6 @@ class TestVisualizationPowerIntegration:
 
     def test_full_featured_single_channel(self, sample_power_trace, sample_statistics):
         """Test single channel with all features enabled."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             sample_power_trace,
@@ -921,8 +837,6 @@ class TestVisualizationPowerIntegration:
 
     def test_full_featured_multi_channel(self, multi_channel_power, multi_channel_statistics):
         """Test multi-channel with all features enabled."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             multi_channel_power,
@@ -942,8 +856,6 @@ class TestVisualizationPowerIntegration:
 
     def test_minimal_configuration(self, sample_power_trace):
         """Test with minimal configuration."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         fig = plot_power_profile(
             sample_power_trace,
@@ -959,8 +871,6 @@ class TestVisualizationPowerIntegration:
 
     def test_save_and_return(self, sample_power_trace, tmp_path):
         """Test saving and returning figure simultaneously."""
-        if not HAS_MATPLOTLIB:
-            pytest.skip("matplotlib not available")
 
         save_path = tmp_path / "power_analysis.png"
 

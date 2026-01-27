@@ -43,11 +43,11 @@ import numpy as np
 
 # Try to import Numba
 try:
-    from numba import guvectorize as _numba_guvectorize  # type: ignore[import-not-found]
-    from numba import jit as _numba_jit  # type: ignore[import-not-found]
-    from numba import njit as _numba_njit  # type: ignore[import-not-found]
-    from numba import prange as _numba_prange  # type: ignore[import-not-found]
-    from numba import vectorize as _numba_vectorize  # type: ignore[import-not-found]
+    from numba import guvectorize as _numba_guvectorize
+    from numba import jit as _numba_jit
+    from numba import njit as _numba_njit
+    from numba import prange as _numba_prange
+    from numba import vectorize as _numba_vectorize
 
     HAS_NUMBA = True
 except ImportError:
@@ -92,7 +92,7 @@ else:
         # Handle both @njit and @njit() syntax
         if len(args) == 1 and callable(args[0]) and not kwargs:
             return decorator(args[0])  # type: ignore[no-any-return]
-        return decorator  # type: ignore[no-any-return]
+        return decorator
 
     def prange(*args: Any, **kwargs: Any) -> range:
         """Fallback to regular range when Numba is not available.
@@ -122,7 +122,7 @@ else:
 
         if len(args) == 1 and callable(args[0]):
             return decorator(args[0])  # type: ignore[no-any-return]
-        return decorator  # type: ignore[no-any-return]
+        return decorator
 
     def guvectorize(*args: Any, **kwargs: Any) -> Callable[[F], F]:
         """No-op decorator when Numba is not available.
@@ -140,7 +140,7 @@ else:
 
         if len(args) == 1 and callable(args[0]):
             return decorator(args[0])  # type: ignore[no-any-return]
-        return decorator  # type: ignore[no-any-return]
+        return decorator
 
     def jit(*args: Any, **kwargs: Any) -> Callable[[F], F]:
         """No-op decorator when Numba is not available.
@@ -162,7 +162,7 @@ else:
 
         if len(args) == 1 and callable(args[0]) and not kwargs:
             return decorator(args[0])  # type: ignore[no-any-return]
-        return decorator  # type: ignore[no-any-return]
+        return decorator
 
 
 def get_optimal_numba_config(
@@ -202,7 +202,7 @@ def get_optimal_numba_config(
 # Example Numba-optimized functions for common operations
 
 
-@njit(cache=True)  # type: ignore[misc,untyped-decorator]
+@njit(cache=True)  # type: ignore[untyped-decorator]  # Numba JIT decorator
 def find_crossings_numba(
     data: np.ndarray,  # type: ignore[type-arg]
     threshold: float,
@@ -233,7 +233,7 @@ def find_crossings_numba(
     return np.array(crossings, dtype=np.int64)
 
 
-@njit(parallel=True, cache=True)  # type: ignore[misc,untyped-decorator]
+@njit(parallel=True, cache=True)  # type: ignore[untyped-decorator]  # Numba JIT decorator
 def moving_average_numba(
     data: np.ndarray,  # type: ignore[type-arg]
     window_size: int,
@@ -259,7 +259,7 @@ def moving_average_numba(
     return result
 
 
-@njit(cache=True)  # type: ignore[misc,untyped-decorator]
+@njit(cache=True)  # type: ignore[untyped-decorator]  # Numba JIT decorator
 def argrelextrema_numba(
     data: np.ndarray,  # type: ignore[type-arg]
     comparator: int,
@@ -297,7 +297,7 @@ def argrelextrema_numba(
     return np.array(extrema, dtype=np.int64)
 
 
-@njit(cache=True)  # type: ignore[misc,untyped-decorator]
+@njit(cache=True)  # type: ignore[untyped-decorator]  # Numba JIT decorator
 def interpolate_linear_numba(
     x: np.ndarray,  # type: ignore[type-arg]
     y: np.ndarray,  # type: ignore[type-arg]

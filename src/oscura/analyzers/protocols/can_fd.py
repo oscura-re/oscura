@@ -120,16 +120,16 @@ class CANFDDecoder(AsyncDecoder):
     longname = "CAN with Flexible Data-rate"
     desc = "CAN-FD protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("can", "CAN", "CAN bus signal", required=True),
     ]
 
-    optional_channels = [  # noqa: RUF012
+    optional_channels = [
         ChannelDef("can_h", "CAN_H", "CAN High differential signal", required=False),
         ChannelDef("can_l", "CAN_L", "CAN Low differential signal", required=False),
     ]
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef(
             "nominal_bitrate",
             "Nominal bitrate",
@@ -146,7 +146,7 @@ class CANFDDecoder(AsyncDecoder):
         ),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("sof", "Start of Frame"),
         ("arbitration", "Arbitration field"),
         ("control", "Control field"),
@@ -299,97 +299,21 @@ class CANFDDecoder(AsyncDecoder):
         Returns:
             (frame, end_index) tuple.
         """
-        errors = []  # type: ignore[var-annotated]
-        bit_idx = sof_idx
-        current_bit_period = nominal_bit_period
+        decoder_state = _CANFDDecoderState(sof_idx, nominal_bit_period, data, data_bit_period)
 
-        # Sample bits (simplified - ignores bit stuffing for brevity)
-        def sample_bits(count: int) -> list[int]:
-            nonlocal bit_idx
-            bits = []
-            for _ in range(count):
-                sample_idx = int(bit_idx + current_bit_period / 2)
-                if sample_idx < len(data):
-                    bits.append(0 if data[sample_idx] else 1)  # Dominant=1, Recessive=0
-                    bit_idx += current_bit_period  # type: ignore[assignment]
-                else:
-                    return bits
-            return bits
+        arbitration_id, is_extended = decoder_state.decode_arbitration_field()
+        if arbitration_id is None:
+            return None, decoder_state.get_bit_idx()
 
-        # Arbitration field (11 bits for standard, 29 for extended)
-        arb_bits = sample_bits(11)
-        if len(arb_bits) < 11:
-            return None, int(bit_idx)
+        is_fd, brs, esi, dlc = decoder_state.decode_control_field(is_extended)
+        if dlc is None:
+            return None, decoder_state.get_bit_idx()
 
-        arbitration_id = 0
-        for bit in arb_bits:
-            arbitration_id = (arbitration_id << 1) | bit
-
-        # Check for extended frame (IDE bit)
-        ide_bits = sample_bits(1)
-        is_extended = ide_bits[0] == 1 if ide_bits else False
-
-        if is_extended:
-            # Extended ID: read additional 18 bits
-            ext_bits = sample_bits(18)
-            for bit in ext_bits:
-                arbitration_id = (arbitration_id << 1) | bit
-
-        # Control field
-        # FDF (EDL), res, BRS, ESI, DLC (4 bits)
-        ctrl_bits = sample_bits(7 if not is_extended else 6)
-
-        if len(ctrl_bits) < (7 if not is_extended else 6):
-            return None, int(bit_idx)
-
-        # FDF/EDL bit - first bit of control field regardless of frame type
-        fdf = ctrl_bits[0]
-        is_fd = fdf == 1
-        brs = ctrl_bits[2] == 1 if len(ctrl_bits) > 2 else False
-        esi = ctrl_bits[3] == 1 if len(ctrl_bits) > 3 else False
-
-        # DLC (4 bits)
-        dlc_start = 3 if not is_extended else 2
-        dlc_bits = (
-            ctrl_bits[dlc_start : dlc_start + 4]
-            if len(ctrl_bits) >= dlc_start + 4
-            else [0, 0, 0, 0]
-        )
-        dlc = 0
-        for bit in dlc_bits:
-            dlc = (dlc << 1) | bit
-
-        # Get data length from DLC
         data_length = CANFD_DLC_TO_LENGTH.get(dlc, 0)
+        data_bytes = decoder_state.decode_data_field(data_length, is_fd, brs)
+        crc = decoder_state.decode_crc_field(data_length)
+        decoder_state.decode_end_of_frame()
 
-        # Switch to data bitrate if BRS is set
-        if is_fd and brs:
-            current_bit_period = data_bit_period
-
-        # Data field
-        data_bytes = []
-        for _ in range(data_length):
-            byte_bits = sample_bits(8)
-            if len(byte_bits) == 8:
-                byte_val = 0
-                for bit in byte_bits:
-                    byte_val = (byte_val << 1) | bit
-                data_bytes.append(byte_val)
-
-        # CRC field (CRC-17 for <=16 bytes, CRC-21 for >16 bytes)
-        crc_length = 17 if data_length <= 16 else 21
-        crc_bits = sample_bits(crc_length)
-        crc = 0
-        for bit in crc_bits:
-            crc = (crc << 1) | bit
-
-        # Switch back to nominal bitrate for CRC delimiter, ACK, EOF
-        current_bit_period = nominal_bit_period
-
-        # CRC delimiter, ACK slot, ACK delimiter, EOF (7 bits)
-        sample_bits(10)
-
-        # Create frame
         frame = CANFDFrame(
             arbitration_id=arbitration_id,
             is_extended=is_extended,
@@ -400,10 +324,113 @@ class CANFDDecoder(AsyncDecoder):
             data=bytes(data_bytes),
             crc=crc,
             timestamp=sof_idx / sample_rate,
-            errors=errors,
+            errors=[],
         )
 
-        return frame, int(bit_idx)
+        return frame, decoder_state.get_bit_idx()
+
+
+class _CANFDDecoderState:
+    """State tracker for CAN-FD frame decoding."""
+
+    def __init__(
+        self,
+        sof_idx: int,
+        nominal_bit_period: float,
+        data: NDArray[np.bool_],
+        data_bit_period: float,
+    ):
+        self.bit_idx: float = float(sof_idx)
+        self.current_bit_period = nominal_bit_period
+        self.nominal_bit_period = nominal_bit_period
+        self.data_bit_period = data_bit_period
+        self.data = data
+
+    def sample_bits(self, count: int) -> list[int]:
+        """Sample specified number of bits."""
+        bits = []
+        for _ in range(count):
+            sample_idx_raw = self.bit_idx + self.current_bit_period / 2
+            sample_idx = int(sample_idx_raw)
+            if sample_idx < len(self.data):
+                bits.append(0 if self.data[sample_idx] else 1)
+                self.bit_idx += self.current_bit_period
+            else:
+                return bits
+        return bits
+
+    def bits_to_int(self, bits: list[int]) -> int:
+        """Convert bit list to integer."""
+        value = 0
+        for bit in bits:
+            value = (value << 1) | bit
+        return value
+
+    def decode_arbitration_field(self) -> tuple[int | None, bool]:
+        """Decode arbitration field and determine if extended frame."""
+        arb_bits = self.sample_bits(11)
+        if len(arb_bits) < 11:
+            return None, False
+
+        arbitration_id = self.bits_to_int(arb_bits)
+
+        ide_bits = self.sample_bits(1)
+        is_extended = bool(ide_bits[0]) if ide_bits else False
+
+        if is_extended:
+            ext_bits = self.sample_bits(18)
+            arbitration_id = (arbitration_id << 18) | self.bits_to_int(ext_bits)
+
+        return arbitration_id, is_extended
+
+    def decode_control_field(self, is_extended: bool) -> tuple[bool, bool, bool, int | None]:
+        """Decode control field."""
+        ctrl_bits = self.sample_bits(7 if not is_extended else 6)
+
+        if len(ctrl_bits) < (7 if not is_extended else 6):
+            return False, False, False, None
+
+        is_fd = ctrl_bits[0] == 1
+        brs = ctrl_bits[2] == 1 if len(ctrl_bits) > 2 else False
+        esi = ctrl_bits[3] == 1 if len(ctrl_bits) > 3 else False
+
+        dlc_start = 3 if not is_extended else 2
+        dlc_bits = (
+            ctrl_bits[dlc_start : dlc_start + 4]
+            if len(ctrl_bits) >= dlc_start + 4
+            else [0, 0, 0, 0]
+        )
+        dlc = self.bits_to_int(dlc_bits)
+
+        return is_fd, brs, esi, dlc
+
+    def decode_data_field(self, data_length: int, is_fd: bool, brs: bool) -> list[int]:
+        """Decode data field."""
+        if is_fd and brs:
+            self.current_bit_period = self.data_bit_period
+
+        data_bytes = []
+        for _ in range(data_length):
+            byte_bits = self.sample_bits(8)
+            if len(byte_bits) == 8:
+                data_bytes.append(self.bits_to_int(byte_bits))
+
+        return data_bytes
+
+    def decode_crc_field(self, data_length: int) -> int:
+        """Decode CRC field."""
+        crc_length = 17 if data_length <= 16 else 21
+        crc_bits = self.sample_bits(crc_length)
+        return self.bits_to_int(crc_bits)
+
+    def decode_end_of_frame(self) -> None:
+        """Decode end of frame."""
+        self.current_bit_period = self.nominal_bit_period
+        self.sample_bits(10)
+
+    def get_bit_idx(self) -> int:
+        """Get current bit index."""
+        return int(self.bit_idx)
 
 
 def decode_can_fd(

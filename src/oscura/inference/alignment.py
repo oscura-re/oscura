@@ -122,42 +122,12 @@ def align_global(
                 traceback[i, j] = 2  # Left
 
     # Traceback to get alignment
-    aligned_a = []
-    aligned_b = []
-
-    i, j = n, m
-    while i > 0 or j > 0:
-        if traceback[i, j] == 0:  # Diagonal
-            aligned_a.append(int(arr_a[i - 1]))
-            aligned_b.append(int(arr_b[j - 1]))
-            i -= 1
-            j -= 1
-        elif traceback[i, j] == 1:  # Up
-            aligned_a.append(int(arr_a[i - 1]))
-            aligned_b.append(-1)  # Gap
-            i -= 1
-        else:  # Left
-            aligned_a.append(-1)  # Gap
-            aligned_b.append(int(arr_b[j - 1]))
-            j -= 1
-
-    # Reverse (we traced backwards)
-    aligned_a = list(reversed(aligned_a))
-    aligned_b = list(reversed(aligned_b))
+    aligned_a, aligned_b = _traceback_alignment(traceback, arr_a, arr_b, n, m)
 
     # Calculate statistics
     final_score = float(score_matrix[n, m])
     similarity = compute_similarity(aligned_a, aligned_b)
-
-    # Handle empty alignments
-    if len(aligned_a) == 0:
-        identity = 0.0
-        gaps = 0
-    else:
-        identity = sum(
-            1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == b and a != -1
-        ) / len(aligned_a)
-        gaps = sum(1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == -1 or b == -1)
+    identity, gaps = _calculate_alignment_stats(aligned_a, aligned_b)
 
     # Find conserved and variable regions
     conserved = _find_conserved_simple(aligned_a, aligned_b)
@@ -196,97 +166,12 @@ def align_local(
     Returns:
         AlignmentResult with best local alignment
     """
-    # Convert to arrays
-    if isinstance(seq_a, bytes):
-        arr_a = np.frombuffer(seq_a, dtype=np.uint8)
-    else:
-        arr_a = np.array(seq_a, dtype=np.uint8)
-
-    if isinstance(seq_b, bytes):
-        arr_b = np.frombuffer(seq_b, dtype=np.uint8)
-    else:
-        arr_b = np.array(seq_b, dtype=np.uint8)
-
-    n, m = len(arr_a), len(arr_b)
-
-    # Initialize scoring matrix and traceback matrix
-    score_matrix = np.zeros((n + 1, m + 1), dtype=np.float32)
-    traceback = np.zeros((n + 1, m + 1), dtype=np.int8)
-
-    # Track maximum score position
-    max_score = 0.0
-    max_i, max_j = 0, 0
-
-    # Fill the matrices (Smith-Waterman: no negative scores)
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            # Match/mismatch
-            if arr_a[i - 1] == arr_b[j - 1]:
-                diag_score = score_matrix[i - 1, j - 1] + match_score
-            else:
-                diag_score = score_matrix[i - 1, j - 1] + mismatch_penalty
-
-            # Gap in seq_b (up)
-            up_score = score_matrix[i - 1, j] + gap_penalty
-
-            # Gap in seq_a (left)
-            left_score = score_matrix[i, j - 1] + gap_penalty
-
-            # Smith-Waterman: can start fresh (score = 0)
-            cell_score = max(0.0, diag_score, up_score, left_score)
-            score_matrix[i, j] = cell_score
-
-            if cell_score == 0:
-                traceback[i, j] = -1  # Stop
-            elif cell_score == diag_score:
-                traceback[i, j] = 0  # Diagonal
-            elif cell_score == up_score:
-                traceback[i, j] = 1  # Up
-            else:
-                traceback[i, j] = 2  # Left
-
-            # Track maximum
-            if cell_score > max_score:
-                max_score = cell_score
-                max_i, max_j = i, j
-
-    # Traceback from max position
-    aligned_a = []
-    aligned_b = []
-
-    i, j = max_i, max_j
-    while i > 0 and j > 0 and traceback[i, j] != -1:
-        if traceback[i, j] == 0:  # Diagonal
-            aligned_a.append(int(arr_a[i - 1]))
-            aligned_b.append(int(arr_b[j - 1]))
-            i -= 1
-            j -= 1
-        elif traceback[i, j] == 1:  # Up
-            aligned_a.append(int(arr_a[i - 1]))
-            aligned_b.append(-1)  # Gap
-            i -= 1
-        else:  # Left
-            aligned_a.append(-1)  # Gap
-            aligned_b.append(int(arr_b[j - 1]))
-            j -= 1
-
-    # Reverse
-    aligned_a = list(reversed(aligned_a))
-    aligned_b = list(reversed(aligned_b))
-
-    # Calculate statistics
-    if len(aligned_a) > 0:
-        similarity = compute_similarity(aligned_a, aligned_b)
-        identity = sum(
-            1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == b and a != -1
-        ) / len(aligned_a)
-        gaps = sum(1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == -1 or b == -1)
-    else:
-        similarity = 0.0
-        identity = 0.0
-        gaps = 0
-
-    # Find conserved and variable regions
+    arr_a, arr_b = _convert_to_arrays(seq_a, seq_b)
+    score_matrix, traceback, max_score, max_pos = _build_sw_matrix(
+        arr_a, arr_b, gap_penalty, match_score, mismatch_penalty
+    )
+    aligned_a, aligned_b = _traceback_local(traceback, arr_a, arr_b, max_pos)
+    similarity, identity, gaps = _compute_local_stats(aligned_a, aligned_b)
     conserved = _find_conserved_simple(aligned_a, aligned_b)
     variable = _find_variable_simple(aligned_a, aligned_b)
 
@@ -530,6 +415,214 @@ def find_variable_regions(
         regions.append((start, length))
 
     return regions
+
+
+def _convert_to_arrays(
+    seq_a: bytes | NDArray[Any], seq_b: bytes | NDArray[Any]
+) -> tuple[NDArray[np.uint8], NDArray[np.uint8]]:
+    """Convert input sequences to numpy arrays.
+
+    Args:
+        seq_a: First sequence (bytes or array).
+        seq_b: Second sequence (bytes or array).
+
+    Returns:
+        Tuple of (arr_a, arr_b) as uint8 arrays.
+    """
+    if isinstance(seq_a, bytes):
+        arr_a = np.frombuffer(seq_a, dtype=np.uint8)
+    else:
+        arr_a = np.array(seq_a, dtype=np.uint8)
+
+    if isinstance(seq_b, bytes):
+        arr_b = np.frombuffer(seq_b, dtype=np.uint8)
+    else:
+        arr_b = np.array(seq_b, dtype=np.uint8)
+
+    return arr_a, arr_b
+
+
+def _build_sw_matrix(
+    arr_a: NDArray[np.uint8],
+    arr_b: NDArray[np.uint8],
+    gap_penalty: float,
+    match_score: float,
+    mismatch_penalty: float,
+) -> tuple[NDArray[np.float32], NDArray[np.int8], float, tuple[int, int]]:
+    """Build Smith-Waterman scoring and traceback matrices.
+
+    Args:
+        arr_a: First sequence array.
+        arr_b: Second sequence array.
+        gap_penalty: Penalty for gaps.
+        match_score: Score for matches.
+        mismatch_penalty: Penalty for mismatches.
+
+    Returns:
+        (score_matrix, traceback, max_score, max_position).
+    """
+    n, m = len(arr_a), len(arr_b)
+    score_matrix = np.zeros((n + 1, m + 1), dtype=np.float32)
+    traceback = np.zeros((n + 1, m + 1), dtype=np.int8)
+    max_score = 0.0
+    max_i, max_j = 0, 0
+
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            # Match/mismatch
+            if arr_a[i - 1] == arr_b[j - 1]:
+                diag_score = score_matrix[i - 1, j - 1] + match_score
+            else:
+                diag_score = score_matrix[i - 1, j - 1] + mismatch_penalty
+
+            up_score = score_matrix[i - 1, j] + gap_penalty
+            left_score = score_matrix[i, j - 1] + gap_penalty
+
+            # Smith-Waterman: can start fresh (score = 0)
+            cell_score = max(0.0, diag_score, up_score, left_score)
+            score_matrix[i, j] = cell_score
+
+            if cell_score == 0:
+                traceback[i, j] = -1  # Stop
+            elif cell_score == diag_score:
+                traceback[i, j] = 0  # Diagonal
+            elif cell_score == up_score:
+                traceback[i, j] = 1  # Up
+            else:
+                traceback[i, j] = 2  # Left
+
+            if cell_score > max_score:
+                max_score = cell_score
+                max_i, max_j = i, j
+
+    return score_matrix, traceback, max_score, (max_i, max_j)
+
+
+def _traceback_local(
+    traceback: NDArray[np.int8],
+    arr_a: NDArray[np.uint8],
+    arr_b: NDArray[np.uint8],
+    max_pos: tuple[int, int],
+) -> tuple[list[int], list[int]]:
+    """Perform traceback from max position for local alignment.
+
+    Args:
+        traceback: Traceback matrix.
+        arr_a: First sequence array.
+        arr_b: Second sequence array.
+        max_pos: (i, j) position of maximum score.
+
+    Returns:
+        Tuple of (aligned_a, aligned_b) with -1 for gaps.
+    """
+    aligned_a = []
+    aligned_b = []
+
+    i, j = max_pos
+    while i > 0 and j > 0 and traceback[i, j] != -1:
+        if traceback[i, j] == 0:  # Diagonal
+            aligned_a.append(int(arr_a[i - 1]))
+            aligned_b.append(int(arr_b[j - 1]))
+            i -= 1
+            j -= 1
+        elif traceback[i, j] == 1:  # Up
+            aligned_a.append(int(arr_a[i - 1]))
+            aligned_b.append(-1)  # Gap
+            i -= 1
+        else:  # Left
+            aligned_a.append(-1)  # Gap
+            aligned_b.append(int(arr_b[j - 1]))
+            j -= 1
+
+    return list(reversed(aligned_a)), list(reversed(aligned_b))
+
+
+def _compute_local_stats(aligned_a: list[int], aligned_b: list[int]) -> tuple[float, float, int]:
+    """Compute statistics for local alignment.
+
+    Args:
+        aligned_a: First aligned sequence.
+        aligned_b: Second aligned sequence.
+
+    Returns:
+        (similarity, identity, gaps).
+    """
+    if len(aligned_a) == 0:
+        return 0.0, 0.0, 0
+
+    similarity = compute_similarity(aligned_a, aligned_b)
+    identity = sum(
+        1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == b and a != -1
+    ) / len(aligned_a)
+    gaps = sum(1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == -1 or b == -1)
+
+    return similarity, identity, gaps
+
+
+def _traceback_alignment(
+    traceback: NDArray[np.int8],
+    arr_a: NDArray[np.uint8],
+    arr_b: NDArray[np.uint8],
+    n: int,
+    m: int,
+) -> tuple[list[int], list[int]]:
+    """Perform traceback to extract aligned sequences.
+
+    Args:
+        traceback: Traceback matrix (0=diagonal, 1=up, 2=left).
+        arr_a: First sequence array.
+        arr_b: Second sequence array.
+        n: Length of first sequence.
+        m: Length of second sequence.
+
+    Returns:
+        Tuple of (aligned_a, aligned_b) with -1 for gaps.
+    """
+    aligned_a = []
+    aligned_b = []
+
+    i, j = n, m
+    while i > 0 or j > 0:
+        if traceback[i, j] == 0:  # Diagonal (match/mismatch)
+            aligned_a.append(int(arr_a[i - 1]))
+            aligned_b.append(int(arr_b[j - 1]))
+            i -= 1
+            j -= 1
+        elif traceback[i, j] == 1:  # Up (gap in seq_b)
+            aligned_a.append(int(arr_a[i - 1]))
+            aligned_b.append(-1)  # Gap
+            i -= 1
+        else:  # Left (gap in seq_a)
+            aligned_a.append(-1)  # Gap
+            aligned_b.append(int(arr_b[j - 1]))
+            j -= 1
+
+    # Reverse (we traced backwards)
+    return list(reversed(aligned_a)), list(reversed(aligned_b))
+
+
+def _calculate_alignment_stats(
+    aligned_a: list[int],
+    aligned_b: list[int],
+) -> tuple[float, int]:
+    """Calculate identity and gap statistics for alignment.
+
+    Args:
+        aligned_a: First aligned sequence (-1 for gaps).
+        aligned_b: Second aligned sequence (-1 for gaps).
+
+    Returns:
+        Tuple of (identity, gaps).
+    """
+    if len(aligned_a) == 0:
+        return 0.0, 0
+
+    identity = sum(
+        1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == b and a != -1
+    ) / len(aligned_a)
+    gaps = sum(1 for a, b in zip(aligned_a, aligned_b, strict=True) if a == -1 or b == -1)
+
+    return identity, gaps
 
 
 def _find_conserved_simple(aligned_a: list[int], aligned_b: list[int]) -> list[tuple[int, int]]:

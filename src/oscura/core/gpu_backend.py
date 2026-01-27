@@ -445,7 +445,7 @@ class GPUBackend:
             return self._to_cpu(counts), self._to_cpu(edges)
         else:
             # CPU fallback
-            return np.histogram(data, bins=bins, range=range, density=density)  # type: ignore[no-any-return]
+            return np.histogram(data, bins=bins, range=range, density=density)
 
     def dot(
         self,
@@ -477,10 +477,12 @@ class GPUBackend:
             gpu_a = self._to_gpu(a)
             gpu_b = self._to_gpu(b)
             result = self._cp.dot(gpu_a, gpu_b)
-            return self._to_cpu(result)  # type: ignore[return-value]
+            return self._to_cpu(result)
         else:
-            # CPU fallback
-            return np.dot(a, b)  # type: ignore[return-value, no-any-return]
+            # CPU fallback - cast result to expected type
+            from typing import cast
+
+            return cast("NDArray[np.float64] | np.float64", np.dot(a, b))
 
     def matmul(
         self,
@@ -511,10 +513,12 @@ class GPUBackend:
             gpu_a = self._to_gpu(a)
             gpu_b = self._to_gpu(b)
             result = self._cp.matmul(gpu_a, gpu_b)
-            return self._to_cpu(result)  # type: ignore[return-value]
+            cpu_result = self._to_cpu(result)
+            return cpu_result
         else:
-            # CPU fallback
-            return np.matmul(a, b)  # type: ignore[return-value, no-any-return]
+            # CPU fallback - cast from Any to expected type
+            result_cpu: NDArray[np.float64] = np.matmul(a, b)
+            return result_cpu
 
 
 # Module-level singleton for convenient access

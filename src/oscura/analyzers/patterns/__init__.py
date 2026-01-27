@@ -127,21 +127,42 @@ def find_motifs(
     return results
 
 
-def extract_motif(data: Any, start: int, length: int) -> NDArray[np.generic]:
+def extract_motif(data: Any, start: int = 0, length: int | None = None) -> NDArray[np.generic]:
     """Extract a motif from data.
 
     Args:
-        data: Input data array.
-        start: Start index.
-        length: Length to extract.
+        data: Input data array. If start and length not provided, attempts to detect and extract
+            the first repeating motif automatically.
+        start: Start index for extraction (default: 0).
+        length: Length to extract. If None, attempts to detect motif length automatically.
 
     Returns:
         Extracted motif as numpy array.
+
+    Raises:
+        ValueError: If automatic detection fails and no length specified.
     """
     import numpy as np
 
     data_arr = np.asarray(data)
-    result = data_arr[start : start + length]
+
+    # If length not specified, try to detect motif automatically
+    if length is None:
+        # Try to find repeating pattern using period detection
+        try:
+            period_result = detect_period(data_arr)
+            if period_result is not None and hasattr(period_result, "period"):
+                length = int(period_result.period)
+            else:
+                # Default to 8 samples if detection fails
+                length = min(8, len(data_arr))
+        except Exception:
+            # Fallback to reasonable default
+            length = min(8, len(data_arr))
+
+    # Ensure we don't exceed array bounds
+    end = min(start + length, len(data_arr))
+    result = data_arr[start:end]
     return result
 
 

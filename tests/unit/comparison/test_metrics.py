@@ -13,33 +13,33 @@ Tests for the comparison module covering:
 import numpy as np
 import pytest
 
-from oscura.comparison.compare import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.compare import (
     ComparisonResult,
     compare_traces,
     correlation,
     difference,
     similarity_score,
 )
-from oscura.comparison.golden import (
+from oscura.utils.comparison.golden import (
     GoldenReference,
     compare_to_golden,
     create_golden,
     tolerance_envelope,
 )
-from oscura.comparison.limits import (
+from oscura.utils.comparison.limits import (
     LimitSpec,
     LimitTestResult,
     check_limits,
     create_limit_spec,
     margin_analysis,
 )
-from oscura.comparison.mask import (
+from oscura.utils.comparison.mask import (
     Mask,
     MaskRegion,
     eye_mask,
     mask_test,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 
@@ -464,12 +464,11 @@ class TestCompareTraces:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             result = compare_traces(sample_trace, trace2, tolerance=0.1)
-        # With a large offset, violations should be detected
-        if result.violations is not None:
-            assert len(result.violations) > 0
-        else:
-            # Or no violations array if none occurred
-            assert True
+        # With a large offset (0.5) and tight tolerance (0.1), violations MUST be detected
+        assert result.violations is not None, (
+            "Expected violations to be detected with offset 0.5 > tolerance 0.1"
+        )
+        assert len(result.violations) > 0, "Expected at least one violation"
 
     def test_comparison_no_violations(self, sample_trace):
         """Test comparison with no violations."""
@@ -1050,37 +1049,25 @@ class TestToleranceEnvelope:
 
     def test_tolerance_envelope_creation(self, sample_trace):
         """Test creating tolerance envelope."""
-        try:
-            upper, lower = tolerance_envelope(sample_trace, tolerance=0.1)
-            assert len(upper) == len(sample_trace.data)
-            assert len(lower) == len(sample_trace.data)
-            assert np.all(upper >= sample_trace.data)
-            assert np.all(lower <= sample_trace.data)
-        except (AttributeError, TypeError):
-            # Function may not be exported or have different signature
-            pytest.skip("tolerance_envelope not available")
+        upper, lower = tolerance_envelope(sample_trace, tolerance=0.1)
+        assert len(upper) == len(sample_trace.data)
+        assert len(lower) == len(sample_trace.data)
+        assert np.all(upper >= sample_trace.data)
+        assert np.all(lower <= sample_trace.data)
 
     def test_tolerance_envelope_percentage(self, sample_trace):
         """Test tolerance envelope with percentage."""
-        try:
-            upper, lower = tolerance_envelope(sample_trace, tolerance_pct=10)
-            # Percentage tolerance should scale with signal
-            assert len(upper) == len(sample_trace.data)
-            assert len(lower) == len(sample_trace.data)
-        except (AttributeError, TypeError):
-            # Function may not be exported or have different signature
-            pytest.skip("tolerance_envelope not available")
+        upper, lower = tolerance_envelope(sample_trace, tolerance_pct=10)
+        # Percentage tolerance should scale with signal
+        assert len(upper) == len(sample_trace.data)
+        assert len(lower) == len(sample_trace.data)
 
     def test_tolerance_envelope_symmetric(self, sample_trace):
         """Test that envelope is symmetric around data."""
-        try:
-            upper, lower = tolerance_envelope(sample_trace, tolerance=0.1)
-            diff_upper = upper - sample_trace.data
-            diff_lower = sample_trace.data - lower
-            np.testing.assert_allclose(diff_upper, diff_lower, rtol=0.01)
-        except (AttributeError, TypeError):
-            # Function may not be exported or have different signature
-            pytest.skip("tolerance_envelope not available")
+        upper, lower = tolerance_envelope(sample_trace, tolerance=0.1)
+        diff_upper = upper - sample_trace.data
+        diff_lower = sample_trace.data - lower
+        np.testing.assert_allclose(diff_upper, diff_lower, rtol=0.01)
 
 
 # ============================================================================

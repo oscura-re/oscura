@@ -1,0 +1,1 @@
+"""EtherCAT protocol analyzer tests."""

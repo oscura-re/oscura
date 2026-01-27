@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from tests.hypothesis_strategies import analog_waveforms
@@ -17,8 +17,7 @@ class TestPreprocessingProperties:
     @settings(max_examples=50, deadline=None)
     def test_normalization_preserves_length(self, signal: np.ndarray) -> None:
         """Property: Normalization preserves signal length."""
-        if len(signal) == 0:
-            pytest.skip("Empty signal")
+        assume(len(signal) > 0)
 
         # Simple normalization
         normalized = (signal - np.mean(signal)) / (np.std(signal) + 1e-10)
@@ -29,8 +28,7 @@ class TestPreprocessingProperties:
     @settings(max_examples=50, deadline=None)
     def test_normalized_signal_zero_mean(self, signal: np.ndarray) -> None:
         """Property: Normalized signal has approximately zero mean."""
-        if len(signal) == 0:
-            pytest.skip("Empty signal")
+        assume(len(signal) > 0)
 
         normalized = (signal - np.mean(signal)) / (np.std(signal) + 1e-10)
 

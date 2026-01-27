@@ -1,8 +1,8 @@
 # Hardware Acquisition Guide
 
-**Version**: 0.5.1
-**Last Updated**: 2026-01-20
-**Status**: Phase 2 Placeholder (Future Implementation)
+**Version**: 0.6.0
+**Last Updated**: 2026-01-25
+**Status**: Planned for Future Release
 
 Guide to acquiring signal data directly from hardware devices using Oscura's unified Source protocol.
 
@@ -25,7 +25,8 @@ Oscura's hardware acquisition layer provides direct integration with:
 ### Basic Hardware Acquisition
 
 ```python
-from oscura.acquisition import HardwareSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 # SocketCAN - Linux CAN interface
 can = HardwareSource.socketcan("can0", bitrate=500000)
@@ -99,7 +100,8 @@ ip link show can0
 ### Basic Usage
 
 ```python
-from oscura.acquisition import HardwareSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 # Create SocketCAN source
 can = HardwareSource.socketcan("can0", bitrate=500000)
@@ -153,7 +155,8 @@ can = HardwareSource.socketcan(
 
 ```python
 from oscura.automotive.can import CANSession
-from oscura.acquisition import HardwareSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 # Create CAN analysis session
 session = CANSession(name="Vehicle Analysis")
@@ -225,7 +228,8 @@ pip install oscura[saleae]
 ### Basic Usage
 
 ```python
-from oscura.acquisition import HardwareSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 # Auto-detect Saleae device
 logic = HardwareSource.saleae()
@@ -252,7 +256,8 @@ ch1 = trace.channels["D1"]
 ### Protocol Analysis
 
 ```python
-from oscura.acquisition import HardwareSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 from oscura.analyzers.protocols import UARTDecoder
 
 # Capture serial data
@@ -349,7 +354,8 @@ pip install oscura[visa]
 ### Basic Usage
 
 ```python
-from oscura.acquisition import HardwareSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 # Auto-detect instruments
 instruments = HardwareSource.visa_list()
@@ -441,7 +447,8 @@ All hardware sources implement the `Source` protocol for consistency.
 ### Polymorphic Usage
 
 ```python
-from oscura.acquisition import Source
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 
 def analyze_from_any_source(source: Source):
     """Works with files, hardware, or synthetic sources."""
@@ -449,9 +456,10 @@ def analyze_from_any_source(source: Source):
     return analyze(trace)
 
 # Works identically with all sources
-from oscura.acquisition import FileSource, HardwareSource, SyntheticSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc, HardwareSource, SyntheticSource
 
-analyze_from_any_source(FileSource("capture.wfm"))
+analyze_from_any_source(osc.load("capture.wfm"))
 analyze_from_any_source(HardwareSource.socketcan("can0"))
 analyze_from_any_source(SyntheticSource(builder))
 ```
@@ -612,7 +620,7 @@ try:
 except AcquisitionError as e:
     print(f"Acquisition failed: {e}")
     # Fallback to file source
-    trace = FileSource("fallback.blf").read()
+    trace = osc.load("fallback.blf").read()
 ```
 
 ---
@@ -646,7 +654,8 @@ if trace.sample_rate < expected_rate * 0.9:
 ## Example: Complete Hardware Workflow
 
 ```python
-from oscura.acquisition import HardwareSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc
 from oscura.automotive.can import CANSession
 
 # Setup

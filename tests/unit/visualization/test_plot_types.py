@@ -109,74 +109,59 @@ class TestWaveformPlotting:
     def test_basic_waveform_plot(self, sample_waveform) -> None:
         """Test basic waveform plotting."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_waveform
+        from oscura.visualization import plot_waveform
 
-            fig = plot_waveform(sample_waveform)
+        fig = plot_waveform(sample_waveform)
 
-            assert fig is not None
-            assert len(fig.axes) >= 1
-        except Exception as e:
-            pytest.skip(f"Waveform plotting skipped: {e}")
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     def test_waveform_with_time_unit(self, sample_waveform) -> None:
         """Test waveform plotting with different time units."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_waveform
+        from oscura.visualization import plot_waveform
 
-            for unit in ["s", "ms", "us", "ns", "auto"]:
-                fig = plot_waveform(sample_waveform, time_unit=unit)
-                assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Time unit test skipped: {e}")
+        for unit in ["s", "ms", "us", "ns", "auto"]:
+            fig = plot_waveform(sample_waveform, time_unit=unit)
+            assert fig is not None
 
     def test_waveform_with_labels(self, sample_waveform) -> None:
         """Test waveform plotting with custom labels."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_waveform
+        from oscura.visualization import plot_waveform
 
-            fig = plot_waveform(
-                sample_waveform,
-                title="Test Waveform",
-                xlabel="Time",
-                ylabel="Voltage (V)",
-            )
+        fig = plot_waveform(
+            sample_waveform,
+            title="Test Waveform",
+            xlabel="Time",
+            ylabel="Voltage (V)",
+        )
 
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Labels test skipped: {e}")
+        assert fig is not None
 
     def test_waveform_time_range(self, sample_waveform) -> None:
         """Test waveform plotting with time range."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_waveform
+        from oscura.visualization import plot_waveform
 
-            fig = plot_waveform(sample_waveform, time_range=(0.0, 0.5e-3))
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Time range test skipped: {e}")
+        fig = plot_waveform(sample_waveform, time_range=(0.0, 0.5e-3))
+        assert fig is not None
 
     def test_xy_plot(self, sample_waveform) -> None:
         """Test XY plot mode."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_xy
+        from oscura.visualization import plot_xy
 
-            # Create second trace for XY mode
-            sample_rate = sample_waveform.metadata.sample_rate
-            t = np.arange(len(sample_waveform.data)) / sample_rate
-            trace_y = WaveformTrace(
-                data=np.cos(2 * np.pi * 1000 * t),
-                metadata=sample_waveform.metadata,
-            )
+        # Create second trace for XY mode
+        sample_rate = sample_waveform.metadata.sample_rate
+        t = np.arange(len(sample_waveform.data)) / sample_rate
+        trace_y = WaveformTrace(
+            data=np.cos(2 * np.pi * 1000 * t),
+            metadata=sample_waveform.metadata,
+        )
 
-            fig = plot_xy(sample_waveform, trace_y)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"XY plot test skipped: {e}")
+        fig = plot_xy(sample_waveform, trace_y)
+        assert fig is not None
 
 
 # =============================================================================
@@ -189,55 +174,43 @@ class TestMultiChannelPlotting:
     def test_basic_multi_channel(self, multi_channel_waveforms) -> None:
         """Test basic multi-channel plotting."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_multi_channel
+        from oscura.visualization import plot_multi_channel
 
-            fig = plot_multi_channel(multi_channel_waveforms)
+        fig = plot_multi_channel(multi_channel_waveforms)
 
-            assert fig is not None
-            assert len(fig.axes) == 3  # Three channels
-        except Exception as e:
-            pytest.skip(f"Multi-channel test skipped: {e}")
+        assert fig is not None
+        assert len(fig.axes) == 3  # Three channels
 
     def test_multi_channel_with_names(self, multi_channel_waveforms) -> None:
         """Test multi-channel with channel names."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_multi_channel
+        from oscura.visualization import plot_multi_channel
 
-            names = ["Ch1 - Sine", "Ch2 - Cosine", "Ch3 - 2kHz"]
-            fig = plot_multi_channel(multi_channel_waveforms, names=names)
+        names = ["Ch1 - Sine", "Ch2 - Cosine", "Ch3 - 2kHz"]
+        fig = plot_multi_channel(multi_channel_waveforms, names=names)
 
-            assert fig is not None
-            # Check that names appear somewhere in the plot
-            for ax, _name in zip(fig.axes, names, strict=False):
-                # May be in title, ylabel, or label
-                assert ax is not None
-        except Exception as e:
-            pytest.skip(f"Channel names test skipped: {e}")
+        assert fig is not None
+        # Check that names appear somewhere in the plot
+        for ax, _name in zip(fig.axes, names, strict=False):
+            # May be in title, ylabel, or label
+            assert ax is not None
 
     def test_multi_channel_shared_x(self, multi_channel_waveforms) -> None:
         """Test multi-channel with shared X axis."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_multi_channel
+        from oscura.visualization import plot_multi_channel
 
-            fig = plot_multi_channel(multi_channel_waveforms, share_x=True)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Shared X test skipped: {e}")
+        fig = plot_multi_channel(multi_channel_waveforms, share_x=True)
+        assert fig is not None
 
     def test_multi_channel_colors(self, multi_channel_waveforms) -> None:
         """Test multi-channel with custom colors."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_multi_channel
+        from oscura.visualization import plot_multi_channel
 
-            colors = ["red", "green", "blue"]
-            fig = plot_multi_channel(multi_channel_waveforms, colors=colors)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Colors test skipped: {e}")
+        colors = ["red", "green", "blue"]
+        fig = plot_multi_channel(multi_channel_waveforms, colors=colors)
+        assert fig is not None
 
 
 # =============================================================================
@@ -250,48 +223,36 @@ class TestSpectrumPlotting:
     def test_basic_spectrum(self, sample_waveform) -> None:
         """Test basic spectrum plotting."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_spectrum
+        from oscura.visualization import plot_spectrum
 
-            fig = plot_spectrum(sample_waveform)
+        fig = plot_spectrum(sample_waveform)
 
-            assert fig is not None
-            assert len(fig.axes) >= 1
-        except Exception as e:
-            pytest.skip(f"Spectrum test skipped: {e}")
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     def test_spectrum_db_scale(self, sample_waveform) -> None:
         """Test spectrum with dB scale."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_spectrum
+        from oscura.visualization import plot_spectrum
 
-            fig = plot_spectrum(sample_waveform, db_scale=True)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"dB scale test skipped: {e}")
+        fig = plot_spectrum(sample_waveform, log_scale=True)
+        assert fig is not None
 
     def test_spectrum_frequency_range(self, sample_waveform) -> None:
         """Test spectrum with frequency range."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_spectrum
+        from oscura.visualization import plot_spectrum
 
-            fig = plot_spectrum(sample_waveform, freq_range=(0, 10000))
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Freq range test skipped: {e}")
+        fig = plot_spectrum(sample_waveform, freq_range=(0, 10000))
+        assert fig is not None
 
     def test_psd_plot(self, sample_waveform) -> None:
         """Test power spectral density plot."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_psd
+        from oscura.visualization import plot_psd
 
-            fig = plot_psd(sample_waveform)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"PSD test skipped: {e}")
+        fig = plot_psd(sample_waveform)
+        assert fig is not None
 
 
 # =============================================================================
@@ -304,36 +265,27 @@ class TestSpectrogramPlotting:
     def test_basic_spectrogram(self, sample_waveform) -> None:
         """Test basic spectrogram plotting."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_spectrogram
+        from oscura.visualization import plot_spectrogram
 
-            fig = plot_spectrogram(sample_waveform)
+        fig = plot_spectrogram(sample_waveform)
 
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Spectrogram test skipped: {e}")
+        assert fig is not None
 
     def test_spectrogram_nfft(self, sample_waveform) -> None:
         """Test spectrogram with custom NFFT."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_spectrogram
+        from oscura.visualization import plot_spectrogram
 
-            fig = plot_spectrogram(sample_waveform, nfft=256)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"NFFT test skipped: {e}")
+        fig = plot_spectrogram(sample_waveform, nfft=256)
+        assert fig is not None
 
     def test_spectrogram_overlap(self, sample_waveform) -> None:
         """Test spectrogram with overlap."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_spectrogram
+        from oscura.visualization import plot_spectrogram
 
-            fig = plot_spectrogram(sample_waveform, overlap=0.5)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Overlap test skipped: {e}")
+        fig = plot_spectrogram(sample_waveform, overlap=0.5)
+        assert fig is not None
 
 
 # =============================================================================
@@ -346,39 +298,30 @@ class TestDigitalTimingDiagram:
     def test_basic_timing(self, digital_traces) -> None:
         """Test basic timing diagram."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_timing
+        from oscura.visualization import plot_timing
 
-            fig = plot_timing(digital_traces)
+        fig = plot_timing(digital_traces)
 
-            assert fig is not None
-            assert len(fig.axes) == 3
-        except Exception as e:
-            pytest.skip(f"Timing diagram test skipped: {e}")
+        assert fig is not None
+        assert len(fig.axes) == 3
 
     def test_timing_with_names(self, digital_traces) -> None:
         """Test timing diagram with channel names."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_timing
+        from oscura.visualization import plot_timing
 
-            names = ["CLK", "DATA", "CS"]
-            fig = plot_timing(digital_traces, names=names)
+        names = ["CLK", "DATA", "CS"]
+        fig = plot_timing(digital_traces, names=names)
 
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Timing names test skipped: {e}")
+        assert fig is not None
 
     def test_logic_analyzer_view(self, digital_traces) -> None:
         """Test logic analyzer style view."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_logic_analyzer
+        from oscura.visualization import plot_logic_analyzer
 
-            fig = plot_logic_analyzer(digital_traces)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Logic analyzer test skipped: {e}")
+        fig = plot_logic_analyzer(digital_traces)
+        assert fig is not None
 
     def test_timing_empty_error(self) -> None:
         """Test timing diagram with empty traces."""
@@ -389,6 +332,10 @@ class TestDigitalTimingDiagram:
             with pytest.raises((ValueError, Exception), match=r".*"):
                 plot_timing([])
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("plot_timing not available")
 
 
@@ -402,36 +349,27 @@ class TestEyeDiagram:
     def test_basic_eye(self, eye_diagram_data) -> None:
         """Test basic eye diagram plotting."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_eye
+        from oscura.visualization import plot_eye
 
-            fig = plot_eye(eye_diagram_data, bit_rate=1e9)
+        fig = plot_eye(eye_diagram_data, bit_rate=1e9)
 
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Eye diagram test skipped: {e}")
+        assert fig is not None
 
     def test_eye_with_ui_count(self, eye_diagram_data) -> None:
         """Test eye diagram with UI count."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_eye
+        from oscura.visualization import plot_eye
 
-            fig = plot_eye(eye_diagram_data, bit_rate=1e9)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"UI count test skipped: {e}")
+        fig = plot_eye(eye_diagram_data, bit_rate=1e9)
+        assert fig is not None
 
     def test_bathtub_plot(self, eye_diagram_data) -> None:
         """Test bathtub curve plotting."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_bathtub
+        from oscura.visualization import plot_bathtub
 
-            fig = plot_bathtub(eye_diagram_data, bit_rate=1e9)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Bathtub test skipped: {e}")
+        fig = plot_bathtub(eye_diagram_data, bit_rate=1e9)
+        assert fig is not None
 
 
 # =============================================================================
@@ -444,25 +382,19 @@ class TestPhasePlot:
     def test_basic_phase_plot(self, sample_waveform) -> None:
         """Test basic phase plot."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_phase
+        from oscura.visualization import plot_phase
 
-            fig = plot_phase(sample_waveform)
+        fig = plot_phase(sample_waveform)
 
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Phase plot test skipped: {e}")
+        assert fig is not None
 
     def test_phase_plot_delay(self, sample_waveform) -> None:
         """Test phase plot with custom delay."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_phase
+        from oscura.visualization import plot_phase
 
-            fig = plot_phase(sample_waveform, delay_samples=10)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Phase delay test skipped: {e}")
+        fig = plot_phase(sample_waveform, delay_samples=10)
+        assert fig is not None
 
 
 # =============================================================================
@@ -475,34 +407,28 @@ class TestBodePlot:
     def test_basic_bode(self) -> None:
         """Test basic Bode plot."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_bode
+        from oscura.visualization import plot_bode
 
-            # Create simple frequency response
-            freq = np.logspace(1, 5, 100)
-            H = 1 / (1 + 1j * freq / 1000)  # Simple low-pass
+        # Create simple frequency response
+        freq = np.logspace(1, 5, 100)
+        H = 1 / (1 + 1j * freq / 1000)  # Simple low-pass
 
-            fig = plot_bode(freq, H)
+        fig = plot_bode(freq, H)
 
-            assert fig is not None
-            # Bode plot has 2 subplots (magnitude and phase)
-            assert len(fig.axes) >= 2
-        except Exception as e:
-            pytest.skip(f"Bode plot test skipped: {e}")
+        assert fig is not None
+        # Bode plot has 2 subplots (magnitude and phase)
+        assert len(fig.axes) >= 2
 
     def test_bode_with_margin(self) -> None:
         """Test Bode plot with stability margins."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_bode
+        from oscura.visualization import plot_bode
 
-            freq = np.logspace(1, 5, 100)
-            H = 10 / (1 + 1j * freq / 1000) ** 2
+        freq = np.logspace(1, 5, 100)
+        H = 10 / (1 + 1j * freq / 1000) ** 2
 
-            fig = plot_bode(freq, H, show_margins=True)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Bode margin test skipped: {e}")
+        fig = plot_bode(freq, H, show_margins=True)
+        assert fig is not None
 
 
 # =============================================================================
@@ -515,24 +441,21 @@ class TestWaterfallPlot:
     def test_basic_waterfall(self) -> None:
         """Test basic waterfall plot."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_waterfall
+        from oscura.visualization import plot_waterfall
 
-            # Create 2D data for waterfall
-            n_traces = 20
-            n_points = 100
-            data = np.zeros((n_traces, n_points))
+        # Create 2D data for waterfall
+        n_traces = 20
+        n_points = 100
+        data = np.zeros((n_traces, n_points))
 
-            for i in range(n_traces):
-                freq = 10 + i * 2
-                t = np.linspace(0, 1, n_points)
-                data[i] = np.sin(2 * np.pi * freq * t)
+        for i in range(n_traces):
+            freq = 10 + i * 2
+            t = np.linspace(0, 1, n_points)
+            data[i] = np.sin(2 * np.pi * freq * t)
 
-            fig = plot_waterfall(data)
+        fig = plot_waterfall(data)
 
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Waterfall test skipped: {e}")
+        assert fig is not None
 
 
 # =============================================================================
@@ -545,36 +468,27 @@ class TestHistogramPlot:
     def test_basic_histogram(self, sample_waveform) -> None:
         """Test basic histogram plotting."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_histogram
+        from oscura.visualization import plot_histogram
 
-            fig = plot_histogram(sample_waveform.data)
+        fig = plot_histogram(sample_waveform.data)
 
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Histogram test skipped: {e}")
+        assert fig is not None
 
     def test_histogram_bins(self, sample_waveform) -> None:
         """Test histogram with custom bins."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_histogram
+        from oscura.visualization import plot_histogram
 
-            fig = plot_histogram(sample_waveform.data, bins=50)
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Histogram bins test skipped: {e}")
+        fig = plot_histogram(sample_waveform.data, bins=50)
+        assert fig is not None
 
     def test_histogram_range(self, sample_waveform) -> None:
         """Test histogram with range."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import plot_histogram
+        from oscura.visualization import plot_histogram
 
-            fig = plot_histogram(sample_waveform.data, range=(-2, 2))
-            assert fig is not None
-        except Exception as e:
-            pytest.skip(f"Histogram range test skipped: {e}")
+        fig = plot_histogram(sample_waveform.data, range=(-2, 2))
+        assert fig is not None
 
 
 # =============================================================================
@@ -596,6 +510,10 @@ class TestOptimizationFunctions:
             assert y_min <= 0.1
             assert y_max >= 1.0
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_optimal_y_range not available")
 
     def test_calculate_optimal_x_window(self) -> None:
@@ -616,6 +534,10 @@ class TestOptimizationFunctions:
             assert t_end is not None
             assert t_end > t_start
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_optimal_x_window not available")
 
     def test_calculate_grid_spacing(self) -> None:
@@ -630,6 +552,10 @@ class TestOptimizationFunctions:
             assert minor_spacing > 0
             assert 100 / major_spacing <= 20  # Reasonable number of grid lines
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_grid_spacing not available")
 
     def test_detect_interesting_regions(self) -> None:
@@ -665,6 +591,10 @@ class TestAccessibility:
             assert isinstance(palette_name, str)
             assert palette_name in ["viridis", "cividis", "plasma", "inferno", "magma"]
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("get_colorblind_palette not available")
 
     def test_colorblind_safe_qualitative_list(self) -> None:
@@ -676,6 +606,10 @@ class TestAccessibility:
             assert len(COLORBLIND_SAFE_QUALITATIVE) >= 8
             assert all(isinstance(c, str) for c in COLORBLIND_SAFE_QUALITATIVE)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("COLORBLIND_SAFE_QUALITATIVE not available")
 
     def test_generate_alt_text(self) -> None:
@@ -690,6 +624,10 @@ class TestAccessibility:
             assert isinstance(alt, str)
             assert len(alt) > 0
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("generate_alt_text not available")
 
     def test_multi_line_styles(self) -> None:
@@ -703,6 +641,8 @@ class TestAccessibility:
             # Each style should be different
             assert len({str(s) for s in styles}) == 5
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("get_multi_line_styles not available")
 
 
@@ -719,18 +659,19 @@ class TestPresets:
             assert len(presets) >= 4
             assert "publication" in presets or any("pub" in p.lower() for p in presets)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("list_visualization_presets not available")
 
     def test_apply_preset(self) -> None:
         """Test applying a preset."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import apply_preset
+        from oscura.visualization import apply_preset
 
-            # Should not raise
-            apply_preset("screen")
-        except Exception as e:
-            pytest.skip(f"apply_preset test skipped: {e}")
+        # Should not raise
+        apply_preset("screen")
 
     def test_publication_preset(self) -> None:
         """Test publication preset."""
@@ -739,6 +680,10 @@ class TestPresets:
 
             assert PUBLICATION_PRESET is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("PUBLICATION_PRESET not available")
 
     def test_dark_theme_preset(self) -> None:
@@ -748,6 +693,10 @@ class TestPresets:
 
             assert DARK_THEME_PRESET is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("DARK_THEME_PRESET not available")
 
 
@@ -757,25 +706,19 @@ class TestRenderingOptimization:
     def test_configure_dpi_rendering(self) -> None:
         """Test VIS-017: DPI-aware rendering."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import configure_dpi_rendering
+        from oscura.visualization import configure_dpi_rendering
 
-            # Should not raise
-            configure_dpi_rendering(dpi=150)
-        except Exception as e:
-            pytest.skip(f"DPI rendering test skipped: {e}")
+        # Should not raise
+        configure_dpi_rendering(dpi=150)
 
     def test_render_thumbnail(self, sample_waveform) -> None:
         """Test VIS-018: Thumbnail mode."""
         pytest.importorskip("matplotlib")
-        try:
-            from oscura.visualization import render_thumbnail
+        from oscura.visualization import render_thumbnail
 
-            thumb = render_thumbnail(sample_waveform.data, width=100, height=50)
+        thumb = render_thumbnail(sample_waveform.data, width=100, height=50)
 
-            assert thumb is not None
-        except Exception as e:
-            pytest.skip(f"Thumbnail test skipped: {e}")
+        assert thumb is not None
 
     def test_decimate_for_display(self) -> None:
         """Test data decimation for display."""
@@ -809,6 +752,10 @@ class TestInteractive:
             assert state.xlim == (0, 100)
             assert state.ylim == (0, 10)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("ZoomState not available")
 
     def test_cursor_measurement(self) -> None:
@@ -847,6 +794,10 @@ class TestHistogramOptimization:
             assert n_bins > 0
             assert n_bins < len(data)
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_optimal_bins not available")
 
     def test_calculate_bin_edges(self) -> None:
@@ -859,6 +810,10 @@ class TestHistogramOptimization:
 
             assert len(edges) == 21  # n_bins + 1 edges
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("calculate_bin_edges not available")
 
 
@@ -875,6 +830,10 @@ class TestColorPalettes:
 
             assert len(palette) >= 5
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("select_optimal_palette not available")
 
     def test_colorblind_safe_qualitative(self) -> None:
@@ -884,6 +843,10 @@ class TestColorPalettes:
 
             assert len(COLORBLIND_SAFE_QUALITATIVE) >= 8
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("COLORBLIND_SAFE_QUALITATIVE not available")
 
     def test_sequential_viridis(self) -> None:
@@ -893,6 +856,10 @@ class TestColorPalettes:
 
             assert SEQUENTIAL_VIRIDIS is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("SEQUENTIAL_VIRIDIS not available")
 
     def test_diverging_coolwarm(self) -> None:
@@ -902,4 +869,8 @@ class TestColorPalettes:
 
             assert DIVERGING_COOLWARM is not None
         except ImportError:
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
+            # SKIP: Valid - Optional visualization feature
+            # Only skip if matplotlib/visualization module not available
             pytest.skip("DIVERGING_COOLWARM not available")

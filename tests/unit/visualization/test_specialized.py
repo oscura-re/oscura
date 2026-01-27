@@ -184,6 +184,14 @@ class TestPlotProtocolTiming:
         assert fig is not None
         assert len(fig.axes) == 3  # Three signals
 
+        # Verify each axis has data
+        for ax in fig.axes:
+            assert ax.has_data(), "Each axis should contain plot data"
+            assert len(ax.lines) > 0, "Each axis should have line plots"
+
+        # Verify x-label on bottom axis
+        assert fig.axes[-1].get_xlabel(), "Bottom axis should have x-label"
+
     @pytest.mark.unit
     def test_single_signal(self, sample_digital_signal):
         """Test timing diagram with single signal."""
@@ -194,6 +202,12 @@ class TestPlotProtocolTiming:
 
         assert fig is not None
         assert len(fig.axes) == 1
+
+        ax = fig.axes[0]
+        assert ax.has_data(), "Axis should contain data"
+        assert len(ax.lines) > 0, "Axis should have plot lines"
+        ylabel = ax.get_ylabel()
+        assert "SINGLE" in ylabel, f"Y-label should contain signal name 'SINGLE', got {ylabel}"
 
     @pytest.mark.unit
     def test_empty_signals_error(self):
@@ -211,6 +225,10 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing(protocol_signals, sample_rate=1e6, style="wavedrom")
 
         assert fig is not None
+        assert len(fig.axes) == 3, "Should have 3 axes for 3 signals"
+        # Verify all axes have data
+        for ax in fig.axes:
+            assert ax.has_data(), "Each axis should contain plot data"
 
     @pytest.mark.unit
     def test_classic_style(self, protocol_signals):
@@ -220,6 +238,10 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing(protocol_signals, sample_rate=1e6, style="classic")
 
         assert fig is not None
+        assert len(fig.axes) == 3, "Should have 3 axes for 3 signals"
+        # Verify all axes have data
+        for ax in fig.axes:
+            assert ax.has_data(), "Each axis should contain plot data"
 
     @pytest.mark.unit
     def test_time_range_full(self, protocol_signals):
@@ -229,6 +251,10 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing(protocol_signals, sample_rate=1e6, time_range=None)
 
         assert fig is not None
+        assert len(fig.axes) == 3, "Should have 3 axes"
+        # Verify data is plotted
+        for ax in fig.axes:
+            assert ax.has_data(), "Axes should contain data"
 
     @pytest.mark.unit
     def test_time_range_partial(self, protocol_signals):
@@ -240,6 +266,13 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing(protocol_signals, sample_rate=1e6, time_range=time_range)
 
         assert fig is not None
+        assert len(fig.axes) == 3, "Should have 3 axes"
+        # Verify time range is approximately correct
+        ax = fig.axes[0]
+        xlim = ax.get_xlim()
+        # Allow some tolerance for scaling/formatting
+        assert xlim[0] >= 0, "X-axis lower limit should be non-negative"
+        assert xlim[1] > xlim[0], "X-axis upper limit should be greater than lower limit"
 
     @pytest.mark.unit
     def test_time_unit_seconds(self, protocol_signals):
@@ -383,6 +416,11 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing([signal], sample_rate=1e6)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Axis should contain data"
+        # Verify axis has annotations (text objects)
+        assert len(ax.texts) > 0, "Should have text annotations"
 
     @pytest.mark.unit
     def test_annotations_outside_range(self, sample_digital_signal):
@@ -396,6 +434,9 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing([signal], sample_rate=1e6, time_range=(0, 0.0001))
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Axis should contain data"
 
     @pytest.mark.unit
     def test_clock_signal_rendering(self, sample_clock_signal):
@@ -406,6 +447,10 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing([signal], sample_rate=1e6, style="wavedrom")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Axis should contain data"
+        assert "CLK" in ax.get_ylabel(), "Y-label should contain signal name"
 
     @pytest.mark.unit
     def test_digital_signal_rendering(self, sample_digital_signal):
@@ -416,6 +461,10 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing([signal], sample_rate=1e6, style="wavedrom")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Axis should contain data"
+        assert "DATA" in ax.get_ylabel(), "Y-label should contain signal name"
 
     @pytest.mark.unit
     def test_bus_signal_rendering(self, sample_bus_signal):
@@ -426,6 +475,10 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing([signal], sample_rate=1e6, style="wavedrom")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Axis should contain data"
+        assert "BUS" in ax.get_ylabel(), "Y-label should contain signal name"
 
     @pytest.mark.unit
     def test_analog_signal_rendering(self, sample_analog_signal):
@@ -436,6 +489,10 @@ class TestPlotProtocolTiming:
         fig = plot_protocol_timing([signal], sample_rate=1e6, style="wavedrom")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert ax.has_data(), "Axis should contain data"
+        assert "ANALOG" in ax.get_ylabel(), "Y-label should contain signal name"
 
     @pytest.mark.unit
     def test_mixed_signal_types(
@@ -528,7 +585,14 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
-        assert len(fig.axes) == 1
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        # State machine has circles for states (patches)
+        assert len(ax.patches) > 0, "Should have state circles (patches)"
+        # State machine has arrows for transitions (arrows/annotations)
+        assert len(ax.artists) > 0 or len(ax.patches) >= len(states), (
+            "Should have transition arrows"
+        )
 
     @pytest.mark.unit
     def test_single_state(self):
@@ -540,6 +604,10 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        # Should have at least one state circle
+        assert len(ax.patches) >= 1, "Should have at least one state circle"
 
     @pytest.mark.unit
     def test_with_initial_state(self, simple_state_machine):
@@ -550,6 +618,10 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, initial_state="IDLE")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        # Initial state should add extra marker patch
+        assert len(ax.patches) > len(states), "Should have extra patch for initial state marker"
 
     @pytest.mark.unit
     def test_with_final_states(self, simple_state_machine):
@@ -560,6 +632,12 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, final_states=["DONE"])
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        # Final states should have double circle (extra patch per final state)
+        assert len(ax.patches) >= len(states) + 1, (
+            "Should have extra patches for final state circles"
+        )
 
     @pytest.mark.unit
     def test_with_initial_and_final(self, simple_state_machine):
@@ -570,6 +648,12 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, initial_state="IDLE", final_states=["DONE"])
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        # Should have patches for states + initial marker + final state double circle
+        assert len(ax.patches) > len(states), (
+            "Should have extra patches for initial and final markers"
+        )
 
     @pytest.mark.unit
     def test_circular_layout(self, simple_state_machine):
@@ -580,6 +664,9 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, layout="circular")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert len(ax.patches) >= len(states), f"Should have patches for {len(states)} states"
 
     @pytest.mark.unit
     def test_hierarchical_layout(self, simple_state_machine):
@@ -590,6 +677,9 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, layout="hierarchical")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert len(ax.patches) >= len(states), f"Should have patches for {len(states)} states"
 
     @pytest.mark.unit
     def test_force_layout(self, simple_state_machine):
@@ -600,6 +690,9 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, layout="force")
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert len(ax.patches) >= len(states), f"Should have patches for {len(states)} states"
 
     @pytest.mark.unit
     def test_custom_figsize(self, simple_state_machine):
@@ -646,6 +739,9 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 2, "Should have patches for 2 states"
 
     @pytest.mark.unit
     def test_transition_without_condition(self):
@@ -657,6 +753,9 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 2, "Should have patches for 2 states"
 
     @pytest.mark.unit
     def test_solid_transition_style(self):
@@ -668,6 +767,7 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
 
     @pytest.mark.unit
     def test_dashed_transition_style(self):
@@ -679,6 +779,7 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
 
     @pytest.mark.unit
     def test_dotted_transition_style(self):
@@ -690,6 +791,7 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
 
     @pytest.mark.unit
     def test_self_loop_transition(self):
@@ -701,6 +803,9 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 1, "Should have patch for 1 state"
 
     @pytest.mark.unit
     def test_invalid_transition_states(self):
@@ -716,6 +821,10 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        # Only 2 states should be drawn (A and B)
+        assert len(ax.patches) >= 2, "Should have patches for 2 valid states"
 
     @pytest.mark.unit
     def test_multiple_transitions_same_states(self):
@@ -731,6 +840,9 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 2, "Should have patches for 2 states"
 
     @pytest.mark.unit
     def test_complex_state_machine(self):
@@ -765,6 +877,10 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, initial_state="INIT", final_states=["DONE"])
 
         assert fig is not None
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        ax = fig.axes[0]
+        # Should have patches for 8 states plus markers
+        assert len(ax.patches) >= 8, "Should have patches for 8 states"
 
     @pytest.mark.unit
     def test_axis_properties(self, simple_state_machine):
@@ -832,6 +948,8 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, layout="circular")
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 5, "Should have patches for 5 states"
 
     @pytest.mark.unit
     def test_hierarchical_layout_positions(self):
@@ -843,6 +961,8 @@ class TestPlotStateMachine:
         fig = plot_state_machine(states, transitions, layout="hierarchical")
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 6, "Should have patches for 6 states"
 
     @pytest.mark.unit
     def test_force_layout_reproducibility(self):
@@ -857,6 +977,9 @@ class TestPlotStateMachine:
 
         assert fig1 is not None
         assert fig2 is not None
+        # Both should have same number of state patches
+        assert len(fig1.axes[0].patches) == len(fig2.axes[0].patches)
+        assert len(fig1.axes[0].patches) >= 3, "Should have patches for 3 states"
 
     @pytest.mark.unit
     def test_multiple_final_states(self):
@@ -877,6 +1000,9 @@ class TestPlotStateMachine:
         )
 
         assert fig is not None
+        ax = fig.axes[0]
+        # Should have patches for 4 states + initial marker + 2 final state extra circles
+        assert len(ax.patches) >= 6, "Should have patches for states and markers"
 
 
 class TestVisualizationSpecializedIntegration:
@@ -903,7 +1029,10 @@ class TestVisualizationSpecializedIntegration:
         fig = plot_protocol_timing(signals, sample_rate=1e6, style="wavedrom")
 
         assert fig is not None
-        assert len(fig.axes) == 4
+        assert len(fig.axes) == 4, "Should have 4 axes for 4 signals"
+        # Verify all axes have data
+        for ax in fig.axes:
+            assert ax.has_data(), "Each axis should contain plot data"
 
     @pytest.mark.unit
     def test_protocol_timing_classic_all_signal_types(
@@ -926,7 +1055,10 @@ class TestVisualizationSpecializedIntegration:
         fig = plot_protocol_timing(signals, sample_rate=1e6, style="classic")
 
         assert fig is not None
-        assert len(fig.axes) == 4
+        assert len(fig.axes) == 4, "Should have 4 axes for 4 signals"
+        # Verify all axes have data
+        for ax in fig.axes:
+            assert ax.has_data(), "Each axis should contain plot data"
 
     @pytest.mark.unit
     def test_state_machine_all_layouts(self):
@@ -943,7 +1075,10 @@ class TestVisualizationSpecializedIntegration:
 
         for layout in ["circular", "hierarchical", "force"]:
             fig = plot_state_machine(states, transitions, layout=layout)
-            assert fig is not None
+            assert fig is not None, f"Layout {layout} should produce a figure"
+            assert len(fig.axes) == 1, f"Layout {layout} should have 1 axis"
+            ax = fig.axes[0]
+            assert len(ax.patches) >= 4, f"Layout {layout} should have patches for 4 states"
 
     @pytest.mark.unit
     def test_complete_protocol_analysis_workflow(self, sample_clock_signal, sample_digital_signal):
@@ -990,6 +1125,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_protocol_timing([signal], sample_rate=1e6)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should plot even short signals"
 
     @pytest.mark.unit
     def test_very_long_signal(self):
@@ -1002,6 +1139,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_protocol_timing([signal], sample_rate=1e6, time_range=(0, 0.001))
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should plot long signals with time range"
 
     @pytest.mark.unit
     def test_constant_signal(self):
@@ -1013,6 +1152,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_protocol_timing([signal], sample_rate=1e6)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should plot constant signals"
 
     @pytest.mark.unit
     def test_zero_signal(self):
@@ -1024,6 +1165,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_protocol_timing([signal], sample_rate=1e6)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should plot zero signals"
 
     @pytest.mark.unit
     def test_nan_values_in_signal(self):
@@ -1035,6 +1178,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_protocol_timing([signal], sample_rate=1e6)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should handle NaN values"
 
     @pytest.mark.unit
     def test_inf_values_in_signal(self):
@@ -1046,6 +1191,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_protocol_timing([signal], sample_rate=1e6)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should handle inf values"
 
     @pytest.mark.unit
     def test_negative_time_range(self):
@@ -1058,6 +1205,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_protocol_timing([signal], sample_rate=1e6, time_range=(-0.001, 0.001))
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert ax.has_data(), "Should handle negative time ranges"
 
     @pytest.mark.unit
     def test_inverted_time_range(self):
@@ -1066,10 +1215,14 @@ class TestVisualizationSpecializedEdgeCases:
 
         data = np.random.random(100)
         signal = ProtocolSignal("TEST", data)
-        # Should handle inverted range
+        # Should handle inverted range (may produce empty plot)
         fig = plot_protocol_timing([signal], sample_rate=1e6, time_range=(0.001, 0.0))
 
-        assert fig is not None
+        assert fig is not None, "Should create figure even with inverted range"
+        assert len(fig.axes) == 1, "Should have 1 axis"
+        # Inverted range may produce empty plot, just verify structure exists
+        ax = fig.axes[0]
+        assert ax is not None, "Axis should exist"
 
     @pytest.mark.unit
     def test_single_state_self_loop(self):
@@ -1081,6 +1234,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 1, "Should have patch for 1 state"
 
     @pytest.mark.unit
     def test_disconnected_states(self):
@@ -1095,6 +1250,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 4, "Should have patches for 4 disconnected states"
 
     @pytest.mark.unit
     def test_very_long_state_names(self):
@@ -1109,6 +1266,8 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 2, "Should handle long state names"
 
     @pytest.mark.unit
     def test_state_name_with_special_characters(self):
@@ -1123,3 +1282,5 @@ class TestVisualizationSpecializedEdgeCases:
         fig = plot_state_machine(states, transitions)
 
         assert fig is not None
+        ax = fig.axes[0]
+        assert len(ax.patches) >= 4, "Should handle special characters in state names"

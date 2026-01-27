@@ -11,14 +11,14 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from oscura.comparison.compare import compare_traces
-from oscura.comparison.visualization import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.compare import compare_traces
+from oscura.utils.comparison.visualization import (
     plot_comparison_heatmap,
     plot_comparison_summary,
     plot_difference,
     plot_overlay,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 
@@ -61,7 +61,7 @@ def configure_plt_mock(mock_plt: Mock) -> tuple[Mock, Mock]:
 class TestPlotOverlay:
     """Test overlay plot function."""
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_basic_overlay(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -72,7 +72,7 @@ class TestPlotOverlay:
         assert fig is not None
         mock_plt.subplots.assert_called_once()
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_overlay_with_labels(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -82,7 +82,7 @@ class TestPlotOverlay:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_overlay_without_highlighting(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -92,7 +92,7 @@ class TestPlotOverlay:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_overlay_custom_threshold(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -102,7 +102,7 @@ class TestPlotOverlay:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_overlay_custom_figsize(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -119,7 +119,7 @@ class TestPlotOverlay:
 class TestPlotDifference:
     """Test difference plot function."""
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_basic_difference(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -130,7 +130,7 @@ class TestPlotDifference:
         assert fig is not None
         mock_plt.subplots.assert_called_once()
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_difference_normalized(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -140,7 +140,7 @@ class TestPlotDifference:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_difference_without_statistics(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -150,7 +150,7 @@ class TestPlotDifference:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_difference_custom_title(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -167,7 +167,7 @@ class TestPlotDifference:
 class TestPlotHeatmap:
     """Test comparison heatmap function."""
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_basic_heatmap(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -177,7 +177,7 @@ class TestPlotHeatmap:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_heatmap_custom_window(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -187,7 +187,7 @@ class TestPlotHeatmap:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_heatmap_custom_title(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -197,7 +197,7 @@ class TestPlotHeatmap:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_heatmap_short_trace(self, mock_plt: Mock) -> None:
         """Test heatmap with very short trace."""
         configure_plt_mock(mock_plt)
@@ -218,7 +218,7 @@ class TestPlotHeatmap:
 class TestPlotSummary:
     """Test comparison summary plot function."""
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_basic_summary(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -228,7 +228,7 @@ class TestPlotSummary:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_summary_custom_title(
         self, mock_plt: Mock, trace1: WaveformTrace, trace2: WaveformTrace
     ) -> None:
@@ -238,7 +238,7 @@ class TestPlotSummary:
 
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_summary_with_violations(self, mock_plt: Mock, trace1: WaveformTrace) -> None:
         """Test summary plot with violations."""
         # Create trace with violations
@@ -252,7 +252,7 @@ class TestPlotSummary:
         assert fig is not None
         assert not result.match
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_summary_passing_comparison(self, mock_plt: Mock, trace1: WaveformTrace) -> None:
         """Test summary plot with passing comparison."""
         result = compare_traces(trace1, trace1)
@@ -267,7 +267,7 @@ class TestPlotSummary:
 class TestComparisonVisualizationEdgeCases:
     """Test edge cases for visualization."""
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_identical_traces(self, mock_plt: Mock, trace1: WaveformTrace) -> None:
         """Test visualizing identical traces."""
         configure_plt_mock(mock_plt)
@@ -277,7 +277,7 @@ class TestComparisonVisualizationEdgeCases:
         fig = plot_difference(trace1, trace1)
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_constant_traces(self, mock_plt: Mock) -> None:
         """Test visualizing constant traces."""
         configure_plt_mock(mock_plt)
@@ -288,7 +288,7 @@ class TestComparisonVisualizationEdgeCases:
         fig = plot_overlay(trace, trace)
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_different_lengths(self, mock_plt: Mock, trace1: WaveformTrace) -> None:
         """Test visualizing traces of different lengths."""
         configure_plt_mock(mock_plt)
@@ -298,7 +298,7 @@ class TestComparisonVisualizationEdgeCases:
         fig = plot_overlay(trace1, trace2)
         assert fig is not None
 
-    @patch("oscura.comparison.visualization.plt")
+    @patch("oscura.utils.comparison.visualization.plt")
     def test_no_sample_rate(self, mock_plt: Mock) -> None:
         """Test visualization without sample rate metadata."""
         configure_plt_mock(mock_plt)

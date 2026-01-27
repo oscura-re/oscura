@@ -12,14 +12,16 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from oscura.component.impedance import (
+from oscura.core.exceptions import AnalysisError, InsufficientDataError
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.component.impedance import (
     Discontinuity,
     ImpedanceProfile,
     discontinuity_analysis,
     extract_impedance,
     impedance_profile,
 )
-from oscura.component.reactive import (
+from oscura.utils.component.reactive import (
     CapacitanceMeasurement,
     InductanceMeasurement,
     ParasiticExtraction,
@@ -27,15 +29,13 @@ from oscura.component.reactive import (
     measure_capacitance,
     measure_inductance,
 )
-from oscura.component.transmission_line import (
+from oscura.utils.component.transmission_line import (
     TransmissionLineResult,
     characteristic_impedance,
     propagation_delay,
     transmission_line_analysis,
     velocity_factor,
 )
-from oscura.core.exceptions import AnalysisError, InsufficientDataError
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

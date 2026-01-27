@@ -12,13 +12,13 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pytest
 
-from oscura.acquisition import SyntheticSource
-from oscura.builders import SignalBuilder
 from oscura.core.types import IQTrace, TraceMetadata, WaveformTrace
+from oscura.hardware.acquisition import SyntheticSource
 from oscura.sessions.base import AnalysisSession, ComparisonResult
+from oscura.utils.builders import SignalBuilder
 
 if TYPE_CHECKING:
-    from oscura.acquisition import Source
+    from oscura.hardware.acquisition import Source
 
 pytestmark = pytest.mark.unit
 
@@ -362,7 +362,7 @@ class TestAnalysisSession:
         )
 
         # Mock the recordings with IQTrace
-        from oscura.acquisition import SyntheticSource
+        from oscura.hardware.acquisition import SyntheticSource
 
         builder = SignalBuilder(sample_rate=1e6, duration=0.001).add_sine(1000)
         normal_source = SyntheticSource(builder)

@@ -60,6 +60,16 @@ EXEMPTED_FILES = {
     "sync_versions.py",  # Updates project-specific version patterns
     "validate_config_consistency.py",  # Validates project-specific config
     "validate_documentation.py",  # May reference project-specific doc paths
+    # Audit/analysis scripts are project-specific tools
+    "audit_copy_usage.py",  # Project-specific code auditing
+    "audit_skipped_tests.py",  # Project-specific test auditing
+    "comprehensive_skip_fixer.py",  # Project-specific test fixing
+    "fix_220_skips.py",  # Project-specific test fixing
+    "remove_duplicates.py",  # Project-specific cleanup
+    "remove_fixable_skips.py",  # Project-specific test fixing
+    "remove_fixable_skips_v2.py",  # Project-specific test fixing
+    "remove_skipif_decorators.py",  # Project-specific test fixing
+    "update_changelog.py",  # Project-specific changelog management
     # Reports are project-specific work products (all reports exempted by directory below)
 }
 
@@ -148,7 +158,41 @@ def is_exempted_file(file_path: Path) -> bool:
     Returns:
         True if exempted
     """
-    return file_path.name in EXEMPTED_FILES
+    # Check if filename is exempted
+    if file_path.name in EXEMPTED_FILES:
+        return True
+
+    # Exempt all audit/report files (project-specific work products)
+    # These files document project-specific work and naturally contain project names
+    report_patterns = [
+        "_AUDIT_",
+        "_REPORT",  # Matches _REPORT.md and _REPORT_.md
+        "_SUMMARY",  # Matches _SUMMARY.md and _SUMMARY_.md
+        "_COMPLETE",  # Matches _COMPLETE.md and _COMPLETE_.md
+        "_PROGRESS",  # Matches _PROGRESS.md and _PROGRESS_.md
+        "_INDEX",
+        "_PROFILE_",
+        "_ENTRIES_",
+        "OPTIMIZATION_",  # Matches OPTIMIZATION_*.md
+        "VALIDATION_",  # Matches *_VALIDATION_*.md
+    ]
+    filename_upper = file_path.name.upper()
+    for pattern in report_patterns:
+        if pattern in filename_upper:
+            return True
+
+    # Exempt timestamped reports (2026-01-25-*.md)
+    if re.match(r"^\d{4}-\d{2}-\d{2}-.+\.md$", file_path.name):
+        return True
+
+    # Exempt all .py scripts in .claude directory (project-specific tools)
+    if file_path.suffix == ".py" and CLAUDE_DIR in file_path.parents:
+        # Only exempt scripts in .claude root or analysis/, not hooks/
+        rel_path = file_path.relative_to(CLAUDE_DIR)
+        if not str(rel_path).startswith("hooks/"):
+            return True
+
+    return False
 
 
 def is_language_agnostic_file(file_path: Path) -> bool:
@@ -591,7 +635,7 @@ def main() -> int:
         check_files.extend(CLAUDE_DIR.glob(pattern))
 
     # Filter out exempted directories
-    exempted_dirs = {"__pycache__", ".git", "archive", "reports"}
+    exempted_dirs = {"__pycache__", ".git", "archive", "reports", "agent-outputs"}
     check_files = [f for f in check_files if not any(ex in f.parts for ex in exempted_dirs)]
 
     if not check_files:

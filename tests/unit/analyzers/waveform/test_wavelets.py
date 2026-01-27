@@ -59,6 +59,8 @@ class TestCWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(100, 1000, 1.0)
@@ -75,6 +77,8 @@ class TestCWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 0.5)
@@ -90,6 +94,8 @@ class TestCWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 0.5)
@@ -105,6 +111,8 @@ class TestCWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 0.5)
@@ -149,6 +157,8 @@ class TestDWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 1.0)
@@ -163,6 +173,8 @@ class TestDWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 1.0)
@@ -181,6 +193,8 @@ class TestDWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 1.0)
@@ -196,6 +210,8 @@ class TestDWT:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 0.5)
@@ -225,6 +241,8 @@ class TestCWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Create temporary signal file
@@ -249,6 +267,8 @@ class TestCWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 3.0)  # 3000 samples
@@ -271,6 +291,8 @@ class TestCWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         scales = np.arange(1, 10)
@@ -283,6 +305,8 @@ class TestCWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Create signal with float32
@@ -318,6 +342,8 @@ class TestDWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Create temporary signal file
@@ -344,6 +370,8 @@ class TestDWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 1.0)
@@ -365,6 +393,8 @@ class TestDWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 1.0)
@@ -386,6 +416,8 @@ class TestDWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = make_sine_wave(50, 1000, 1.0)
@@ -408,6 +440,8 @@ class TestDWTChunked:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         with pytest.raises(FileNotFoundError):
@@ -428,6 +462,8 @@ class TestWaveletIntegration:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Linear chirp from 10 Hz to 100 Hz
@@ -453,6 +489,8 @@ class TestWaveletIntegration:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Create clean signal + noise
@@ -475,6 +513,8 @@ class TestWaveletIntegration:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Create a larger signal (10000 samples)
@@ -507,6 +547,8 @@ class TestWaveformWaveletsEdgeCases:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Create empty file
@@ -524,6 +566,8 @@ class TestWaveformWaveletsEdgeCases:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # Very small signal
@@ -540,6 +584,8 @@ class TestWaveformWaveletsEdgeCases:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         signal = np.ones(1000)
@@ -555,6 +601,8 @@ class TestWaveformWaveletsEdgeCases:
         try:
             import pywt  # noqa: F401
         except ImportError:
+            # SKIP: Valid - Optional pywavelets dependency
+            # Only skip if pywavelets not installed (pip install oscura[wavelets])
             pytest.skip("PyWavelets not installed")
 
         # High frequency relative to sample rate

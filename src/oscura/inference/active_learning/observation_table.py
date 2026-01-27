@@ -219,10 +219,13 @@ class ObservationTable:
         initial_row = self.row(())
         initial_state = row_to_state[initial_row]
 
+        # Type cast alphabet from set[str] to set[str | int] for FiniteAutomaton
+        alphabet_union: set[str | int] = set(self.alphabet)
+
         return FiniteAutomaton(
             states=states,
             transitions=transitions,
-            alphabet=self.alphabet.copy(),
+            alphabet=alphabet_union,
             initial_state=initial_state,
             accepting_states=accepting_states,
         )

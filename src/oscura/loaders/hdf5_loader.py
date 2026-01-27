@@ -212,104 +212,26 @@ def load_hdf5(
         >>> # Load as memory-mapped for large files
         >>> trace = load_hdf5("huge_data.h5", mmap=True)
     """
-    if not H5PY_AVAILABLE:
-        raise LoaderError(
-            "HDF5 support not available",
-            details="h5py package is required for HDF5 loading",
-            fix_hint="Install h5py: pip install h5py",
-        )
-
-    path = Path(path)
-
-    if not path.exists():
-        raise LoaderError(
-            "File not found",
-            file_path=str(path),
-        )
-
-    # Use channel as dataset if dataset not specified
-    if dataset is None and channel is not None:
-        dataset = str(channel)
+    _validate_hdf5_availability()
+    file_path = _validate_file_path(path)
+    dataset_path = _resolve_dataset_name(dataset, channel)
 
     try:
-        with h5py.File(path, "r") as f:
-            # Find dataset
-            if dataset is not None:
-                if dataset in f:
-                    ds = f[dataset]
-                else:
-                    # Try to find by name
-                    ds = _find_dataset_by_name(f, dataset)
-                    if ds is None:
-                        available = list_datasets(path)
-                        raise FormatError(
-                            f"Dataset not found: {dataset}",
-                            file_path=str(path),
-                            expected=dataset,
-                            got=f"Available: {', '.join(available)}",
-                        )
-            else:
-                # Auto-detect dataset
-                ds = _find_waveform_dataset(f)
-                if ds is None:
-                    available = list_datasets(path)
-                    raise FormatError(
-                        "No waveform data found in HDF5 file",
-                        file_path=str(path),
-                        expected=f"Dataset named: {', '.join(DATASET_NAMES)}",
-                        got=f"Datasets: {', '.join(available)}",
-                    )
+        with h5py.File(file_path, "r") as f:
+            ds = _locate_dataset(f, dataset_path, file_path)
+            _validate_dataset(ds, file_path)
+            data = _extract_data_array(ds)
+            metadata = _build_metadata(f, ds, sample_rate, file_path)
 
-            # Extract data
-            if not isinstance(ds, h5py.Dataset):
-                raise FormatError(
-                    "Selected path is not a dataset",
-                    file_path=str(path),
-                    got=type(ds).__name__,
-                )
-
-            data = np.asarray(ds, dtype=np.float64)
-            if data.ndim > 1:
-                data = data.ravel()
-
-            # Extract metadata from attributes
-            detected_sample_rate = sample_rate
-            if detected_sample_rate is None:
-                detected_sample_rate = _find_sample_rate(f, ds)
-
-            if detected_sample_rate is None:
-                detected_sample_rate = 1e6  # Default
-
-            # Get other metadata
-            vertical_scale = _get_attr(ds, ["vertical_scale", "v_scale", "scale"])
-            vertical_offset = _get_attr(ds, ["vertical_offset", "v_offset", "offset"])
-            channel_name = _get_attr(ds, ["channel_name", "name", "channel"])
-
-            if channel_name is None:
-                channel_name = ds.name.split("/")[-1] if ds.name else "CH1"
-
-            metadata = TraceMetadata(
-                sample_rate=float(detected_sample_rate),
-                vertical_scale=float(vertical_scale) if vertical_scale else None,
-                vertical_offset=float(vertical_offset) if vertical_offset else None,
-                source_file=str(path),
-                channel_name=str(channel_name),
-            )
-
-            # Return memory-mapped trace if requested
             if mmap:
-                return HDF5MmapTrace(
-                    file_path=path,
-                    dataset_path=ds.name,
-                    metadata=metadata,
-                )
+                return _create_mmap_trace(file_path, ds.name, metadata)
 
             return WaveformTrace(data=data, metadata=metadata)
 
     except OSError as e:
         raise LoaderError(
             "Failed to read HDF5 file",
-            file_path=str(path),
+            file_path=str(file_path),
             details=str(e),
         ) from e
     except Exception as e:
@@ -317,9 +239,226 @@ def load_hdf5(
             raise
         raise LoaderError(
             "Failed to load HDF5 file",
-            file_path=str(path),
+            file_path=str(file_path),
             details=str(e),
         ) from e
+
+
+def _validate_hdf5_availability() -> None:
+    """Validate that h5py package is available.
+
+    Raises:
+        LoaderError: If h5py is not installed.
+    """
+    if not H5PY_AVAILABLE:
+        raise LoaderError(
+            "HDF5 support not available",
+            details="h5py package is required for HDF5 loading",
+            fix_hint="Install h5py: pip install h5py",
+        )
+
+
+def _validate_file_path(path: str | PathLike[str]) -> Path:
+    """Validate that the file path exists.
+
+    Args:
+        path: File path to validate.
+
+    Returns:
+        Validated Path object.
+
+    Raises:
+        LoaderError: If file does not exist.
+    """
+    file_path = Path(path)
+    if not file_path.exists():
+        raise LoaderError("File not found", file_path=str(file_path))
+    return file_path
+
+
+def _resolve_dataset_name(dataset: str | None, channel: str | int | None) -> str | None:
+    """Resolve dataset name from dataset or channel parameter.
+
+    Args:
+        dataset: Explicit dataset path.
+        channel: Channel name/number (alternative to dataset).
+
+    Returns:
+        Resolved dataset name, or None for auto-detection.
+
+    Example:
+        >>> _resolve_dataset_name(None, 1)
+        '1'
+        >>> _resolve_dataset_name("/data", None)
+        '/data'
+    """
+    if dataset is None and channel is not None:
+        return str(channel)
+    return dataset
+
+
+def _locate_dataset(f: h5py.File, dataset_path: str | None, file_path: Path) -> h5py.Dataset:
+    """Locate dataset in HDF5 file by path or auto-detection.
+
+    Args:
+        f: Open HDF5 file handle.
+        dataset_path: Specific dataset path, or None for auto-detect.
+        file_path: Path to HDF5 file (for error messages).
+
+    Returns:
+        Located HDF5 dataset.
+
+    Raises:
+        FormatError: If dataset not found.
+
+    Example:
+        >>> with h5py.File("data.h5") as f:
+        ...     ds = _locate_dataset(f, "/waveform", Path("data.h5"))
+    """
+    if dataset_path is not None:
+        if dataset_path in f:
+            return f[dataset_path]
+
+        # Try fuzzy name matching
+        ds = _find_dataset_by_name(f, dataset_path)
+        if ds is None:
+            available = list_datasets(file_path)
+            raise FormatError(
+                f"Dataset not found: {dataset_path}",
+                file_path=str(file_path),
+                expected=dataset_path,
+                got=f"Available: {', '.join(available)}",
+            )
+        return ds
+
+    # Auto-detect waveform dataset
+    ds = _find_waveform_dataset(f)
+    if ds is None:
+        available = list_datasets(file_path)
+        raise FormatError(
+            "No waveform data found in HDF5 file",
+            file_path=str(file_path),
+            expected=f"Dataset named: {', '.join(DATASET_NAMES)}",
+            got=f"Datasets: {', '.join(available)}",
+        )
+    return ds
+
+
+def _validate_dataset(ds: Any, file_path: Path) -> None:
+    """Validate that object is a valid HDF5 dataset.
+
+    Args:
+        ds: Object to validate.
+        file_path: Path to HDF5 file (for error messages).
+
+    Raises:
+        FormatError: If not a dataset.
+    """
+    if not isinstance(ds, h5py.Dataset):
+        raise FormatError(
+            "Selected path is not a dataset",
+            file_path=str(file_path),
+            got=type(ds).__name__,
+        )
+
+
+def _extract_data_array(ds: h5py.Dataset) -> np.ndarray[Any, Any]:
+    """Extract and flatten data array from dataset.
+
+    Args:
+        ds: HDF5 dataset.
+
+    Returns:
+        1D numpy array of float64 data.
+
+    Example:
+        >>> data = _extract_data_array(dataset)
+        >>> data.shape
+        (10000,)
+    """
+    data = np.asarray(ds, dtype=np.float64)
+    if data.ndim > 1:
+        data = data.ravel()
+    return data
+
+
+def _build_metadata(
+    f: h5py.File, ds: h5py.Dataset, sample_rate: float | None, file_path: Path
+) -> TraceMetadata:
+    """Build trace metadata from HDF5 attributes.
+
+    Args:
+        f: Open HDF5 file handle.
+        ds: HDF5 dataset.
+        sample_rate: User-provided sample rate override.
+        file_path: Path to HDF5 file.
+
+    Returns:
+        TraceMetadata with extracted attributes.
+
+    Example:
+        >>> metadata = _build_metadata(f, ds, None, Path("data.h5"))
+        >>> metadata.sample_rate
+        1000000.0
+    """
+    detected_sample_rate = sample_rate if sample_rate is not None else _find_sample_rate(f, ds)
+    if detected_sample_rate is None:
+        detected_sample_rate = 1e6  # Default 1 MHz
+
+    vertical_scale = _get_attr(ds, ["vertical_scale", "v_scale", "scale"])
+    vertical_offset = _get_attr(ds, ["vertical_offset", "v_offset", "offset"])
+    channel_name = _get_channel_name(ds)
+
+    return TraceMetadata(
+        sample_rate=float(detected_sample_rate),
+        vertical_scale=float(vertical_scale) if vertical_scale else None,
+        vertical_offset=float(vertical_offset) if vertical_offset else None,
+        source_file=str(file_path),
+        channel_name=str(channel_name),
+    )
+
+
+def _get_channel_name(ds: h5py.Dataset) -> str:
+    """Get channel name from dataset attributes or path.
+
+    Args:
+        ds: HDF5 dataset.
+
+    Returns:
+        Channel name string.
+
+    Example:
+        >>> _get_channel_name(dataset)
+        'CH1'
+    """
+    channel_name = _get_attr(ds, ["channel_name", "name", "channel"])
+    if channel_name is None:
+        channel_name = ds.name.split("/")[-1] if ds.name else "CH1"
+    return channel_name
+
+
+def _create_mmap_trace(
+    file_path: Path, dataset_path: str, metadata: TraceMetadata
+) -> HDF5MmapTrace:
+    """Create memory-mapped HDF5 trace.
+
+    Args:
+        file_path: Path to HDF5 file.
+        dataset_path: Path to dataset within file.
+        metadata: Trace metadata.
+
+    Returns:
+        Memory-mapped trace object.
+
+    Example:
+        >>> trace = _create_mmap_trace(Path("data.h5"), "/waveform", metadata)
+        >>> trace[1000:2000]  # Access subset without loading entire file
+    """
+    return HDF5MmapTrace(
+        file_path=file_path,
+        dataset_path=dataset_path,
+        metadata=metadata,
+    )
 
 
 def _find_waveform_dataset(f: h5py.File) -> h5py.Dataset | None:
@@ -327,6 +466,12 @@ def _find_waveform_dataset(f: h5py.File) -> h5py.Dataset | None:
     result: h5py.Dataset | None = None
 
     def visitor(name: str, obj: Any) -> None:
+        """Visit HDF5 items to find waveform dataset.
+
+        Args:
+            name: Dataset path within HDF5 file.
+            obj: HDF5 object (dataset or group).
+        """
         nonlocal result
         if result is not None:
             return
@@ -352,6 +497,12 @@ def _find_dataset_by_name(f: h5py.File, name: str) -> h5py.Dataset | None:
     result: h5py.Dataset | None = None
 
     def visitor(path: str, obj: Any) -> None:
+        """Visit HDF5 items to find dataset by name.
+
+        Args:
+            path: Dataset path within HDF5 file.
+            obj: HDF5 object (dataset or group).
+        """
         nonlocal result
         if result is not None:
             return
@@ -365,42 +516,44 @@ def _find_dataset_by_name(f: h5py.File, name: str) -> h5py.Dataset | None:
 
 
 def _find_sample_rate(f: h5py.File, ds: h5py.Dataset) -> float | None:
-    """Find sample rate from HDF5 attributes."""
-    # Check dataset attributes first
+    """Find sample rate from HDF5 attributes.
+
+    Args:
+        f: HDF5 file handle.
+        ds: Dataset to search for sample rate.
+
+    Returns:
+        Sample rate in Hz, or None if not found.
+    """
+    # Check dataset, then parent, then root, then metadata group
+    search_locations = [ds, ds.parent, f, f.get("metadata")]
+
+    for location in search_locations:
+        if location is None:
+            continue
+
+        rate = _extract_sample_rate_from_attrs(location)
+        if rate is not None:
+            return rate
+
+    return None
+
+
+def _extract_sample_rate_from_attrs(obj: h5py.Dataset | h5py.Group | h5py.File) -> float | None:
+    """Extract sample rate from HDF5 object attributes.
+
+    Args:
+        obj: HDF5 object with attributes.
+
+    Returns:
+        Sample rate in Hz, or None if not found.
+    """
     for attr_name in SAMPLE_RATE_ATTRS:
-        if attr_name in ds.attrs:
-            value = ds.attrs[attr_name]
+        if attr_name in obj.attrs:
+            value = obj.attrs[attr_name]
             if attr_name in ("sample_interval", "dt") and value > 0:
                 return 1.0 / float(value)
             return float(value)
-
-    # Check parent group attributes
-    if ds.parent is not None:
-        for attr_name in SAMPLE_RATE_ATTRS:
-            if attr_name in ds.parent.attrs:
-                value = ds.parent.attrs[attr_name]
-                if attr_name in ("sample_interval", "dt") and value > 0:
-                    return 1.0 / float(value)
-                return float(value)
-
-    # Check root attributes
-    for attr_name in SAMPLE_RATE_ATTRS:
-        if attr_name in f.attrs:
-            value = f.attrs[attr_name]
-            if attr_name in ("sample_interval", "dt") and value > 0:
-                return 1.0 / float(value)
-            return float(value)
-
-    # Check for metadata group
-    if "metadata" in f:
-        meta = f["metadata"]
-        if isinstance(meta, h5py.Group | h5py.Dataset):
-            for attr_name in SAMPLE_RATE_ATTRS:
-                if attr_name in meta.attrs:
-                    value = meta.attrs[attr_name]
-                    if attr_name in ("sample_interval", "dt") and value > 0:
-                        return 1.0 / float(value)
-                    return float(value)
 
     return None
 
@@ -446,6 +599,12 @@ def list_datasets(path: str | PathLike[str]) -> list[str]:
     datasets: list[str] = []
 
     def visitor(name: str, obj: Any) -> None:
+        """Visit HDF5 items to collect dataset paths.
+
+        Args:
+            name: Dataset path within HDF5 file.
+            obj: HDF5 object (dataset or group).
+        """
         if isinstance(obj, h5py.Dataset):
             datasets.append("/" + name)
 

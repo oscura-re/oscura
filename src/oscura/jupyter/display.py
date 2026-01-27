@@ -15,9 +15,15 @@ Example:
 from typing import Any
 
 try:
-    from IPython.display import HTML, SVG, display
+    from IPython.display import HTML, SVG
+    from IPython.display import display as ipython_display
 
     IPYTHON_AVAILABLE = True
+
+    def display(*args: Any, **kwargs: Any) -> None:
+        """Wrapper for IPython display."""
+        ipython_display(*args, **kwargs)  # type: ignore[no-untyped-call]
+
 except ImportError:
     IPYTHON_AVAILABLE = False
 
@@ -33,7 +39,7 @@ except ImportError:
         def __init__(self, data: str) -> None:
             self.data = data
 
-    def display(*args: Any, **kwargs: Any) -> None:  # type: ignore[no-redef,misc]
+    def display(*args: Any, **kwargs: Any) -> None:
         """Fallback display when IPython not available."""
         for arg in args:
             print(arg)
@@ -58,56 +64,130 @@ class TraceDisplay:
     def _repr_html_(self) -> str:
         """Generate HTML representation for Jupyter."""
         trace = self.trace
+        rows: list[tuple[str, str]] = []
 
-        # Build info rows
-        rows = []
+        # Collect trace information
+        self._add_basic_rows(trace, rows)
+        self._add_metadata_rows(trace, rows)
+        self._add_duration_row(trace, rows)
+        self._add_statistics_rows(trace, rows)
 
+        # Build HTML table
+        return self._build_html_table(rows)
+
+    def _add_basic_rows(self, trace: Any, rows: list[tuple[str, str]]) -> None:
+        """Add basic trace information rows.
+
+        Args:
+            trace: Trace object.
+            rows: List of (label, value) tuples.
+        """
         if hasattr(trace, "data"):
             rows.append(("Samples", f"{len(trace.data):,}"))
 
-        if hasattr(trace, "metadata"):
-            meta = trace.metadata
-            if hasattr(meta, "sample_rate") and meta.sample_rate:
-                rate = meta.sample_rate
-                if rate >= 1e9:
-                    rate_str = f"{rate / 1e9:.3f} GSa/s"
-                elif rate >= 1e6:
-                    rate_str = f"{rate / 1e6:.3f} MSa/s"
-                else:
-                    rate_str = f"{rate / 1e3:.3f} kSa/s"
-                rows.append(("Sample Rate", rate_str))
+    def _add_metadata_rows(self, trace: Any, rows: list[tuple[str, str]]) -> None:
+        """Add metadata information rows.
 
-            if hasattr(meta, "channel_name") and meta.channel_name:
-                rows.append(("Channel", meta.channel_name))
+        Args:
+            trace: Trace object.
+            rows: List of (label, value) tuples.
+        """
+        if not hasattr(trace, "metadata"):
+            return
 
-            if hasattr(meta, "source_file") and meta.source_file:
-                rows.append(("Source", meta.source_file))
+        meta = trace.metadata
 
-        # Calculate duration if possible
-        if hasattr(trace, "data") and hasattr(trace, "metadata"):
-            if hasattr(trace.metadata, "sample_rate") and trace.metadata.sample_rate:
-                duration = len(trace.data) / trace.metadata.sample_rate
-                if duration >= 1:
-                    dur_str = f"{duration:.3f} s"
-                elif duration >= 1e-3:
-                    dur_str = f"{duration * 1e3:.3f} ms"
-                elif duration >= 1e-6:
-                    dur_str = f"{duration * 1e6:.3f} us"
-                else:
-                    dur_str = f"{duration * 1e9:.3f} ns"
-                rows.append(("Duration", dur_str))
+        # Sample rate
+        if hasattr(meta, "sample_rate") and meta.sample_rate:
+            rate_str = self._format_sample_rate(meta.sample_rate)
+            rows.append(("Sample Rate", rate_str))
 
-        # Data statistics
-        if hasattr(trace, "data"):
-            import numpy as np
+        # Channel name
+        if hasattr(meta, "channel_name") and meta.channel_name:
+            rows.append(("Channel", meta.channel_name))
 
-            data = trace.data
-            rows.append(("Min", f"{np.min(data):.4g}"))
-            rows.append(("Max", f"{np.max(data):.4g}"))
-            rows.append(("Mean", f"{np.mean(data):.4g}"))
-            rows.append(("Std Dev", f"{np.std(data):.4g}"))
+        # Source file
+        if hasattr(meta, "source_file") and meta.source_file:
+            rows.append(("Source", meta.source_file))
 
-        # Build HTML table
+    def _format_sample_rate(self, rate: float) -> str:
+        """Format sample rate with appropriate units.
+
+        Args:
+            rate: Sample rate in Hz.
+
+        Returns:
+            Formatted string with units.
+        """
+        if rate >= 1e9:
+            return f"{rate / 1e9:.3f} GSa/s"
+        elif rate >= 1e6:
+            return f"{rate / 1e6:.3f} MSa/s"
+        else:
+            return f"{rate / 1e3:.3f} kSa/s"
+
+    def _add_duration_row(self, trace: Any, rows: list[tuple[str, str]]) -> None:
+        """Add duration information row.
+
+        Args:
+            trace: Trace object.
+            rows: List of (label, value) tuples.
+        """
+        if not (hasattr(trace, "data") and hasattr(trace, "metadata")):
+            return
+
+        if not (hasattr(trace.metadata, "sample_rate") and trace.metadata.sample_rate):
+            return
+
+        duration = len(trace.data) / trace.metadata.sample_rate
+        dur_str = self._format_duration(duration)
+        rows.append(("Duration", dur_str))
+
+    def _format_duration(self, duration: float) -> str:
+        """Format duration with appropriate units.
+
+        Args:
+            duration: Duration in seconds.
+
+        Returns:
+            Formatted string with units.
+        """
+        if duration >= 1:
+            return f"{duration:.3f} s"
+        elif duration >= 1e-3:
+            return f"{duration * 1e3:.3f} ms"
+        elif duration >= 1e-6:
+            return f"{duration * 1e6:.3f} us"
+        else:
+            return f"{duration * 1e9:.3f} ns"
+
+    def _add_statistics_rows(self, trace: Any, rows: list[tuple[str, str]]) -> None:
+        """Add data statistics rows.
+
+        Args:
+            trace: Trace object.
+            rows: List of (label, value) tuples.
+        """
+        if not hasattr(trace, "data"):
+            return
+
+        import numpy as np
+
+        data = trace.data
+        rows.append(("Min", f"{np.min(data):.4g}"))
+        rows.append(("Max", f"{np.max(data):.4g}"))
+        rows.append(("Mean", f"{np.mean(data):.4g}"))
+        rows.append(("Std Dev", f"{np.std(data):.4g}"))
+
+    def _build_html_table(self, rows: list[tuple[str, str]]) -> str:
+        """Build HTML table from rows.
+
+        Args:
+            rows: List of (label, value) tuples.
+
+        Returns:
+            HTML string.
+        """
         html = f"""
 <div style="border: 1px solid #ccc; border-radius: 4px; padding: 10px; max-width: 400px;">
     <h4 style="margin: 0 0 10px 0; color: #333;">{self.title}</h4>

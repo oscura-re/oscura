@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-This directory contains the Claude Code configuration for the Oscura project.
+This directory contains the Claude Code configuration for the {{project_name}} project.
 
 ## Attribution Policy
 

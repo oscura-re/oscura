@@ -10,6 +10,8 @@ from typing import Any, Literal
 import numpy as np
 from numpy.typing import NDArray
 
+from oscura.core.types import TraceMetadata, WaveformTrace
+
 
 @dataclass
 class SignalFactory:
@@ -544,3 +546,33 @@ def create_test_packets(
 
     factory = PacketFactory(payload_size=payload_size, **kwargs)
     return factory.create_batch(count)
+
+
+# =============================================================================
+# Trace Creation Helpers
+# =============================================================================
+
+
+def make_waveform_trace(
+    data: np.ndarray,
+    sample_rate: float = 1_000_000.0,
+) -> WaveformTrace:
+    """Create a WaveformTrace from raw data for testing.
+
+    This is a convenience function for quickly creating WaveformTrace objects
+    from numpy arrays in tests without manually constructing metadata.
+
+    Args:
+        data: Raw waveform data (will be converted to float64).
+        sample_rate: Sample rate in Hz (default: 1 MHz).
+
+    Returns:
+        WaveformTrace with the given data and sample rate.
+
+    Example:
+        >>> data = np.sin(2 * np.pi * 1000 * np.arange(1000) / 1e6)
+        >>> trace = make_waveform_trace(data, sample_rate=1e6)
+        >>> assert trace.metadata.sample_rate == 1e6
+    """
+    metadata = TraceMetadata(sample_rate=sample_rate)
+    return WaveformTrace(data=data.astype(np.float64), metadata=metadata)

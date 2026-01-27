@@ -17,7 +17,7 @@ References:
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from oscura.analyzers.protocols.base import (
     AnnotationLevel,
@@ -26,6 +26,7 @@ from oscura.analyzers.protocols.base import (
     SyncDecoder,
 )
 from oscura.core.types import DigitalTrace, ProtocolPacket
+from oscura.utils.bitwise import bits_to_byte
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -108,18 +109,18 @@ class USBDecoder(SyncDecoder):
     longname = "Universal Serial Bus"
     desc = "USB Low/Full Speed protocol decoder"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("dp", "D+", "USB D+ signal", required=True),
         ChannelDef("dm", "D-", "USB D- signal", required=True),
     ]
 
-    optional_channels = []  # noqa: RUF012
+    optional_channels = []
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef("speed", "Speed", "USB speed", default="full", values=["low", "full"]),
     ]
 
-    annotations = [  # noqa: RUF012
+    annotations = [
         ("sync", "SYNC field"),
         ("pid", "Packet ID"),
         ("data", "Data payload"),
@@ -167,46 +168,16 @@ class USBDecoder(SyncDecoder):
         if dp is None or dm is None:
             return
 
-        n_samples = min(len(dp), len(dm))
-        dp = dp[:n_samples]
-        dm = dm[:n_samples]
-
-        # Decode differential signal to single-ended
-        # J state: LS: D-=1, D+=0; FS: D+=1, D-=0
-        # K state: LS: D+=1, D-=0; FS: D-=1, D+=0
-        # SE0: D+=0, D-=0 (idle/EOP)
-        # SE1: D+=1, D-=1 (illegal)
-
-        if self._speed == USBSpeed.LOW_SPEED:
-            # Low speed: J = D-, K = D+
-            diff_signal = ~dp & dm  # J=1, K=0
-        else:
-            # Full speed: J = D+, K = D-
-            diff_signal = dp & ~dm  # J=1, K=0
-
-        # Find packet boundaries (SYNC followed by data, ending with EOP)
-        # EOP is SE0 for at least 2 bit times
-
-        bit_period = sample_rate / self._speed.value
-        int(2 * bit_period)
-
-        # Find SE0 regions (both D+ and D- are 0)
-        se0 = ~dp & ~dm
+        diff_signal, se0, bit_period = self._prepare_signals(dp, dm, sample_rate)
 
         trans_num = 0
         idx = 0
 
         while idx < len(diff_signal):
-            # Look for SYNC pattern in NRZI-decoded signal
-            # SYNC is 0x80 (10000000) after NRZI and bit unstuffing
-            # In NRZI: no transition = 1, transition = 0
-
-            # Decode NRZI starting from current position
             nrzi_start = self._find_sync_pattern(diff_signal, idx, bit_period)
             if nrzi_start is None:
                 break
 
-            # Extract packet bits
             packet_bits, bit_errors = self._extract_packet_bits(
                 diff_signal, nrzi_start, bit_period, se0
             )
@@ -215,96 +186,230 @@ class USBDecoder(SyncDecoder):
                 idx = nrzi_start + int(bit_period)
                 continue
 
-            # Skip SYNC field (first 8 bits)
-            data_bits = packet_bits[8:]
+            pid_value, pid_name, errors = self._parse_pid(packet_bits, bit_errors)
 
-            # Extract PID (8 bits)
-            if len(data_bits) < 8:
-                idx = nrzi_start + int(bit_period)
-                continue
-
-            pid_byte = self._bits_to_byte(data_bits[:8])
-            pid_value = pid_byte & 0x0F
-            pid_check = (pid_byte >> 4) & 0x0F
-
-            errors = list(bit_errors)
-
-            # Validate PID (upper 4 bits should be complement of lower 4 bits)
-            if pid_value ^ pid_check != 0x0F:
-                errors.append("PID check failed")
-
-            pid_name = PID_NAMES.get(pid_value, f"UNKNOWN(0x{pid_value:X})")
-
-            # Extract payload based on PID type
-            payload_bits = data_bits[8:]
-            payload_bytes = []
-            annotations = {
-                "transaction_num": trans_num,
-                "pid_value": pid_value,
-                "pid_name": pid_name,
-            }
-
-            # Token packets: OUT, IN, SOF, SETUP
-            if pid_value in [0b0001, 0b1001, 0b1101]:  # OUT, IN, SETUP
-                if len(payload_bits) >= 16:  # 11-bit (addr+endp) + 5-bit CRC
-                    addr_endp = self._bits_to_value(payload_bits[:11])
-                    address = addr_endp & 0x7F
-                    endpoint = (addr_endp >> 7) & 0x0F
-                    crc5 = self._bits_to_value(payload_bits[11:16])
-
-                    # Validate CRC5
-                    expected_crc5 = self._crc5(addr_endp)
-                    if crc5 != expected_crc5:
-                        errors.append("CRC5 error")
-
-                    annotations["address"] = address
-                    annotations["endpoint"] = endpoint
-
-            elif pid_value == 0b0101:  # SOF
-                if len(payload_bits) >= 16:  # 11-bit frame number + 5-bit CRC
-                    frame_num = self._bits_to_value(payload_bits[:11])
-                    crc5 = self._bits_to_value(payload_bits[11:16])
-                    annotations["frame_number"] = frame_num
-
-            # Data packets: DATA0, DATA1, DATA2, MDATA
-            elif pid_value in [0b0011, 0b1011, 0b0111, 0b1111]:
-                if len(payload_bits) >= 16:  # At least CRC16
-                    # Data payload + CRC16
-                    data_bit_count = len(payload_bits) - 16
-                    if data_bit_count >= 0:
-                        for i in range(0, data_bit_count, 8):
-                            if i + 8 <= data_bit_count:
-                                byte_val = self._bits_to_byte(payload_bits[i : i + 8])
-                                payload_bytes.append(byte_val)
-
-                        self._bits_to_value(payload_bits[-16:])
-                        annotations["data_length"] = len(payload_bytes)
-
-            # Calculate timing
-            start_time = nrzi_start / sample_rate
-            end_time = (nrzi_start + len(packet_bits) * bit_period) / sample_rate
-
-            # Add annotation
-            self.put_annotation(
-                start_time,
-                end_time,
-                AnnotationLevel.PACKETS,
-                f"{pid_name}",
+            payload_bits = packet_bits[16:]  # Skip SYNC(8) + PID(8)
+            payload_bytes, annotations = self._parse_payload(
+                pid_value, pid_name, payload_bits, trans_num, errors
             )
 
-            # Create packet
-            packet = ProtocolPacket(
-                timestamp=start_time,
-                protocol="usb",
-                data=bytes(payload_bytes),
-                annotations=annotations,
-                errors=errors,
+            packet = self._build_usb_packet(
+                nrzi_start,
+                packet_bits,
+                bit_period,
+                sample_rate,
+                pid_name,
+                payload_bytes,
+                annotations,
+                errors,
             )
 
             yield packet
 
             trans_num += 1
             idx = int(nrzi_start + len(packet_bits) * bit_period)
+
+    def _prepare_signals(
+        self, dp: NDArray[np.bool_], dm: NDArray[np.bool_], sample_rate: float
+    ) -> tuple[NDArray[np.bool_], NDArray[np.bool_], float]:
+        """Prepare differential and SE0 signals.
+
+        Args:
+            dp: D+ signal.
+            dm: D- signal.
+            sample_rate: Sample rate in Hz.
+
+        Returns:
+            Tuple of (differential_signal, se0_signal, bit_period).
+        """
+        n_samples = min(len(dp), len(dm))
+        dp = dp[:n_samples]
+        dm = dm[:n_samples]
+
+        # Decode differential signal
+        if self._speed == USBSpeed.LOW_SPEED:
+            diff_signal = ~dp & dm  # Low speed: J = D-, K = D+
+        else:
+            diff_signal = dp & ~dm  # Full speed: J = D+, K = D-
+
+        se0 = ~dp & ~dm  # SE0: both D+ and D- are 0
+        bit_period = sample_rate / self._speed.value
+
+        return diff_signal, se0, bit_period
+
+    def _parse_pid(
+        self, packet_bits: list[int], bit_errors: list[str]
+    ) -> tuple[int, str, list[str]]:
+        """Parse and validate PID field.
+
+        Args:
+            packet_bits: Full packet bits including SYNC.
+            bit_errors: Bit-level errors from extraction.
+
+        Returns:
+            Tuple of (pid_value, pid_name, errors).
+        """
+        data_bits = packet_bits[8:]  # Skip SYNC
+        errors = list(bit_errors)
+
+        if len(data_bits) < 8:
+            return 0, "INVALID", errors
+
+        pid_byte = bits_to_byte(data_bits[:8])
+        pid_value = pid_byte & 0x0F
+        pid_check = (pid_byte >> 4) & 0x0F
+
+        # Validate PID (upper 4 bits should be complement of lower 4 bits)
+        if pid_value ^ pid_check != 0x0F:
+            errors.append("PID check failed")
+
+        pid_name = PID_NAMES.get(pid_value, f"UNKNOWN(0x{pid_value:X})")
+
+        return pid_value, pid_name, errors
+
+    def _parse_payload(
+        self,
+        pid_value: int,
+        pid_name: str,
+        payload_bits: list[int],
+        trans_num: int,
+        errors: list[str],
+    ) -> tuple[list[int], dict[str, Any]]:
+        """Parse payload based on PID type.
+
+        Args:
+            pid_value: PID value.
+            pid_name: PID name string.
+            payload_bits: Payload bits after PID.
+            trans_num: Transaction number.
+            errors: Error list to append to.
+
+        Returns:
+            Tuple of (payload_bytes, annotations).
+        """
+        annotations = {
+            "transaction_num": trans_num,
+            "pid_value": pid_value,
+            "pid_name": pid_name,
+        }
+        payload_bytes = []
+
+        # Token packets: OUT, IN, SETUP
+        if pid_value in [0b0001, 0b1001, 0b1101]:
+            self._parse_token_payload(payload_bits, annotations, errors)
+        # SOF packet
+        elif pid_value == 0b0101:
+            self._parse_sof_payload(payload_bits, annotations)
+        # Data packets: DATA0, DATA1, DATA2, MDATA
+        elif pid_value in [0b0011, 0b1011, 0b0111, 0b1111]:
+            payload_bytes = self._parse_data_payload(payload_bits, annotations)
+
+        return payload_bytes, annotations
+
+    def _parse_token_payload(
+        self, payload_bits: list[int], annotations: dict[str, Any], errors: list[str]
+    ) -> None:
+        """Parse token packet payload (address + endpoint + CRC5).
+
+        Args:
+            payload_bits: Payload bits.
+            annotations: Annotations dict to update.
+            errors: Error list to append to.
+        """
+        if len(payload_bits) >= 16:  # 11-bit (addr+endp) + 5-bit CRC
+            addr_endp = self._bits_to_value(payload_bits[:11])
+            address = addr_endp & 0x7F
+            endpoint = (addr_endp >> 7) & 0x0F
+            crc5 = self._bits_to_value(payload_bits[11:16])
+
+            # Validate CRC5
+            expected_crc5 = self._crc5(addr_endp)
+            if crc5 != expected_crc5:
+                errors.append("CRC5 error")
+
+            annotations["address"] = address
+            annotations["endpoint"] = endpoint
+
+    def _parse_sof_payload(self, payload_bits: list[int], annotations: dict[str, Any]) -> None:
+        """Parse SOF packet payload (frame number + CRC5).
+
+        Args:
+            payload_bits: Payload bits.
+            annotations: Annotations dict to update.
+        """
+        if len(payload_bits) >= 16:  # 11-bit frame number + 5-bit CRC
+            frame_num = self._bits_to_value(payload_bits[:11])
+            annotations["frame_number"] = frame_num
+
+    def _parse_data_payload(
+        self, payload_bits: list[int], annotations: dict[str, Any]
+    ) -> list[int]:
+        """Parse data packet payload (data + CRC16).
+
+        Args:
+            payload_bits: Payload bits.
+            annotations: Annotations dict to update.
+
+        Returns:
+            List of data bytes.
+        """
+        payload_bytes = []
+
+        if len(payload_bits) >= 16:  # At least CRC16
+            data_bit_count = len(payload_bits) - 16
+            if data_bit_count >= 0:
+                for i in range(0, data_bit_count, 8):
+                    if i + 8 <= data_bit_count:
+                        byte_val = bits_to_byte(payload_bits[i : i + 8])
+                        payload_bytes.append(byte_val)
+
+                annotations["data_length"] = len(payload_bytes)
+
+        return payload_bytes
+
+    def _build_usb_packet(
+        self,
+        start_idx: int,
+        packet_bits: list[int],
+        bit_period: float,
+        sample_rate: float,
+        pid_name: str,
+        payload_bytes: list[int],
+        annotations: dict[str, Any],
+        errors: list[str],
+    ) -> ProtocolPacket:
+        """Build USB protocol packet.
+
+        Args:
+            start_idx: Packet start index.
+            packet_bits: All packet bits.
+            bit_period: Bit period in samples.
+            sample_rate: Sample rate in Hz.
+            pid_name: PID name string.
+            payload_bytes: Payload data bytes.
+            annotations: Packet annotations.
+            errors: Error list.
+
+        Returns:
+            Protocol packet.
+        """
+        start_time = start_idx / sample_rate
+        end_time = (start_idx + len(packet_bits) * bit_period) / sample_rate
+
+        self.put_annotation(
+            start_time,
+            end_time,
+            AnnotationLevel.PACKETS,
+            f"{pid_name}",
+        )
+
+        return ProtocolPacket(
+            timestamp=start_time,
+            protocol="usb",
+            data=bytes(payload_bytes),
+            annotations=annotations,
+            errors=errors,
+        )
 
     def _find_sync_pattern(
         self,
@@ -418,20 +523,6 @@ class USBDecoder(SyncDecoder):
 
         return bits, errors
 
-    def _bits_to_byte(self, bits: list[int]) -> int:
-        """Convert 8 bits to byte (LSB first).
-
-        Args:
-            bits: List of 8 bits.
-
-        Returns:
-            Byte value.
-        """
-        value = 0
-        for i in range(min(8, len(bits))):
-            value |= bits[i] << i
-        return value
-
     def _bits_to_value(self, bits: list[int]) -> int:
         """Convert bits to integer (LSB first).
 
@@ -445,6 +536,19 @@ class USBDecoder(SyncDecoder):
         for i, bit in enumerate(bits):
             value |= bit << i
         return value
+
+    def _bits_to_byte(self, bits: list[int]) -> int:
+        """Convert 8 bits to byte value (LSB first).
+
+        Alias for _bits_to_value for backward compatibility.
+
+        Args:
+            bits: List of 8 bits.
+
+        Returns:
+            Byte value (0-255).
+        """
+        return self._bits_to_value(bits[:8])
 
     def _crc5(self, data: int) -> int:
         """Compute USB CRC5.

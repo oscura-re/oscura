@@ -92,27 +92,61 @@ def plot_protocol_decode(
     References:
         VIS-030: Protocol Decode Visualization
     """
+    _validate_plot_inputs(packets)
+    protocol = packets[0].protocol
+    t_min, t_max, time_mult, time_unit = _calculate_time_parameters(packets, time_range, time_unit)
+    fig, axes = _create_figure_layout(trace, figsize)
+    ax_idx = _plot_waveform_if_present(
+        axes, trace, trace_channel, protocol, t_min, t_max, time_mult
+    )
+    _plot_packet_timeline(
+        axes[ax_idx], packets, protocol, t_min, t_max, time_mult, show_data, show_errors, colorize
+    )
+    _finalize_plot_layout(axes, t_min, t_max, time_mult, time_unit, title)
+
+    return fig
+
+
+def _validate_plot_inputs(packets: list[ProtocolPacket]) -> None:
+    """Validate plot inputs.
+
+    Args:
+        packets: List of protocol packets.
+
+    Raises:
+        ImportError: If matplotlib not available.
+        ValueError: If packets list is empty.
+    """
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
-
     if len(packets) == 0:
         raise ValueError("packets list cannot be empty")
 
-    # Determine protocol name from first packet
-    protocol = packets[0].protocol
 
-    # Determine time range
+def _calculate_time_parameters(
+    packets: list[ProtocolPacket],
+    time_range: tuple[float, float] | None,
+    time_unit: str,
+) -> tuple[float, float, float, str]:
+    """Calculate time range and multiplier for plotting.
+
+    Args:
+        packets: List of packets for auto time range.
+        time_range: User-specified time range or None.
+        time_unit: Time unit string.
+
+    Returns:
+        Tuple of (t_min, t_max, time_mult, time_unit).
+    """
     if time_range is None:
         t_min = min(p.timestamp for p in packets)
         t_max = max(p.end_timestamp if p.end_timestamp else p.timestamp for p in packets)
-        # Add 10% padding
         padding = (t_max - t_min) * 0.1
         t_min -= padding
         t_max += padding
     else:
         t_min, t_max = time_range
 
-    # Select time unit
     if time_unit == "auto":
         time_range_val = t_max - t_min
         if time_range_val < 1e-6:
@@ -130,10 +164,23 @@ def plot_protocol_decode(
     else:
         time_mult = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}.get(time_unit, 1.0)
 
-    # Determine number of rows
-    n_rows = 1 if trace is None else 2  # Waveform + packets
+    return t_min, t_max, time_mult, time_unit
 
-    # Auto-calculate figure size
+
+def _create_figure_layout(
+    trace: DigitalTrace | None, figsize: tuple[float, float] | None
+) -> tuple[Figure, list[Axes]]:
+    """Create figure and axes layout.
+
+    Args:
+        trace: Optional trace for determining row count.
+        figsize: Figure size or None for auto.
+
+    Returns:
+        Tuple of (figure, axes_list).
+    """
+    n_rows = 1 if trace is None else 2
+
     if figsize is None:
         width = 14
         height = max(4, n_rows * 1.5 + 1)
@@ -150,35 +197,78 @@ def plot_protocol_decode(
     if n_rows == 1:
         axes = [axes]
 
-    ax_idx = 0
+    return fig, axes
 
-    # Plot waveform if provided
-    if trace is not None:
-        ax = axes[ax_idx]
-        ax_idx += 1
 
-        # Create time vector for trace
-        trace_time = trace.time_vector * time_mult
-        trace_data = trace.data.astype(float)
+def _plot_waveform_if_present(
+    axes: list[Axes],
+    trace: DigitalTrace | None,
+    trace_channel: str | None,
+    protocol: str,
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+) -> int:
+    """Plot waveform trace if provided.
 
-        # Filter to time range
-        mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
-        trace_time = trace_time[mask]
-        trace_data = trace_data[mask]
+    Args:
+        axes: List of axes to plot on.
+        trace: Optional digital trace.
+        trace_channel: Channel name override.
+        protocol: Protocol name for default label.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time unit multiplier.
 
-        # Plot as digital waveform
-        _plot_digital_waveform(ax, trace_time, trace_data)
+    Returns:
+        Index of next available axis.
+    """
+    if trace is None:
+        return 0
 
-        channel_name = trace_channel if trace_channel else protocol
-        ax.set_ylabel(channel_name, rotation=0, ha="right", va="center", fontsize=10)
-        ax.set_ylim(-0.2, 1.3)
-        ax.set_yticks([])
-        ax.grid(True, axis="x", alpha=0.3, linestyle=":")
+    ax = axes[0]
+    trace_time = trace.time_vector * time_mult
+    trace_data = trace.data.astype(float)
 
-    # Plot packets row
-    ax = axes[ax_idx]
+    mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
+    trace_time = trace_time[mask]
+    trace_data = trace_data[mask]
 
-    # Plot packet timeline
+    _plot_digital_waveform(ax, trace_time, trace_data)
+
+    channel_name = trace_channel if trace_channel else protocol
+    ax.set_ylabel(channel_name, rotation=0, ha="right", va="center", fontsize=10)
+    ax.set_ylim(-0.2, 1.3)
+    ax.set_yticks([])
+    ax.grid(True, axis="x", alpha=0.3, linestyle=":")
+
+    return 1
+
+
+def _plot_packet_timeline(
+    ax: Axes,
+    packets: list[ProtocolPacket],
+    protocol: str,
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    show_data: bool,
+    show_errors: bool,
+    colorize: bool,
+) -> None:
+    """Plot packet timeline on axis.
+
+    Args:
+        ax: Matplotlib axis.
+        packets: List of packets to plot.
+        protocol: Protocol name.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time unit multiplier.
+        show_data: Show data annotations.
+        show_errors: Highlight errors.
+        colorize: Use color coding.
+    """
     for packet in packets:
         if packet.timestamp < t_min or packet.timestamp > t_max:
             continue
@@ -188,15 +278,8 @@ def plot_protocol_decode(
             packet.end_timestamp if packet.end_timestamp else packet.timestamp + 0.001
         ) * time_mult
 
-        # Determine packet color
-        if show_errors and packet.errors:
-            color = "#ff6b6b"  # Red for errors
-        elif colorize:
-            color = _get_packet_color(packet, protocol)
-        else:
-            color = "#4ecdc4"  # Default teal
+        color = _determine_packet_color(packet, protocol, show_errors, colorize)
 
-        # Draw packet rectangle
         rect = patches.Rectangle(
             (start, 0.1),
             end - start,
@@ -208,45 +291,93 @@ def plot_protocol_decode(
         )
         ax.add_patch(rect)
 
-        # Add data annotation
         if show_data and packet.data:
-            data_str = _format_packet_data(packet)
-            mid_time = (start + end) / 2
-            ax.text(
-                mid_time,
-                0.5,
-                data_str,
-                ha="center",
-                va="center",
-                fontsize=8,
-                fontweight="bold",
-                color="white" if not (show_errors and packet.errors) else "black",
-            )
+            _add_packet_annotation(ax, packet, start, end, show_errors)
 
-        # Add error markers
         if show_errors and packet.errors:
-            ax.plot(
-                start,
-                1.1,
-                "rx",
-                markersize=8,
-                markeredgewidth=2,
-            )
+            ax.plot(start, 1.1, "rx", markersize=8, markeredgewidth=2)
 
     ax.set_ylabel(f"{protocol}\nPackets", rotation=0, ha="right", va="center", fontsize=10)
     ax.set_ylim(0, 1.2)
     ax.set_yticks([])
     ax.grid(True, axis="x", alpha=0.3, linestyle=":")
 
-    # Set x-axis label
+
+def _determine_packet_color(
+    packet: ProtocolPacket, protocol: str, show_errors: bool, colorize: bool
+) -> str:
+    """Determine packet rectangle color.
+
+    Args:
+        packet: Protocol packet.
+        protocol: Protocol name.
+        show_errors: Whether to highlight errors.
+        colorize: Whether to use protocol colors.
+
+    Returns:
+        Color string.
+    """
+    if show_errors and packet.errors:
+        return "#ff6b6b"
+    elif colorize:
+        return _get_packet_color(packet, protocol)
+    else:
+        return "#4ecdc4"
+
+
+def _add_packet_annotation(
+    ax: Axes, packet: ProtocolPacket, start: float, end: float, show_errors: bool
+) -> None:
+    """Add data annotation to packet.
+
+    Args:
+        ax: Matplotlib axis.
+        packet: Protocol packet.
+        start: Start time in scaled units.
+        end: End time in scaled units.
+        show_errors: Whether errors are highlighted.
+    """
+    data_str = _format_packet_data(packet)
+    mid_time = (start + end) / 2
+    text_color = "white" if not (show_errors and packet.errors) else "black"
+    ax.text(
+        mid_time,
+        0.5,
+        data_str,
+        ha="center",
+        va="center",
+        fontsize=8,
+        fontweight="bold",
+        color=text_color,
+    )
+
+
+def _finalize_plot_layout(
+    axes: list[Axes],
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    time_unit: str,
+    title: str | None,
+) -> None:
+    """Finalize plot layout with labels and title.
+
+    Args:
+        axes: List of axes.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time unit multiplier.
+        time_unit: Time unit string.
+        title: Optional plot title.
+    """
     axes[-1].set_xlabel(f"Time ({time_unit})", fontsize=11)
     axes[-1].set_xlim(t_min * time_mult, t_max * time_mult)
 
-    if title:
-        fig.suptitle(title, fontsize=14, y=0.98)
-
-    fig.tight_layout()
-    return fig
+    fig = axes[0].get_figure()
+    if fig and hasattr(fig, "tight_layout"):
+        if title:
+            fig.suptitle(title, fontsize=14, y=0.98)
+        fig.tight_layout()
 
 
 def plot_uart_decode(
@@ -350,38 +481,43 @@ def _plot_dual_channel_uart(
     Returns:
         Matplotlib Figure object.
     """
-    # Determine time range from packets
-    if time_range is None:
-        t_min = min(p.timestamp for p in packets)
-        t_max = max(p.end_timestamp if p.end_timestamp else p.timestamp for p in packets)
-        padding = (t_max - t_min) * 0.1
-        t_min -= padding
-        t_max += padding
-    else:
-        t_min, t_max = time_range
+    # Calculate time parameters
+    t_min, t_max, time_mult, time_unit = _determine_time_params(packets, time_range, time_unit)
 
-    # Select time unit
-    if time_unit == "auto":
-        time_range_val = t_max - t_min
-        if time_range_val < 1e-6:
-            time_unit = "ns"
-            time_mult = 1e9
-        elif time_range_val < 1e-3:
-            time_unit = "us"
-            time_mult = 1e6
-        elif time_range_val < 1:
-            time_unit = "ms"
-            time_mult = 1e3
-        else:
-            time_unit = "s"
-            time_mult = 1.0
-    else:
-        time_mult = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}.get(time_unit, 1.0)
+    # Create figure with 4 rows
+    fig, axes = _create_dual_uart_figure(figsize)
 
-    # 4 rows: RX waveform, RX packets, TX waveform, TX packets
+    # Separate packets by channel
+    rx_packets, tx_packets = _separate_uart_packets(packets)
+    show_errors = show_parity_errors or show_framing_errors
+
+    # Plot all four rows
+    _plot_uart_channel_pair(
+        axes[0], axes[1], rx_trace, rx_packets, "RX", t_min, t_max, time_mult, show_errors
+    )
+    _plot_uart_channel_pair(
+        axes[2], axes[3], tx_trace, tx_packets, "TX", t_min, t_max, time_mult, show_errors
+    )
+
+    # Finalize plot
+    _finalize_uart_plot(fig, axes, t_min, t_max, time_mult, time_unit, title)
+
+    return fig
+
+
+def _create_dual_uart_figure(
+    figsize: tuple[float, float] | None,
+) -> tuple[Figure, list[Axes]]:
+    """Create figure for dual-channel UART plot.
+
+    Args:
+        figsize: Figure size or None for auto-calculation.
+
+    Returns:
+        Tuple of (figure, axes_list).
+    """
     n_rows = 4
 
-    # Auto-calculate figure size
     if figsize is None:
         width = 14
         height = max(6, n_rows * 1.2 + 1)
@@ -395,11 +531,24 @@ def _plot_dual_channel_uart(
         gridspec_kw={"hspace": 0.1, "height_ratios": [1, 0.8, 1, 0.8]},
     )
 
-    # Separate packets by channel (using metadata if available)
+    return fig, axes
+
+
+def _separate_uart_packets(
+    packets: list[ProtocolPacket],
+) -> tuple[list[ProtocolPacket], list[ProtocolPacket]]:
+    """Separate UART packets by channel (RX vs TX).
+
+    Args:
+        packets: List of UART packets.
+
+    Returns:
+        Tuple of (rx_packets, tx_packets).
+    """
     rx_packets = []
     tx_packets = []
+
     for packet in packets:
-        # Check packet metadata for channel info
         channel = getattr(packet, "channel", None)
         if channel is None and hasattr(packet, "metadata"):
             channel = packet.metadata.get("channel") if isinstance(packet.metadata, dict) else None
@@ -407,49 +556,74 @@ def _plot_dual_channel_uart(
         if channel == "TX":
             tx_packets.append(packet)
         else:
-            # Default to RX if channel not specified
             rx_packets.append(packet)
 
-    # If no channel info, put all packets on both (as they were before)
+    # If no channel info, put all packets on RX
     if not rx_packets and not tx_packets:
         rx_packets = packets
-        tx_packets = []
 
-    show_errors = show_parity_errors or show_framing_errors
+    return rx_packets, tx_packets
 
-    # Plot RX waveform (row 0)
-    ax_rx_wave = axes[0]
-    rx_time = rx_trace.time_vector * time_mult
-    rx_data = rx_trace.data.astype(float)
-    mask = (rx_time >= t_min * time_mult) & (rx_time <= t_max * time_mult)
-    _plot_digital_waveform(ax_rx_wave, rx_time[mask], rx_data[mask])
-    ax_rx_wave.set_ylabel("RX", rotation=0, ha="right", va="center", fontsize=10)
-    ax_rx_wave.set_ylim(-0.2, 1.3)
-    ax_rx_wave.set_yticks([])
-    ax_rx_wave.grid(True, axis="x", alpha=0.3, linestyle=":")
 
-    # Plot RX packets (row 1)
-    ax_rx_packets = axes[1]
-    _plot_packet_row(ax_rx_packets, rx_packets, t_min, t_max, time_mult, show_errors)
-    ax_rx_packets.set_ylabel("RX\nData", rotation=0, ha="right", va="center", fontsize=9)
+def _plot_uart_channel_pair(
+    ax_wave: Axes,
+    ax_packets: Axes,
+    trace: DigitalTrace,
+    packets: list[ProtocolPacket],
+    label: str,
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    show_errors: bool,
+) -> None:
+    """Plot waveform and packet row for a single UART channel.
 
-    # Plot TX waveform (row 2)
-    ax_tx_wave = axes[2]
-    tx_time = tx_trace.time_vector * time_mult
-    tx_data = tx_trace.data.astype(float)
-    mask = (tx_time >= t_min * time_mult) & (tx_time <= t_max * time_mult)
-    _plot_digital_waveform(ax_tx_wave, tx_time[mask], tx_data[mask])
-    ax_tx_wave.set_ylabel("TX", rotation=0, ha="right", va="center", fontsize=10)
-    ax_tx_wave.set_ylim(-0.2, 1.3)
-    ax_tx_wave.set_yticks([])
-    ax_tx_wave.grid(True, axis="x", alpha=0.3, linestyle=":")
+    Args:
+        ax_wave: Axis for waveform plot.
+        ax_packets: Axis for packet annotations.
+        trace: Digital trace for the channel.
+        packets: Packets for this channel.
+        label: Channel label (e.g., "RX" or "TX").
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time unit multiplier.
+        show_errors: Whether to highlight errors.
+    """
+    # Plot waveform
+    trace_time = trace.time_vector * time_mult
+    trace_data = trace.data.astype(float)
+    mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
+    _plot_digital_waveform(ax_wave, trace_time[mask], trace_data[mask])
+    ax_wave.set_ylabel(label, rotation=0, ha="right", va="center", fontsize=10)
+    ax_wave.set_ylim(-0.2, 1.3)
+    ax_wave.set_yticks([])
+    ax_wave.grid(True, axis="x", alpha=0.3, linestyle=":")
 
-    # Plot TX packets (row 3)
-    ax_tx_packets = axes[3]
-    _plot_packet_row(ax_tx_packets, tx_packets, t_min, t_max, time_mult, show_errors)
-    ax_tx_packets.set_ylabel("TX\nData", rotation=0, ha="right", va="center", fontsize=9)
+    # Plot packets
+    _plot_packet_row(ax_packets, packets, t_min, t_max, time_mult, show_errors)
+    ax_packets.set_ylabel(f"{label}\nData", rotation=0, ha="right", va="center", fontsize=9)
 
-    # Set x-axis label
+
+def _finalize_uart_plot(
+    fig: Figure,
+    axes: list[Axes],
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    time_unit: str,
+    title: str | None,
+) -> None:
+    """Add final formatting to UART plot.
+
+    Args:
+        fig: Matplotlib figure.
+        axes: List of axes.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time multiplier.
+        time_unit: Time unit string.
+        title: Plot title or None.
+    """
     axes[-1].set_xlabel(f"Time ({time_unit})", fontsize=11)
     axes[-1].set_xlim(t_min * time_mult, t_max * time_mult)
 
@@ -457,7 +631,6 @@ def _plot_dual_channel_uart(
         fig.suptitle(title, fontsize=14, y=0.98)
 
     fig.tight_layout()
-    return fig
 
 
 def _plot_packet_row(
@@ -634,7 +807,37 @@ def _plot_multi_channel_spi(
     Returns:
         Matplotlib Figure object.
     """
-    # Determine time range from packets
+    t_min, t_max, time_mult, time_unit = _determine_time_params(packets, time_range, time_unit)
+    rows = _build_spi_row_list(cs_trace, clk_trace, mosi_trace, miso_trace, show_mosi, show_miso)
+
+    if len(rows) == 0:
+        return plot_protocol_decode(
+            packets, time_range=(t_min, t_max), time_unit=time_unit, figsize=figsize, title=title
+        )
+
+    fig, axes = _create_spi_figure(rows, figsize)
+    mosi_packets, miso_packets = _separate_spi_packets(packets)
+    _render_spi_rows(axes, rows, t_min, t_max, time_mult, mosi_packets, miso_packets)
+    _finalize_spi_plot(axes, t_min, t_max, time_mult, time_unit, title)
+
+    return fig
+
+
+def _determine_time_params(
+    packets: list[ProtocolPacket],
+    time_range: tuple[float, float] | None,
+    time_unit: str,
+) -> tuple[float, float, float, str]:
+    """Determine time range and multiplier for SPI plot.
+
+    Args:
+        packets: List of SPI packets for time range calculation.
+        time_range: User-specified time range or None for auto.
+        time_unit: Time unit ("auto" or specific unit).
+
+    Returns:
+        Tuple of (t_min, t_max, time_mult, time_unit).
+    """
     if time_range is None:
         t_min = min(p.timestamp for p in packets)
         t_max = max(p.end_timestamp if p.end_timestamp else p.timestamp for p in packets)
@@ -644,7 +847,6 @@ def _plot_multi_channel_spi(
     else:
         t_min, t_max = time_range
 
-    # Select time unit
     if time_unit == "auto":
         time_range_val = t_max - t_min
         if time_range_val < 1e-6:
@@ -662,45 +864,64 @@ def _plot_multi_channel_spi(
     else:
         time_mult = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}.get(time_unit, 1.0)
 
-    # Build list of rows to display
+    return t_min, t_max, time_mult, time_unit
+
+
+def _build_spi_row_list(
+    cs_trace: DigitalTrace | None,
+    clk_trace: DigitalTrace | None,
+    mosi_trace: DigitalTrace | None,
+    miso_trace: DigitalTrace | None,
+    show_mosi: bool,
+    show_miso: bool,
+) -> list[dict[str, Any]]:
+    """Build list of row specifications for SPI multi-channel plot.
+
+    Args:
+        cs_trace: Chip select trace.
+        clk_trace: Clock trace.
+        mosi_trace: MOSI trace.
+        miso_trace: MISO trace.
+        show_mosi: Whether to show MOSI data row.
+        show_miso: Whether to show MISO data row.
+
+    Returns:
+        List of row dictionaries specifying type, trace, label, channel.
+    """
     rows: list[dict[str, Any]] = []
 
     if cs_trace is not None:
         rows.append({"type": "waveform", "trace": cs_trace, "label": "CS"})
-
     if clk_trace is not None:
         rows.append({"type": "waveform", "trace": clk_trace, "label": "CLK"})
-
     if mosi_trace is not None:
         rows.append({"type": "waveform", "trace": mosi_trace, "label": "MOSI"})
         if show_mosi:
             rows.append({"type": "packets", "label": "MOSI\nData", "channel": "MOSI"})
-
     if miso_trace is not None:
         rows.append({"type": "waveform", "trace": miso_trace, "label": "MISO"})
         if show_miso:
             rows.append({"type": "packets", "label": "MISO\nData", "channel": "MISO"})
 
+    return rows
+
+
+def _create_spi_figure(
+    rows: list[dict[str, Any]],
+    figsize: tuple[float, float] | None,
+) -> tuple[Figure, list[Axes]]:
+    """Create matplotlib figure and axes for SPI plot.
+
+    Args:
+        rows: Row specifications from _build_spi_row_list.
+        figsize: Figure size or None for auto-calculation.
+
+    Returns:
+        Tuple of (figure, axes_list).
+    """
+    height_ratios = [1.0 if row["type"] == "waveform" else 0.6 for row in rows]
     n_rows = len(rows)
-    if n_rows == 0:
-        # Fallback to generic if no traces
-        return plot_protocol_decode(
-            packets,
-            time_range=time_range,
-            time_unit=time_unit,
-            figsize=figsize,
-            title=title,
-        )
 
-    # Calculate height ratios (waveforms get more space than data rows)
-    height_ratios = []
-    for row in rows:
-        if row["type"] == "waveform":
-            height_ratios.append(1.0)
-        else:
-            height_ratios.append(0.6)
-
-    # Auto-calculate figure size
     if figsize is None:
         width = 14
         height = max(4, sum(height_ratios) * 1.2 + 1)
@@ -713,13 +934,26 @@ def _plot_multi_channel_spi(
         sharex=True,
         gridspec_kw={"hspace": 0.1, "height_ratios": height_ratios},
     )
-
     if n_rows == 1:
         axes = [axes]
 
-    # Separate packets by channel (MOSI vs MISO)
+    return fig, axes
+
+
+def _separate_spi_packets(
+    packets: list[ProtocolPacket],
+) -> tuple[list[ProtocolPacket], list[ProtocolPacket]]:
+    """Separate packets by channel (MOSI vs MISO).
+
+    Args:
+        packets: List of SPI packets.
+
+    Returns:
+        Tuple of (mosi_packets, miso_packets).
+    """
     mosi_packets = []
     miso_packets = []
+
     for packet in packets:
         channel = getattr(packet, "channel", None)
         if channel is None and hasattr(packet, "metadata"):
@@ -728,41 +962,121 @@ def _plot_multi_channel_spi(
         if channel == "MISO":
             miso_packets.append(packet)
         else:
-            # Default to MOSI
             mosi_packets.append(packet)
 
-    # If no channel info, use all packets for MOSI
     if not mosi_packets and not miso_packets:
         mosi_packets = packets
 
-    # Plot each row
+    return mosi_packets, miso_packets
+
+
+def _render_spi_rows(
+    axes: list[Axes],
+    rows: list[dict[str, Any]],
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    mosi_packets: list[ProtocolPacket],
+    miso_packets: list[ProtocolPacket],
+) -> None:
+    """Render all SPI plot rows (waveforms and packet data).
+
+    Args:
+        axes: List of matplotlib axes.
+        rows: Row specifications.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time multiplier for unit conversion.
+        mosi_packets: MOSI channel packets.
+        miso_packets: MISO channel packets.
+    """
     for ax, row in zip(axes, rows, strict=False):
         if row["type"] == "waveform":
-            trace = row["trace"]
-            trace_time = trace.time_vector * time_mult
-            trace_data = trace.data.astype(float)
-            mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
-            _plot_digital_waveform(ax, trace_time[mask], trace_data[mask])
-            ax.set_ylabel(row["label"], rotation=0, ha="right", va="center", fontsize=10)
-            ax.set_ylim(-0.2, 1.3)
-            ax.set_yticks([])
-            ax.grid(True, axis="x", alpha=0.3, linestyle=":")
+            _render_spi_waveform_row(ax, row, t_min, t_max, time_mult)
         else:
-            # Packet row
-            channel = row.get("channel", "MOSI")
-            pkts = mosi_packets if channel == "MOSI" else miso_packets
-            _plot_packet_row(ax, pkts, t_min, t_max, time_mult, show_errors=True)
-            ax.set_ylabel(row["label"], rotation=0, ha="right", va="center", fontsize=9)
+            _render_spi_packet_row(ax, row, t_min, t_max, time_mult, mosi_packets, miso_packets)
 
-    # Set x-axis label
+
+def _render_spi_waveform_row(
+    ax: Axes,
+    row: dict[str, Any],
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+) -> None:
+    """Render a single waveform row for SPI plot.
+
+    Args:
+        ax: Matplotlib axis to render on.
+        row: Row specification with trace and label.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time multiplier for unit conversion.
+    """
+    trace = row["trace"]
+    trace_time = trace.time_vector * time_mult
+    trace_data = trace.data.astype(float)
+    mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
+    _plot_digital_waveform(ax, trace_time[mask], trace_data[mask])
+    ax.set_ylabel(row["label"], rotation=0, ha="right", va="center", fontsize=10)
+    ax.set_ylim(-0.2, 1.3)
+    ax.set_yticks([])
+    ax.grid(True, axis="x", alpha=0.3, linestyle=":")
+
+
+def _render_spi_packet_row(
+    ax: Axes,
+    row: dict[str, Any],
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    mosi_packets: list[ProtocolPacket],
+    miso_packets: list[ProtocolPacket],
+) -> None:
+    """Render a single packet data row for SPI plot.
+
+    Args:
+        ax: Matplotlib axis to render on.
+        row: Row specification with channel and label.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time multiplier for unit conversion.
+        mosi_packets: MOSI channel packets.
+        miso_packets: MISO channel packets.
+    """
+    channel = row.get("channel", "MOSI")
+    pkts = mosi_packets if channel == "MOSI" else miso_packets
+    _plot_packet_row(ax, pkts, t_min, t_max, time_mult, show_errors=True)
+    ax.set_ylabel(row["label"], rotation=0, ha="right", va="center", fontsize=9)
+
+
+def _finalize_spi_plot(
+    axes: list[Axes],
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    time_unit: str,
+    title: str | None,
+) -> None:
+    """Add final formatting to SPI plot.
+
+    Args:
+        axes: List of matplotlib axes.
+        t_min: Minimum time value.
+        t_max: Maximum time value.
+        time_mult: Time multiplier for unit conversion.
+        time_unit: Time unit string for label.
+        title: Plot title or None.
+    """
     axes[-1].set_xlabel(f"Time ({time_unit})", fontsize=11)
     axes[-1].set_xlim(t_min * time_mult, t_max * time_mult)
 
-    if title:
+    fig = axes[0].get_figure()
+    if title and fig is not None:
         fig.suptitle(title, fontsize=14, y=0.98)
 
-    fig.tight_layout()
-    return fig
+    if fig is not None and hasattr(fig, "tight_layout"):
+        fig.tight_layout()
 
 
 def plot_i2c_decode(

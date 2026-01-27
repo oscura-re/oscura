@@ -6,22 +6,22 @@ Tests requirements:
 import numpy as np
 import pytest
 
-from oscura.component.impedance import (
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.component.impedance import (
     discontinuity_analysis,
     extract_impedance,
     impedance_profile,
 )
-from oscura.component.reactive import (
+from oscura.utils.component.reactive import (
     measure_capacitance,
     measure_inductance,
 )
-from oscura.component.transmission_line import (
+from oscura.utils.component.transmission_line import (
     characteristic_impedance,
     propagation_delay,
     transmission_line_analysis,
     velocity_factor,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

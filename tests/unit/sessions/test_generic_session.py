@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from oscura.acquisition import SyntheticSource
-from oscura.builders import SignalBuilder
+from oscura.hardware.acquisition import SyntheticSource
 from oscura.sessions import ComparisonResult, GenericSession
+from oscura.utils.builders import SignalBuilder
 
 pytestmark = pytest.mark.unit
 

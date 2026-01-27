@@ -46,7 +46,7 @@ class TimeIndex:
     """
 
     # Time unit multipliers to seconds
-    TIME_UNITS = {  # noqa: RUF012
+    TIME_UNITS = {
         "s": 1.0,
         "ms": 1e-3,
         "us": 1e-6,
@@ -212,7 +212,7 @@ class UnitConverter:
     """
 
     # SI prefixes
-    SI_PREFIXES = {  # noqa: RUF012
+    SI_PREFIXES = {
         "P": 1e15,  # peta
         "T": 1e12,  # tera
         "G": 1e9,  # giga
@@ -227,7 +227,7 @@ class UnitConverter:
     }
 
     # Base units
-    BASE_UNITS = {  # noqa: RUF012
+    BASE_UNITS = {
         "V": "voltage",
         "A": "current",
         "W": "power",

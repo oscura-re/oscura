@@ -106,7 +106,7 @@ class DTCDatabase:
 
         Args:
             code: DTC code to look up (e.g., "P0420", "p0420")
-                  Case-insensitive
+                  Case-insensitive, whitespace is stripped
 
         Returns:
             DTCInfo object if found, None if code not in database
@@ -117,7 +117,7 @@ class DTCDatabase:
             ...     print(f"{info.code}: {info.description}")
             P0420: Catalyst System Efficiency Below Threshold (Bank 1)
         """
-        return DTCS.get(code.upper())
+        return DTCS.get(code.strip().upper())
 
     @staticmethod
     def search(keyword: str) -> list[DTCInfo]:

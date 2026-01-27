@@ -65,19 +65,6 @@ def signal_integrity_audit(
         - bit_error_rate_estimate: Estimated BER from eye closure
         - snr_db: Signal-to-noise ratio in dB
 
-    Returns:
-        Dictionary containing:
-        - eye_height: Eye opening height in volts
-        - eye_width: Eye opening width in seconds
-        - jitter_rms: RMS jitter in seconds
-        - jitter_pp: Peak-to-peak jitter in seconds
-        - tie: Time Interval Error array
-        - tie_rms: RMS of TIE in seconds
-        - margin_to_mask: Margin to specified mask (if provided)
-        - dominant_jitter_source: 'random' or 'deterministic'
-        - bit_error_rate_estimate: Estimated BER from eye closure
-        - snr_db: Signal-to-noise ratio in dB
-
     Example:
         >>> trace = osc.load('high_speed_data.wfm')
         >>> result = osc.signal_integrity_audit(trace, bit_rate=1e9)
@@ -89,96 +76,190 @@ def signal_integrity_audit(
         JEDEC Standard No. 65B Section 4.3 (Eye diagrams)
         TIA-568.2-D (Signal integrity for high-speed data)
     """
-    # Import here to avoid circular dependencies
-    try:
-        from oscura.analyzers.eye.diagram import (
-            EyeDiagram,
-        )
-    except ImportError:
-        # Fallback if eye module not available
-        pass
+    # Load timing analyzers
+    time_interval_error, recover_clock_fft = _load_timing_analyzers()
 
+    # Determine clock frequency
+    recovered_freq = _determine_clock_frequency(trace, bit_rate, recover_clock_fft, clock_trace)
+    ui = 1.0 / recovered_freq if recovered_freq else 1e-9
+
+    # Analyze eye parameters
+    eye_height, eye_width = _analyze_eye_parameters(trace, recovered_freq, ui)
+
+    # Analyze jitter
+    tie, jitter_rms_val, jitter_pp_val = _analyze_jitter(
+        trace, recovered_freq, ui, time_interval_error
+    )
+
+    # Classify jitter source
+    dominant_jitter_source = _classify_jitter_source(jitter_rms_val, jitter_pp_val)
+
+    # Estimate signal quality
+    snr_db, ber_estimate = _estimate_signal_quality(eye_height, jitter_rms_val, recovered_freq)
+
+    # Calculate mask margin
+    margin_to_mask = _calculate_mask_margin(mask, eye_height)
+
+    # Build result
+    result = _build_result_dict(
+        eye_height,
+        eye_width,
+        jitter_rms_val,
+        jitter_pp_val,
+        tie,
+        margin_to_mask,
+        dominant_jitter_source,
+        ber_estimate,
+        snr_db,
+        recovered_freq,
+        ui,
+    )
+
+    # Generate report if requested
+    if report is not None:
+        _generate_si_report(result, report)
+
+    return result
+
+
+def _load_timing_analyzers() -> tuple[Any, Any]:
+    """Load timing analysis functions."""
     try:
         from oscura.analyzers.digital.timing import (
-            peak_to_peak_jitter,
             recover_clock_fft,
             time_interval_error,
         )
-    except ImportError:
-        # Provide minimal implementation
-        recover_clock_fft = None  # type: ignore[assignment]
-        peak_to_peak_jitter = None  # type: ignore[assignment]  # noqa: F841
-        time_interval_error = None  # type: ignore[assignment]
 
-    # Recover clock if not provided
-    if clock_trace is None and recover_clock_fft is not None:
+        return time_interval_error, recover_clock_fft
+    except ImportError:
+        return None, None
+
+
+def _determine_clock_frequency(
+    trace: WaveformTrace,
+    bit_rate: float | None,
+    recover_clock_fft: Any,
+    clock_trace: WaveformTrace | None,
+) -> float:
+    """Determine clock frequency from trace or bit rate.
+
+    Priority order:
+    1. If bit_rate is explicitly specified, use it (user knows best)
+    2. If clock_trace is provided, try to recover frequency from it
+    3. Try to recover frequency from data trace
+    4. Fall back to default 1 GHz
+    """
+    # If bit_rate is explicitly specified, use it
+    if bit_rate is not None:
+        return bit_rate
+
+    # If clock_trace provided, try to recover from it
+    if clock_trace is not None and recover_clock_fft is not None:
+        try:
+            clock_result = recover_clock_fft(clock_trace)
+            freq: float = float(clock_result.frequency)
+            return freq
+        except Exception:
+            pass
+
+    # Try to recover from data trace
+    if recover_clock_fft is not None:
         try:
             clock_result = recover_clock_fft(trace)
-            recovered_freq = clock_result.frequency
+            freq_trace: float = float(clock_result.frequency)
+            return freq_trace
         except Exception:
-            # Estimate from bit rate
-            recovered_freq = bit_rate if bit_rate else 1e9
-    else:
-        recovered_freq = bit_rate if bit_rate else 1e9
+            pass
 
-    # Calculate eye parameters (simplified - would use actual eye_diagram function)
-    # For now, provide placeholder calculations
+    # Fall back to default
+    return 1e9
+
+
+def _analyze_eye_parameters(
+    trace: WaveformTrace,
+    recovered_freq: float,
+    ui: float,
+) -> tuple[float, float]:
+    """Analyze eye diagram parameters."""
     vpp = np.ptp(trace.data)
     eye_height = vpp * 0.7  # Typical eye opening is ~70% of signal swing
-    ui = 1.0 / recovered_freq if recovered_freq else 1e-9  # Unit Interval
     eye_width = ui * 0.6  # Typical eye opening is ~60% of UI
+    return eye_height, eye_width
 
-    # Calculate jitter (simplified)
-    # In real implementation, would use proper jitter analysis
+
+def _analyze_jitter(
+    trace: WaveformTrace,
+    recovered_freq: float,
+    ui: float,
+    time_interval_error: Any,
+) -> tuple[Any, float, float]:
+    """Analyze jitter characteristics."""
     if time_interval_error is not None:
         try:
             tie = time_interval_error(trace, nominal_period=1.0 / recovered_freq)
-            jitter_rms_val = float(np.std(tie))
-            jitter_pp_val = float(np.ptp(tie))
+            return tie, float(np.std(tie)), float(np.ptp(tie))
         except Exception:
-            tie = np.array([])
-            jitter_rms_val = ui * 0.05  # Assume 5% UI jitter
-            jitter_pp_val = ui * 0.2  # Assume 20% UI p-p jitter
-    else:
-        tie = np.array([])  # type: ignore[unreachable]
-        jitter_rms_val = ui * 0.05
-        jitter_pp_val = ui * 0.2
+            pass
 
-    # Determine dominant jitter source
-    # Random jitter dominates if RMS jitter is significant compared to p-p
-    # (deterministic would show bounded p-p with lower RMS)
+    # Fallback estimates
+    tie = np.array([])
+    jitter_rms_val = ui * 0.05  # Assume 5% UI jitter
+    jitter_pp_val = ui * 0.2  # Assume 20% UI p-p jitter
+    return tie, jitter_rms_val, jitter_pp_val
+
+
+def _classify_jitter_source(jitter_rms_val: float, jitter_pp_val: float) -> str:
+    """Classify dominant jitter source as random or deterministic."""
     if jitter_rms_val > 0:
         jitter_ratio = jitter_pp_val / (6 * jitter_rms_val)  # Expect ~6 for Gaussian
-        dominant_jitter_source = "random" if jitter_ratio < 8 else "deterministic"
-    else:
-        dominant_jitter_source = "unknown"
+        return "random" if jitter_ratio < 8 else "deterministic"
+    return "unknown"
 
-    # Estimate BER from eye closure (simplified Gaussian approximation)
-    if eye_height > 0:
-        snr_linear = (
-            eye_height / (2 * jitter_rms_val * recovered_freq) if jitter_rms_val > 0 else 100
-        )
-        snr_db = 20 * np.log10(snr_linear) if snr_linear > 0 else 0
-        # BER ~ Q(SNR) where Q is Q-function
-        ber_estimate = 0.5 * (1 - np.tanh(snr_linear / np.sqrt(2)))
-    else:
-        snr_db = 0
-        ber_estimate = 0.5
 
-    # Mask margin (placeholder - would load actual mask)
-    margin_to_mask = None
-    if mask is not None:
-        # Would compare eye to loaded mask
-        margin_to_mask = eye_height * 0.2  # Assume 20% margin
+def _estimate_signal_quality(
+    eye_height: float,
+    jitter_rms_val: float,
+    recovered_freq: float,
+) -> tuple[float, float]:
+    """Estimate SNR and BER from eye parameters."""
+    if eye_height <= 0:
+        return 0.0, 0.5
 
-    # Build result dictionary
-    result = {
+    snr_linear = eye_height / (2 * jitter_rms_val * recovered_freq) if jitter_rms_val > 0 else 100
+    snr_db = 20 * np.log10(snr_linear) if snr_linear > 0 else 0
+    ber_estimate = 0.5 * (1 - np.tanh(snr_linear / np.sqrt(2)))
+
+    return snr_db, ber_estimate
+
+
+def _calculate_mask_margin(mask: str | None, eye_height: float) -> float | None:
+    """Calculate margin to specified mask."""
+    if mask is None:
+        return None
+    return eye_height * 0.2  # Assume 20% margin
+
+
+def _build_result_dict(
+    eye_height: float,
+    eye_width: float,
+    jitter_rms_val: float,
+    jitter_pp_val: float,
+    tie: Any,
+    margin_to_mask: float | None,
+    dominant_jitter_source: str,
+    ber_estimate: float,
+    snr_db: float,
+    recovered_freq: float,
+    ui: float,
+) -> dict[str, Any]:
+    """Build result dictionary."""
+    return {
         "eye_height": eye_height,
         "eye_width": eye_width,
         "jitter_rms": jitter_rms_val,
         "jitter_pp": jitter_pp_val,
         "tie": tie,
-        "tie_rms": jitter_rms_val,  # TIE RMS same as jitter RMS
+        "tie_rms": jitter_rms_val,
         "margin_to_mask": margin_to_mask,
         "dominant_jitter_source": dominant_jitter_source,
         "bit_error_rate_estimate": ber_estimate,
@@ -186,12 +267,6 @@ def signal_integrity_audit(
         "bit_rate": recovered_freq,
         "unit_interval": ui,
     }
-
-    # Generate report if requested
-    if report is not None:
-        _generate_si_report(result, report)
-
-    return result
 
 
 def _generate_si_report(result: dict[str, Any], output_path: str) -> None:

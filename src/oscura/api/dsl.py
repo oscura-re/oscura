@@ -78,7 +78,7 @@ class DSLParser:
         API-010: Domain-Specific Language (DSL)
     """
 
-    OPERATIONS = {  # noqa: RUF012
+    OPERATIONS = {
         "load",
         "save",
         "export",

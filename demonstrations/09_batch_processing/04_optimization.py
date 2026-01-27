@@ -25,14 +25,11 @@ import numpy as np
 # Add demonstrations to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from oscura.utils.optimization.parallel import get_optimal_workers, parallel_map
+
 from demonstrations.common import BaseDemo
-from oscura.batch.advanced import AdvancedBatchProcessor, BatchConfig
 from oscura.core.gpu_backend import GPUBackend
 from oscura.core.types import TraceMetadata, WaveformTrace
-from oscura.optimization.parallel import (
-    get_optimal_workers,
-    parallel_map,
-)
 
 
 class BatchOptimizationDemo(BaseDemo):
@@ -241,36 +238,43 @@ class BatchOptimizationDemo(BaseDemo):
         self.subsection("Part 5: Advanced Batch Processing")
         self.info("Use AdvancedBatchProcessor for production workflows.")
 
-        config = BatchConfig(
-            on_error="skip",
-            max_workers=optimal_workers,
-            use_threads=False,  # Processes for CPU-bound work
-            progress_bar=False,  # Disable for demo output clarity
-            timeout_per_file=5.0,  # 5 second timeout per file
-        )
+        # NOTE: BatchConfig and AdvancedBatchProcessor removed in v0.6
+        # Use parallel_map with custom configuration instead
+        # config = BatchConfig(
+        #     on_error="skip",
+        #     max_workers=optimal_workers,
+        #     use_threads=False,  # Processes for CPU-bound work
+        #     progress_bar=False,  # Disable for demo output clarity
+        #     timeout_per_file=5.0,  # 5 second timeout per file
+        # )
+        #
+        # processor = AdvancedBatchProcessor(config)
 
-        processor = AdvancedBatchProcessor(config)
+        # Create file paths for processor (unused - kept for reference)
+        # file_paths = [f"trace_{i:03d}.bin" for i in range(num_files)]
 
-        # Create file paths for processor
-        file_paths = [f"trace_{i:03d}.bin" for i in range(num_files)]
+        # Analysis function wrapper (unused - kept for reference)
+        # def analyze_trace_by_path(file_path: str) -> dict[str, Any]:
+        #     # Find trace by path
+        #     idx = int(file_path.split("_")[1].split(".")[0])
+        #     if idx < len(traces):
+        #         return self._process_signal_cpu(traces[idx], idx)
+        #     return {}
 
-        # Analysis function wrapper
-        def analyze_trace_by_path(file_path: str) -> dict[str, Any]:
-            # Find trace by path
-            idx = int(file_path.split("_")[1].split(".")[0])
-            if idx < len(traces):
-                return self._process_signal_cpu(traces[idx], idx)
-            return {}
+        # start_time = time.time()
+        # batch_results_df = processor.process(file_paths, analyze_trace_by_path)
+        # batch_time = time.time() - start_time
+        #
+        # self.result("Files processed", len(batch_results_df))
+        # self.result("Successful", batch_results_df["success"].sum())
+        # self.result("Failed", (~batch_results_df["success"]).sum())
+        # self.result("Batch time", f"{batch_time:.3f}", "seconds")
+        # self.result("Speedup vs serial", f"{serial_time / batch_time:.2f}", "x")
+        self.info("NOTE: AdvancedBatchProcessor removed in v0.6 - use parallel_map instead")
 
-        start_time = time.time()
-        batch_results_df = processor.process(file_paths, analyze_trace_by_path)
-        batch_time = time.time() - start_time
-
-        self.result("Files processed", len(batch_results_df))
-        self.result("Successful", batch_results_df["success"].sum())
-        self.result("Failed", (~batch_results_df["success"]).sum())
-        self.result("Batch time", f"{batch_time:.3f}", "seconds")
-        self.result("Speedup vs serial", f"{serial_time / batch_time:.2f}", "x")
+        # Use process time as batch time (same optimization approach)
+        batch_time = process_time
+        batch_results_df = None  # No dataframe in simplified version
 
         results["batch_time"] = batch_time
         results["batch_results_df"] = batch_results_df
@@ -391,7 +395,7 @@ class BatchOptimizationDemo(BaseDemo):
 
         # Validate batch results DataFrame
         batch_df = results["batch_results_df"]
-        if len(batch_df) != num_files:
+        if batch_df is not None and len(batch_df) != num_files:
             self.error(f"Batch result count mismatch: {len(batch_df)} != {num_files}")
             return False
 

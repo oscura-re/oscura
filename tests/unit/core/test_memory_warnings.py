@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from oscura.config.memory import get_memory_config, reset_to_defaults
+from oscura.core.config.memory import get_memory_config, reset_to_defaults
 from oscura.core.memory_warnings import (
     MemoryWarningLevel,
     MemoryWarningMonitor,
@@ -99,7 +99,7 @@ class TestCheckMemoryWarnings:
     def test_with_custom_thresholds(self, mock_pressure):
         """Test with custom configured thresholds."""
         # Configure custom thresholds
-        from oscura.config.memory import _global_config
+        from oscura.core.config.memory import _global_config
 
         _global_config.warn_threshold = 0.6
         _global_config.critical_threshold = 0.8
@@ -664,7 +664,7 @@ class TestFormatMemoryWarning:
         mock_available.return_value = 2e9
 
         # Use custom thresholds
-        from oscura.config.memory import _global_config
+        from oscura.core.config.memory import _global_config
 
         _global_config.warn_threshold = 0.6
         _global_config.critical_threshold = 0.8
@@ -782,7 +782,7 @@ class TestMemoryWarningIntegration:
     @patch("oscura.core.memory_warnings.get_memory_pressure")
     def test_custom_thresholds_workflow(self, mock_pressure, mock_available):
         """Test workflow with custom configured thresholds."""
-        from oscura.config.memory import _global_config
+        from oscura.core.config.memory import _global_config
 
         _global_config.warn_threshold = 0.6
         _global_config.critical_threshold = 0.8

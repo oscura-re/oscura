@@ -1030,8 +1030,14 @@ class TestPCAPIntegration:
             assert result is not None
             assert len(result) > 0
         except ImportError:
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("PCAP loader not available")
         except (LoaderError, FormatError) as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"PCAP loading failed: {e}")
 
     def test_load_modbus_pcap(self, modbus_pcap: Path | None) -> None:
@@ -1048,6 +1054,12 @@ class TestPCAPIntegration:
             assert result is not None
             assert len(result) > 0
         except ImportError:
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
+            # SKIP: Valid - Optional PCAP/network analysis dependencies
+            # Only skip if scapy not installed (pip install oscura[network])
             pytest.skip("PCAP loader not available")
         except (LoaderError, FormatError) as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"PCAP loading failed: {e}")

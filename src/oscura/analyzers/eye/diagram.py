@@ -96,19 +96,47 @@ def generate_eye(
     """
     data = trace.data
     sample_rate = trace.metadata.sample_rate
-    1.0 / sample_rate
 
-    # Calculate samples per UI
+    samples_per_ui = _validate_unit_interval(unit_interval, sample_rate)
+    total_ui_samples = samples_per_ui * n_ui
+    _validate_data_length(len(data), total_ui_samples)
+
+    trigger_indices = _find_trigger_points(data, trigger_level, trigger_edge)
+    eye_traces = _extract_eye_traces(
+        data, trigger_indices, samples_per_ui, total_ui_samples, max_traces
+    )
+    eye_data = np.array(eye_traces, dtype=np.float64)
+    time_axis = np.linspace(0, n_ui, total_ui_samples, endpoint=False)
+
+    histogram, voltage_bins, time_bins = _generate_histogram_if_requested(
+        eye_data, time_axis, n_ui, generate_histogram, histogram_bins
+    )
+
+    return EyeDiagram(
+        data=eye_data,
+        time_axis=time_axis,
+        unit_interval=unit_interval,
+        samples_per_ui=samples_per_ui,
+        n_traces=len(eye_traces),
+        sample_rate=sample_rate,
+        histogram=histogram,
+        voltage_bins=voltage_bins,
+        time_bins=time_bins,
+    )
+
+
+def _validate_unit_interval(unit_interval: float, sample_rate: float) -> int:
+    """Validate unit interval and calculate samples per UI."""
     samples_per_ui = round(unit_interval * sample_rate)
-
     if samples_per_ui < 4:
         raise AnalysisError(
             f"Unit interval too short: {samples_per_ui} samples/UI. Need at least 4 samples per UI."
         )
+    return samples_per_ui
 
-    n_samples = len(data)
-    total_ui_samples = samples_per_ui * n_ui
 
+def _validate_data_length(n_samples: int, total_ui_samples: int) -> None:
+    """Validate that we have enough data for eye generation."""
     if n_samples < total_ui_samples * 2:
         raise InsufficientDataError(
             f"Need at least {total_ui_samples * 2} samples for eye diagram",
@@ -117,7 +145,13 @@ def generate_eye(
             analysis_type="eye_diagram_generation",
         )
 
-    # Find trigger points
+
+def _find_trigger_points(
+    data: NDArray[np.float64],
+    trigger_level: float,
+    trigger_edge: str,
+) -> NDArray[np.intp]:
+    """Find trigger points in the data."""
     low = np.percentile(data, 10)
     high = np.percentile(data, 90)
     threshold = low + trigger_level * (high - low)
@@ -137,9 +171,20 @@ def generate_eye(
             analysis_type="eye_diagram_generation",
         )
 
-    # Extract eye traces
+    return trigger_indices
+
+
+def _extract_eye_traces(
+    data: NDArray[np.float64],
+    trigger_indices: NDArray[np.intp],
+    samples_per_ui: int,
+    total_ui_samples: int,
+    max_traces: int | None,
+) -> list[NDArray[np.float64]]:
+    """Extract eye traces from data using trigger points."""
     eye_traces = []
-    half_ui = samples_per_ui // 2  # Start half UI before trigger
+    half_ui = samples_per_ui // 2
+    n_samples = len(data)
 
     for trig_idx in trigger_indices:
         start_idx = trig_idx - half_ui
@@ -159,47 +204,34 @@ def generate_eye(
             analysis_type="eye_diagram_generation",
         )
 
-    # Stack into 2D array
-    eye_data = np.array(eye_traces, dtype=np.float64)
+    return eye_traces
 
-    # Generate time axis in UI
-    time_axis = np.linspace(0, n_ui, total_ui_samples, endpoint=False)
 
-    # Optional: Generate 2D histogram
-    histogram = None
-    voltage_bins = None
-    time_bins = None
+def _generate_histogram_if_requested(
+    eye_data: NDArray[np.float64],
+    time_axis: NDArray[np.float64],
+    n_ui: int,
+    generate_histogram: bool,
+    histogram_bins: tuple[int, int],
+) -> tuple[NDArray[np.float64] | None, NDArray[np.float64] | None, NDArray[np.float64] | None]:
+    """Generate 2D histogram if requested."""
+    if not generate_histogram:
+        return None, None, None
 
-    if generate_histogram:
-        # Flatten for histogram
-        all_voltages = eye_data.flatten()
-        all_times = np.tile(time_axis, len(eye_traces))
+    all_voltages = eye_data.flatten()
+    all_times = np.tile(time_axis, len(eye_data))
 
-        # Create histogram
-        voltage_range = (np.min(all_voltages), np.max(all_voltages))
-        time_range = (0, n_ui)
+    voltage_range = (np.min(all_voltages), np.max(all_voltages))
+    time_range = (0, n_ui)
 
-        histogram, voltage_edges, time_edges = np.histogram2d(
-            all_voltages,
-            all_times,
-            bins=histogram_bins,
-            range=[voltage_range, time_range],
-        )
-
-        voltage_bins = voltage_edges
-        time_bins = time_edges
-
-    return EyeDiagram(
-        data=eye_data,
-        time_axis=time_axis,
-        unit_interval=unit_interval,
-        samples_per_ui=samples_per_ui,
-        n_traces=len(eye_traces),
-        sample_rate=sample_rate,
-        histogram=histogram,
-        voltage_bins=voltage_bins,
-        time_bins=time_bins,
+    histogram, voltage_edges, time_edges = np.histogram2d(
+        all_voltages,
+        all_times,
+        bins=histogram_bins,
+        range=[voltage_range, time_range],
     )
+
+    return histogram, voltage_edges, time_edges
 
 
 def generate_eye_from_edges(
@@ -301,6 +333,95 @@ def generate_eye_from_edges(
     )
 
 
+def _calculate_trigger_threshold(data: NDArray[np.float64], trigger_fraction: float) -> float:
+    """Calculate trigger threshold from data amplitude.
+
+    Args:
+        data: Eye diagram data.
+        trigger_fraction: Trigger level as fraction of amplitude.
+
+    Returns:
+        Threshold value.
+    """
+    low = np.percentile(data, 10)
+    high = np.percentile(data, 90)
+    amplitude_range = high - low
+    threshold: float = float(low + trigger_fraction * amplitude_range)
+    return threshold
+
+
+def _find_trace_crossings(data: NDArray[np.float64], threshold: float) -> list[int]:
+    """Find crossing indices for all traces.
+
+    Args:
+        data: Eye diagram trace data (n_traces x samples_per_trace).
+        threshold: Crossing threshold.
+
+    Returns:
+        List of crossing indices for traces with crossings.
+    """
+    n_traces, _samples_per_trace = data.shape
+    crossing_indices = []
+
+    for trace_idx in range(n_traces):
+        trace = data[trace_idx, :]
+        crossings = np.where((trace[:-1] < threshold) & (trace[1:] >= threshold))[0]
+
+        if len(crossings) > 0:
+            crossing_indices.append(crossings[0])
+
+    return crossing_indices
+
+
+def _align_traces_to_target(
+    data: NDArray[np.float64], threshold: float, target_crossing: int
+) -> NDArray[np.float64]:
+    """Align all traces to target crossing position.
+
+    Args:
+        data: Eye diagram trace data.
+        threshold: Crossing threshold.
+        target_crossing: Target crossing position.
+
+    Returns:
+        Aligned trace data.
+    """
+    n_traces, _samples_per_trace = data.shape
+    aligned_data = np.zeros_like(data)
+
+    for trace_idx in range(n_traces):
+        trace = data[trace_idx, :]
+        crossings = np.where((trace[:-1] < threshold) & (trace[1:] >= threshold))[0]
+
+        if len(crossings) > 0:
+            crossing = crossings[0]
+            shift = target_crossing - crossing
+
+            if shift != 0:
+                aligned_data[trace_idx, :] = np.roll(trace, shift)
+            else:
+                aligned_data[trace_idx, :] = trace
+        else:
+            aligned_data[trace_idx, :] = trace
+
+    return aligned_data
+
+
+def _apply_symmetric_centering(data: NDArray[np.float64]) -> NDArray[np.float64]:
+    """Apply symmetric amplitude centering if enabled.
+
+    Args:
+        data: Aligned trace data.
+
+    Returns:
+        Symmetrically centered data.
+    """
+    max_abs = np.max(np.abs(data))
+    if max_abs > 0:
+        data = data - np.mean(data)
+    return data
+
+
 def auto_center_eye_diagram(
     eye: EyeDiagram,
     *,
@@ -335,37 +456,12 @@ def auto_center_eye_diagram(
     if not 0 <= trigger_fraction <= 1:
         raise ValueError(f"trigger_fraction must be in [0, 1], got {trigger_fraction}")
 
+    # Setup: calculate threshold and find crossings
     data = eye.data
-
-    # Calculate optimal trigger point using histogram-based threshold
-    # Find median value (represents middle level)
-    np.median(data)
-
-    # Calculate amplitude range
-    low = np.percentile(data, 10)
-    high = np.percentile(data, 90)
-    amplitude_range = high - low
-
-    # Trigger threshold at specified fraction
-    threshold = low + trigger_fraction * amplitude_range
-
-    # Find crossing points for each trace
-    # A crossing is where signal crosses threshold
-    n_traces, samples_per_trace = data.shape
-    crossing_indices = []
-
-    for trace_idx in range(n_traces):
-        trace = data[trace_idx, :]
-
-        # Find zero-crossings relative to threshold
-        crossings = np.where((trace[:-1] < threshold) & (trace[1:] >= threshold))[0]
-
-        if len(crossings) > 0:
-            # Use first crossing in this trace
-            crossing_indices.append(crossings[0])
+    threshold = _calculate_trigger_threshold(data, trigger_fraction)
+    crossing_indices = _find_trace_crossings(data, threshold)
 
     if len(crossing_indices) == 0:
-        # No crossings found, return original
         import warnings
 
         warnings.warn(
@@ -375,44 +471,15 @@ def auto_center_eye_diagram(
         )
         return eye
 
-    # Calculate median crossing position
-    int(np.median(crossing_indices))
+    # Processing: align traces to target crossing point
+    _n_traces, samples_per_trace = data.shape
+    target_crossing = samples_per_trace // 2
+    aligned_data = _align_traces_to_target(data, threshold, target_crossing)
 
-    # Align all traces to common crossing point
-    # This requires resampling/shifting each trace
-    aligned_data = np.zeros_like(data)
-    target_crossing = samples_per_trace // 2  # Center of trace
-
-    for trace_idx in range(n_traces):
-        trace = data[trace_idx, :]
-
-        # Find crossing for this trace
-        crossings = np.where((trace[:-1] < threshold) & (trace[1:] >= threshold))[0]
-
-        if len(crossings) > 0:
-            crossing = crossings[0]
-            shift = target_crossing - crossing
-
-            # Shift trace by interpolation
-            if shift != 0:
-                # Simple roll (circular shift)
-                aligned_data[trace_idx, :] = np.roll(trace, shift)
-            else:
-                aligned_data[trace_idx, :] = trace
-        else:
-            # No crossing, keep original
-            aligned_data[trace_idx, :] = trace
-
-    # Scale amplitude to symmetric range if requested
+    # Result building: apply symmetric centering and create result
     if symmetric_range:
-        max_abs = np.max(np.abs(aligned_data))
-        if max_abs > 0:
-            # Center on zero
-            aligned_data = aligned_data - np.mean(aligned_data)
-            # Scale to ±max for symmetric range
-            # No additional scaling needed, data already centered
+        aligned_data = _apply_symmetric_centering(aligned_data)
 
-    # Create centered eye diagram
     return EyeDiagram(
         data=aligned_data,
         time_axis=eye.time_axis,
@@ -420,7 +487,7 @@ def auto_center_eye_diagram(
         samples_per_ui=eye.samples_per_ui,
         n_traces=eye.n_traces,
         sample_rate=eye.sample_rate,
-        histogram=None,  # Invalidate histogram after centering
+        histogram=None,
         voltage_bins=None,
         time_bins=None,
     )

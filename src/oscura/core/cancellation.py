@@ -260,7 +260,7 @@ class CancellationManager:
         except KeyboardInterrupt:
             self.cancel("Interrupted by user (Ctrl+C)")
             self._cleanup()
-            raise CancelledException(  # noqa: B904
+            raise CancelledException(
                 f"{name} interrupted by user",
                 partial_results=self._partial_results,
                 elapsed_time=time.time() - self._start_time,

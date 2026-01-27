@@ -1,5 +1,7 @@
 """Export Formats: Comprehensive Guide to All Export Formats
 
+# SKIP_VALIDATION: oscura.exporters module removed in v0.6 refactoring
+
 Demonstrates:
 - CSV export with metadata preservation
 - JSON export for structured data

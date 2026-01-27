@@ -271,12 +271,12 @@ class TestAdvancedCompliance:
 
     def test_limit_interpolation(self) -> None:
         """Test limit interpolation - COMP-005."""
-        from oscura.compliance.advanced import (
+        from oscura.validation.compliance.advanced import (
             InterpolationMethod,
             LimitInterpolator,
             interpolate_limit,
         )
-        from oscura.compliance.masks import load_limit_mask
+        from oscura.validation.compliance.masks import load_limit_mask
 
         mask = load_limit_mask("FCC_Part15_ClassB")
         interp = LimitInterpolator(mask, method=InterpolationMethod.LOG_LINEAR)
@@ -310,7 +310,7 @@ class TestAdvancedCompliance:
 
     def test_compliance_test_runner(self) -> None:
         """Test compliance test execution - COMP-006."""
-        from oscura.compliance.advanced import (
+        from oscura.validation.compliance.advanced import (
             ComplianceTestRunner,
             ComplianceTestSuite,
             run_compliance_suite,
@@ -350,7 +350,7 @@ class TestAdvancedCompliance:
 
     def test_quasi_peak_detector(self) -> None:
         """Test quasi-peak detection - COMP-007."""
-        from oscura.compliance.advanced import QPDetectorBand, QuasiPeakDetector
+        from oscura.validation.compliance.advanced import QPDetectorBand, QuasiPeakDetector
 
         detector = QuasiPeakDetector()
 
@@ -393,7 +393,7 @@ class TestAdvancedFuzzyMatching:
 
     def test_variant_characterization(self) -> None:
         """Test binary pattern variant characterization - FUZZY-004."""
-        from oscura.exploratory.fuzzy_advanced import (
+        from oscura.jupyter.exploratory.fuzzy_advanced import (
             VariationType,
             characterize_variants,
         )
@@ -429,7 +429,7 @@ class TestAdvancedFuzzyMatching:
 
     def test_sequence_alignment(self) -> None:
         """Test multiple sequence alignment - FUZZY-005."""
-        from oscura.exploratory.fuzzy_advanced import (
+        from oscura.jupyter.exploratory.fuzzy_advanced import (
             align_sequences,
             align_two_sequences,
         )
@@ -478,7 +478,7 @@ class TestAdvancedFuzzyMatching:
 
     def test_conservation_scores(self) -> None:
         """Test conservation score computation - FUZZY-005."""
-        from oscura.exploratory.fuzzy_advanced import (
+        from oscura.jupyter.exploratory.fuzzy_advanced import (
             compute_conservation_scores,
         )
 

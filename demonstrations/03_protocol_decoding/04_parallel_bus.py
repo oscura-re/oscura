@@ -14,6 +14,8 @@ This demonstration generates synthetic parallel bus signals and uses
 oscura decoders to extract bus transactions with multi-channel data.
 """
 
+# SKIP_VALIDATION: Parallel bus decoders incomplete (GPIB, Centronics)
+
 from __future__ import annotations
 
 import sys

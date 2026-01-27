@@ -10,9 +10,11 @@ from __future__ import annotations
 import contextlib
 import gc
 import hashlib
+import hmac
 import json
 import logging
 import pickle
+import secrets
 import tempfile
 import threading
 import time
@@ -23,6 +25,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import numpy as np
+
+from oscura.core.exceptions import SecurityError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -573,7 +577,7 @@ class AdaptiveMeasurementSelector:
     """
 
     # Default size thresholds (in samples)
-    THRESHOLDS = {  # noqa: RUF012
+    THRESHOLDS = {
         "eye_diagram": 1e8,  # 100M samples
         "spectrogram": 5e8,  # 500M samples
         "full_correlation": 1e9,  # 1B samples
@@ -730,13 +734,21 @@ class CacheInvalidationStrategy:
         self._misses = 0
 
     def _compute_hash(self, data: Any) -> str:
-        """Compute hash of data for comparison."""
+        """Compute hash of data for comparison.
+
+        Note:
+            Uses MD5 for cache invalidation checksums only (not for security).
+            MD5 is appropriate here for non-cryptographic data comparison.
+        """
         if isinstance(data, np.ndarray):
-            return hashlib.md5(data.tobytes()[:1024]).hexdigest()
+            # Sample first 1KB for performance (cache invalidation only, not security)
+            return hashlib.md5(data.tobytes()[:1024], usedforsecurity=False).hexdigest()
         elif isinstance(data, dict | list):
-            return hashlib.md5(json.dumps(data, sort_keys=True).encode()).hexdigest()
+            return hashlib.md5(
+                json.dumps(data, sort_keys=True).encode(), usedforsecurity=False
+            ).hexdigest()
         else:
-            return hashlib.md5(str(data).encode()).hexdigest()
+            return hashlib.md5(str(data).encode(), usedforsecurity=False).hexdigest()
 
     def get(
         self,
@@ -938,6 +950,9 @@ class DiskCache:
         self._memory_used = 0
         self._lock = threading.Lock()
 
+        # Security: HMAC signing key for cache integrity (SEC-003 fix)
+        self._cache_key = self._load_or_create_cache_key()
+
     def _get_cache_path(self, key: str) -> Path:
         """Get cache file path for key."""
         key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
@@ -946,9 +961,43 @@ class DiskCache:
     def _estimate_size(self, value: Any) -> int:
         """Estimate memory size of value."""
         if isinstance(value, np.ndarray):
-            return value.nbytes  # type: ignore[no-any-return]
+            return value.nbytes
         else:
             return len(pickle.dumps(value))
+
+    def _load_or_create_cache_key(self) -> bytes:
+        """Load or create HMAC signing key for cache integrity.
+
+        Returns:
+            256-bit signing key.
+
+        Security:
+            SEC-003 fix: Protects cached pickle files from tampering.
+            Key is persistent per cache directory and stored with 0o600 permissions.
+            Each cache directory has its own unique key.
+
+        References:
+            https://owasp.org/www-project-top-ten/
+        """
+        key_file = self._cache_dir / ".cache_key"
+
+        # Load existing key
+        if key_file.exists():
+            with open(key_file, "rb") as f:
+                return f.read()
+
+        # Create new 256-bit key
+        key = secrets.token_bytes(32)
+
+        # Save with restrictive permissions
+        with open(key_file, "wb") as f:
+            f.write(key)
+
+        # Set owner read/write only (0o600)
+        key_file.chmod(0o600)
+
+        logger.info(f"Created new cache signing key: {key_file}")
+        return key
 
     def get(self, key: str) -> tuple[Any, bool]:
         """Get value from cache.
@@ -976,7 +1025,23 @@ class DiskCache:
 
             try:
                 with open(cache_path, "rb") as f:
-                    value = pickle.load(f)
+                    signature = f.read(32)  # SHA256 = 32 bytes
+                    data = f.read()
+
+                # Verify HMAC signature (SEC-003 fix)
+                expected_signature = hmac.new(self._cache_key, data, hashlib.sha256).digest()
+
+                if not hmac.compare_digest(signature, expected_signature):
+                    logger.error(f"Cache integrity check failed for {key}")
+                    # Delete corrupted cache file
+                    cache_path.unlink()
+                    raise SecurityError(
+                        f"Cache file integrity verification failed: {key}. "
+                        "File may have been tampered with and has been removed."
+                    )
+
+                # Deserialize only after HMAC verification
+                value = pickle.loads(data)
 
                 # Promote to memory cache if space
                 size = self._estimate_size(value)
@@ -984,6 +1049,9 @@ class DiskCache:
                     self._add_to_memory(key, value, size)
 
                 return value, True
+
+            except SecurityError:
+                raise  # Re-raise security errors
             except Exception as e:
                 logger.warning(f"Failed to load cache: {e}")
                 return None, False
@@ -1004,14 +1072,29 @@ class DiskCache:
             self._memory_used += size
 
     def _write_to_disk(self, key: str, value: Any) -> None:
-        """Write value to disk cache."""
+        """Write value to disk cache with HMAC signature.
+
+        Security:
+            SEC-003 fix: Writes HMAC-SHA256 signature + pickled data.
+            Format: [32 bytes signature][pickled data]
+            Signature computed over pickled data using self._cache_key.
+        """
         # Check disk space
         self._cleanup_disk()
 
         cache_path = self._get_cache_path(key)
         try:
+            # Serialize value
+            data = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+
+            # Compute HMAC-SHA256 signature
+            signature = hmac.new(self._cache_key, data, hashlib.sha256).digest()
+
+            # Write signature + data
             with open(cache_path, "wb") as f:
-                pickle.dump(value, f)
+                f.write(signature)  # First 32 bytes
+                f.write(data)  # Rest is pickled data
+
         except Exception as e:
             logger.warning(f"Failed to write cache: {e}")
 

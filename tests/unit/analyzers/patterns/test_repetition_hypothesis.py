@@ -1,7 +1,7 @@
 """Property-based tests for repetition detection."""
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from tests.hypothesis_strategies import repetitive_sequences
@@ -17,8 +17,7 @@ class TestRepetitionDetectionProperties:
     def test_repetitive_data_detected(self, data: bytes) -> None:
         """Property: Repetitive sequences are detected."""
         # Any repetitive sequence should have repeated bytes
-        if len(data) < 2:
-            pytest.skip("Data too short")
+        assume(len(data) >= 2)
 
         # Check for repetition (at least one byte appears twice)
         byte_counts = {}

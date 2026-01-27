@@ -70,14 +70,24 @@ def rise_time(
     uncertainties = []
 
     # 1. Time base uncertainty (Type B)
-    if trace.metadata.calibration_info is not None:
-        # Use calibration info if available
-        # Typical scope: 25-50 ppm timebase accuracy
-        timebase_ppm = 25.0  # Conservative estimate
+    if (
+        trace.metadata.calibration_info is not None
+        and trace.metadata.calibration_info.timebase_accuracy is not None
+    ):
+        # Use calibration timebase accuracy if available
+        timebase_ppm = trace.metadata.calibration_info.timebase_accuracy
         u_timebase = UncertaintyEstimator.time_base_uncertainty(
             trace.metadata.sample_rate, timebase_ppm
         )
         # Rise time involves 2 samples (start and stop), so uncertainty scales
+        u_timebase_rise = u_timebase * np.sqrt(2)
+        uncertainties.append(u_timebase_rise)
+    elif trace.metadata.calibration_info is not None:
+        # Use conservative estimate if calibration present but no timebase accuracy
+        timebase_ppm = 25.0  # Typical scope: 25-50 ppm
+        u_timebase = UncertaintyEstimator.time_base_uncertainty(
+            trace.metadata.sample_rate, timebase_ppm
+        )
         u_timebase_rise = u_timebase * np.sqrt(2)
         uncertainties.append(u_timebase_rise)
     else:
@@ -146,7 +156,13 @@ def fall_time(
     uncertainties = []
 
     # Time base uncertainty
-    timebase_ppm = 25.0
+    if (
+        trace.metadata.calibration_info is not None
+        and trace.metadata.calibration_info.timebase_accuracy is not None
+    ):
+        timebase_ppm = trace.metadata.calibration_info.timebase_accuracy
+    else:
+        timebase_ppm = 25.0  # Conservative default
     u_timebase = UncertaintyEstimator.time_base_uncertainty(
         trace.metadata.sample_rate, timebase_ppm
     )
@@ -208,7 +224,13 @@ def frequency(
     uncertainties = []
 
     # Time base uncertainty
-    timebase_ppm = 25.0
+    if (
+        trace.metadata.calibration_info is not None
+        and trace.metadata.calibration_info.timebase_accuracy is not None
+    ):
+        timebase_ppm = trace.metadata.calibration_info.timebase_accuracy
+    else:
+        timebase_ppm = 25.0  # Conservative default
     # Period measurement spans multiple cycles, typically more accurate
     u_period_timebase = period * (timebase_ppm * 1e-6)
     uncertainties.append(u_period_timebase)
@@ -292,15 +314,9 @@ def amplitude(
         uncertainties.append(u_quant)
 
     # 3. Signal noise (Type A)
-    # Estimate from flat regions (if available)
-    # Simplified: use standard deviation as proxy
-    if len(trace.data) > 100:
-        # Sample first and last 50 points (assume flat regions)
-        noise_start = np.std(trace.data[:50])
-        noise_end = np.std(trace.data[-50:])
-        u_noise = np.mean([noise_start, noise_end])
-        # Amplitude involves max and min, so sqrt(2) factor
-        uncertainties.append(u_noise * np.sqrt(2))
+    # For amplitude (Vpp) measurements, noise is already captured in the peak detection
+    # uncertainty. Adding additional noise estimation from "flat regions" is inappropriate
+    # for periodic signals where no regions are truly flat. Skip noise term for amplitude.
 
     total_uncertainty = UncertaintyEstimator.combined_uncertainty(uncertainties)
 

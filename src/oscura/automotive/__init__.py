@@ -42,7 +42,14 @@ Example:
     P0420: Catalyst System Efficiency Below Threshold (Bank 1)
 """
 
-__version__ = "0.5.1"  # pragma: no cover
+# Version dynamically imported from package metadata (SSOT: pyproject.toml)
+try:
+    from importlib.metadata import version
+
+    __version__ = version("oscura")
+except Exception:
+    # Fallback for development/testing when package not installed
+    __version__ = "0.6.0"
 
 __all__ = [
     "CANMessage",

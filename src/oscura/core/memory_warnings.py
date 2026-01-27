@@ -20,7 +20,7 @@ import warnings
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from oscura.config.memory import get_memory_config
+from oscura.core.config.memory import get_memory_config
 from oscura.utils.memory import get_available_memory, get_memory_pressure
 
 if TYPE_CHECKING:

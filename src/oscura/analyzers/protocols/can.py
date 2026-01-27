@@ -142,11 +142,11 @@ class CANDecoder(AsyncDecoder):
     desc = "CAN 2.0A/B bus decoder"
     license = "MIT"
 
-    channels = [  # noqa: RUF012
+    channels = [
         ChannelDef("can", "CAN", "CAN bus signal (CAN_H - CAN_L or single-ended)"),
     ]
 
-    options = [  # noqa: RUF012
+    options = [
         OptionDef(
             "bitrate",
             "Bit Rate",
@@ -407,127 +407,34 @@ class CANDecoder(AsyncDecoder):
         Returns:
             Parsed CANFrame or None if invalid.
         """
-        errors = []
+        errors: list[str] = []
 
         try:
-            pos = 0
-
-            # SOF (should be 0)
-            if pos >= len(bits):
-                return None
-            sof = bits[pos]
-            pos += 1
-
-            if sof != 0:
-                errors.append("Invalid SOF")
-
-            # Arbitration field
-            if pos + 11 > len(bits):
+            pos = self._parse_sof(bits, errors)
+            if pos is None:
                 return None
 
-            # First 11 bits of ID
-            arb_id = 0
-            for i in range(11):
-                arb_id = (arb_id << 1) | bits[pos + i]
-            pos += 11
-
-            # RTR bit (for standard) or SRR bit (for extended)
-            if pos >= len(bits):
+            arb_result = self._parse_arbitration_field(bits, pos)
+            if arb_result[0] is None:
                 return None
-            rtr_or_srr = bits[pos]
-            pos += 1
+            arb_id, is_extended, is_remote, pos = arb_result
 
-            # IDE bit
-            if pos >= len(bits):
+            dlc_result = self._parse_dlc(bits, pos)
+            if dlc_result[0] is None:
                 return None
-            ide = bits[pos]
-            pos += 1
+            dlc, data_len, pos = dlc_result
 
-            is_extended = bool(ide)
-            is_remote = False
-
-            if is_extended:
-                # Extended frame: 18 more ID bits
-                if pos + 18 > len(bits):
-                    return None
-
-                # ID extension (18 bits)
-                for i in range(18):
-                    arb_id = (arb_id << 1) | bits[pos + i]
-                pos += 18
-
-                # RTR bit
-                if pos >= len(bits):
-                    return None
-                is_remote = bool(bits[pos])
-                pos += 1
-
-                # r1, r0 reserved bits
-                pos += 2
-            else:
-                # Standard frame
-                is_remote = bool(rtr_or_srr)
-                # r0 reserved bit
-                pos += 1
-
-            # DLC (4 bits)
-            if pos + 4 > len(bits):
+            data_result = self._parse_data_field(bits, pos, data_len, is_remote)
+            if data_result[0] is None:
                 return None
+            data, pos = data_result
 
-            dlc = 0
-            for i in range(4):
-                dlc = (dlc << 1) | bits[pos + i]
-            pos += 4
-
-            # Limit DLC to 8
-            data_len = min(dlc, 8)
-
-            # Data field (0-8 bytes)
-            if not is_remote:
-                if pos + data_len * 8 > len(bits):
-                    return None
-
-                data_bytes = bytearray()
-                for byte_idx in range(data_len):
-                    byte_val = 0
-                    for bit_idx in range(8):
-                        byte_val = (byte_val << 1) | bits[pos + byte_idx * 8 + bit_idx + bit_idx]
-                    data_bytes.append(byte_val)
-                    pos += 8
-
-                data = bytes(data_bytes)
-            else:
-                data = b""
-
-            # CRC field (15 bits)
-            if pos + 15 > len(bits):
+            crc_result = self._parse_crc_field(bits, pos, errors)
+            if crc_result[0] is None:
                 return None
+            crc_received, crc_computed, pos = crc_result
 
-            crc_received = 0
-            for i in range(15):
-                crc_received = (crc_received << 1) | bits[pos + i]
-            pos += 15
-
-            # Compute CRC on frame bits before CRC field
-            # CRC covers SOF through data field
-            crc_data_end = pos - 15
-            crc_computed = self._compute_crc(bits[:crc_data_end])
-
-            if crc_received != crc_computed:
-                errors.append(
-                    f"CRC error: received 0x{crc_received:04X}, computed 0x{crc_computed:04X}"
-                )
-
-            # CRC delimiter (should be 1)
-            if pos < len(bits) and bits[pos] != 1:
-                errors.append("CRC delimiter error")
-            pos += 1
-
-            # ACK slot and delimiter
-            pos += 2
-
-            # EOF (7 recessive bits)
-            # We don't strictly check this
+            pos = self._parse_ack_eof(bits, pos, errors)
 
             end_time = start_time + pos * (1.0 / self._bitrate)
 
@@ -546,6 +453,218 @@ class CANDecoder(AsyncDecoder):
 
         except (IndexError, ValueError):
             return None
+
+    def _parse_sof(self, bits: list[int], errors: list[str]) -> int | None:
+        """Parse Start of Frame bit.
+
+        Args:
+            bits: Bit array.
+            errors: Error list to append to.
+
+        Returns:
+            Position after SOF, or None if invalid.
+        """
+        if len(bits) < 1:
+            return None
+
+        sof = bits[0]
+        if sof != 0:
+            errors.append("Invalid SOF")
+
+        return 1
+
+    def _parse_arbitration_field(
+        self, bits: list[int], pos: int
+    ) -> tuple[int, bool, bool, int] | tuple[None, None, None, None]:
+        """Parse CAN arbitration field (ID, RTR, IDE).
+
+        Args:
+            bits: Bit array.
+            pos: Current position.
+
+        Returns:
+            Tuple of (arb_id, is_extended, is_remote, new_pos) or (None, None, None, None).
+        """
+        if pos + 11 > len(bits):
+            return None, None, None, None
+
+        # First 11 bits of ID
+        arb_id = self._extract_bits_as_int(bits, pos, 11)
+        pos += 11
+
+        # RTR/SRR bit
+        if pos >= len(bits):
+            return None, None, None, None
+        rtr_or_srr = bits[pos]
+        pos += 1
+
+        # IDE bit
+        if pos >= len(bits):
+            return None, None, None, None
+        ide = bits[pos]
+        pos += 1
+
+        is_extended = bool(ide)
+
+        if is_extended:
+            try:
+                arb_id, is_remote, pos = self._parse_extended_id(bits, pos, arb_id)
+            except IndexError:
+                return None, None, None, None
+        else:
+            is_remote = bool(rtr_or_srr)
+            pos += 1  # r0 reserved bit
+
+        return arb_id, is_extended, is_remote, pos
+
+    def _parse_extended_id(self, bits: list[int], pos: int, base_id: int) -> tuple[int, bool, int]:
+        """Parse extended CAN ID (18 additional bits).
+
+        Args:
+            bits: Bit array.
+            pos: Current position.
+            base_id: Base 11-bit ID.
+
+        Returns:
+            Tuple of (full_id, is_remote, new_pos).
+
+        Raises:
+            IndexError: If insufficient bits available.
+        """
+        if pos + 18 > len(bits):
+            raise IndexError("Insufficient bits for extended ID")
+
+        # ID extension (18 bits)
+        id_ext = self._extract_bits_as_int(bits, pos, 18)
+        arb_id = (base_id << 18) | id_ext
+        pos += 18
+
+        # RTR bit
+        if pos >= len(bits):
+            raise IndexError("Insufficient bits for RTR")
+        is_remote = bool(bits[pos])
+        pos += 1
+
+        # r1, r0 reserved bits
+        pos += 2
+
+        return arb_id, is_remote, pos
+
+    def _parse_dlc(
+        self, bits: list[int], pos: int
+    ) -> tuple[int, int, int] | tuple[None, None, None]:
+        """Parse Data Length Code.
+
+        Args:
+            bits: Bit array.
+            pos: Current position.
+
+        Returns:
+            Tuple of (dlc, data_len, new_pos) or (None, None, None).
+        """
+        if pos + 4 > len(bits):
+            return None, None, None
+
+        dlc = self._extract_bits_as_int(bits, pos, 4)
+        pos += 4
+
+        data_len = min(dlc, 8)  # Limit to 8 bytes
+        return dlc, data_len, pos
+
+    def _parse_data_field(
+        self, bits: list[int], pos: int, data_len: int, is_remote: bool
+    ) -> tuple[bytes, int] | tuple[None, None]:
+        """Parse CAN data field.
+
+        Args:
+            bits: Bit array.
+            pos: Current position.
+            data_len: Number of data bytes.
+            is_remote: True if remote frame.
+
+        Returns:
+            Tuple of (data_bytes, new_pos) or (None, None).
+        """
+        if is_remote:
+            return b"", pos
+
+        if pos + data_len * 8 > len(bits):
+            return None, None
+
+        data_bytes = bytearray()
+        for _ in range(data_len):
+            byte_val = self._extract_bits_as_int(bits, pos, 8)
+            data_bytes.append(byte_val)
+            pos += 8
+
+        return bytes(data_bytes), pos
+
+    def _parse_crc_field(
+        self, bits: list[int], pos: int, errors: list[str]
+    ) -> tuple[int, int, int] | tuple[None, None, None]:
+        """Parse CRC field and validate.
+
+        Args:
+            bits: Bit array.
+            pos: Current position.
+            errors: Error list to append to.
+
+        Returns:
+            Tuple of (crc_received, crc_computed, new_pos) or (None, None, None).
+        """
+        if pos + 15 > len(bits):
+            return None, None, None
+
+        crc_received = self._extract_bits_as_int(bits, pos, 15)
+        crc_data_end = pos
+        pos += 15
+
+        crc_computed = self._compute_crc(bits[:crc_data_end])
+
+        if crc_received != crc_computed:
+            errors.append(
+                f"CRC error: received 0x{crc_received:04X}, computed 0x{crc_computed:04X}"
+            )
+
+        # CRC delimiter (should be 1)
+        if pos < len(bits) and bits[pos] != 1:
+            errors.append("CRC delimiter error")
+        pos += 1
+
+        return crc_received, crc_computed, pos
+
+    def _parse_ack_eof(self, bits: list[int], pos: int, errors: list[str]) -> int:
+        """Parse ACK and EOF fields.
+
+        Args:
+            bits: Bit array.
+            pos: Current position.
+            errors: Error list to append to.
+
+        Returns:
+            Position after ACK/EOF.
+        """
+        # ACK slot and delimiter
+        pos += 2
+
+        # EOF (7 recessive bits) - not strictly checked
+        return pos
+
+    def _extract_bits_as_int(self, bits: list[int], start: int, count: int) -> int:
+        """Extract consecutive bits as integer (MSB first).
+
+        Args:
+            bits: Bit array.
+            start: Start position.
+            count: Number of bits.
+
+        Returns:
+            Integer value.
+        """
+        value = 0
+        for i in range(count):
+            value = (value << 1) | bits[start + i]
+        return value
 
     def _compute_crc(self, bits: list[int]) -> int:
         """Compute CAN CRC-15.

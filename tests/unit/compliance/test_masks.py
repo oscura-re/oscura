@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from oscura.compliance.masks import (
+from oscura.validation.compliance.masks import (
     LimitMask,
     create_custom_mask,
     load_limit_mask,
@@ -166,13 +166,9 @@ class TestLoadLimitMask:
 
     def test_load_case_insensitive(self):
         """Test mask name loading behavior (case sensitivity depends on implementation)."""
-        try:
-            mask1 = load_limit_mask("FCC_Part15_ClassB")
-            # First load should succeed
-            assert mask1 is not None, "Expected valid mask object"
-        except (ValueError, KeyError, FileNotFoundError):
-            pytest.skip("FCC_Part15_ClassB mask not available")
-
+        mask1 = load_limit_mask("FCC_Part15_ClassB")
+        # First load should succeed
+        assert mask1 is not None, "Expected valid mask object"
         try:
             mask2 = load_limit_mask("fcc_part15_classb")
             # If case insensitive implementation, names should match

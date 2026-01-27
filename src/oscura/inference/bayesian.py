@@ -142,9 +142,9 @@ class Prior:
             ValueError: If distribution is not recognized.
         """
         if self.distribution == "normal":
-            return float(stats.norm.pdf(x, loc=self.params["mean"], scale=self.params["std"]))  # type: ignore[no-any-return]
+            return float(stats.norm.pdf(x, loc=self.params["mean"], scale=self.params["std"]))
         elif self.distribution == "uniform":
-            return float(  # type: ignore[no-any-return]
+            return float(
                 stats.uniform.pdf(
                     x, loc=self.params["low"], scale=self.params["high"] - self.params["low"]
                 )
@@ -156,16 +156,16 @@ class Prior:
             log_x = np.log(np.maximum(x, 1e-100))  # Avoid log(0)
             density = stats.uniform.pdf(log_x, loc=log_low, scale=log_high - log_low)
             # Jacobian correction: d(log x)/dx = 1/x
-            result = density / np.maximum(x, 1e-100)
-            return result  # type: ignore[return-value, no-any-return]
+            result: float | NDArray[np.floating[Any]] = density / np.maximum(x, 1e-100)
+            return result
         elif self.distribution == "beta":
-            return float(stats.beta.pdf(x, a=self.params["a"], b=self.params["b"]))  # type: ignore[no-any-return]
+            return float(stats.beta.pdf(x, a=self.params["a"], b=self.params["b"]))
         elif self.distribution == "gamma":
-            return float(stats.gamma.pdf(x, a=self.params["shape"], scale=self.params["scale"]))  # type: ignore[no-any-return]
+            return float(stats.gamma.pdf(x, a=self.params["shape"], scale=self.params["scale"]))
         elif self.distribution == "half_normal":
-            return float(stats.halfnorm.pdf(x, scale=self.params["scale"]))  # type: ignore[no-any-return]
+            return float(stats.halfnorm.pdf(x, scale=self.params["scale"]))
         elif self.distribution == "geometric":
-            return float(stats.geom.pmf(x, p=self.params["p"]))  # type: ignore[no-any-return]
+            return float(stats.geom.pmf(x, p=self.params["p"]))
         else:
             raise ValueError(f"PDF not implemented for {self.distribution}")
 
@@ -191,7 +191,7 @@ class Prior:
             # Sample uniformly on log scale, then exponentiate
             log_low = np.log(self.params["low"])
             log_high = np.log(self.params["high"])
-            log_samples = stats.uniform.rvs(loc=log_low, scale=log_high - log_low, size=n)  # type: ignore[no-any-return]
+            log_samples = stats.uniform.rvs(loc=log_low, scale=log_high - log_low, size=n)
             return np.exp(log_samples)  # type: ignore[no-any-return]
         elif self.distribution == "beta":
             return stats.beta.rvs(a=self.params["a"], b=self.params["b"], size=n)  # type: ignore[no-any-return]
@@ -364,7 +364,25 @@ class BayesianInference:
             >>> inference = BayesianInference()
             >>> posterior = inference.update("frequency", likelihood)
         """
-        # Get prior
+        prior = self._get_prior(param, prior)
+        samples = self._sample_from_prior(prior, param, num_samples)
+        likelihoods = self._compute_likelihoods(samples, likelihood_fn, param)
+        weights = self._normalize_weights(likelihoods, param)
+        return self._build_posterior(samples, weights)
+
+    def _get_prior(self, param: str, prior: Prior | None) -> Prior:
+        """Get prior distribution for parameter.
+
+        Args:
+            param: Parameter name.
+            prior: Optional explicit prior.
+
+        Returns:
+            Prior distribution to use.
+
+        Raises:
+            ValueError: If parameter unknown and no prior provided.
+        """
         if prior is None:
             if param not in self.priors:
                 raise ValueError(
@@ -372,17 +390,51 @@ class BayesianInference:
                     f"Known parameters: {list(self.priors.keys())}"
                 )
             prior = self.priors[param]
+        return prior
 
-        # Sample from prior
+    def _sample_from_prior(
+        self, prior: Prior, param: str, num_samples: int
+    ) -> NDArray[np.floating[Any]]:
+        """Sample from prior distribution.
+
+        Args:
+            prior: Prior distribution.
+            param: Parameter name for error messages.
+            num_samples: Number of samples.
+
+        Returns:
+            Array of prior samples.
+
+        Raises:
+            AnalysisError: If sampling fails.
+        """
         try:
-            samples = prior.sample(num_samples)
+            return prior.sample(num_samples)
         except Exception as e:
             raise AnalysisError(
                 f"Failed to sample from prior for '{param}'",
                 details=str(e),
             ) from e
 
-        # Compute likelihood for each sample
+    def _compute_likelihoods(
+        self,
+        samples: NDArray[np.floating[Any]],
+        likelihood_fn: Callable[[float], float],
+        param: str,
+    ) -> NDArray[np.floating[Any]]:
+        """Compute likelihoods for all samples.
+
+        Args:
+            samples: Prior samples.
+            likelihood_fn: Likelihood function.
+            param: Parameter name for error messages.
+
+        Returns:
+            Array of likelihood values.
+
+        Raises:
+            AnalysisError: If likelihood computation fails or all zeros.
+        """
         try:
             likelihoods = np.array([likelihood_fn(s) for s in samples])
         except Exception as e:
@@ -392,7 +444,6 @@ class BayesianInference:
                 fix_hint="Check that likelihood_fn is compatible with prior samples",
             ) from e
 
-        # Check for valid likelihoods (before numerical stability fixes)
         if np.all(likelihoods == 0):
             raise AnalysisError(
                 f"All likelihood values are zero for '{param}'",
@@ -400,42 +451,71 @@ class BayesianInference:
                 fix_hint="Adjust prior range or check likelihood function",
             )
 
-        # Numerical stability: normalize likelihoods to prevent underflow
-        # Use log-space computation if likelihoods are very small
+        return likelihoods
+
+    def _normalize_weights(
+        self, likelihoods: NDArray[np.floating[Any]], param: str
+    ) -> NDArray[np.floating[Any]]:
+        """Normalize likelihoods to importance weights.
+
+        Uses numerical stability techniques for extreme values.
+
+        Args:
+            likelihoods: Likelihood values.
+            param: Parameter name for error messages.
+
+        Returns:
+            Normalized importance weights.
+
+        Raises:
+            AnalysisError: If all likelihoods are zero.
+        """
         max_likelihood = np.max(likelihoods)
-        if max_likelihood > 0:
-            # Normalize by max to prevent overflow/underflow
-            normalized_likelihoods = likelihoods / max_likelihood
-            # Check if we need log-space (very small values)
-            if max_likelihood < 1e-300:
-                # Use log-space for extreme underflow
-                log_likelihoods = np.log(np.maximum(likelihoods, 1e-300))
-                log_likelihoods -= np.max(log_likelihoods)  # Normalize
-                weights = np.exp(log_likelihoods)
-                weights /= np.sum(weights)
-            else:
-                # Standard normalization
-                weights = normalized_likelihoods / np.sum(normalized_likelihoods)
-        else:
-            # All likelihoods are zero - this should have been caught above
+        if max_likelihood <= 0:
             raise AnalysisError(
                 f"All likelihood values are zero for '{param}'",
                 details="Observation may be incompatible with prior range",
                 fix_hint="Adjust prior range or check likelihood function",
             )
 
+        # Normalize by max to prevent overflow/underflow
+        normalized_likelihoods = likelihoods / max_likelihood
+
+        # Use log-space for extreme underflow
+        if max_likelihood < 1e-300:
+            log_likelihoods = np.log(np.maximum(likelihoods, 1e-300))
+            log_likelihoods -= np.max(log_likelihoods)
+            weights = np.exp(log_likelihoods)
+            weights /= np.sum(weights)
+        else:
+            weights = normalized_likelihoods / np.sum(normalized_likelihoods)
+
+        result: NDArray[np.floating[Any]] = np.asarray(weights, dtype=np.float64)
+        return result
+
+    def _build_posterior(
+        self, samples: NDArray[np.floating[Any]], weights: NDArray[np.floating[Any]]
+    ) -> Posterior:
+        """Build posterior distribution from weighted samples.
+
+        Args:
+            samples: Prior samples.
+            weights: Importance weights.
+
+        Returns:
+            Posterior distribution with statistics.
+        """
         # Compute posterior statistics
         mean = float(np.sum(samples * weights))
         variance = float(np.sum(weights * (samples - mean) ** 2))
         std = float(np.sqrt(variance))
 
-        # Compute 95% credible interval via weighted percentiles
+        # Compute 95% credible interval
         sorted_indices = np.argsort(samples)
         sorted_samples = samples[sorted_indices]
         sorted_weights = weights[sorted_indices]
         cumsum = np.cumsum(sorted_weights)
 
-        # Find 2.5th and 97.5th percentiles
         ci_lower = float(sorted_samples[np.searchsorted(cumsum, 0.025)])
         ci_upper = float(sorted_samples[np.searchsorted(cumsum, 0.975)])
 

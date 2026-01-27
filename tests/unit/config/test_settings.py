@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from oscura.config.settings import (
+from oscura.core.config.settings import (
     AnalysisSettings,
     CLIDefaults,
     OutputSettings,

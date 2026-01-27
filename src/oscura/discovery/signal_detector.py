@@ -98,110 +98,37 @@ def characterize_signal(
     References:
         DISC-001: Automatic Signal Characterization
     """
-    # Validate input
-    if len(trace) == 0:
-        raise ValueError("Cannot characterize empty trace")
+    # Validate and extract trace data
+    data, sample_rate, is_analog = _validate_and_extract_trace(trace)
 
-    # Get signal data
-    if isinstance(trace, WaveformTrace):
-        data = trace.data
-        sample_rate = trace.metadata.sample_rate
-        is_analog = True
-    else:
-        data = trace.data.astype(np.float64)
-        sample_rate = trace.metadata.sample_rate
-        is_analog = False
-
-    # Compute basic statistics
+    # Compute basic statistics and voltage levels
     stats = basic_stats(data)
+    voltage_low, voltage_high, voltage_swing = _compute_voltage_levels(data)
 
-    # Determine voltage levels using percentiles to be robust to noise
-    # Use 5th and 95th percentiles to ignore outliers from noise
-    voltage_low = float(np.percentile(data, 5))
-    voltage_high = float(np.percentile(data, 95))
-    voltage_swing = voltage_high - voltage_low
+    # Run all signal type detectors
+    candidates = _detect_all_signal_types(data, sample_rate, voltage_swing, is_analog)
 
-    # Analyze signal characteristics
-    candidates: dict[SignalType, float] = {}
-
-    # Check for digital signal (bimodal distribution)
-    digital_confidence = _detect_digital(data, voltage_swing)
-    candidates["digital"] = digital_confidence
-
-    # Check for analog signal (continuous distribution)
-    analog_confidence = _detect_analog(data, voltage_swing, is_analog)
-    candidates["analog"] = analog_confidence
-
-    # Check for PWM (periodic square wave with varying duty cycle)
-    pwm_confidence = _detect_pwm(data, sample_rate, voltage_swing)
-    candidates["pwm"] = pwm_confidence
-
-    # Check for UART (asynchronous serial with start/stop bits)
-    uart_confidence = _detect_uart(data, sample_rate, voltage_swing)
-    candidates["uart"] = uart_confidence
-
-    # Check for SPI (synchronous with clock and data)
-    spi_confidence = _detect_spi(data, sample_rate, voltage_swing)
-    candidates["spi"] = spi_confidence
-
-    # Check for I2C (two-wire with specific patterns)
-    i2c_confidence = _detect_i2c(data, sample_rate, voltage_swing)
-    candidates["i2c"] = i2c_confidence
-
-    # Select best match
-    sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-    best_type, best_confidence = sorted_candidates[0]
-
-    # If confidence is too low, mark as unknown
-    if best_confidence < 0.5:
-        best_type = "unknown"
-
-    # If analog won but digital score is meaningful, prefer digital/unknown
-    # This handles noisy digital signals that look analog-ish
-    if best_type == "analog":
-        # Check if any protocol detector had reasonable confidence
-        protocol_confidence = max(
-            candidates.get("uart", 0),
-            candidates.get("spi", 0),
-            candidates.get("pwm", 0),
-        )
-
-        # If digital or protocol detectors have some confidence, don't call it purely analog
-        if digital_confidence > 0.3 or protocol_confidence > 0.2:
-            # Signal has digital characteristics - don't call it analog
-            if protocol_confidence > 0.3:
-                best_type = "unknown"  # Too noisy/ambiguous to classify as specific protocol
-                best_confidence = protocol_confidence
-            elif digital_confidence > 0.4:
-                best_type = "digital"  # Generic digital signal
-                best_confidence = digital_confidence
-            else:
-                best_type = "unknown"  # Too ambiguous
-                best_confidence = max(digital_confidence, protocol_confidence, analog_confidence)
+    # Select best signal type with refinement logic
+    best_type, best_confidence = _select_best_signal_type(candidates)
 
     # Estimate dominant frequency
     frequency_hz = _estimate_frequency(data, sample_rate)
 
-    # Extract type-specific parameters
+    # Extract type-specific parameters and quality metrics
     parameters = _extract_parameters(best_type, data, sample_rate, voltage_low, voltage_high)
+    quality_metrics = _compute_quality_metrics(
+        data, stats, sample_rate, voltage_low, voltage_high, candidates["digital"]
+    )
 
-    # Calculate quality metrics with improved noise estimation
-    noise_level = _estimate_noise_level(data, voltage_low, voltage_high, digital_confidence)
-    quality_metrics = {
-        "snr_db": _estimate_snr(data, stats),
-        "jitter_ns": _estimate_jitter(data, sample_rate) * 1e9,
-        "noise_level": noise_level,
-    }
-
-    # Prepare alternatives
-    alternatives: list[tuple[SignalType, float]] = []
-    if include_alternatives or best_confidence < confidence_threshold:
-        # Include top alternatives (excluding the winner)
-        for sig_type, conf in sorted_candidates[1:]:
-            if len(alternatives) >= min_alternatives:
-                break
-            if conf >= 0.3:  # Only include reasonable alternatives
-                alternatives.append((sig_type, conf))
+    # Prepare alternatives if requested
+    alternatives = _build_alternatives(
+        candidates,
+        best_type,
+        best_confidence,
+        include_alternatives,
+        confidence_threshold,
+        min_alternatives,
+    )
 
     return SignalCharacterization(
         signal_type=best_type,
@@ -213,6 +140,196 @@ def characterize_signal(
         quality_metrics=quality_metrics,
         alternatives=alternatives,
     )
+
+
+def _validate_and_extract_trace(
+    trace: WaveformTrace | DigitalTrace,
+) -> tuple[NDArray[np.floating[Any]], float, bool]:
+    """Validate trace and extract data, sample rate, and analog flag.
+
+    Args:
+        trace: Input waveform or digital trace.
+
+    Returns:
+        Tuple of (data, sample_rate, is_analog).
+
+    Raises:
+        ValueError: If trace is empty.
+    """
+    if len(trace) == 0:
+        raise ValueError("Cannot characterize empty trace")
+
+    if isinstance(trace, WaveformTrace):
+        return trace.data, trace.metadata.sample_rate, True
+    else:
+        return trace.data.astype(np.float64), trace.metadata.sample_rate, False
+
+
+def _compute_voltage_levels(
+    data: NDArray[np.floating[Any]],
+) -> tuple[float, float, float]:
+    """Compute voltage levels using robust percentiles.
+
+    Args:
+        data: Signal data array.
+
+    Returns:
+        Tuple of (voltage_low, voltage_high, voltage_swing).
+    """
+    voltage_low = float(np.percentile(data, 5))
+    voltage_high = float(np.percentile(data, 95))
+    voltage_swing = voltage_high - voltage_low
+    return voltage_low, voltage_high, voltage_swing
+
+
+def _detect_all_signal_types(
+    data: NDArray[np.floating[Any]],
+    sample_rate: float,
+    voltage_swing: float,
+    is_analog: bool,
+) -> dict[SignalType, float]:
+    """Run all signal type detectors and return confidence scores.
+
+    Args:
+        data: Signal data array.
+        sample_rate: Sample rate in Hz.
+        voltage_swing: Peak-to-peak voltage swing.
+        is_analog: Whether input is from analog trace.
+
+    Returns:
+        Dictionary mapping signal types to confidence scores.
+    """
+    return {
+        "digital": _detect_digital(data, voltage_swing),
+        "analog": _detect_analog(data, voltage_swing, is_analog),
+        "pwm": _detect_pwm(data, sample_rate, voltage_swing),
+        "uart": _detect_uart(data, sample_rate, voltage_swing),
+        "spi": _detect_spi(data, sample_rate, voltage_swing),
+        "i2c": _detect_i2c(data, sample_rate, voltage_swing),
+    }
+
+
+def _select_best_signal_type(
+    candidates: dict[SignalType, float],
+) -> tuple[SignalType, float]:
+    """Select best signal type with refinement logic.
+
+    Args:
+        candidates: Dictionary of signal types and confidence scores.
+
+    Returns:
+        Tuple of (best_type, best_confidence).
+    """
+    sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
+    best_type, best_confidence = sorted_candidates[0]
+
+    # If confidence is too low, mark as unknown
+    if best_confidence < 0.5:
+        return "unknown", best_confidence
+
+    # Refine analog classification if digital characteristics present
+    if best_type == "analog":
+        return _refine_analog_classification(candidates)
+
+    return best_type, best_confidence
+
+
+def _refine_analog_classification(
+    candidates: dict[SignalType, float],
+) -> tuple[SignalType, float]:
+    """Refine analog classification when digital characteristics are present.
+
+    Args:
+        candidates: Dictionary of signal types and confidence scores.
+
+    Returns:
+        Tuple of (refined_type, confidence).
+    """
+    digital_confidence = candidates.get("digital", 0)
+    analog_confidence = candidates.get("analog", 0)
+    protocol_confidence = max(
+        candidates.get("uart", 0),
+        candidates.get("spi", 0),
+        candidates.get("pwm", 0),
+    )
+
+    # If digital or protocol detectors have some confidence, don't call it purely analog
+    if digital_confidence > 0.3 or protocol_confidence > 0.2:
+        if protocol_confidence > 0.3:
+            return "unknown", protocol_confidence
+        elif digital_confidence > 0.4:
+            return "digital", digital_confidence
+        else:
+            return "unknown", max(digital_confidence, protocol_confidence, analog_confidence)
+
+    return "analog", analog_confidence
+
+
+def _compute_quality_metrics(
+    data: NDArray[np.floating[Any]],
+    stats: dict[str, float],
+    sample_rate: float,
+    voltage_low: float,
+    voltage_high: float,
+    digital_confidence: float,
+) -> dict[str, float]:
+    """Compute signal quality metrics.
+
+    Args:
+        data: Signal data array.
+        stats: Basic statistics dictionary.
+        sample_rate: Sample rate in Hz.
+        voltage_low: Low voltage level.
+        voltage_high: High voltage level.
+        digital_confidence: Confidence that signal is digital.
+
+    Returns:
+        Dictionary of quality metrics.
+    """
+    noise_level = _estimate_noise_level(data, voltage_low, voltage_high, digital_confidence)
+    return {
+        "snr_db": _estimate_snr(data, stats),
+        "jitter_ns": _estimate_jitter(data, sample_rate) * 1e9,
+        "noise_level": noise_level,
+    }
+
+
+def _build_alternatives(
+    candidates: dict[SignalType, float],
+    best_type: SignalType,
+    best_confidence: float,
+    include_alternatives: bool,
+    confidence_threshold: float,
+    min_alternatives: int,
+) -> list[tuple[SignalType, float]]:
+    """Build list of alternative signal type suggestions.
+
+    Args:
+        candidates: All candidate types with confidence scores.
+        best_type: Best detected signal type.
+        best_confidence: Confidence of best type.
+        include_alternatives: Whether to include alternatives.
+        confidence_threshold: Threshold for including alternatives.
+        min_alternatives: Minimum number of alternatives.
+
+    Returns:
+        List of (signal_type, confidence) tuples.
+    """
+    alternatives: list[tuple[SignalType, float]] = []
+
+    if not (include_alternatives or best_confidence < confidence_threshold):
+        return alternatives
+
+    sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
+
+    # Include top alternatives (excluding the winner)
+    for sig_type, conf in sorted_candidates[1:]:
+        if len(alternatives) >= min_alternatives:
+            break
+        if conf >= 0.3:  # Only include reasonable alternatives
+            alternatives.append((sig_type, conf))
+
+    return alternatives
 
 
 def _estimate_noise_level(

@@ -35,12 +35,6 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.fixture
-def sample_rate() -> float:
-    """Standard sample rate for tests."""
-    return 1e6  # 1 MHz
-
-
-@pytest.fixture
 def sine_trace(sample_rate: float) -> WaveformTrace:
     """Create a sine wave trace for testing."""
     time = np.linspace(0, 1e-3, 1000)

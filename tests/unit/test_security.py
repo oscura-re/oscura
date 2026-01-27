@@ -14,7 +14,7 @@ import pytest
 
 from oscura.core.audit import AuditTrail
 from oscura.core.exceptions import SecurityError
-from oscura.session import Session, load_session
+from oscura.sessions.legacy import Session, load_session
 
 pytestmark = pytest.mark.unit
 
@@ -194,7 +194,7 @@ class TestPickleSecurity:
 
     def test_hmac_key_is_constant(self) -> None:
         """Test that HMAC key is deterministic."""
-        from oscura.session.session import _SECURITY_KEY
+        from oscura.sessions.legacy import _SECURITY_KEY
 
         # Key should be derived from constant string
         expected = hashlib.sha256(b"oscura-session-v1").digest()
@@ -202,7 +202,7 @@ class TestPickleSecurity:
 
     def test_session_magic_bytes(self) -> None:
         """Test that session files have correct magic bytes."""
-        from oscura.session.session import _SESSION_MAGIC
+        from oscura.sessions.legacy import _SESSION_MAGIC
 
         assert _SESSION_MAGIC == b"OSC1"
         assert len(_SESSION_MAGIC) == 4

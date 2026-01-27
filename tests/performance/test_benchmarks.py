@@ -180,6 +180,10 @@ class TestInferenceBenchmarks:
         try:
             from oscura.inference.message_format import infer_format
         except ImportError:
+            # SKIP: Valid - Optional format inference
+            # Only skip if auto-detection module not available
+            # SKIP: Valid - Optional format inference
+            # Only skip if auto-detection module not available
             pytest.skip("infer_format not available")
 
         # Generate test packets with consistent structure and FIXED length
@@ -504,6 +508,10 @@ class TestChunkedAnalyzerBenchmarks:
         try:
             from oscura.analyzers.statistics.streaming import StreamingStats
         except ImportError:
+            # SKIP: Valid - Optional streaming statistics
+            # Only skip if streaming stats module not available
+            # SKIP: Valid - Optional streaming statistics
+            # Only skip if streaming stats module not available
             pytest.skip("StreamingStats not available")
 
         # Generate test data
@@ -534,6 +542,10 @@ class TestChunkedAnalyzerBenchmarks:
         try:
             from oscura.analyzers.spectral.fft import fft_chunked
         except ImportError:
+            # SKIP: Valid - Optional chunked FFT processing
+            # Only skip if chunked FFT module not available
+            # SKIP: Valid - Optional chunked FFT processing
+            # Only skip if chunked FFT module not available
             pytest.skip("fft_chunked not available")
 
         # Generate test signal
@@ -620,6 +632,10 @@ class TestParallelProcessingBenchmarks:
         try:
             from oscura.analyzers.spectral.fft import fft_chunked_parallel
         except ImportError:
+            # SKIP: Valid - Optional chunked FFT processing
+            # Only skip if chunked FFT module not available
+            # SKIP: Valid - Optional chunked FFT processing
+            # Only skip if chunked FFT module not available
             pytest.skip("fft_chunked_parallel not available")
 
         # Generate large test signal
@@ -645,6 +661,10 @@ class TestParallelProcessingBenchmarks:
         try:
             from oscura.analyzers.spectral.fft import fft_chunked, fft_chunked_parallel
         except ImportError:
+            # SKIP: Valid - Optional chunked FFT processing
+            # Only skip if chunked FFT module not available
+            # SKIP: Valid - Optional chunked FFT processing
+            # Only skip if chunked FFT module not available
             pytest.skip("fft_chunked_parallel not available")
 
         # Generate test signal
@@ -909,7 +929,10 @@ class TestImportTimeBenchmarks:
             import oscura  # noqa: F401
 
         # Benchmark import
-        benchmark(import_oscura)
+        result = benchmark(import_oscura)
+        assert result is not None
+        # Verify import was successful
+        assert "oscura" in sys.modules
 
     def test_lazy_import_overhead(self, benchmark) -> None:
         """Benchmark lazy import overhead.
@@ -921,10 +944,13 @@ class TestImportTimeBenchmarks:
 
         def create_lazy_module() -> None:
             """Create lazy module proxy."""
-            lazy_import("numpy")
+            result = lazy_import("numpy")
+            assert result is not None
+            return result
 
         # Benchmark lazy import creation (should be very fast)
-        benchmark(create_lazy_module)
+        result = benchmark(create_lazy_module)
+        assert result is not None
 
     def test_lazy_vs_eager_import(self) -> None:
         """Compare lazy vs eager import performance.

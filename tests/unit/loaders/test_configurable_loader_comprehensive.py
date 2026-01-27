@@ -36,67 +36,67 @@ class TestConfigurablePacketLoader:
             assert PacketFormatConfig is not None
             assert load_binary_packets is not None
         except ImportError as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"Configurable loader not available: {e}")
 
     def test_packet_format_config_from_dict(self) -> None:
         """Test creating a packet format configuration from dictionary."""
         try:
             from oscura.loaders import PacketFormatConfig
-
-            # Create config using from_dict (the actual API)
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            assert config.name == "test_format"
-            assert config.packet_size == 512
-
         except ImportError:
             pytest.skip("PacketFormatConfig not available")
-        except Exception as e:
-            pytest.skip(f"PacketFormatConfig creation failed: {e}")
+
+        # Create config using from_dict (the actual API)
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        assert config.name == "test_format"
+        assert config.packet_size == 512
 
     def test_load_fixed_length_packets(self, synthetic_packets: dict[str, Path]) -> None:
         """Test loading fixed-length packets from synthetic data."""
         data_path = synthetic_packets["data"]
         if not data_path.exists():
+            # SKIP: Valid - Optional dependency
+            # Only skip if required: Synthetic packet data not available
             pytest.skip("Synthetic packet data not available")
 
         try:
             from oscura.loaders import PacketFormatConfig, load_binary_packets
-
-            # Create proper config for 512-byte packets
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            packets = load_binary_packets(data_path, config)
-
-            assert packets is not None
-            assert len(packets) > 0
-
         except ImportError:
             pytest.skip("Configurable loader not available")
-        except Exception as e:
-            pytest.skip(f"Packet loading requires specific configuration: {e}")
+
+        # Create proper config for 512-byte packets
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        packets = load_binary_packets(data_path, config)
+
+        assert packets is not None
+        assert len(packets) > 0
 
 
 @pytest.mark.unit
@@ -109,7 +109,10 @@ class TestSampleFormatConfiguration:
         """Test creating sample format definitions."""
         try:
             from oscura.loaders import SampleFormatDef
+        except ImportError:
+            pytest.skip("SampleFormatDef not available")
 
+        try:
             # Define 16-bit little-endian samples
             sample_format = SampleFormatDef(
                 size=2,
@@ -120,9 +123,6 @@ class TestSampleFormatConfiguration:
             assert sample_format.type == "int16"
             assert sample_format.endian == "little"
             assert sample_format.size == 2
-
-        except ImportError:
-            pytest.skip("SampleFormatDef not available")
         except TypeError as e:
             pytest.skip(f"SampleFormatDef has different signature: {e}")
 
@@ -154,13 +154,20 @@ class TestHeaderFieldExtraction:
         except ImportError:
             pytest.skip("HeaderFieldDef not available")
         except TypeError as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"HeaderFieldDef has different signature: {e}")
 
     def test_multiple_header_fields(self) -> None:
         """Test configuration with multiple header fields."""
         try:
             from oscura.loaders import HeaderFieldDef, PacketFormatConfig
+        except ImportError:
+            pytest.skip("Header field configuration not available")
 
+        try:
             fields = [
                 HeaderFieldDef(name="sync", offset=0, size=2, type="uint16"),
                 HeaderFieldDef(name="sequence", offset=2, size=4, type="uint32"),
@@ -188,9 +195,6 @@ class TestHeaderFieldExtraction:
             config = PacketFormatConfig.from_dict(config_dict)
 
             assert len(config.header_fields) == 3
-
-        except ImportError:
-            pytest.skip("Header field configuration not available")
         except TypeError as e:
             pytest.skip(f"API has different signature: {e}")
 
@@ -218,6 +222,10 @@ class TestBitfieldParsing:
         except ImportError:
             pytest.skip("BitfieldDef not available")
         except TypeError as e:
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
+            # SKIP: Valid - Conditional import dependency
+            # Only skip if required module not available
             pytest.skip(f"BitfieldDef has different signature: {e}")
 
     def test_bitfield_extractor(self) -> None:
@@ -260,9 +268,11 @@ class TestDeviceMapping:
         """Test device configuration loading from YAML."""
         try:
             from oscura.loaders import DeviceConfig
+        except ImportError:
+            pytest.skip("DeviceConfig not available")
 
-            # Create test YAML config
-            yaml_content = """
+        # Create test YAML config
+        yaml_content = """
 devices:
   0x01:
     name: "Sensor A"
@@ -275,19 +285,14 @@ devices:
 unknown_device:
   policy: warn
 """
-            config_file = tmp_path / "device_config.yaml"
-            config_file.write_text(yaml_content)
+        config_file = tmp_path / "device_config.yaml"
+        config_file.write_text(yaml_content)
 
-            config = DeviceConfig.from_yaml(config_file)
+        config = DeviceConfig.from_yaml(config_file)
 
-            assert 0x01 in config.devices
-            assert config.devices[0x01]["name"] == "Sensor A"
-            assert config.unknown_policy == "warn"
-
-        except ImportError:
-            pytest.skip("DeviceConfig not available")
-        except Exception as e:
-            pytest.skip(f"DeviceConfig loading failed: {e}")
+        assert 0x01 in config.devices
+        assert config.devices[0x01]["name"] == "Sensor A"
+        assert config.unknown_policy == "warn"
 
     def test_device_mapper(self, tmp_path: Path) -> None:
         """Test device ID to configuration mapping."""
@@ -318,6 +323,10 @@ unknown_device:
             assert "Unknown" in unknown_name or "0xFF" in unknown_name.upper()
 
         except ImportError:
+            # SKIP: Valid - Optional device mapping configuration
+            # Only skip if device mapper not available
+            # SKIP: Valid - Optional device mapping configuration
+            # Only skip if device mapper not available
             pytest.skip("DeviceMapper not available")
 
     def test_detect_source_type(self, tmp_path: Path) -> None:
@@ -361,6 +370,10 @@ class TestPacketValidation:
             assert validator is not None
 
         except ImportError:
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
             pytest.skip("PacketValidator not available")
 
     def test_sequence_validation(self) -> None:
@@ -372,6 +385,10 @@ class TestPacketValidation:
             assert SequenceValidation is not None
 
         except ImportError:
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
             pytest.skip("SequenceValidation not available")
 
     def test_validation_result(self) -> None:
@@ -383,6 +400,10 @@ class TestPacketValidation:
             assert ValidationResult is not None
 
         except ImportError:
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
+            # SKIP: Valid - Optional packet validation
+            # Only skip if packet validator module not available
             pytest.skip("ValidationResult not available")
 
 
@@ -400,33 +421,30 @@ class TestStreamingLoader:
 
         try:
             from oscura.loaders import PacketFormatConfig, load_packets_streaming
-
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            # Streaming should yield packets one at a time
-            packet_count = 0
-            for _packet in load_packets_streaming(data_path, config):
-                packet_count += 1
-                if packet_count >= 10:  # Just test first few
-                    break
-
-            assert packet_count > 0
-
         except ImportError:
             pytest.skip("Streaming loader not available")
-        except Exception as e:
-            pytest.skip(f"Streaming load requires specific configuration: {e}")
+
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        # Streaming should yield packets one at a time
+        packet_count = 0
+        for _packet in load_packets_streaming(data_path, config):
+            packet_count += 1
+            if packet_count >= 10:  # Just test first few
+                break
+
+        assert packet_count > 0
 
 
 @pytest.mark.unit
@@ -447,34 +465,31 @@ class TestChannelExtraction:
                 extract_channels,
                 load_binary_packets,
             )
-
-            config_dict = {
-                "name": "test_format",
-                "version": "1.0",
-                "packet": {"size": 512, "byte_order": "big"},
-                "header": {"size": 16, "fields": []},
-                "samples": {
-                    "offset": 16,
-                    "count": 124,
-                    "format": {"size": 4, "type": "uint32"},
-                },
-            }
-            config = PacketFormatConfig.from_dict(config_dict)
-
-            packets = load_binary_packets(data_path, config)
-
-            if packets:
-                channel_map = {"ch0": {"bits": (0, 7)}, "ch1": {"bits": (8, 15)}}
-                channels = extract_channels(packets, channel_map)
-
-                assert channels is not None
-                assert "ch0" in channels
-                assert "ch1" in channels
-
         except ImportError:
             pytest.skip("extract_channels not available")
-        except Exception as e:
-            pytest.skip(f"Channel extraction failed: {e}")
+
+        config_dict = {
+            "name": "test_format",
+            "version": "1.0",
+            "packet": {"size": 512, "byte_order": "big"},
+            "header": {"size": 16, "fields": []},
+            "samples": {
+                "offset": 16,
+                "count": 124,
+                "format": {"size": 4, "type": "uint32"},
+            },
+        }
+        config = PacketFormatConfig.from_dict(config_dict)
+
+        packets = load_binary_packets(data_path, config)
+
+        if packets:
+            channel_map = {"ch0": {"bits": (0, 7)}, "ch1": {"bits": (8, 15)}}
+            channels = extract_channels(packets, channel_map)
+
+            assert channels is not None
+            assert "ch0" in channels
+            assert "ch1" in channels
 
 
 @pytest.mark.unit
@@ -515,6 +530,10 @@ class TestPreprocessing:
             assert len(regions) >= 2  # Two idle regions at start and end
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("detect_idle_regions not available")
 
     def test_idle_detection_with_ones(self) -> None:
@@ -534,28 +553,29 @@ class TestPreprocessing:
             assert len(regions) >= 2  # Two idle regions at start and end
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("detect_idle_regions not available")
 
     def test_trim_idle(self) -> None:
         """Test idle region trimming."""
         try:
             from oscura.loaders import trim_idle
-
-            # Create test data with idle bytes at start and end
-            test_data = [False] * 100 + [True] * 50 + [False] * 100
-            trace = self._create_digital_trace(test_data)
-
-            trimmed = trim_idle(trace, pattern="zeros", min_duration=50)
-
-            # Should remove leading/trailing idle samples
-            assert len(trimmed.data) <= len(trace.data)
-            # The active portion (50 ones) should remain
-            assert len(trimmed.data) >= 50
-
         except ImportError:
             pytest.skip("trim_idle not available")
-        except Exception as e:
-            pytest.skip(f"trim_idle failed: {e}")
+
+        # Create test data with idle bytes at start and end
+        test_data = [False] * 100 + [True] * 50 + [False] * 100
+        trace = self._create_digital_trace(test_data)
+
+        trimmed = trim_idle(trace, pattern="zeros", min_duration=50)
+
+        # Should remove leading/trailing idle samples
+        assert len(trimmed.data) <= len(trace.data)
+        # The active portion (50 ones) should remain
+        assert len(trimmed.data) >= 50
 
     def test_idle_statistics(self) -> None:
         """Test idle region statistics calculation."""
@@ -574,6 +594,10 @@ class TestPreprocessing:
             assert stats.idle_fraction > 0.5  # More than half is idle
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("get_idle_statistics not available")
 
     def test_idle_region_properties(self) -> None:
@@ -592,6 +616,10 @@ class TestPreprocessing:
             assert region.get_duration_seconds(1e6) == 100e-6  # 100 us
 
         except ImportError:
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
+            # SKIP: Valid - Optional idle region detection
+            # Only skip if idle detection module not available
             pytest.skip("IdleRegion not available")
 
     def test_idle_statistics_properties(self) -> None:

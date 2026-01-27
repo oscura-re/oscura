@@ -7,7 +7,7 @@ import copy
 
 import pytest
 
-from oscura.config.migration import (
+from oscura.core.config.migration import (
     Migration,
     SchemaMigration,
     get_config_version,

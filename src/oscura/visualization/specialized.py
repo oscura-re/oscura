@@ -17,7 +17,7 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
@@ -122,9 +122,28 @@ def plot_protocol_timing(
     if len(signals) == 0:
         raise ValueError("signals list cannot be empty")
 
+    # Setup figure and axes
+    fig, axes = _setup_timing_figure(signals, figsize)
+
+    # Determine time parameters
+    t_min, t_max = _determine_time_range(signals, sample_rate, time_range)
+    time_unit_final, time_mult = _select_timing_unit(time_unit, t_min, t_max)
+
+    # Plot each signal
+    _plot_all_signals(axes, signals, sample_rate, t_min, t_max, time_mult, style)
+
+    # Finalize plot
+    _finalize_timing_plot(fig, axes, time_unit_final, title)
+
+    return fig
+
+
+def _setup_timing_figure(
+    signals: list[ProtocolSignal], figsize: tuple[float, float] | None
+) -> tuple[Figure, list[Any]]:
+    """Setup figure and axes for timing diagram."""
     n_signals = len(signals)
 
-    # Auto-calculate figure size
     if figsize is None:
         width = 12
         height = max(4, n_signals * 0.8 + 1)
@@ -141,77 +160,106 @@ def plot_protocol_timing(
     if n_signals == 1:
         axes = [axes]
 
-    # Determine time range
-    if time_range is None:
-        max_len = max(len(sig.data) for sig in signals)
-        t_min = 0.0
-        t_max = max_len / sample_rate
-    else:
-        t_min, t_max = time_range
+    return fig, axes
 
-    # Select time unit
+
+def _determine_time_range(
+    signals: list[ProtocolSignal],
+    sample_rate: float,
+    time_range: tuple[float, float] | None,
+) -> tuple[float, float]:
+    """Determine time range for plotting."""
+    if time_range is not None:
+        return time_range
+
+    max_len = max(len(sig.data) for sig in signals)
+    return 0.0, max_len / sample_rate
+
+
+def _select_timing_unit(time_unit: str, t_min: float, t_max: float) -> tuple[str, float]:
+    """Select appropriate time unit and multiplier."""
     if time_unit == "auto":
         time_range_val = t_max - t_min
         if time_range_val < 1e-6:
-            time_unit = "ns"
-            time_mult = 1e9
+            return "ns", 1e9
         elif time_range_val < 1e-3:
-            time_unit = "us"
-            time_mult = 1e6
+            return "us", 1e6
         elif time_range_val < 1:
-            time_unit = "ms"
-            time_mult = 1e3
+            return "ms", 1e3
         else:
-            time_unit = "s"
-            time_mult = 1.0
+            return "s", 1.0
     else:
         time_mult = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}.get(time_unit, 1.0)
+        return time_unit, time_mult
 
-    # Plot each signal
+
+def _plot_all_signals(
+    axes: list[Any],
+    signals: list[ProtocolSignal],
+    sample_rate: float,
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+    style: str,
+) -> None:
+    """Plot all signals on their respective axes."""
     for _idx, (signal, ax) in enumerate(zip(signals, axes, strict=False)):
-        # Create time vector
         time = np.arange(len(signal.data)) / sample_rate * time_mult
 
         # Filter to time range
         mask = (time >= t_min * time_mult) & (time <= t_max * time_mult)
-        time = time[mask]
-        data = signal.data[mask]
+        time_filtered = time[mask]
+        data_filtered = signal.data[mask]
 
+        # Plot signal
         if style == "wavedrom":
-            _plot_wavedrom_signal(ax, time, data, signal)
+            _plot_wavedrom_signal(ax, time_filtered, data_filtered, signal)
         else:
-            _plot_classic_signal(ax, time, data, signal)
+            _plot_classic_signal(ax, time_filtered, data_filtered, signal)
 
-        # Add signal name label
-        ax.set_ylabel(signal.name, rotation=0, ha="right", va="center", fontsize=10)
-        ax.set_ylim(-0.2, 1.3)
-
-        # Remove y-axis ticks
-        ax.set_yticks([])
-
-        # Grid for timing
-        ax.grid(True, axis="x", alpha=0.3, linestyle=":")
+        # Format axes
+        _format_signal_axes(ax, signal.name)
 
         # Add annotations
-        if signal.annotations:
-            for t, text in signal.annotations.items():
-                if t_min <= t <= t_max:
-                    ax.annotate(
-                        text,
-                        xy=(t * time_mult, 1.2),
-                        fontsize=8,
-                        ha="center",
-                        bbox={"boxstyle": "round,pad=0.3", "facecolor": "yellow", "alpha": 0.7},
-                    )
+        _add_signal_annotations(ax, signal, t_min, t_max, time_mult)
 
-    # X-axis label only on bottom plot
+
+def _format_signal_axes(ax: Axes, signal_name: str) -> None:
+    """Format axes for a single signal."""
+    ax.set_ylabel(signal_name, rotation=0, ha="right", va="center", fontsize=10)
+    ax.set_ylim(-0.2, 1.3)
+    ax.set_yticks([])
+    ax.grid(True, axis="x", alpha=0.3, linestyle=":")
+
+
+def _add_signal_annotations(
+    ax: Axes,
+    signal: ProtocolSignal,
+    t_min: float,
+    t_max: float,
+    time_mult: float,
+) -> None:
+    """Add annotations to signal plot."""
+    if signal.annotations:
+        for t, text in signal.annotations.items():
+            if t_min <= t <= t_max:
+                ax.annotate(
+                    text,
+                    xy=(t * time_mult, 1.2),
+                    fontsize=8,
+                    ha="center",
+                    bbox={"boxstyle": "round,pad=0.3", "facecolor": "yellow", "alpha": 0.7},
+                )
+
+
+def _finalize_timing_plot(fig: Figure, axes: list[Any], time_unit: str, title: str | None) -> None:
+    """Finalize timing plot with labels and title."""
     axes[-1].set_xlabel(f"Time ({time_unit})", fontsize=11)
 
     if title:
         fig.suptitle(title, fontsize=14, y=0.98)
 
     fig.tight_layout()
-    return fig
 
 
 def _plot_wavedrom_signal(
@@ -333,14 +381,32 @@ def plot_state_machine(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
+    # Setup figure
     fig, ax = plt.subplots(figsize=figsize)
-
-    # Calculate state positions using selected layout
     positions = _calculate_state_positions(states, layout)
-
-    # Draw states as circles
     state_radius = 0.15
 
+    # Draw all states
+    _draw_all_states(ax, positions, state_radius, initial_state, final_states)
+
+    # Draw all transitions
+    _draw_all_transitions(ax, transitions, positions, state_radius)
+
+    # Finalize axes
+    _finalize_state_machine_plot(ax, title)
+
+    fig.tight_layout()
+    return fig
+
+
+def _draw_all_states(
+    ax: Axes,
+    positions: dict[str, tuple[float, float]],
+    state_radius: float,
+    initial_state: str | None,
+    final_states: list[str] | None,
+) -> None:
+    """Draw all state nodes with appropriate markers."""
     for state, (x, y) in positions.items():
         # Draw state circle
         circle = patches.Circle(
@@ -386,7 +452,14 @@ def plot_state_machine(
             fontweight="bold",
         )
 
-    # Draw transitions as arrows
+
+def _draw_all_transitions(
+    ax: Axes,
+    transitions: list[StateTransition],
+    positions: dict[str, tuple[float, float]],
+    state_radius: float,
+) -> None:
+    """Draw all transition arrows between states."""
     for trans in transitions:
         if trans.from_state not in positions or trans.to_state not in positions:
             continue
@@ -394,65 +467,85 @@ def plot_state_machine(
         x1, y1 = positions[trans.from_state]
         x2, y2 = positions[trans.to_state]
 
-        # Calculate arrow start/end on circle perimeter
+        # Check for self-loop
         dx = x2 - x1
         dy = y2 - y1
         dist = np.sqrt(dx**2 + dy**2)
 
         if dist < 1e-6:
-            # Self-loop
             _draw_self_loop(ax, x1, y1, state_radius, trans.condition)
             continue
 
-        # Normalize
-        dx_norm = dx / dist
-        dy_norm = dy / dist
+        # Draw regular transition arrow
+        _draw_transition_arrow(ax, x1, y1, x2, y2, state_radius, trans)
 
-        # Arrow start/end on circle edges
-        arrow_start_x = x1 + dx_norm * state_radius
-        arrow_start_y = y1 + dy_norm * state_radius
-        arrow_end_x = x2 - dx_norm * state_radius
-        arrow_end_y = y2 - dy_norm * state_radius
 
-        # Line style
-        linestyle = {
-            "solid": "-",
-            "dashed": "--",
-            "dotted": ":",
-        }.get(trans.style, "-")
+def _draw_transition_arrow(
+    ax: Axes,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    state_radius: float,
+    trans: StateTransition,
+) -> None:
+    """Draw single transition arrow with label."""
+    # Calculate arrow start/end on circle perimeter
+    dx = x2 - x1
+    dy = y2 - y1
+    dist = np.sqrt(dx**2 + dy**2)
 
-        # Draw arrow
-        ax.annotate(
-            "",
-            xy=(arrow_end_x, arrow_end_y),
-            xytext=(arrow_start_x, arrow_start_y),
-            arrowprops={
-                "arrowstyle": "->",
-                "lw": 1.5,
-                "linestyle": linestyle,
-                "color": "black",
+    # Normalize
+    dx_norm = dx / dist
+    dy_norm = dy / dist
+
+    # Arrow start/end on circle edges
+    arrow_start_x = x1 + dx_norm * state_radius
+    arrow_start_y = y1 + dy_norm * state_radius
+    arrow_end_x = x2 - dx_norm * state_radius
+    arrow_end_y = y2 - dy_norm * state_radius
+
+    # Line style
+    linestyle = {
+        "solid": "-",
+        "dashed": "--",
+        "dotted": ":",
+    }.get(trans.style, "-")
+
+    # Draw arrow
+    ax.annotate(
+        "",
+        xy=(arrow_end_x, arrow_end_y),
+        xytext=(arrow_start_x, arrow_start_y),
+        arrowprops={
+            "arrowstyle": "->",
+            "lw": 1.5,
+            "linestyle": linestyle,
+            "color": "black",
+        },
+    )
+
+    # Add transition label
+    if trans.condition:
+        mid_x = (x1 + x2) / 2
+        mid_y = (y1 + y2) / 2
+        ax.text(
+            mid_x,
+            mid_y,
+            trans.condition,
+            fontsize=8,
+            ha="center",
+            bbox={
+                "boxstyle": "round,pad=0.3",
+                "facecolor": "white",
+                "edgecolor": "gray",
+                "alpha": 0.9,
             },
         )
 
-        # Add transition label
-        if trans.condition:
-            mid_x = (x1 + x2) / 2
-            mid_y = (y1 + y2) / 2
-            ax.text(
-                mid_x,
-                mid_y,
-                trans.condition,
-                fontsize=8,
-                ha="center",
-                bbox={
-                    "boxstyle": "round,pad=0.3",
-                    "facecolor": "white",
-                    "edgecolor": "gray",
-                    "alpha": 0.9,
-                },
-            )
 
-    # Set axis properties
+def _finalize_state_machine_plot(ax: Axes, title: str | None) -> None:
+    """Set axis properties and title for state machine plot."""
     ax.set_aspect("equal")
     ax.axis("off")
     ax.set_xlim(-0.2, 1.2)
@@ -460,9 +553,6 @@ def plot_state_machine(
 
     if title:
         ax.set_title(title, fontsize=14, pad=20)
-
-    fig.tight_layout()
-    return fig
 
 
 def _calculate_state_positions(
@@ -495,7 +585,7 @@ def _calculate_state_positions(
     else:  # force-directed (simplified)
         # Use random positions as a placeholder for true force-directed layout
         np.random.seed(42)
-        for i, state in enumerate(states):  # noqa: B007
+        for i, state in enumerate(states):
             x = 0.2 + 0.6 * np.random.rand()
             y = 0.2 + 0.6 * np.random.rand()
             positions[state] = (x, y)

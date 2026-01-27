@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 # Try to import dpkt for full PCAP support
 try:
-    import dpkt  # type: ignore[import-not-found]
+    import dpkt
 
     DPKT_AVAILABLE = True
 except ImportError:
@@ -160,6 +160,135 @@ def load_pcap(
         )
 
 
+def _create_pcap_reader(f: Any, path: Path) -> Any:
+    """Create appropriate PCAP reader based on file format.
+
+    Args:
+        f: File handle.
+        path: Path to PCAP file.
+
+    Returns:
+        dpkt PCAP or PCAPNG reader.
+
+    Raises:
+        LoaderError: If PCAPNG support is unavailable.
+    """
+    magic = f.read(4)
+    f.seek(0)
+    magic_int = struct.unpack("<I", magic)[0]
+
+    if magic_int == PCAPNG_MAGIC:
+        try:
+            return dpkt.pcapng.Reader(f)
+        except AttributeError:
+            raise LoaderError(
+                "PCAPNG support requires newer dpkt version",
+                file_path=str(path),
+                fix_hint="Install dpkt >= 1.9: pip install dpkt>=1.9",
+            )
+    else:
+        return dpkt.pcap.Reader(f)
+
+
+def _parse_transport_layer(ip: Any, annotations: dict[str, Any]) -> str:
+    """Parse TCP/UDP/ICMP transport layer from IP packet.
+
+    Args:
+        ip: dpkt IP object.
+        annotations: Annotations dictionary to populate.
+
+    Returns:
+        Protocol name ("TCP", "UDP", "ICMP", or "IP").
+    """
+    if isinstance(ip.data, dpkt.tcp.TCP):
+        tcp = ip.data
+        annotations["src_port"] = tcp.sport
+        annotations["dst_port"] = tcp.dport
+        annotations["layer4_protocol"] = "TCP"
+        annotations["tcp_flags"] = tcp.flags
+        return "TCP"
+
+    elif isinstance(ip.data, dpkt.udp.UDP):
+        udp = ip.data
+        annotations["src_port"] = udp.sport
+        annotations["dst_port"] = udp.dport
+        annotations["layer4_protocol"] = "UDP"
+        return "UDP"
+
+    elif isinstance(ip.data, dpkt.icmp.ICMP):
+        annotations["layer4_protocol"] = "ICMP"
+        return "ICMP"
+
+    return "IP"
+
+
+def _parse_ethernet_frame(raw_data: bytes, link_type: int) -> tuple[str, dict[str, Any]]:
+    """Parse Ethernet frame and extract protocol information.
+
+    Args:
+        raw_data: Raw packet bytes.
+        link_type: Link layer type.
+
+    Returns:
+        Tuple of (protocol_name, annotations_dict).
+    """
+    annotations: dict[str, Any] = {}
+    protocol = "RAW"
+
+    try:
+        if link_type != 1:  # Not Ethernet
+            return protocol, annotations
+
+        eth = dpkt.ethernet.Ethernet(raw_data)
+        annotations["src_mac"] = _format_mac(eth.src)
+        annotations["dst_mac"] = _format_mac(eth.dst)
+
+        # Parse network layer
+        if isinstance(eth.data, dpkt.ip.IP):
+            ip = eth.data
+            annotations["src_ip"] = _format_ip(ip.src)
+            annotations["dst_ip"] = _format_ip(ip.dst)
+            annotations["layer3_protocol"] = "IP"
+            protocol = _parse_transport_layer(ip, annotations)
+
+        elif isinstance(eth.data, dpkt.ip6.IP6):
+            protocol = "IPv6"
+            annotations["layer3_protocol"] = "IPv6"
+
+        elif isinstance(eth.data, dpkt.arp.ARP):
+            protocol = "ARP"
+            annotations["layer3_protocol"] = "ARP"
+
+    except Exception:
+        # If parsing fails, return defaults
+        pass
+
+    return protocol, annotations
+
+
+def _matches_protocol_filter(
+    protocol: str, annotations: dict[str, Any], protocol_filter: str | None
+) -> bool:
+    """Check if packet matches protocol filter.
+
+    Args:
+        protocol: Packet protocol name.
+        annotations: Packet annotations.
+        protocol_filter: Filter string.
+
+    Returns:
+        True if packet matches filter (or no filter set).
+    """
+    if protocol_filter is None:
+        return True
+
+    return (
+        annotations.get("layer3_protocol") == protocol_filter
+        or annotations.get("layer4_protocol") == protocol_filter
+        or protocol == protocol_filter
+    )
+
+
 def _load_with_dpkt(
     path: Path,
     *,
@@ -180,27 +309,8 @@ def _load_with_dpkt(
         LoaderError: If file cannot be read or dpkt version is incompatible.
     """
     try:
-        with open(path, "rb") as f:
-            # Detect file format
-            magic = f.read(4)
-            f.seek(0)
-
-            magic_int = struct.unpack("<I", magic)[0]
-
-            if magic_int == PCAPNG_MAGIC:
-                # PCAPNG format
-                try:
-                    pcap_reader = dpkt.pcapng.Reader(f)
-                except AttributeError:
-                    raise LoaderError(  # noqa: B904
-                        "PCAPNG support requires newer dpkt version",
-                        file_path=str(path),
-                        fix_hint="Install dpkt >= 1.9: pip install dpkt>=1.9",
-                    )
-            else:
-                # Standard PCAP format
-                pcap_reader = dpkt.pcap.Reader(f)
-
+        with open(path, "rb", buffering=65536) as f:
+            pcap_reader = _create_pcap_reader(f, path)
             packets: list[ProtocolPacket] = []
             link_type = getattr(pcap_reader, "datalink", lambda: 1)()
 
@@ -208,62 +318,9 @@ def _load_with_dpkt(
                 if max_packets is not None and len(packets) >= max_packets:
                     break
 
-                # Parse Ethernet frame
-                annotations: dict[str, Any] = {}
-                protocol = "RAW"
+                protocol, annotations = _parse_ethernet_frame(raw_data, link_type)
 
-                try:
-                    if link_type == 1:  # Ethernet
-                        eth = dpkt.ethernet.Ethernet(raw_data)
-                        annotations["src_mac"] = _format_mac(eth.src)
-                        annotations["dst_mac"] = _format_mac(eth.dst)
-
-                        # Parse IP layer
-                        if isinstance(eth.data, dpkt.ip.IP):
-                            ip = eth.data
-                            protocol = "IP"
-                            annotations["src_ip"] = _format_ip(ip.src)
-                            annotations["dst_ip"] = _format_ip(ip.dst)
-                            annotations["layer3_protocol"] = "IP"
-
-                            # Parse transport layer
-                            if isinstance(ip.data, dpkt.tcp.TCP):
-                                tcp = ip.data
-                                protocol = "TCP"
-                                annotations["src_port"] = tcp.sport
-                                annotations["dst_port"] = tcp.dport
-                                annotations["layer4_protocol"] = "TCP"
-                                annotations["tcp_flags"] = tcp.flags
-
-                            elif isinstance(ip.data, dpkt.udp.UDP):
-                                udp = ip.data
-                                protocol = "UDP"
-                                annotations["src_port"] = udp.sport
-                                annotations["dst_port"] = udp.dport
-                                annotations["layer4_protocol"] = "UDP"
-
-                            elif isinstance(ip.data, dpkt.icmp.ICMP):
-                                protocol = "ICMP"
-                                annotations["layer4_protocol"] = "ICMP"
-
-                        elif isinstance(eth.data, dpkt.ip6.IP6):
-                            protocol = "IPv6"
-                            annotations["layer3_protocol"] = "IPv6"
-
-                        elif isinstance(eth.data, dpkt.arp.ARP):
-                            protocol = "ARP"
-                            annotations["layer3_protocol"] = "ARP"
-
-                except Exception:
-                    # If parsing fails, store raw data
-                    pass
-
-                # Apply protocol filter
-                if protocol_filter is not None and (
-                    annotations.get("layer3_protocol") != protocol_filter
-                    and annotations.get("layer4_protocol") != protocol_filter
-                    and protocol != protocol_filter
-                ):
+                if not _matches_protocol_filter(protocol, annotations, protocol_filter):
                     continue
 
                 packet = ProtocolPacket(
@@ -312,75 +369,9 @@ def _load_basic(
         LoaderError: If file cannot be read.
     """
     try:
-        with open(path, "rb") as f:
-            # Read global header (24 bytes)
-            header = f.read(24)
-            if len(header) < 24:
-                raise FormatError(
-                    "File too small to be a valid PCAP",
-                    file_path=str(path),
-                    expected="At least 24 bytes",
-                    got=f"{len(header)} bytes",
-                )
-
-            # Parse magic number
-            magic = struct.unpack("<I", header[:4])[0]
-
-            if magic in (PCAP_MAGIC_LE, PCAP_MAGIC_NS_LE):
-                byte_order = "<"
-                nanosecond = magic == PCAP_MAGIC_NS_LE
-            elif magic in (PCAP_MAGIC_BE, PCAP_MAGIC_NS_BE):
-                byte_order = ">"
-                nanosecond = magic == PCAP_MAGIC_NS_BE
-            elif magic == PCAPNG_MAGIC:
-                raise LoaderError(
-                    "PCAPNG format requires dpkt library",
-                    file_path=str(path),
-                    fix_hint="Install dpkt: pip install dpkt",
-                )
-            else:
-                raise FormatError(
-                    "Invalid PCAP magic number",
-                    file_path=str(path),
-                    expected="PCAP magic (0xa1b2c3d4)",
-                    got=f"0x{magic:08x}",
-                )
-
-            # Parse rest of header (version_major, version_minor, thiszone, sigfigs, snaplen, network)
-            _, _, _, _, snaplen, link_type = struct.unpack(f"{byte_order}HHiIII", header[4:])
-
-            packets: list[ProtocolPacket] = []
-
-            # Read packets
-            while True:
-                if max_packets is not None and len(packets) >= max_packets:
-                    break
-
-                # Read packet header (16 bytes)
-                pkt_header = f.read(16)
-                if len(pkt_header) < 16:
-                    break
-
-                ts_sec, ts_usec, incl_len, orig_len = struct.unpack(f"{byte_order}IIII", pkt_header)
-
-                # Calculate timestamp
-                if nanosecond:
-                    timestamp = ts_sec + ts_usec / 1e9
-                else:
-                    timestamp = ts_sec + ts_usec / 1e6
-
-                # Read packet data
-                pkt_data = f.read(incl_len)
-                if len(pkt_data) < incl_len:
-                    break
-
-                packet = ProtocolPacket(
-                    timestamp=timestamp,
-                    protocol="RAW",
-                    data=bytes(pkt_data),
-                    annotations={"original_length": orig_len},
-                )
-                packets.append(packet)
+        with open(path, "rb", buffering=65536) as f:
+            byte_order, nanosecond, snaplen, link_type = _parse_pcap_header(f, path)
+            packets = _read_pcap_packets(f, byte_order, nanosecond, max_packets)
 
             return PcapPacketList(
                 packets=packets,
@@ -390,10 +381,7 @@ def _load_basic(
             )
 
     except struct.error as e:
-        raise FormatError(
-            "Corrupted PCAP file",
-            file_path=str(path),
-        ) from e
+        raise FormatError("Corrupted PCAP file", file_path=str(path)) from e
     except Exception as e:
         if isinstance(e, LoaderError | FormatError):
             raise
@@ -403,6 +391,90 @@ def _load_basic(
             details=str(e),
             fix_hint="Install dpkt for full PCAP support: pip install dpkt",
         ) from e
+
+
+def _parse_pcap_header(f: Any, path: Path) -> tuple[str, bool, int, int]:
+    """Parse PCAP global header and return format info."""
+    header = f.read(24)
+    if len(header) < 24:
+        raise FormatError(
+            "File too small to be a valid PCAP",
+            file_path=str(path),
+            expected="At least 24 bytes",
+            got=f"{len(header)} bytes",
+        )
+
+    # Parse magic number
+    magic = struct.unpack("<I", header[:4])[0]
+    byte_order, nanosecond = _determine_byte_order(magic, path)
+
+    # Parse rest of header
+    _, _, _, _, snaplen, link_type = struct.unpack(f"{byte_order}HHiIII", header[4:])
+    return byte_order, nanosecond, snaplen, link_type
+
+
+def _determine_byte_order(magic: int, path: Path) -> tuple[str, bool]:
+    """Determine byte order and timestamp precision from magic number."""
+    if magic in (PCAP_MAGIC_LE, PCAP_MAGIC_NS_LE):
+        return "<", magic == PCAP_MAGIC_NS_LE
+    elif magic in (PCAP_MAGIC_BE, PCAP_MAGIC_NS_BE):
+        return ">", magic == PCAP_MAGIC_NS_BE
+    elif magic == PCAPNG_MAGIC:
+        raise LoaderError(
+            "PCAPNG format requires dpkt library",
+            file_path=str(path),
+            fix_hint="Install dpkt: pip install dpkt",
+        )
+    else:
+        raise FormatError(
+            "Invalid PCAP magic number",
+            file_path=str(path),
+            expected="PCAP magic (0xa1b2c3d4)",
+            got=f"0x{magic:08x}",
+        )
+
+
+def _read_pcap_packets(
+    f: Any, byte_order: str, nanosecond: bool, max_packets: int | None
+) -> list[ProtocolPacket]:
+    """Read all packets from PCAP file."""
+    packets: list[ProtocolPacket] = []
+
+    while True:
+        if max_packets is not None and len(packets) >= max_packets:
+            break
+
+        packet = _read_one_packet(f, byte_order, nanosecond)
+        if packet is None:
+            break
+
+        packets.append(packet)
+
+    return packets
+
+
+def _read_one_packet(f: Any, byte_order: str, nanosecond: bool) -> ProtocolPacket | None:
+    """Read one packet from PCAP file."""
+    pkt_header = f.read(16)
+    if len(pkt_header) < 16:
+        return None
+
+    ts_sec, ts_usec, incl_len, orig_len = struct.unpack(f"{byte_order}IIII", pkt_header)
+
+    # Calculate timestamp
+    timestamp = ts_sec + (ts_usec / 1e9 if nanosecond else ts_usec / 1e6)
+
+    # Read packet data
+    pkt_data = f.read(incl_len)
+    if len(pkt_data) < incl_len:
+        return None
+
+    return ProtocolPacket(
+        timestamp=timestamp,
+        protocol="RAW",
+        data=bytes(pkt_data),
+        annotations={"original_length": orig_len},
+    )
 
 
 def _format_mac(mac_bytes: bytes) -> str:

@@ -481,7 +481,7 @@ class TestPayloadComparison:
 
     def test_compute_similarity(self):
         """Test similarity computation."""
-        from oscura.analyzers.packet.payload import compute_similarity
+        from oscura.analyzers.packet.payload_analysis import compute_similarity
 
         a = b"ABCD"
         b = b"ABCE"

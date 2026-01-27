@@ -102,7 +102,9 @@ class Report:
         """
         self.output_path = path
 
-        html_content = f"""<!DOCTYPE html>
+        # Use list + join for O(n) string building instead of O(n²) +=
+        html_parts = [
+            f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -155,26 +157,33 @@ class Report:
         <p><strong>Date:</strong> {self.metadata.date}</p>
         <p><strong>Author:</strong> {self.metadata.author}</p>
 """
+        ]
+
         if self.metadata.project:
-            html_content += f"        <p><strong>Project:</strong> {self.metadata.project}</p>\n"
+            html_parts.append(f"        <p><strong>Project:</strong> {self.metadata.project}</p>\n")
 
         if self.metadata.tags:
-            html_content += (
+            html_parts.append(
                 f"        <p><strong>Tags:</strong> {', '.join(self.metadata.tags)}</p>\n"
             )
 
-        html_content += "    </div>\n\n"
+        html_parts.append("    </div>\n\n")
 
+        # Build sections with list.append instead of += in loop
         for section in self.sections:
             if section in self.content:
                 section_title = section.replace("_", " ").title()
-                html_content += f"""    <div class="section">
+                html_parts.append(
+                    f"""    <div class="section">
         <h2>{section_title}</h2>
         <p>{self.content[section]}</p>
     </div>
 """
-        html_content += """</body>
-</html>"""
+                )
+
+        html_parts.append("</body>\n</html>")
+        html_content = "".join(html_parts)
+
         with open(path, "w") as f:
             f.write(html_content)
 
@@ -188,23 +197,30 @@ class Report:
         """
         self.output_path = path
 
-        md_content = f"# {self.metadata.title}\n\n"
-        md_content += f"**Date:** {self.metadata.date}  \n"
-        md_content += f"**Author:** {self.metadata.author}  \n"
+        # Use list + join for O(n) string building instead of O(n²) +=
+        md_parts = [
+            f"# {self.metadata.title}\n\n",
+            f"**Date:** {self.metadata.date}  \n",
+            f"**Author:** {self.metadata.author}  \n",
+        ]
 
         if self.metadata.project:
-            md_content += f"**Project:** {self.metadata.project}  \n"
+            md_parts.append(f"**Project:** {self.metadata.project}  \n")
 
         if self.metadata.tags:
-            md_content += f"**Tags:** {', '.join(self.metadata.tags)}  \n"
+            md_parts.append(f"**Tags:** {', '.join(self.metadata.tags)}  \n")
 
-        md_content += "\n---\n\n"
+        md_parts.append("\n---\n\n")
 
+        # Build sections with list.append instead of += in loop
         for section in self.sections:
             if section in self.content:
                 section_title = section.replace("_", " ").title()
-                md_content += f"## {section_title}\n\n"
-                md_content += self.content[section] + "\n\n"
+                md_parts.append(f"## {section_title}\n\n")
+                md_parts.append(self.content[section])
+                md_parts.append("\n\n")
+
+        md_content = "".join(md_parts)
 
         with open(path, "w") as f:
             f.write(md_content)
@@ -397,6 +413,67 @@ def _generate_detailed_results(trace: WaveformTrace, context: dict[str, Any]) ->
     return results
 
 
+def _generate_section_content(
+    sections: list[str], trace: WaveformTrace, context: dict[str, Any]
+) -> dict[str, str]:
+    """Generate content for requested sections.
+
+    Args:
+        sections: List of section names to generate
+        trace: Waveform trace
+        context: Analysis context
+
+    Returns:
+        Dictionary mapping section names to content
+    """
+    content = {}
+
+    if "executive_summary" in sections or "summary" in sections:
+        content["executive_summary"] = _generate_executive_summary(trace, context)
+
+    if "key_findings" in sections or "findings" in sections:
+        content["key_findings"] = _generate_key_findings(trace, context)
+
+    if "methodology" in sections:
+        content["methodology"] = _generate_methodology(trace, context)
+
+    if "detailed_results" in sections or "results" in sections:
+        content["detailed_results"] = _generate_detailed_results(trace, context)
+
+    if "recommendations" in sections:
+        content["recommendations"] = (
+            "Recommendations based on analysis:\n\n"
+            "1. Signal quality is acceptable for analysis\n"
+            "2. Consider additional captures for verification\n"
+            "3. Review anomalies if present\n"
+        )
+
+    return content
+
+
+def _determine_plot_types(trace: WaveformTrace, options: dict[str, Any]) -> list[str]:
+    """Determine which plots to include in report.
+
+    Args:
+        trace: Waveform trace
+        options: Report options
+
+    Returns:
+        List of plot type names
+    """
+    configured_plot_types = options.get("plot_types", [])
+    if configured_plot_types:
+        # Cast to list[str] - we know it contains strings from config
+        return [str(p) for p in configured_plot_types]
+
+    # Auto-select based on signal characteristics
+    plot_types = ["time_domain_waveform"]
+    if len(trace.data) > 100:
+        plot_types.append("fft_spectrum")
+
+    return plot_types
+
+
 def generate_report(
     trace: WaveformTrace,
     *,
@@ -437,55 +514,15 @@ def generate_report(
     context = context or {}
     options = options or {}
 
-    # Determine sections to include
-    default_sections = [
-        "executive_summary",
-        "key_findings",
-        "methodology",
-        "detailed_results",
-    ]
-
+    default_sections = ["executive_summary", "key_findings", "methodology", "detailed_results"]
     sections = options.get("select_sections", default_sections)
 
-    # Generate content for each section
-    content = {}
+    content = _generate_section_content(sections, trace, context)
+    plot_types = _determine_plot_types(trace, options)
 
-    if "executive_summary" in sections or "summary" in sections:
-        content["executive_summary"] = _generate_executive_summary(trace, context)
+    # Estimate page count
+    page_count = 1 + len(sections) + (len(plot_types) + 1) // 2
 
-    if "key_findings" in sections or "findings" in sections:
-        content["key_findings"] = _generate_key_findings(trace, context)
-
-    if "methodology" in sections:
-        content["methodology"] = _generate_methodology(trace, context)
-
-    if "detailed_results" in sections or "results" in sections:
-        content["detailed_results"] = _generate_detailed_results(trace, context)
-
-    if "recommendations" in sections:
-        content["recommendations"] = (
-            "Recommendations based on analysis:\n\n"
-            "1. Signal quality is acceptable for analysis\n"
-            "2. Consider additional captures for verification\n"
-            "3. Review anomalies if present\n"
-        )
-
-    # Determine plot types to include
-    plot_types = options.get("plot_types", [])
-    if not plot_types:
-        # Auto-select based on signal characteristics
-        plot_types = ["time_domain_waveform"]
-
-        # Add spectral if signal looks periodic
-        if len(trace.data) > 100:
-            plot_types.append("fft_spectrum")
-
-    # Estimate page count (rough estimate)
-    page_count = 1  # Title page
-    page_count += len(sections)  # One page per section
-    page_count += (len(plot_types) + 1) // 2  # 2 plots per page
-
-    # Create report object
     report = Report(
         sections=list(sections),
         plots=plot_types,
@@ -493,7 +530,6 @@ def generate_report(
         content=content,
     )
 
-    # Set custom metadata if provided
     if "custom_header" in options:
         report.metadata.title = options["custom_header"]
 

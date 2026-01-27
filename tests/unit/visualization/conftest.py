@@ -141,11 +141,6 @@ def figure_with_subplots():
 # MIGRATION COMPLETE: Signal generation fixtures removed.
 # Tests should use SignalBuilder from tests/fixtures/signal_builders.py instead.
 #
-# Previous fixtures replaced by SignalBuilder methods:
-#   plot_test_data    → signal_builder.multitone() + noisy_sine()
-#   digital_plot_data → signal_builder.square_wave() + digital_pattern()
-#   eye_diagram_data  → signal_builder.digital_pattern() with noise
-#
 # Example usage:
 #   def test_plot(signal_builder):
 #       signal = signal_builder.multitone([10, 25], sample_rate=1000)

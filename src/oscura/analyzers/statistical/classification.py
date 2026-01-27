@@ -118,13 +118,66 @@ def classify_data_type(data: DataType) -> ClassificationResult:
         >>> result.primary_type
         'text'
     """
-    if isinstance(data, np.ndarray):
-        data = data.tobytes() if data.dtype == np.uint8 else bytes(data.flatten())
+    data = _normalize_data(data)
+    stats = _compute_statistics(data)
 
-    if not data:
+    # Classification logic in priority order
+    result = (
+        _check_padding(stats)
+        or _check_binary_signatures(data, stats)
+        or _check_compression_signatures(data, stats)
+        or _check_text(stats)
+        or _check_encrypted(stats)
+        or _check_compressed(stats)
+        or _default_binary(stats)
+    )
+
+    return result
+
+
+def _normalize_data(data: DataType) -> bytes:
+    """Normalize input data to bytes.
+
+    Args:
+        data: Input data as bytes, bytearray, or numpy array.
+
+    Returns:
+        Normalized bytes object.
+
+    Raises:
+        ValueError: If data is empty.
+    """
+    data_bytes: bytes
+    if isinstance(data, np.ndarray):
+        data_bytes = data.tobytes() if data.dtype == np.uint8 else bytes(data.flatten())
+    else:
+        data_bytes = bytes(data)
+
+    if not data_bytes:
         raise ValueError("Cannot classify empty data")
 
-    # Calculate statistics
+    return data_bytes
+
+
+@dataclass
+class _Statistics:
+    """Internal statistics for classification."""
+
+    entropy: float
+    printable_ratio: float
+    null_ratio: float
+    byte_variance: float
+
+
+def _compute_statistics(data: bytes) -> _Statistics:
+    """Compute statistics for classification.
+
+    Args:
+        data: Input data as bytes.
+
+    Returns:
+        Statistics object with computed metrics.
+    """
     entropy_val = shannon_entropy(data)
 
     # Printable ASCII: 0x20-0x7E plus tab, newline, carriage return
@@ -139,103 +192,118 @@ def classify_data_type(data: DataType) -> ClassificationResult:
     byte_array = np.frombuffer(data, dtype=np.uint8)
     byte_variance = float(np.var(byte_array))
 
-    details = {}
-
-    # Classification logic
-    # 1. Padding/null regions
-    if null_ratio > 0.9:
-        return ClassificationResult(
-            primary_type="padding",
-            confidence=min(1.0, null_ratio),
-            entropy=entropy_val,
-            printable_ratio=printable_ratio,
-            null_ratio=null_ratio,
-            byte_variance=byte_variance,
-            details={"reason": "high_null_ratio"},
-        )
-
-    # 2. Check for executable/binary signatures (BEFORE compression and encrypted)
-    for sig, bin_type in BINARY_SIGNATURES.items():
-        if data[: len(sig)] == sig:
-            details["binary_type"] = bin_type
-            return ClassificationResult(
-                primary_type="binary",
-                confidence=0.95,
-                entropy=entropy_val,
-                printable_ratio=printable_ratio,
-                null_ratio=null_ratio,
-                byte_variance=byte_variance,
-                details=details,
-            )
-
-    # 3. Check for compression signatures
-    for sig, comp_type in COMPRESSION_SIGNATURES.items():
-        if data[: len(sig)] == sig:
-            details["compression_type"] = comp_type
-            return ClassificationResult(
-                primary_type="compressed",
-                confidence=0.95,
-                entropy=entropy_val,
-                printable_ratio=printable_ratio,
-                null_ratio=null_ratio,
-                byte_variance=byte_variance,
-                details=details,
-            )
-
-    # 4. Text data (high printable ratio) - check BEFORE entropy-based classification
-    if printable_ratio > 0.75 and entropy_val < 6.5:
-        confidence = min(1.0, printable_ratio * 0.95)
-        details["reason"] = "high_printable_ratio"
-        return ClassificationResult(
-            primary_type="text",
-            confidence=confidence,
-            entropy=entropy_val,
-            printable_ratio=printable_ratio,
-            null_ratio=null_ratio,
-            byte_variance=byte_variance,
-            details=details,
-        )
-
-    # 5. Encrypted/random data (high entropy, no structure)
-    if entropy_val > 7.5 and byte_variance > 5000:
-        # High entropy with high variance suggests random/encrypted
-        confidence = min(1.0, (entropy_val - 7.5) / 0.5 + 0.7)
-        details["reason"] = "high_entropy_and_variance"
-        return ClassificationResult(
-            primary_type="encrypted",
-            confidence=confidence,
-            entropy=entropy_val,
-            printable_ratio=printable_ratio,
-            null_ratio=null_ratio,
-            byte_variance=byte_variance,
-            details=details,
-        )
-
-    # 6. Compressed data (high entropy, some structure)
-    if 6.5 <= entropy_val <= 7.5:
-        confidence = 0.7
-        details["reason"] = "compression_entropy_range"
-        return ClassificationResult(
-            primary_type="compressed",
-            confidence=confidence,
-            entropy=entropy_val,
-            printable_ratio=printable_ratio,
-            null_ratio=null_ratio,
-            byte_variance=byte_variance,
-            details=details,
-        )
-
-    # 7. Default to binary/structured
-    confidence = 0.6
-    details["reason"] = "default_binary"
-    return ClassificationResult(
-        primary_type="binary",
-        confidence=confidence,
+    return _Statistics(
         entropy=entropy_val,
         printable_ratio=printable_ratio,
         null_ratio=null_ratio,
         byte_variance=byte_variance,
-        details=details,
+    )
+
+
+def _check_padding(stats: _Statistics) -> ClassificationResult | None:
+    """Check if data is padding/null region."""
+    if stats.null_ratio > 0.9:
+        return ClassificationResult(
+            primary_type="padding",
+            confidence=min(1.0, stats.null_ratio),
+            entropy=stats.entropy,
+            printable_ratio=stats.printable_ratio,
+            null_ratio=stats.null_ratio,
+            byte_variance=stats.byte_variance,
+            details={"reason": "high_null_ratio"},
+        )
+    return None
+
+
+def _check_binary_signatures(data: bytes, stats: _Statistics) -> ClassificationResult | None:
+    """Check for executable/binary signatures."""
+    for sig, bin_type in BINARY_SIGNATURES.items():
+        if data[: len(sig)] == sig:
+            return ClassificationResult(
+                primary_type="binary",
+                confidence=0.95,
+                entropy=stats.entropy,
+                printable_ratio=stats.printable_ratio,
+                null_ratio=stats.null_ratio,
+                byte_variance=stats.byte_variance,
+                details={"binary_type": bin_type},
+            )
+    return None
+
+
+def _check_compression_signatures(data: bytes, stats: _Statistics) -> ClassificationResult | None:
+    """Check for compression signatures."""
+    for sig, comp_type in COMPRESSION_SIGNATURES.items():
+        if data[: len(sig)] == sig:
+            return ClassificationResult(
+                primary_type="compressed",
+                confidence=0.95,
+                entropy=stats.entropy,
+                printable_ratio=stats.printable_ratio,
+                null_ratio=stats.null_ratio,
+                byte_variance=stats.byte_variance,
+                details={"compression_type": comp_type},
+            )
+    return None
+
+
+def _check_text(stats: _Statistics) -> ClassificationResult | None:
+    """Check for text data (high printable ratio)."""
+    if stats.printable_ratio > 0.75 and stats.entropy < 6.5:
+        confidence = min(1.0, stats.printable_ratio * 0.95)
+        return ClassificationResult(
+            primary_type="text",
+            confidence=confidence,
+            entropy=stats.entropy,
+            printable_ratio=stats.printable_ratio,
+            null_ratio=stats.null_ratio,
+            byte_variance=stats.byte_variance,
+            details={"reason": "high_printable_ratio"},
+        )
+    return None
+
+
+def _check_encrypted(stats: _Statistics) -> ClassificationResult | None:
+    """Check for encrypted/random data (high entropy, no structure)."""
+    if stats.entropy > 7.5 and stats.byte_variance > 5000:
+        confidence = min(1.0, (stats.entropy - 7.5) / 0.5 + 0.7)
+        return ClassificationResult(
+            primary_type="encrypted",
+            confidence=confidence,
+            entropy=stats.entropy,
+            printable_ratio=stats.printable_ratio,
+            null_ratio=stats.null_ratio,
+            byte_variance=stats.byte_variance,
+            details={"reason": "high_entropy_and_variance"},
+        )
+    return None
+
+
+def _check_compressed(stats: _Statistics) -> ClassificationResult | None:
+    """Check for compressed data (high entropy, some structure)."""
+    if 6.5 <= stats.entropy <= 7.5:
+        return ClassificationResult(
+            primary_type="compressed",
+            confidence=0.7,
+            entropy=stats.entropy,
+            printable_ratio=stats.printable_ratio,
+            null_ratio=stats.null_ratio,
+            byte_variance=stats.byte_variance,
+            details={"reason": "compression_entropy_range"},
+        )
+    return None
+
+
+def _default_binary(stats: _Statistics) -> ClassificationResult:
+    """Default to binary/structured classification."""
+    return ClassificationResult(
+        primary_type="binary",
+        confidence=0.6,
+        entropy=stats.entropy,
+        printable_ratio=stats.printable_ratio,
+        null_ratio=stats.null_ratio,
+        byte_variance=stats.byte_variance,
+        details={"reason": "default_binary"},
     )
 
 
@@ -262,63 +330,98 @@ def detect_text_regions(
         >>> len(regions) > 0
         True
     """
+    # Convert numpy arrays to bytes
+    data_bytes: bytes
     if isinstance(data, np.ndarray):
-        data = data.tobytes() if data.dtype == np.uint8 else bytes(data.flatten())
+        data_bytes = data.tobytes() if data.dtype == np.uint8 else bytes(data.flatten())
+    else:
+        data_bytes = bytes(data)
 
-    regions = []
+    regions: list[RegionClassification] = []
     in_region = False
     region_start = 0
-    _printable_in_window = 0
     window_size = min_length
 
-    for i, byte in enumerate(data):
-        _is_printable = 32 <= byte <= 126 or byte in (9, 10, 13)
-
+    for i in range(len(data_bytes)):
         if not in_region:
             # Look for start of text region
-            if i >= window_size - 1:
-                # Check window
-                window = data[i - window_size + 1 : i + 1]
-                printable_count = sum(1 for b in window if 32 <= b <= 126 or b in (9, 10, 13))
-                if printable_count / window_size >= min_printable:
-                    in_region = True
-                    region_start = i - window_size + 1
+            start_pos = _check_region_start(data_bytes, i, window_size, min_printable)
+            if start_pos is not None:
+                in_region = True
+                region_start = start_pos
         else:
-            # In text region, look for end
-            # Use a sliding window to detect when printable ratio drops
-            if i >= region_start + window_size:
-                window = data[i - window_size + 1 : i + 1]
-                printable_count = sum(1 for b in window if 32 <= b <= 126 or b in (9, 10, 13))
-                if printable_count / window_size < min_printable:
-                    # End of region
-                    region_data = data[region_start : i - window_size + 1]
-                    if len(region_data) >= min_length:
-                        classification = classify_data_type(region_data)
-                        regions.append(
-                            RegionClassification(
-                                start=region_start,
-                                end=i - window_size + 1,
-                                length=len(region_data),
-                                classification=classification,
-                            )
-                        )
-                    in_region = False
+            # Look for end of text region
+            if _check_region_end(data_bytes, i, region_start, window_size, min_printable):
+                _append_region(data_bytes, regions, region_start, i - window_size + 1, min_length)
+                in_region = False
 
     # Handle region extending to end
     if in_region:
-        region_data = data[region_start:]
-        if len(region_data) >= min_length:
-            classification = classify_data_type(region_data)
-            regions.append(
-                RegionClassification(
-                    start=region_start,
-                    end=len(data),
-                    length=len(region_data),
-                    classification=classification,
-                )
-            )
+        _append_region(data_bytes, regions, region_start, len(data_bytes), min_length)
 
     return regions
+
+
+def _is_printable_byte(byte: int) -> bool:
+    """Check if byte is printable ASCII."""
+    return 32 <= byte <= 126 or byte in (9, 10, 13)
+
+
+def _check_region_start(
+    data: bytes,
+    i: int,
+    window_size: int,
+    min_printable: float,
+) -> int | None:
+    """Check if position marks start of text region."""
+    if i < window_size - 1:
+        return None
+
+    window = data[i - window_size + 1 : i + 1]
+    printable_count = sum(1 for b in window if _is_printable_byte(b))
+
+    if printable_count / window_size >= min_printable:
+        return i - window_size + 1
+
+    return None
+
+
+def _check_region_end(
+    data: bytes,
+    i: int,
+    region_start: int,
+    window_size: int,
+    min_printable: float,
+) -> bool:
+    """Check if position marks end of text region."""
+    if i < region_start + window_size:
+        return False
+
+    window = data[i - window_size + 1 : i + 1]
+    printable_count = sum(1 for b in window if _is_printable_byte(b))
+
+    return printable_count / window_size < min_printable
+
+
+def _append_region(
+    data: bytes,
+    regions: list[RegionClassification],
+    start: int,
+    end: int,
+    min_length: int,
+) -> None:
+    """Append region to list if it meets minimum length."""
+    region_data = data[start:end]
+    if len(region_data) >= min_length:
+        classification = classify_data_type(region_data)
+        regions.append(
+            RegionClassification(
+                start=start,
+                end=end,
+                length=len(region_data),
+                classification=classification,
+            )
+        )
 
 
 def detect_encrypted_regions(

@@ -1062,63 +1062,59 @@ class TestSigrokUARTFiles:
         if not uart_sigrok_files:
             pytest.skip("No UART sigrok files available")
 
-        try:
-            from oscura import load
+        from oscura import load
 
-            loaded_count = 0
-            for sr_file in uart_sigrok_files[:5]:  # Test first 5
-                try:
-                    trace = load(sr_file)
-                    if trace is not None and len(trace.data) > 0:
-                        loaded_count += 1
-                except (OSError, ValueError, KeyError, RuntimeError, FormatError) as e:
-                    # Skip files that fail to load (corrupted, unsupported format)
-                    continue
+        loaded_count = 0
+        for sr_file in uart_sigrok_files[:5]:  # Test first 5
+            try:
+                trace = load(sr_file)
+                if trace is not None and len(trace.data) > 0:
+                    loaded_count += 1
+            except (OSError, ValueError, KeyError, RuntimeError, FormatError) as e:
+                # Skip files that fail to load (corrupted, unsupported format)
+                continue
 
-            if loaded_count == 0:
-                pytest.skip("No sigrok files loaded successfully")
-
-        except ImportError:
-            pytest.skip("oscura.load not available")
+        if loaded_count == 0:
+            # SKIP: Valid - Test data dependency
+            # Only skip if sigrok test files not loaded successfully
+            pytest.skip("No sigrok files loaded successfully")
 
     def test_baud_detection_on_real_captures(self, uart_sigrok_files: list) -> None:
         """Test baud rate detection on real UART captures."""
         if not uart_sigrok_files:
+            # SKIP: Valid - Test data dependency
+            # Only skip if sigrok test files not loaded successfully
             pytest.skip("No UART sigrok files available")
 
-        try:
-            from oscura import load
+        from oscura import load
 
-            detection_count = 0
+        detection_count = 0
 
-            for sr_file in uart_sigrok_files[:5]:
-                try:
-                    trace = load(sr_file)
-                    data = trace.data
+        for sr_file in uart_sigrok_files[:5]:
+            try:
+                trace = load(sr_file)
+                data = trace.data
 
-                    if len(data) < 100:
-                        continue
-
-                    sample_rate = getattr(trace.metadata, "sample_rate", 1e6)
-                    result = detect_baud_rate(data, sample_rate)
-
-                    if result is not None:
-                        detection_count += 1
-
-                except (
-                    OSError,
-                    ValueError,
-                    KeyError,
-                    AttributeError,
-                    RuntimeError,
-                    FormatError,
-                ) as e:
-                    # Skip files that fail to load or have invalid data
+                if len(data) < 100:
                     continue
 
-            # Skip if no files worked (data availability issue)
-            if detection_count == 0:
-                pytest.skip("No baud rates detected from available files")
+                sample_rate = getattr(trace.metadata, "sample_rate", 1e6)
+                result = detect_baud_rate(data, sample_rate)
 
-        except ImportError:
-            pytest.skip("detect_baud_rate not available")
+                if result is not None:
+                    detection_count += 1
+
+            except (
+                OSError,
+                ValueError,
+                KeyError,
+                AttributeError,
+                RuntimeError,
+                FormatError,
+            ) as e:
+                # Skip files that fail to load or have invalid data
+                continue
+
+        # Skip if no files worked (data availability issue)
+        if detection_count == 0:
+            pytest.skip("No baud rates detected from available files")

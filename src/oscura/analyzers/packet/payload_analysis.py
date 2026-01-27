@@ -469,17 +469,9 @@ class FieldInferrer:
         """
         size = end - start
         name = f"field_{index}"
+        raw_values = self._extract_field_values(messages, start, end)
 
-        # Extract field values
-        values = []
-        raw_values = []
-        for msg in messages:
-            if len(msg) >= end:
-                field_bytes = msg[start:end]
-                raw_values.append(field_bytes)
-                values.append(field_bytes)
-
-        if not values:
+        if not raw_values:
             return InferredField(
                 name=name,
                 offset=start,
@@ -488,31 +480,60 @@ class FieldInferrer:
                 confidence=0.0,
             )
 
-        # Check if constant
+        # Analyze field properties
         unique_values = set(raw_values)
         is_constant = len(unique_values) == 1
+        is_sequence = self._check_sequence(raw_values, size, is_constant)
+        is_checksum = self._check_checksum(messages, start, size)
 
-        # Check if sequence
-        is_sequence = False
-        if not is_constant and size in [1, 2, 4, 8]:
-            int_values = [int.from_bytes(v, "big") for v in raw_values]
-            is_sequence = self._is_sequence(int_values)
-
-        # Check for checksum patterns
-        is_checksum = False
-        if start >= min(len(m) for m in messages) - 4:
-            score = self._check_checksum_correlation(messages, start, size)
-            is_checksum = score > 0.7
-
-        # Infer type
+        # Infer type and create sample values
         inferred_type, endianness, confidence = self._infer_type(raw_values, size)
+        sample_values = self._create_sample_values(raw_values[:5], inferred_type, endianness)
 
-        # Sample values for debugging
+        # Cast to Literal types for type checker
+        type_literal = self._cast_type_literal(inferred_type)
+        endianness_literal = self._cast_endianness_literal(endianness)
+
+        return InferredField(
+            name=name,
+            offset=start,
+            size=size,
+            inferred_type=type_literal,
+            endianness=endianness_literal,
+            is_constant=is_constant,
+            is_sequence=is_sequence,
+            is_checksum=is_checksum,
+            constant_value=raw_values[0] if is_constant else None,
+            confidence=confidence,
+            sample_values=sample_values,
+        )
+
+    def _extract_field_values(self, messages: Sequence[bytes], start: int, end: int) -> list[bytes]:
+        """Extract field values from messages."""
+        return [msg[start:end] for msg in messages if len(msg) >= end]
+
+    def _check_sequence(self, raw_values: list[bytes], size: int, is_constant: bool) -> bool:
+        """Check if field values form a sequence."""
+        if is_constant or size not in [1, 2, 4, 8]:
+            return False
+        int_values = [int.from_bytes(v, "big") for v in raw_values]
+        return self._is_sequence(int_values)
+
+    def _check_checksum(self, messages: Sequence[bytes], start: int, size: int) -> bool:
+        """Check if field appears to be a checksum."""
+        if start < min(len(m) for m in messages) - 4:
+            return False
+        score = self._check_checksum_correlation(messages, start, size)
+        return score > 0.7
+
+    def _create_sample_values(
+        self, raw_values: list[bytes], inferred_type: str, endianness: str
+    ) -> list[int | str]:
+        """Create sample values for debugging."""
         sample_values: list[int | str] = []
-        for v in raw_values[:5]:
-            if inferred_type.startswith("uint") or inferred_type.startswith("int"):
+        for v in raw_values:
+            if inferred_type.startswith(("uint", "int")):
                 try:
-                    # Cast endianness to Literal type for type checker
                     byte_order: Literal["big", "little"] = (
                         "big" if endianness == "n/a" else endianness  # type: ignore[assignment]
                     )
@@ -526,38 +547,31 @@ class FieldInferrer:
                     sample_values.append(v.hex())
             else:
                 sample_values.append(v.hex())
+        return sample_values
 
-        # Cast to Literal types for type checker
-        inferred_type_literal: Literal[
-            "uint8",
-            "uint16",
-            "uint32",
-            "uint64",
-            "int8",
-            "int16",
-            "int32",
-            "int64",
-            "float32",
-            "float64",
-            "bytes",
-            "string",
-            "unknown",
-        ] = inferred_type  # type: ignore[assignment]
-        endianness_literal: Literal["big", "little", "n/a"] = endianness  # type: ignore[assignment]
+    def _cast_type_literal(
+        self, inferred_type: str
+    ) -> Literal[
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "float32",
+        "float64",
+        "bytes",
+        "string",
+        "unknown",
+    ]:
+        """Cast inferred type to Literal for type checker."""
+        return inferred_type  # type: ignore[return-value]
 
-        return InferredField(
-            name=name,
-            offset=start,
-            size=size,
-            inferred_type=inferred_type_literal,
-            endianness=endianness_literal,
-            is_constant=is_constant,
-            is_sequence=is_sequence,
-            is_checksum=is_checksum,
-            constant_value=raw_values[0] if is_constant else None,
-            confidence=confidence,
-            sample_values=sample_values,
-        )
+    def _cast_endianness_literal(self, endianness: str) -> Literal["big", "little", "n/a"]:
+        """Cast endianness to Literal for type checker."""
+        return endianness  # type: ignore[return-value]
 
     def _infer_type(
         self,
@@ -576,59 +590,114 @@ class FieldInferrer:
         if not values:
             return "unknown", "n/a", 0.0
 
-        # Check for string (high printable ratio)
+        # Check for string first
+        string_result = self._check_string_type(values, size)
+        if string_result is not None:
+            return string_result
+
+        # Infer based on field size
+        if size == 1:
+            return "uint8", "n/a", 0.9
+        elif size == 2:
+            return self._infer_uint16_type(values)
+        elif size == 4:
+            return self._infer_4byte_type(values)
+        elif size == 8:
+            return self._infer_uint64_type(values)
+        else:
+            return "bytes", "n/a", 0.6
+
+    def _check_string_type(self, values: list[bytes], size: int) -> tuple[str, str, float] | None:
+        """Check if values represent string data.
+
+        Args:
+            values: Field values to check.
+            size: Field size.
+
+        Returns:
+            Type tuple if string, None otherwise.
+        """
         printable_ratio = sum(
             1 for v in values for b in v if 32 <= b <= 126 or b in (9, 10, 13)
         ) / (len(values) * size)
 
         if printable_ratio > 0.8:
             return "string", "n/a", printable_ratio
+        return None
 
-        # Check for standard integer sizes
-        if size == 1:
-            return "uint8", "n/a", 0.9
+    def _infer_uint16_type(self, values: list[bytes]) -> tuple[str, str, float]:
+        """Infer uint16 type and detect endianness.
 
-        elif size == 2:
-            # Try to detect endianness
-            be_variance = np.var([int.from_bytes(v, "big") for v in values])
-            le_variance = np.var([int.from_bytes(v, "little") for v in values])
+        Args:
+            values: Field values.
 
-            if be_variance < le_variance:
-                endian = "big"
-            else:
-                endian = "little"
+        Returns:
+            Type tuple with endianness.
+        """
+        endian = self._detect_endianness(values)
+        return "uint16", endian, 0.8
 
-            return "uint16", endian, 0.8
+    def _infer_4byte_type(self, values: list[bytes]) -> tuple[str, str, float]:
+        """Infer 4-byte type (float32 or uint32).
 
-        elif size == 4:
-            # Check for float
-            float_valid = 0
-            for v in values:
-                try:
-                    f = struct.unpack(">f", v)[0]
-                    if not (np.isnan(f) or np.isinf(f)) and -1e10 < f < 1e10:
-                        float_valid += 1
-                except Exception:
-                    pass
+        Args:
+            values: Field values.
 
-            if float_valid / len(values) > 0.8:
-                return "float32", "big", 0.7
+        Returns:
+            Type tuple with endianness.
+        """
+        # Check if float32
+        if self._is_valid_float32(values):
+            return "float32", "big", 0.7
 
-            # Otherwise integer
-            be_variance = np.var([int.from_bytes(v, "big") for v in values])
-            le_variance = np.var([int.from_bytes(v, "little") for v in values])
-            endian = "big" if be_variance < le_variance else "little"
-            return "uint32", endian, 0.8
+        # Otherwise uint32
+        endian = self._detect_endianness(values)
+        return "uint32", endian, 0.8
 
-        elif size == 8:
-            # Check for float64 or uint64
-            be_variance = np.var([int.from_bytes(v, "big") for v in values])
-            le_variance = np.var([int.from_bytes(v, "little") for v in values])
-            endian = "big" if be_variance < le_variance else "little"
-            return "uint64", endian, 0.7
+    def _infer_uint64_type(self, values: list[bytes]) -> tuple[str, str, float]:
+        """Infer uint64 type and detect endianness.
 
-        else:
-            return "bytes", "n/a", 0.6
+        Args:
+            values: Field values.
+
+        Returns:
+            Type tuple with endianness.
+        """
+        endian = self._detect_endianness(values)
+        return "uint64", endian, 0.7
+
+    def _detect_endianness(self, values: list[bytes]) -> str:
+        """Detect endianness by comparing variance.
+
+        Args:
+            values: Field values.
+
+        Returns:
+            Endianness string ("big" or "little").
+        """
+        be_variance = np.var([int.from_bytes(v, "big") for v in values])
+        le_variance = np.var([int.from_bytes(v, "little") for v in values])
+        return "big" if be_variance < le_variance else "little"
+
+    def _is_valid_float32(self, values: list[bytes]) -> bool:
+        """Check if values are valid float32 numbers.
+
+        Args:
+            values: Field values to check.
+
+        Returns:
+            True if majority are valid floats.
+        """
+        float_valid = 0
+        for v in values:
+            try:
+                f = struct.unpack(">f", v)[0]
+                if not (np.isnan(f) or np.isinf(f)) and -1e10 < f < 1e10:
+                    float_valid += 1
+            except Exception:
+                pass
+
+        return float_valid / len(values) > 0.8
 
     def _is_sequence(self, values: list[int]) -> bool:
         """Check if values form a sequence.
@@ -827,46 +896,13 @@ def diff_payloads(payload_a: bytes, payload_b: bytes) -> PayloadDiff:
         >>> print(f"Common prefix: {diff.common_prefix_length} bytes")
         >>> print(f"Different bytes: {len(diff.differences)}")
     """
-    # Find common prefix
-    common_prefix = 0
     min_len = min(len(payload_a), len(payload_b))
-    for i in range(min_len):
-        if payload_a[i] == payload_b[i]:
-            common_prefix += 1
-        else:
-            break
 
-    # Find common suffix
-    common_suffix = 0
-    for i in range(1, min_len - common_prefix + 1):
-        if payload_a[-i] == payload_b[-i]:
-            common_suffix += 1
-        else:
-            break
+    common_prefix = _find_common_prefix(payload_a, payload_b, min_len)
+    common_suffix = _find_common_suffix(payload_a, payload_b, min_len, common_prefix)
+    differences = _find_payload_differences(payload_a, payload_b, min_len)
 
-    # Find all differences
-    differences = []
-    for i in range(min_len):
-        if payload_a[i] != payload_b[i]:
-            differences.append((i, payload_a[i], payload_b[i]))
-
-    # Add length differences
-    if len(payload_a) > len(payload_b):
-        for i in range(len(payload_b), len(payload_a)):
-            differences.append((i, payload_a[i], -1))
-    elif len(payload_b) > len(payload_a):
-        for i in range(len(payload_a), len(payload_b)):
-            differences.append((i, -1, payload_b[i]))
-
-    # Calculate similarity
-    max_len = max(len(payload_a), len(payload_b))
-    if max_len == 0:
-        similarity = 1.0
-    else:
-        matching = min_len - len([d for d in differences if d[0] < min_len])
-        similarity = matching / max_len
-
-    # Calculate edit distance (simplified Levenshtein)
+    similarity = _calculate_similarity(payload_a, payload_b, min_len, differences)
     edit_distance = _levenshtein_distance(payload_a, payload_b)
 
     return PayloadDiff(
@@ -876,6 +912,96 @@ def diff_payloads(payload_a: bytes, payload_b: bytes) -> PayloadDiff:
         similarity=similarity,
         edit_distance=edit_distance,
     )
+
+
+def _find_common_prefix(payload_a: bytes, payload_b: bytes, min_len: int) -> int:
+    """Find length of common prefix.
+
+    Args:
+        payload_a: First payload.
+        payload_b: Second payload.
+        min_len: Minimum payload length.
+
+    Returns:
+        Length of common prefix in bytes.
+    """
+    for i in range(min_len):
+        if payload_a[i] != payload_b[i]:
+            return i
+    return min_len
+
+
+def _find_common_suffix(
+    payload_a: bytes, payload_b: bytes, min_len: int, common_prefix: int
+) -> int:
+    """Find length of common suffix.
+
+    Args:
+        payload_a: First payload.
+        payload_b: Second payload.
+        min_len: Minimum payload length.
+        common_prefix: Length of common prefix.
+
+    Returns:
+        Length of common suffix in bytes.
+    """
+    for i in range(1, min_len - common_prefix + 1):
+        if payload_a[-i] != payload_b[-i]:
+            return i - 1
+    return min_len - common_prefix
+
+
+def _find_payload_differences(
+    payload_a: bytes, payload_b: bytes, min_len: int
+) -> list[tuple[int, int, int]]:
+    """Find all byte differences between payloads.
+
+    Args:
+        payload_a: First payload.
+        payload_b: Second payload.
+        min_len: Minimum payload length.
+
+    Returns:
+        List of (offset, byte_a, byte_b) tuples (-1 for missing bytes).
+    """
+    differences = []
+
+    # Differences in overlapping region
+    for i in range(min_len):
+        if payload_a[i] != payload_b[i]:
+            differences.append((i, payload_a[i], payload_b[i]))
+
+    # Length differences
+    if len(payload_a) > len(payload_b):
+        for i in range(len(payload_b), len(payload_a)):
+            differences.append((i, payload_a[i], -1))
+    elif len(payload_b) > len(payload_a):
+        for i in range(len(payload_a), len(payload_b)):
+            differences.append((i, -1, payload_b[i]))
+
+    return differences
+
+
+def _calculate_similarity(
+    payload_a: bytes, payload_b: bytes, min_len: int, differences: list[tuple[int, int, int]]
+) -> float:
+    """Calculate payload similarity ratio.
+
+    Args:
+        payload_a: First payload.
+        payload_b: Second payload.
+        min_len: Minimum payload length.
+        differences: List of differences.
+
+    Returns:
+        Similarity ratio (0.0-1.0).
+    """
+    max_len = max(len(payload_a), len(payload_b))
+    if max_len == 0:
+        return 1.0
+
+    matching = min_len - len([d for d in differences if d[0] < min_len])
+    return matching / max_len
 
 
 def find_common_bytes(payloads: Sequence[bytes]) -> bytes:
@@ -1008,7 +1134,7 @@ def compute_similarity(
 def cluster_payloads(
     payloads: Sequence[bytes],
     threshold: float = 0.8,
-    algorithm: Literal["greedy", "dbscan"] = "greedy",
+    algorithm: Literal["greedy", "dbscan", "lsh"] = "greedy",
 ) -> list[PayloadCluster]:
     """Cluster similar payloads together.
 
@@ -1017,7 +1143,7 @@ def cluster_payloads(
     Args:
         payloads: List of payloads to cluster.
         threshold: Similarity threshold for clustering.
-        algorithm: Clustering algorithm.
+        algorithm: Clustering algorithm (greedy: O(n²), lsh: O(n log n)).
 
     Returns:
         List of PayloadCluster objects.
@@ -1026,11 +1152,19 @@ def cluster_payloads(
         >>> clusters = cluster_payloads(payloads, threshold=0.85)
         >>> for c in clusters:
         ...     print(f"Cluster {c.cluster_id}: {c.size} payloads")
+
+        >>> # For large datasets (>1000 payloads), use LSH for 100-1000x speedup
+        >>> clusters = cluster_payloads(payloads, threshold=0.85, algorithm="lsh")
     """
     if not payloads:
         return []
 
-    if algorithm == "greedy":
+    if algorithm == "lsh":
+        # Use LSH for O(n log n) performance on large datasets
+        from oscura.utils.performance.lsh_clustering import cluster_payloads_lsh
+
+        return cluster_payloads_lsh(payloads, threshold=threshold)
+    elif algorithm == "greedy":
         return _cluster_greedy_optimized(payloads, threshold)
     # algorithm == "dbscan"
     return _cluster_dbscan(payloads, threshold)
@@ -1103,6 +1237,100 @@ def _levenshtein_distance(a: bytes, b: bytes) -> int:
     return previous_row[-1]
 
 
+def _check_length_similarity(len_a: int, len_b: int, threshold: float) -> float | None:
+    """Check if length difference allows similarity threshold.
+
+    Args:
+        len_a: Length of first payload.
+        len_b: Length of second payload.
+        threshold: Similarity threshold.
+
+    Returns:
+        Similarity if can be determined from length, None otherwise.
+    """
+    # Empty payloads
+    if len_a == 0 and len_b == 0:
+        return 1.0
+    if len_a == 0 or len_b == 0:
+        return 0.0
+
+    # Maximum possible similarity given length difference
+    max_len = max(len_a, len_b)
+    min_len = min(len_a, len_b)
+    max_possible_similarity = min_len / max_len
+
+    if max_possible_similarity < threshold:
+        return max_possible_similarity
+
+    return None
+
+
+def _sample_hamming_similarity(payload_a: bytes, payload_b: bytes, length: int) -> float:
+    """Compute similarity by sampling first 16, last 16, and middle bytes.
+
+    Args:
+        payload_a: First payload.
+        payload_b: Second payload.
+        length: Length of payloads (must be equal).
+
+    Returns:
+        Estimated similarity based on samples.
+    """
+    sample_size = min(48, length)
+    mismatches = 0
+
+    # First 16 bytes
+    for i in range(min(16, length)):
+        if payload_a[i] != payload_b[i]:
+            mismatches += 1
+
+    # Last 16 bytes
+    for i in range(1, min(17, length + 1)):
+        if payload_a[-i] != payload_b[-i]:
+            mismatches += 1
+
+    # Middle samples (only if length > 32)
+    step = (length - 32) // 16
+    if step > 0:
+        for i in range(16, length - 16, step):
+            if payload_a[i] != payload_b[i]:
+                mismatches += 1
+
+    return 1.0 - (mismatches / sample_size)
+
+
+def _prefix_suffix_similarity(
+    payload_a: bytes, payload_b: bytes, min_len: int, max_len: int
+) -> float:
+    """Estimate similarity from common prefix and suffix.
+
+    Args:
+        payload_a: First payload.
+        payload_b: Second payload.
+        min_len: Minimum length.
+        max_len: Maximum length.
+
+    Returns:
+        Estimated similarity.
+    """
+    common_prefix = 0
+    for i in range(min_len):
+        if payload_a[i] == payload_b[i]:
+            common_prefix += 1
+        else:
+            break
+
+    common_suffix = 0
+    for i in range(1, min_len - common_prefix + 1):
+        if payload_a[-i] == payload_b[-i]:
+            common_suffix += 1
+        else:
+            break
+
+    common_bytes = common_prefix + common_suffix
+    return common_bytes / max_len
+
+
 def _fast_similarity(payload_a: bytes, payload_b: bytes, threshold: float) -> float | None:
     """Fast similarity check with early termination.
 
@@ -1121,50 +1349,16 @@ def _fast_similarity(payload_a: bytes, payload_b: bytes, threshold: float) -> fl
     len_a = len(payload_a)
     len_b = len(payload_b)
 
-    # Empty payloads
-    if len_a == 0 and len_b == 0:
-        return 1.0
-    if len_a == 0 or len_b == 0:
-        return 0.0
-
-    # Length difference filter: if lengths differ by more than (1-threshold)*max_len,
-    # similarity can't exceed threshold
-    max_len = max(len_a, len_b)
-    min_len = min(len_a, len_b)
-    _length_diff = max_len - min_len
-
-    # Maximum possible similarity given length difference
-    max_possible_similarity = min_len / max_len
-    if max_possible_similarity < threshold:
-        return max_possible_similarity
+    # Check length-based similarity
+    length_result = _check_length_similarity(len_a, len_b, threshold)
+    if length_result is not None:
+        return length_result
 
     # For same-length payloads, use fast hamming similarity
     if len_a == len_b:
         # Sample comparison for large payloads
         if len_a > 50:
-            # Sample first 16, last 16, and some middle bytes
-            sample_size = min(48, len_a)
-            mismatches = 0
-
-            # First 16 bytes
-            for i in range(min(16, len_a)):
-                if payload_a[i] != payload_b[i]:
-                    mismatches += 1
-
-            # Last 16 bytes
-            for i in range(1, min(17, len_a + 1)):
-                if payload_a[-i] != payload_b[-i]:
-                    mismatches += 1
-
-            # Middle samples (len_a > 32 always true here since len_a > 50)
-            step = (len_a - 32) // 16
-            if step > 0:
-                for i in range(16, len_a - 16, step):
-                    if payload_a[i] != payload_b[i]:
-                        mismatches += 1
-
-            # Estimate similarity from sample
-            estimated_similarity = 1.0 - (mismatches / sample_size)
+            estimated_similarity = _sample_hamming_similarity(payload_a, payload_b, len_a)
 
             # If sample shows very low similarity, reject early
             if estimated_similarity < threshold * 0.8:
@@ -1175,23 +1369,9 @@ def _fast_similarity(payload_a: bytes, payload_b: bytes, threshold: float) -> fl
         return matches / len_a
 
     # For different-length payloads, use common prefix/suffix heuristic
-    common_prefix = 0
-    for i in range(min_len):
-        if payload_a[i] == payload_b[i]:
-            common_prefix += 1
-        else:
-            break
-
-    common_suffix = 0
-    for i in range(1, min_len - common_prefix + 1):
-        if payload_a[-i] == payload_b[-i]:
-            common_suffix += 1
-        else:
-            break
-
-    # Estimate similarity from prefix/suffix
-    common_bytes = common_prefix + common_suffix
-    estimated_similarity = common_bytes / max_len
+    max_len = max(len_a, len_b)
+    min_len = min(len_a, len_b)
+    estimated_similarity = _prefix_suffix_similarity(payload_a, payload_b, min_len, max_len)
 
     # If common bytes suggest low similarity, reject
     if estimated_similarity < threshold * 0.7:

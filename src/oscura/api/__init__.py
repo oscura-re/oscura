@@ -1,15 +1,24 @@
 """Expert API module for Oscura.
 
 This module provides advanced APIs for power users including DSL,
-fluent interfaces, performance profiling, and advanced workflow control.
+fluent interfaces, performance profiling, REST API server, and advanced workflow control.
 """
 
 from oscura.api.dsl import (
-    DSLExpression,
-    DSLParser,
-    analyze,
-    parse_expression,
+    Expression,
 )
+from oscura.api.dsl import (
+    Interpreter as DSLParser,
+)
+from oscura.api.dsl import (
+    execute_dsl as analyze,
+)
+from oscura.api.dsl import (
+    parse_dsl as parse_expression,
+)
+
+# Alias for backward compatibility
+DSLExpression = Expression
 from oscura.api.fluent import (
     FluentResult,
     FluentTrace,
@@ -33,11 +42,24 @@ from oscura.api.profiling import (
     ProfileReport,
     profile,
 )
+from oscura.api.rest_server import (
+    AnalysisRequest,
+    AnalysisResponse,
+    ErrorResponse,
+    ProtocolResponse,
+    RESTAPIServer,
+    SessionManager,
+    SessionResponse,
+)
 
 __all__ = [
+    # REST API Server
+    "AnalysisRequest",
+    "AnalysisResponse",
     # DSL (API-010)
     "DSLExpression",
     "DSLParser",
+    "ErrorResponse",
     # Fluent (API-019)
     "FluentResult",
     "FluentTrace",
@@ -49,6 +71,10 @@ __all__ = [
     "ParameterSpace",
     "ProfileReport",
     "Profiler",
+    "ProtocolResponse",
+    "RESTAPIServer",
+    "SessionManager",
+    "SessionResponse",
     # Operators (API-015, API-016, API-018)
     "TimeIndex",
     "UnitConverter",

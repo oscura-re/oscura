@@ -1,7 +1,7 @@
 """Property-based tests for checksum algorithms."""
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from tests.hypothesis_strategies import checksum_data
@@ -31,8 +31,7 @@ class TestChecksumProperties:
     @settings(max_examples=50, deadline=None)
     def test_checksum_changes_on_modification(self, data: bytes) -> None:
         """Property: Modifying data typically changes checksum."""
-        if len(data) < 2:
-            pytest.skip("Data too short")
+        assume(len(data) >= 2)
 
         # Original checksum
         original_checksum = 0
@@ -58,8 +57,7 @@ class TestChecksumProperties:
     @settings(max_examples=50, deadline=None)
     def test_single_bit_change_detected(self, data: bytes, byte_position: int) -> None:
         """Property: Single bit change is detected by checksum."""
-        if len(data) == 0:
-            pytest.skip("Empty data")
+        assume(len(data) > 0)
 
         position = byte_position % len(data)
 

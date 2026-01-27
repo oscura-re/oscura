@@ -52,12 +52,6 @@ def patch_power_statistics():
 
 
 @pytest.fixture
-def sample_rate() -> float:
-    """Standard sample rate for tests."""
-    return 1_000_000.0  # 1 MHz
-
-
-@pytest.fixture
 def dc_voltage(sample_rate: float) -> WaveformTrace:
     """DC voltage trace (5V)."""
     n = 1000
@@ -369,7 +363,7 @@ class TestPowerAnalysisErrors:
         with pytest.raises(AnalysisError) as exc_info:
             power_analysis(voltage, current)
 
-        assert "same sample rate" in str(exc_info.value).lower()
+        assert "sample rate mismatch" in str(exc_info.value).lower()
 
     def test_power_analysis_empty_traces(self, sample_rate: float):
         """Test power analysis with empty traces."""

@@ -27,6 +27,8 @@ from typing import Any, Literal
 # Add demonstrations to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from oscura.utils.filtering import design_filter
+
 from demonstrations.common import (
     BaseDemo,
     add_noise,
@@ -42,7 +44,6 @@ from oscura import (
     rms,
 )
 from oscura.core.types import TraceMetadata, WaveformTrace
-from oscura.filtering.design import design_filter
 
 
 class FilteringDemo(BaseDemo):

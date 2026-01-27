@@ -279,6 +279,155 @@ def find_longest_repeat(data: bytes | NDArray[np.uint8]) -> RepeatingSequence | 
     )
 
 
+def _extract_substrings(data_bytes: bytes, min_length: int) -> list[tuple[bytes, int]]:
+    """Extract all substrings of given length with their positions.
+
+    Args:
+        data_bytes: Input byte string
+        min_length: Length of substrings to extract
+
+    Returns:
+        List of (pattern, position) tuples
+    """
+    n = len(data_bytes)
+    substrings = []
+    for i in range(n - min_length + 1):
+        substrings.append((data_bytes[i : i + min_length], i))
+    return substrings
+
+
+def _build_fuzzy_hash_buckets(
+    substrings: list[tuple[bytes, int]], min_length: int
+) -> dict[tuple[bytes, bytes], list[tuple[bytes, int]]]:
+    """Group substrings by fuzzy hash for efficient approximate matching.
+
+    Uses locality-sensitive hashing: hash of first few bytes + last few bytes.
+    Sequences with same prefix/suffix are likely similar.
+
+    Args:
+        substrings: List of (pattern, position) tuples
+        min_length: Minimum pattern length
+
+    Returns:
+        Dictionary mapping fuzzy hash to list of patterns
+    """
+    hash_buckets: dict[tuple[bytes, bytes], list[tuple[bytes, int]]] = defaultdict(list)
+    prefix_len = min(3, min_length // 3)  # First 3 bytes or ~1/3 of length
+    suffix_len = min(3, min_length // 3)  # Last 3 bytes
+
+    for pattern, pos in substrings:
+        prefix = pattern[:prefix_len]
+        suffix = pattern[-suffix_len:] if len(pattern) > suffix_len else pattern
+        fuzzy_hash = (prefix, suffix)
+        hash_buckets[fuzzy_hash].append((pattern, pos))
+
+    return hash_buckets
+
+
+def _is_pattern_compatible(pattern: bytes, other_pattern: bytes, max_distance: int) -> bool:
+    """Check if two patterns can be within edit distance threshold.
+
+    Args:
+        pattern: First pattern
+        other_pattern: Second pattern
+        max_distance: Maximum allowed edit distance
+
+    Returns:
+        True if patterns might be within threshold (quick check)
+    """
+    return abs(len(pattern) - len(other_pattern)) <= max_distance
+
+
+def _try_add_to_cluster(
+    pattern: bytes,
+    other_pattern: bytes,
+    other_pos: int,
+    max_distance: int,
+    cluster_patterns: list[bytes],
+    cluster_positions: list[int],
+) -> bool:
+    """Try to add a pattern to existing cluster if within distance threshold.
+
+    Args:
+        pattern: Representative pattern of cluster
+        other_pattern: Pattern to potentially add
+        other_pos: Position of other pattern
+        max_distance: Maximum edit distance allowed
+        cluster_patterns: Current cluster patterns (modified in place)
+        cluster_positions: Current cluster positions (modified in place)
+
+    Returns:
+        True if pattern was added to cluster
+    """
+    if not _is_pattern_compatible(pattern, other_pattern, max_distance):
+        return False
+
+    distance = _edit_distance_optimized(pattern, other_pattern, max_distance)
+    if distance <= max_distance:
+        cluster_patterns.append(other_pattern)
+        cluster_positions.append(other_pos)
+        return True
+    return False
+
+
+def _cluster_bucket_patterns(
+    bucket_patterns: list[tuple[bytes, int]],
+    substrings: list[tuple[bytes, int]],
+    max_distance: int,
+    min_count: int,
+    global_used: set[int],
+) -> list[tuple[list[bytes], list[int]]]:
+    """Cluster patterns within a single hash bucket.
+
+    Args:
+        bucket_patterns: Patterns in this bucket
+        substrings: All substrings (for index lookup)
+        max_distance: Maximum edit distance
+        min_count: Minimum cluster size
+        global_used: Set of globally used indices (modified in place)
+
+    Returns:
+        List of (cluster_patterns, cluster_positions) tuples
+    """
+    clusters = []
+    bucket_used: set[int] = set()
+
+    for i, (pattern, pos) in enumerate(bucket_patterns):
+        # Check if already used globally
+        actual_idx = substrings.index((pattern, pos))
+        if actual_idx in global_used:
+            continue
+
+        # Start new cluster
+        cluster_patterns = [pattern]
+        cluster_positions = [pos]
+        bucket_used.add(i)
+        global_used.add(actual_idx)
+
+        # Compare within same bucket
+        for j in range(i + 1, len(bucket_patterns)):
+            if j in bucket_used:
+                continue
+
+            other_pattern, other_pos = bucket_patterns[j]
+            other_idx = substrings.index((other_pattern, other_pos))
+            if other_idx in global_used:
+                continue
+
+            # Try to add to cluster
+            if _try_add_to_cluster(
+                pattern, other_pattern, other_pos, max_distance, cluster_patterns, cluster_positions
+            ):
+                bucket_used.add(j)
+                global_used.add(other_idx)
+
+        # Add cluster if large enough
+        if len(cluster_patterns) >= min_count:
+            clusters.append((cluster_patterns, cluster_positions))
+
+    return clusters
+
+
 @memoize_analysis(maxsize=16)
 def find_approximate_repeats(
     data: bytes | NDArray[np.uint8],
@@ -328,98 +477,46 @@ def find_approximate_repeats(
     if n < min_length:
         return []
 
-    # OPTIMIZATION 1: Extract substrings with numpy for better memory efficiency
-    substrings = []
-    for i in range(n - min_length + 1):
-        substrings.append((data_bytes[i : i + min_length], i))
+    # Extract all substrings
+    substrings = _extract_substrings(data_bytes, min_length)
 
-    # OPTIMIZATION 2: Hash-based pre-grouping
-    # Group sequences by fuzzy hash to reduce comparisons
-    # Use a locality-sensitive hash: hash of first few bytes + last few bytes
-    hash_buckets: dict[tuple[bytes, bytes], list[tuple[bytes, int]]] = defaultdict(list)
-    prefix_len = min(3, min_length // 3)  # First 3 bytes or ~1/3 of length
-    suffix_len = min(3, min_length // 3)  # Last 3 bytes
+    # Group by fuzzy hash to reduce comparisons
+    hash_buckets = _build_fuzzy_hash_buckets(substrings, min_length)
 
-    for pattern, pos in substrings:
-        # Create fuzzy hash from prefix and suffix
-        # Sequences with same prefix/suffix are likely similar
-        prefix = pattern[:prefix_len]
-        suffix = pattern[-suffix_len:] if len(pattern) > suffix_len else pattern
-        fuzzy_hash = (prefix, suffix)
-        hash_buckets[fuzzy_hash].append((pattern, pos))
-
-    # OPTIMIZATION 3: Cluster within hash buckets only
-    # This reduces O(n²) comparisons to O(k * m²) where k is number of buckets
-    # and m is average bucket size (m << n)
-    clusters = []
+    # Cluster within hash buckets
+    results = []
     global_used: set[int] = set()
 
     for bucket_patterns in hash_buckets.values():
         # Skip small buckets that can't form clusters
         if len(bucket_patterns) < min_count:
-            # Still need to check if they can join other buckets
-            # For now, skip - could optimize further by cross-bucket matching
             continue
 
-        # Cluster within this bucket
-        bucket_used: set[int] = set()
+        # Cluster patterns in this bucket
+        bucket_clusters = _cluster_bucket_patterns(
+            bucket_patterns, substrings, max_distance, min_count, global_used
+        )
 
-        for i, (pattern, pos) in enumerate(bucket_patterns):
-            # Check if already used globally
-            actual_idx = substrings.index((pattern, pos))
-            if actual_idx in global_used:
-                continue
+        # Convert clusters to RepeatingSequence objects
+        for cluster_patterns, cluster_positions in bucket_clusters:
+            # Use most common pattern as representative
+            pattern_counter = Counter(cluster_patterns)
+            representative = pattern_counter.most_common(1)[0][0]
 
-            # Start new cluster
-            cluster_patterns = [pattern]
-            cluster_positions = [pos]
-            bucket_used.add(i)
-            global_used.add(actual_idx)
-
-            # OPTIMIZATION 4: Only compare within same bucket
-            for j in range(i + 1, len(bucket_patterns)):
-                if j in bucket_used:
-                    continue
-
-                other_pattern, other_pos = bucket_patterns[j]
-                other_idx = substrings.index((other_pattern, other_pos))
-                if other_idx in global_used:
-                    continue
-
-                # OPTIMIZATION 5: Early termination with quick checks
-                # Check if lengths are compatible
-                if abs(len(pattern) - len(other_pattern)) > max_distance:
-                    continue
-
-                # OPTIMIZATION 6: Use optimized edit distance
-                distance = _edit_distance_optimized(pattern, other_pattern, max_distance)
-
-                if distance <= max_distance:
-                    cluster_patterns.append(other_pattern)
-                    cluster_positions.append(other_pos)
-                    bucket_used.add(j)
-                    global_used.add(other_idx)
-
-            # Add cluster if large enough
-            if len(cluster_patterns) >= min_count:
-                # Use most common pattern as representative
-                pattern_counter = Counter(cluster_patterns)
-                representative = pattern_counter.most_common(1)[0][0]
-
-                clusters.append(
-                    RepeatingSequence(
-                        pattern=representative,
-                        length=len(representative),
-                        count=len(cluster_patterns),
-                        positions=sorted(cluster_positions),
-                        frequency=len(cluster_patterns) / (n - min_length + 1),
-                    )
+            results.append(
+                RepeatingSequence(
+                    pattern=representative,
+                    length=len(representative),
+                    count=len(cluster_patterns),
+                    positions=sorted(cluster_positions),
+                    frequency=len(cluster_patterns) / (n - min_length + 1),
                 )
+            )
 
     # Sort by count (descending)
-    clusters.sort(key=lambda x: x.count, reverse=True)
+    results.sort(key=lambda x: x.count, reverse=True)
 
-    return clusters
+    return results
 
 
 def _to_bytes(data: bytes | NDArray[np.uint8] | memoryview | bytearray) -> bytes:
@@ -439,7 +536,7 @@ def _to_bytes(data: bytes | NDArray[np.uint8] | memoryview | bytearray) -> bytes
     elif isinstance(data, bytearray | memoryview):
         return bytes(data)
     elif isinstance(data, np.ndarray):
-        return data.astype(np.uint8).tobytes()  # type: ignore[no-any-return]
+        return data.astype(np.uint8).tobytes()
     else:
         raise TypeError(f"Unsupported data type: {type(data)}")
 

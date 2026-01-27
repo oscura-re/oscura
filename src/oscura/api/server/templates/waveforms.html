@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Waveforms - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="bi bi-graph-up"></i> Waveform Viewer
+                </h2>
+                <p class="text-muted">{{ filename }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div id="waveformPlot" style="width: 100%; height: 600px;"></div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Controls</h5>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-secondary" onclick="resetZoom()">
+                        <i class="bi bi-zoom-out"></i> Reset Zoom
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="togglePan()">
+                        <i class="bi bi-arrows-move"></i> Pan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const sessionId = '{{ session_id }}';
+    const plotlyConfig = {{ plotly_config|safe }};
+
+    async function loadWaveform() {
+        try {
+            const response = await fetch(`/api/session/${sessionId}/waveform`);
+            const data = await response.json();
+
+            Plotly.newPlot('waveformPlot', data.data, data.layout, plotlyConfig);
+        } catch (error) {
+            console.error('Failed to load waveform:', error);
+            document.getElementById('waveformPlot').innerHTML =
+                '<div class="alert alert-danger">Failed to load waveform data</div>';
+        }
+    }
+
+    function resetZoom() {
+        Plotly.relayout('waveformPlot', {
+            'xaxis.autorange': true,
+            'yaxis.autorange': true
+        });
+    }
+
+    function togglePan() {
+        const plot = document.getElementById('waveformPlot');
+        Plotly.relayout(plot, {dragmode: 'pan'});
+    }
+
+    // Load waveform on page load
+    loadWaveform();
+</script>
+{% endblock %}

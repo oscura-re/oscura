@@ -466,15 +466,16 @@ band = band_pass(trace, low=1000.0, high=5000.0)
 **Custom Filter Design**:
 
 ```python
-from oscura.filtering.design import design_filter
+# Use scipy directly for custom filter design
+from scipy import signal
 
 # Design custom filter
-sos = design_filter(
-    filter_type='lowpass',
-    cutoff=10000.0,
-    sample_rate=trace.metadata.sample_rate,
-    order=6,
-    ftype='butter'  # butterworth, cheby1, cheby2, bessel, ellip
+sos = signal.butter(
+    N=6,  # order
+    Wn=10000.0,  # cutoff frequency
+    btype='lowpass',
+    fs=trace.metadata.sample_rate,
+    output='sos'  # second-order sections
 )
 ```
 

@@ -77,14 +77,23 @@ plugins:
 
 nav:
   - Home: index.md
-  - Getting Started:
+  - User Guide:
+      - Getting Started: user-guide/getting-started.md
+      - Common Workflows: user-guide/workflows.md
       - Quick Start: guides/quick-start.md
       - Core Concepts: guides/concepts.md
-      - Common Workflows: guides/workflows.md
       - Choosing Features: guides/choosing-features.md
+  - Tutorials:
+      - UART Reverse Engineering: tutorials/reverse-engineering-uart.md
+      - CAN Bus Analysis: tutorials/can-bus-analysis.md
+  - Protocol Catalog:
+      - Overview: protocols/index.md
+      - Automotive Protocols: protocols/automotive.md
   - Demos: demos.md
   - Architecture:
       - Overview: images/architecture/index.md
+  - Developer Guide:
+      - Architecture: developer-guide/architecture.md
   - API Reference:
       - Overview: api/index.md
       - Analysis API: api/analysis.md
@@ -106,6 +115,7 @@ nav:
       - OOM Prevention: testing/oom-prevention.md
   - Development:
       - Pre-Push Optimizations: development/pre-push-optimizations.md
+  - FAQ: faq/index.md
   - CLI Reference: cli.md
   - Error Codes: error-codes.md
   - Code of Conduct: code-of-conduct.md

@@ -82,12 +82,33 @@ def _generate_comparison_summary(
     current: dict[str, Any],
 ) -> str:
     """Generate comparison summary."""
-    summary_parts = []
+    summary_parts: list[str] = []
 
-    # Count changes
     baseline_meas = baseline.get("measurements", {})
     current_meas = current.get("measurements", {})
 
+    changed, improved, degraded = _categorize_parameter_changes(baseline_meas, current_meas)
+
+    _add_parameter_change_summary(
+        summary_parts, baseline_meas, current_meas, changed, improved, degraded
+    )
+    _add_pass_rate_comparison(summary_parts, baseline, current)
+
+    return "\n".join(summary_parts)
+
+
+def _categorize_parameter_changes(
+    baseline_meas: dict[str, Any], current_meas: dict[str, Any]
+) -> tuple[list[str], list[str], list[str]]:
+    """Categorize parameter changes.
+
+    Args:
+        baseline_meas: Baseline measurements.
+        current_meas: Current measurements.
+
+    Returns:
+        Tuple of (changed, improved, degraded) parameter lists.
+    """
     all_params = set(baseline_meas.keys()) | set(current_meas.keys())
     changed_params = []
     improved_params = []
@@ -98,10 +119,9 @@ def _generate_comparison_summary(
         curr_val = current_meas.get(param, {}).get("value")
 
         if base_val is not None and curr_val is not None:
-            if abs(curr_val - base_val) / abs(base_val) > 0.05:  # >5% change
+            if abs(curr_val - base_val) / abs(base_val) > 0.05:
                 changed_params.append(param)
 
-                # Determine if improved or degraded
                 base_passed = baseline_meas.get(param, {}).get("passed", True)
                 curr_passed = current_meas.get(param, {}).get("passed", True)
 
@@ -110,22 +130,50 @@ def _generate_comparison_summary(
                 elif base_passed and not curr_passed:
                     degraded_params.append(param)
 
+    return changed_params, improved_params, degraded_params
+
+
+def _add_parameter_change_summary(
+    summary_parts: list[str],
+    baseline_meas: dict[str, Any],
+    current_meas: dict[str, Any],
+    changed: list[str],
+    improved: list[str],
+    degraded: list[str],
+) -> None:
+    """Add parameter change summary.
+
+    Args:
+        summary_parts: List to append to.
+        baseline_meas: Baseline measurements.
+        current_meas: Current measurements.
+        changed: Changed parameters.
+        improved: Improved parameters.
+        degraded: Degraded parameters.
+    """
+    all_params = set(baseline_meas.keys()) | set(current_meas.keys())
     summary_parts.append(f"Comparing {len(all_params)} parameter(s) between baseline and current.")
 
-    if changed_params:
-        summary_parts.append(f"\n{len(changed_params)} measurement(s) changed significantly (>5%).")
+    if changed:
+        summary_parts.append(f"\n{len(changed)} measurement(s) changed significantly (>5%).")
 
-    if improved_params:
-        summary_parts.append(
-            f"\n✓ {len(improved_params)} parameter(s) improved (failures → passes)."
-        )
+    if improved:
+        summary_parts.append(f"\n✓ {len(improved)} parameter(s) improved (failures → passes).")
 
-    if degraded_params:
-        summary_parts.append(
-            f"\n✗ {len(degraded_params)} parameter(s) degraded (passes → failures)."
-        )
+    if degraded:
+        summary_parts.append(f"\n✗ {len(degraded)} parameter(s) degraded (passes → failures).")
 
-    # Pass/fail comparison
+
+def _add_pass_rate_comparison(
+    summary_parts: list[str], baseline: dict[str, Any], current: dict[str, Any]
+) -> None:
+    """Add pass rate comparison.
+
+    Args:
+        summary_parts: List to append to.
+        baseline: Baseline results.
+        current: Current results.
+    """
     baseline_pass = baseline.get("pass_count", 0)
     baseline_total = baseline.get("total_count", 0)
     current_pass = current.get("pass_count", 0)
@@ -139,8 +187,6 @@ def _generate_comparison_summary(
         summary_parts.append(
             f"\nPass rate: {baseline_rate:.1f}% → {current_rate:.1f}% ({delta:+.1f}% change)"
         )
-
-    return "\n".join(summary_parts)
 
 
 def _create_changes_section(

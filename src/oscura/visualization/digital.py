@@ -38,6 +38,172 @@ if TYPE_CHECKING:
     from oscura.analyzers.protocols.base import Annotation
 
 
+def _validate_timing_inputs(
+    traces: Sequence[WaveformTrace | DigitalTrace],
+    names: list[str] | None,
+) -> tuple[int, list[str]]:
+    """Validate plot_timing inputs and generate default names.
+
+    Args:
+        traces: List of traces to validate.
+        names: Channel names or None for defaults.
+
+    Returns:
+        Tuple of (n_channels, validated_names).
+
+    Raises:
+        ValueError: If traces empty or names length mismatch.
+    """
+    if len(traces) == 0:
+        raise ValueError("traces list cannot be empty")
+
+    n_channels = len(traces)
+
+    if names is None:
+        names = [f"CH{i + 1}" for i in range(n_channels)]
+
+    if len(names) != n_channels:
+        raise ValueError(f"names length ({len(names)}) must match traces ({n_channels})")
+
+    return n_channels, names
+
+
+def _convert_to_digital_traces(
+    traces: Sequence[WaveformTrace | DigitalTrace],
+    threshold: float | str,
+) -> list[DigitalTrace]:
+    """Convert analog traces to digital using threshold.
+
+    Args:
+        traces: List of analog or digital traces.
+        threshold: Threshold for analog-to-digital conversion.
+
+    Returns:
+        List of digital traces.
+    """
+    from oscura.analyzers.digital.extraction import to_digital
+
+    digital_traces: list[DigitalTrace] = []
+    for trace in traces:
+        if isinstance(trace, WaveformTrace):
+            digital_traces.append(to_digital(trace, threshold=threshold))  # type: ignore[arg-type]
+        else:
+            digital_traces.append(trace)
+
+    return digital_traces
+
+
+def _select_time_unit_and_multiplier(
+    digital_traces: list[DigitalTrace],
+    time_unit: str,
+) -> tuple[str, float]:
+    """Select appropriate time unit based on signal duration.
+
+    Args:
+        digital_traces: List of digital traces.
+        time_unit: Time unit ("auto" or specific unit).
+
+    Returns:
+        Tuple of (time_unit, multiplier).
+    """
+    if time_unit == "auto" and len(digital_traces) > 0:
+        ref_trace = digital_traces[0]
+        duration = len(ref_trace.data) * ref_trace.metadata.time_base
+        if duration < 1e-6:
+            time_unit = "ns"
+        elif duration < 1e-3:
+            time_unit = "us"
+        elif duration < 1:
+            time_unit = "ms"
+        else:
+            time_unit = "s"
+
+    time_multipliers = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}
+    multiplier = time_multipliers.get(time_unit, 1.0)
+
+    return time_unit, multiplier
+
+
+def _determine_plot_time_range(
+    digital_traces: list[DigitalTrace],
+    time_range: tuple[float, float] | None,
+) -> tuple[float, float]:
+    """Determine start and end times for plot.
+
+    Args:
+        digital_traces: List of digital traces.
+        time_range: User-specified time range or None for auto.
+
+    Returns:
+        Tuple of (start_time, end_time) in seconds.
+    """
+    if time_range is not None:
+        return time_range
+
+    start_time = 0.0
+    end_time = max(trace.duration for trace in digital_traces if len(trace.data) > 0)
+    return start_time, end_time
+
+
+def _plot_timing_channel(
+    ax: Axes,
+    trace: DigitalTrace,
+    name: str,
+    channel_index: int,
+    multiplier: float,
+    time_range: tuple[float, float] | None,
+    show_grid: bool,
+    annotations: list[Annotation] | None,
+    time_unit: str,
+) -> None:
+    """Plot a single channel in the timing diagram.
+
+    Args:
+        ax: Matplotlib axes to plot on.
+        trace: Digital trace to plot.
+        name: Channel name for label.
+        channel_index: Index for color selection.
+        multiplier: Time unit multiplier.
+        time_range: Optional time range to display.
+        show_grid: Show vertical grid lines.
+        annotations: Optional protocol annotations.
+        time_unit: Time unit string.
+    """
+    time = trace.time_vector * multiplier
+
+    # Filter to time range
+    if time_range is not None:
+        start_time, end_time = time_range
+        start_idx = int(np.searchsorted(trace.time_vector, start_time))
+        end_idx = int(np.searchsorted(trace.time_vector, end_time))
+        time = time[start_idx:end_idx]
+        data_slice = trace.data[start_idx:end_idx]
+    else:
+        data_slice = trace.data
+
+    # Plot digital waveform as step function
+    ax.step(
+        time,
+        data_slice.astype(int),
+        where="post",
+        color=f"C{channel_index}",
+        linewidth=1.5,
+    )
+
+    # Set up digital signal display
+    ax.set_ylim(-0.2, 1.2)
+    ax.set_yticks([0, 1])
+    ax.set_yticklabels(["0", "1"])
+    ax.set_ylabel(name, rotation=0, ha="right", va="center", fontweight="bold")
+
+    if show_grid:
+        ax.grid(True, alpha=0.2, axis="x")
+
+    # Add protocol annotations if provided
+    if annotations:
+        _add_protocol_annotations(ax, annotations, multiplier, time_unit)
+
+
 def plot_timing(
     traces: Sequence[WaveformTrace | DigitalTrace],
     *,
@@ -87,108 +253,41 @@ def plot_timing(
     if not HAS_MATPLOTLIB:
         raise ImportError("matplotlib is required for visualization")
 
-    if len(traces) == 0:
-        raise ValueError("traces list cannot be empty")
+    # Data preparation/validation
+    n_channels, names = _validate_timing_inputs(traces, names)
+    digital_traces = _convert_to_digital_traces(traces, threshold)
 
-    n_channels = len(traces)
+    # Unit/scale selection
+    time_unit, multiplier = _select_time_unit_and_multiplier(digital_traces, time_unit)
+    start_time, end_time = _determine_plot_time_range(digital_traces, time_range)
 
-    if names is None:
-        names = [f"CH{i + 1}" for i in range(n_channels)]
-
-    if len(names) != n_channels:
-        raise ValueError(f"names length ({len(names)}) must match traces ({n_channels})")
-
+    # Figure/axes creation
     if figsize is None:
         figsize = (12, 1.5 * n_channels)
 
-    # Convert analog traces to digital
-    from oscura.analyzers.digital.extraction import to_digital
-
-    digital_traces: list[DigitalTrace] = []
-    for trace in traces:
-        if isinstance(trace, WaveformTrace):
-            digital_traces.append(to_digital(trace, threshold=threshold))  # type: ignore[arg-type]
-        else:
-            digital_traces.append(trace)
-
-    # Auto-select time unit from first trace
-    if time_unit == "auto" and len(digital_traces) > 0:
-        ref_trace = digital_traces[0]
-        duration = len(ref_trace.data) * ref_trace.metadata.time_base
-        if duration < 1e-6:
-            time_unit = "ns"
-        elif duration < 1e-3:
-            time_unit = "us"
-        elif duration < 1:
-            time_unit = "ms"
-        else:
-            time_unit = "s"
-
-    time_multipliers = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}
-    multiplier = time_multipliers.get(time_unit, 1.0)
-
-    # Create figure
-    fig, axes = plt.subplots(
-        n_channels,
-        1,
-        figsize=figsize,
-        sharex=True,
-    )
+    fig, axes = plt.subplots(n_channels, 1, figsize=figsize, sharex=True)
 
     if n_channels == 1:
         axes = [axes]
 
-    # Determine time range
-    if time_range is not None:
-        start_time, end_time = time_range
-    else:
-        start_time = 0.0
-        end_time = max(trace.duration for trace in digital_traces if len(trace.data) > 0)
-
+    # Plotting/rendering
     for i, (trace, name, ax) in enumerate(zip(digital_traces, names, axes, strict=False)):
-        time = trace.time_vector * multiplier
-
-        # Filter to time range
-        if time_range is not None:
-            start_idx = int(np.searchsorted(trace.time_vector, start_time))
-            end_idx = int(np.searchsorted(trace.time_vector, end_time))
-            time = time[start_idx:end_idx]
-            data_slice = trace.data[start_idx:end_idx]
-        else:
-            data_slice = trace.data
-
-        # Plot digital waveform as step function
-        ax.step(
-            time,
-            data_slice.astype(int),
-            where="post",
-            color=f"C{i}",
-            linewidth=1.5,
+        channel_annotations = annotations[i] if annotations and i < len(annotations) else None
+        _plot_timing_channel(
+            ax, trace, name, i, multiplier, time_range, show_grid, channel_annotations, time_unit
         )
-
-        # Set up digital signal display
-        ax.set_ylim(-0.2, 1.2)
-        ax.set_yticks([0, 1])
-        ax.set_yticklabels(["0", "1"])
-        ax.set_ylabel(name, rotation=0, ha="right", va="center", fontweight="bold")
-
-        if show_grid:
-            ax.grid(True, alpha=0.2, axis="x")
-
-        # Add protocol annotations if provided
-        if annotations is not None and i < len(annotations) and annotations[i]:
-            _add_protocol_annotations(ax, annotations[i], multiplier, time_unit)
 
         # Remove x-axis labels except for bottom plot
         if i < n_channels - 1:
             ax.set_xticklabels([])
 
-    # Set x-label on bottom plot
+    # Annotation/labeling
     axes[-1].set_xlabel(f"Time ({time_unit})")
 
     if title:
         fig.suptitle(title, fontsize=14, fontweight="bold")
 
+    # Layout/formatting
     fig.tight_layout()
     return fig
 

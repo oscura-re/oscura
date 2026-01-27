@@ -1,8 +1,8 @@
 # Oscura Design Principles
 
-**Version**: 0.5.1 (Phase 0)
-**Status**: Foundation Architecture
-**Last Updated**: 2026-01-20
+**Version**: 0.6.0
+**Status**: Production Release
+**Last Updated**: 2026-01-25
 
 This document defines the core design principles that guide Oscura's architecture. All new features and refactoring must align with these principles.
 
@@ -37,7 +37,8 @@ The foundation (Phase 0) establishes these principles through:
 
 ```python
 # GOOD: Unified Source protocol
-from oscura.acquisition import FileSource, HardwareSource, SyntheticSource
+# NOTE: Direct loading recommended in v0.6
+import oscura as osc, HardwareSource, SyntheticSource
 
 def analyze_from_source(source: Source):
     """Works with ANY source - file, hardware, or synthetic."""
@@ -45,7 +46,7 @@ def analyze_from_source(source: Source):
     return analyze(trace)
 
 # Works polymorphically
-analyze_from_source(FileSource("capture.wfm"))
+analyze_from_source(osc.load("capture.wfm"))
 analyze_from_source(HardwareSource.socketcan("can0"))
 analyze_from_source(SyntheticSource(builder))
 
@@ -131,7 +132,7 @@ channels = builder.build_channels()   # Clear: getting all channels
 trace = builder.build()  # Which channel? First? All? Unclear.
 
 # GOOD: Explicit source type
-source = FileSource("capture.wfm")
+source = osc.load("capture.wfm")
 trace = source.read()
 
 # BAD: Hidden file I/O
@@ -214,8 +215,8 @@ result = trace | low_pass(1e6) | fft() | thd()
 
 # Level 3: Full customization with session
 session = CANSession()
-session.add_recording("baseline", FileSource("idle.blf"))
-session.add_recording("active", FileSource("running.blf"))
+session.add_recording("baseline", osc.load("idle.blf"))
+session.add_recording("active", osc.load("running.blf"))
 signals = session.discover_signals()
 session.export_dbc("output.dbc")
 

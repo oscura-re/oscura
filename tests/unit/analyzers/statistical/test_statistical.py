@@ -206,7 +206,7 @@ class TestChecksumDetection:
 
     def test_detect_crc16_checksum(self) -> None:
         """Test detecting CRC-16 checksum field."""
-        from oscura.testing.synthetic import generate_protocol_messages
+        from oscura.validation.testing.synthetic import generate_protocol_messages
 
         # Generate messages with CRC-16 checksums
         messages, _truth = generate_protocol_messages(
@@ -223,7 +223,10 @@ class TestChecksumDetection:
 
     def test_identify_checksum_algorithm(self) -> None:
         """Test identifying checksum algorithm."""
-        from oscura.testing.synthetic import SyntheticDataGenerator, SyntheticMessageConfig
+        from oscura.validation.testing.synthetic import (
+            SyntheticDataGenerator,
+            SyntheticMessageConfig,
+        )
 
         config = SyntheticMessageConfig(message_size=32, include_checksum=True)
         generator = SyntheticDataGenerator()
@@ -251,7 +254,10 @@ class TestChecksumDetection:
 
     def test_verify_checksum_valid(self) -> None:
         """Test verifying valid checksums."""
-        from oscura.testing.synthetic import SyntheticDataGenerator, SyntheticMessageConfig
+        from oscura.validation.testing.synthetic import (
+            SyntheticDataGenerator,
+            SyntheticMessageConfig,
+        )
 
         config = SyntheticMessageConfig(message_size=32, include_checksum=True)
         generator = SyntheticDataGenerator()
@@ -270,7 +276,10 @@ class TestChecksumDetection:
 
     def test_detect_corrupted_checksum(self) -> None:
         """Test detecting corrupted checksums."""
-        from oscura.testing.synthetic import SyntheticDataGenerator, SyntheticMessageConfig
+        from oscura.validation.testing.synthetic import (
+            SyntheticDataGenerator,
+            SyntheticMessageConfig,
+        )
 
         config = SyntheticMessageConfig(message_size=32, include_checksum=True)
         generator = SyntheticDataGenerator()
@@ -290,7 +299,7 @@ class TestChecksumDetection:
 
     def test_checksum_correlation_analysis(self) -> None:
         """Test correlation analysis for checksum detection."""
-        from oscura.testing.synthetic import generate_protocol_messages
+        from oscura.validation.testing.synthetic import generate_protocol_messages
 
         messages, _truth = generate_protocol_messages(count=100, include_checksum=True)
 
@@ -396,7 +405,7 @@ class TestPerformance:
 
     def test_checksum_detection_many_messages(self) -> None:
         """Benchmark checksum detection on many messages."""
-        from oscura.testing.synthetic import generate_protocol_messages
+        from oscura.validation.testing.synthetic import generate_protocol_messages
 
         # 1000 messages
         messages, _ = generate_protocol_messages(count=1000, include_checksum=True)

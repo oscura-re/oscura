@@ -1,0 +1,616 @@
+{
+  "structure": {
+    "00_getting_started": {
+      "description": "Introduction to Oscura",
+      "from_demonstrations": [
+        "00_hello_world.py",
+        "01_core_types.py",
+        "02_supported_formats.py"
+      ],
+      "from_demos": []
+    },
+    "01_data_loading": {
+      "description": "Loading all file formats",
+      "from_demonstrations": [
+        "01_oscilloscopes.py",
+        "02_logic_analyzers.py",
+        "03_automotive_formats.py",
+        "04_scientific_formats.py",
+        "05_custom_binary.py",
+        "06_streaming_large_files.py",
+        "07_multi_channel.py",
+        "08_network_formats.py",
+        "09_specialized_formats.py",
+        "10_performance_loading.py"
+      ],
+      "from_demos": [
+        "demos/02_file_format_io/vcd_loader_demo.py \u2192 vcd_advanced_demo.py",
+        "demos/03_custom_daq/simple_loader.py \u2192 custom_loader_simple.py",
+        "demos/03_custom_daq/chunked_loader.py \u2192 custom_loader_chunked.py",
+        "demos/03_custom_daq/optimal_streaming_loader.py \u2192 custom_loader_streaming.py"
+      ]
+    },
+    "02_basic_analysis": {
+      "description": "Core signal analysis",
+      "from_demonstrations": [
+        "01_waveform_measurements.py",
+        "02_statistics.py",
+        "03_spectral_analysis.py",
+        "04_filtering.py",
+        "05_triggering.py",
+        "06_math_operations.py",
+        "07_wavelet_analysis.py"
+      ],
+      "from_demos": [
+        "demos/01_waveform_analysis/comprehensive_wfm_analysis.py \u2192 waveform_comprehensive.py",
+        "demos/11_mixed_signal/comprehensive_mixed_signal_demo.py \u2192 mixed_signal.py",
+        "demos/12_spectral_compliance/comprehensive_spectral_demo.py \u2192 spectral_compliance.py"
+      ]
+    },
+    "03_protocol_decoding": {
+      "description": "All protocol decoders",
+      "from_demonstrations": [
+        "01_serial_comprehensive.py",
+        "02_automotive_protocols.py",
+        "03_debug_protocols.py",
+        "04_parallel_bus.py",
+        "05_encoded_protocols.py",
+        "06_auto_detection.py"
+      ],
+      "from_demos": [
+        "demos/04_serial_protocols/i2s_demo.py \u2192 i2s.py",
+        "demos/04_serial_protocols/jtag_demo.py \u2192 jtag.py",
+        "demos/04_serial_protocols/manchester_demo.py \u2192 manchester.py",
+        "demos/04_serial_protocols/onewire_demo.py \u2192 onewire.py",
+        "demos/04_serial_protocols/swd_demo.py \u2192 swd.py",
+        "demos/04_serial_protocols/usb_demo.py \u2192 usb.py",
+        "demos/05_protocol_decoding/comprehensive_protocol_demo.py \u2192 protocol_comprehensive.py",
+        "demos/06_udp_packet_analysis/comprehensive_udp_analysis.py \u2192 udp_analysis.py"
+      ]
+    },
+    "04_advanced_analysis": {
+      "description": "Advanced signal analysis",
+      "from_demonstrations": [
+        "01_jitter_analysis.py",
+        "02_power_analysis.py",
+        "03_signal_integrity.py",
+        "04_eye_diagrams.py",
+        "05_pattern_discovery.py",
+        "06_quality_assessment.py",
+        "07_component_characterization.py",
+        "08_transmission_lines.py",
+        "09_digital_timing.py"
+      ],
+      "from_demos": [
+        "demos/13_jitter_analysis/ddj_dcd_demo.py \u2192 jitter_ddj_dcd.py",
+        "demos/13_jitter_analysis/bathtub_curve_demo.py \u2192 jitter_bathtub.py",
+        "demos/14_power_analysis/dcdc_efficiency_demo.py \u2192 power_dcdc.py",
+        "demos/14_power_analysis/ripple_analysis_demo.py \u2192 power_ripple.py",
+        "demos/15_signal_integrity/tdr_impedance_demo.py \u2192 signal_integrity_tdr.py",
+        "demos/15_signal_integrity/setup_hold_timing_demo.py \u2192 signal_integrity_timing.py",
+        "demos/15_signal_integrity/sparams_demo.py \u2192 signal_integrity_sparams.py"
+      ]
+    },
+    "05_domain_specific": {
+      "description": "Industry-specific analysis",
+      "from_demonstrations": [
+        "01_automotive_diagnostics.py",
+        "02_emc_compliance.py",
+        "03_vintage_logic.py",
+        "04_side_channel.py"
+      ],
+      "from_demos": [
+        "demos/08_automotive_protocols/lin_demo.py \u2192 automotive_lin.py",
+        "demos/08_automotive_protocols/flexray_demo.py \u2192 automotive_flexray.py",
+        "demos/09_automotive/comprehensive_automotive_demo.py \u2192 automotive_comprehensive.py",
+        "demos/16_emc_compliance/comprehensive_emc_demo.py \u2192 emc_comprehensive.py",
+        "demos/10_timing_measurements/ieee_181_pulse_demo.py \u2192 timing_ieee181.py"
+      ]
+    },
+    "06_reverse_engineering": {
+      "description": "Protocol reverse engineering",
+      "from_demonstrations": [
+        "01_unknown_protocol.py",
+        "02_crc_recovery.py",
+        "03_state_machines.py",
+        "04_field_inference.py",
+        "05_pattern_discovery.py",
+        "06_wireshark_export.py",
+        "07_entropy_analysis.py",
+        "08_data_classification.py",
+        "09_signal_classification.py",
+        "10_anomaly_detection.py"
+      ],
+      "from_demos": [
+        "demos/07_protocol_inference/crc_reverse_demo.py \u2192 crc_reverse.py",
+        "demos/07_protocol_inference/state_machine_learning.py \u2192 state_machine_learning.py",
+        "demos/07_protocol_inference/wireshark_dissector_demo.py \u2192 wireshark_dissector.py",
+        "demos/17_signal_reverse_engineering/comprehensive_re.py \u2192 re_comprehensive.py",
+        "demos/17_signal_reverse_engineering/exploratory_analysis.py \u2192 re_exploratory.py",
+        "demos/17_signal_reverse_engineering/reverse_engineer_tool.py \u2192 re_tool.py",
+        "demos/18_advanced_inference/bayesian_inference_demo.py \u2192 inference_bayesian.py",
+        "demos/18_advanced_inference/protocol_dsl_demo.py \u2192 inference_dsl.py",
+        "demos/18_advanced_inference/active_learning_demo.py \u2192 inference_active_learning.py"
+      ]
+    },
+    "07_advanced_api": {
+      "description": "Expert API features",
+      "from_demonstrations": [
+        "01_pipeline_api.py",
+        "02_dsl_syntax.py",
+        "03_operators.py",
+        "04_composition.py",
+        "05_optimization.py",
+        "06_streaming_api.py",
+        "07_parallel_processing.py",
+        "08_gpu_acceleration.py"
+      ],
+      "from_demos": []
+    },
+    "08_extensibility": {
+      "description": "Plugins and customization",
+      "from_demonstrations": [
+        "01_plugin_basics.py",
+        "02_custom_measurement.py",
+        "03_custom_algorithm.py",
+        "04_plugin_development.py",
+        "05_measurement_registry.py",
+        "06_plugin_templates.py"
+      ],
+      "from_demos": []
+    },
+    "09_batch_processing": {
+      "description": "Parallel and batch operations",
+      "from_demonstrations": [
+        "01_parallel_batch.py",
+        "02_result_aggregation.py",
+        "03_progress_tracking.py",
+        "04_optimization.py"
+      ],
+      "from_demos": []
+    },
+    "10_sessions": {
+      "description": "Interactive analysis sessions",
+      "from_demonstrations": [
+        "01_analysis_session.py",
+        "02_can_session.py",
+        "03_blackbox_session.py",
+        "04_session_persistence.py",
+        "05_interactive_analysis.py"
+      ],
+      "from_demos": []
+    },
+    "11_integration": {
+      "description": "Tool integration",
+      "from_demonstrations": [
+        "01_cli_usage.py",
+        "02_jupyter_notebooks.py",
+        "03_llm_integration.py",
+        "04_configuration_files.py",
+        "05_hardware_integration.py"
+      ],
+      "from_demos": []
+    },
+    "12_quality_tools": {
+      "description": "Quality assessment tools",
+      "from_demonstrations": [
+        "01_ensemble_methods.py",
+        "02_quality_scoring.py",
+        "03_warning_system.py",
+        "04_recommendations.py"
+      ],
+      "from_demos": []
+    },
+    "13_guidance": {
+      "description": "User guidance and wizards",
+      "from_demonstrations": [
+        "01_smart_recommendations.py",
+        "02_analysis_wizards.py",
+        "03_onboarding_helpers.py"
+      ],
+      "from_demos": []
+    },
+    "14_exploratory": {
+      "description": "Exploratory analysis",
+      "from_demonstrations": [
+        "01_unknown_signals.py",
+        "02_fuzzy_matching.py",
+        "03_signal_recovery.py",
+        "04_exploratory_analysis.py",
+        "05_advanced_search.py"
+      ],
+      "from_demos": []
+    },
+    "15_export_visualization": {
+      "description": "Export and visualization",
+      "from_demonstrations": [
+        "01_export_formats.py",
+        "02_wavedrom_timing.py",
+        "03_wireshark_dissectors.py",
+        "04_report_generation.py",
+        "05_visualization_gallery.py",
+        "06_comprehensive_export.py"
+      ],
+      "from_demos": [
+        "demos/01_waveform_analysis/all_output_formats.py \u2192 all_export_formats.py"
+      ]
+    },
+    "16_complete_workflows": {
+      "description": "End-to-end workflows",
+      "from_demonstrations": [
+        "01_unknown_device_re.py",
+        "02_automotive_diagnostics.py",
+        "03_emc_testing.py",
+        "04_production_testing.py",
+        "05_failure_analysis.py",
+        "06_device_characterization.py"
+      ],
+      "from_demos": [
+        "demos/19_complete_workflows/automotive_full_workflow.py \u2192 automotive_workflow.py",
+        "demos/19_complete_workflows/network_analysis_workflow.py \u2192 network_workflow.py",
+        "demos/19_complete_workflows/unknown_signal_workflow.py \u2192 unknown_signal_workflow.py"
+      ]
+    },
+    "17_signal_generation": {
+      "description": "Signal and protocol generation",
+      "from_demonstrations": [
+        "01_signal_builder_comprehensive.py",
+        "02_protocol_generation.py",
+        "03_impairment_simulation.py"
+      ],
+      "from_demos": []
+    },
+    "18_comparison_testing": {
+      "description": "Comparison and regression testing",
+      "from_demonstrations": [
+        "01_golden_reference.py",
+        "02_limit_testing.py",
+        "03_mask_testing.py",
+        "04_regression_testing.py"
+      ],
+      "from_demos": []
+    },
+    "19_standards_compliance": {
+      "description": "IEEE standards validation",
+      "from_demonstrations": [
+        "01_ieee_181.py",
+        "02_ieee_1241.py",
+        "03_ieee_1459.py",
+        "04_ieee_2414.py"
+      ],
+      "from_demos": []
+    }
+  },
+  "implementation_plan": {
+    "phase_1_keep_demonstrations": [
+      "demonstrations/00_getting_started/00_hello_world.py",
+      "demonstrations/00_getting_started/01_core_types.py",
+      "demonstrations/00_getting_started/02_supported_formats.py",
+      "demonstrations/01_data_loading/01_oscilloscopes.py",
+      "demonstrations/01_data_loading/02_logic_analyzers.py",
+      "demonstrations/01_data_loading/03_automotive_formats.py",
+      "demonstrations/01_data_loading/04_scientific_formats.py",
+      "demonstrations/01_data_loading/05_custom_binary.py",
+      "demonstrations/01_data_loading/06_streaming_large_files.py",
+      "demonstrations/01_data_loading/07_multi_channel.py",
+      "demonstrations/01_data_loading/08_network_formats.py",
+      "demonstrations/01_data_loading/09_specialized_formats.py",
+      "demonstrations/01_data_loading/10_performance_loading.py",
+      "demonstrations/02_basic_analysis/01_waveform_measurements.py",
+      "demonstrations/02_basic_analysis/02_statistics.py",
+      "demonstrations/02_basic_analysis/03_spectral_analysis.py",
+      "demonstrations/02_basic_analysis/04_filtering.py",
+      "demonstrations/02_basic_analysis/05_triggering.py",
+      "demonstrations/02_basic_analysis/06_math_operations.py",
+      "demonstrations/02_basic_analysis/07_wavelet_analysis.py",
+      "demonstrations/03_protocol_decoding/01_serial_comprehensive.py",
+      "demonstrations/03_protocol_decoding/02_automotive_protocols.py",
+      "demonstrations/03_protocol_decoding/03_debug_protocols.py",
+      "demonstrations/03_protocol_decoding/04_parallel_bus.py",
+      "demonstrations/03_protocol_decoding/05_encoded_protocols.py",
+      "demonstrations/03_protocol_decoding/06_auto_detection.py",
+      "demonstrations/04_advanced_analysis/01_jitter_analysis.py",
+      "demonstrations/04_advanced_analysis/02_power_analysis.py",
+      "demonstrations/04_advanced_analysis/03_signal_integrity.py",
+      "demonstrations/04_advanced_analysis/04_eye_diagrams.py",
+      "demonstrations/04_advanced_analysis/05_pattern_discovery.py",
+      "demonstrations/04_advanced_analysis/06_quality_assessment.py",
+      "demonstrations/04_advanced_analysis/07_component_characterization.py",
+      "demonstrations/04_advanced_analysis/08_transmission_lines.py",
+      "demonstrations/04_advanced_analysis/09_digital_timing.py",
+      "demonstrations/05_domain_specific/01_automotive_diagnostics.py",
+      "demonstrations/05_domain_specific/02_emc_compliance.py",
+      "demonstrations/05_domain_specific/03_vintage_logic.py",
+      "demonstrations/05_domain_specific/04_side_channel.py",
+      "demonstrations/06_reverse_engineering/01_unknown_protocol.py",
+      "demonstrations/06_reverse_engineering/02_crc_recovery.py",
+      "demonstrations/06_reverse_engineering/03_state_machines.py",
+      "demonstrations/06_reverse_engineering/04_field_inference.py",
+      "demonstrations/06_reverse_engineering/05_pattern_discovery.py",
+      "demonstrations/06_reverse_engineering/06_wireshark_export.py",
+      "demonstrations/06_reverse_engineering/07_entropy_analysis.py",
+      "demonstrations/06_reverse_engineering/08_data_classification.py",
+      "demonstrations/06_reverse_engineering/09_signal_classification.py",
+      "demonstrations/06_reverse_engineering/10_anomaly_detection.py",
+      "demonstrations/07_advanced_api/01_pipeline_api.py",
+      "demonstrations/07_advanced_api/02_dsl_syntax.py",
+      "demonstrations/07_advanced_api/03_operators.py",
+      "demonstrations/07_advanced_api/04_composition.py",
+      "demonstrations/07_advanced_api/05_optimization.py",
+      "demonstrations/07_advanced_api/06_streaming_api.py",
+      "demonstrations/07_advanced_api/07_parallel_processing.py",
+      "demonstrations/07_advanced_api/08_gpu_acceleration.py",
+      "demonstrations/08_extensibility/01_plugin_basics.py",
+      "demonstrations/08_extensibility/02_custom_measurement.py",
+      "demonstrations/08_extensibility/03_custom_algorithm.py",
+      "demonstrations/08_extensibility/04_plugin_development.py",
+      "demonstrations/08_extensibility/05_measurement_registry.py",
+      "demonstrations/08_extensibility/06_plugin_templates.py",
+      "demonstrations/09_batch_processing/01_parallel_batch.py",
+      "demonstrations/09_batch_processing/02_result_aggregation.py",
+      "demonstrations/09_batch_processing/03_progress_tracking.py",
+      "demonstrations/09_batch_processing/04_optimization.py",
+      "demonstrations/10_sessions/01_analysis_session.py",
+      "demonstrations/10_sessions/02_can_session.py",
+      "demonstrations/10_sessions/03_blackbox_session.py",
+      "demonstrations/10_sessions/04_session_persistence.py",
+      "demonstrations/10_sessions/05_interactive_analysis.py",
+      "demonstrations/11_integration/01_cli_usage.py",
+      "demonstrations/11_integration/02_jupyter_notebooks.py",
+      "demonstrations/11_integration/03_llm_integration.py",
+      "demonstrations/11_integration/04_configuration_files.py",
+      "demonstrations/11_integration/05_hardware_integration.py",
+      "demonstrations/12_quality_tools/01_ensemble_methods.py",
+      "demonstrations/12_quality_tools/02_quality_scoring.py",
+      "demonstrations/12_quality_tools/03_warning_system.py",
+      "demonstrations/12_quality_tools/04_recommendations.py",
+      "demonstrations/13_guidance/01_smart_recommendations.py",
+      "demonstrations/13_guidance/02_analysis_wizards.py",
+      "demonstrations/13_guidance/03_onboarding_helpers.py",
+      "demonstrations/14_exploratory/01_unknown_signals.py",
+      "demonstrations/14_exploratory/02_fuzzy_matching.py",
+      "demonstrations/14_exploratory/03_signal_recovery.py",
+      "demonstrations/14_exploratory/04_exploratory_analysis.py",
+      "demonstrations/14_exploratory/05_advanced_search.py",
+      "demonstrations/15_export_visualization/01_export_formats.py",
+      "demonstrations/15_export_visualization/02_wavedrom_timing.py",
+      "demonstrations/15_export_visualization/03_wireshark_dissectors.py",
+      "demonstrations/15_export_visualization/04_report_generation.py",
+      "demonstrations/15_export_visualization/05_visualization_gallery.py",
+      "demonstrations/15_export_visualization/06_comprehensive_export.py",
+      "demonstrations/16_complete_workflows/01_unknown_device_re.py",
+      "demonstrations/16_complete_workflows/02_automotive_diagnostics.py",
+      "demonstrations/16_complete_workflows/03_emc_testing.py",
+      "demonstrations/16_complete_workflows/04_production_testing.py",
+      "demonstrations/16_complete_workflows/05_failure_analysis.py",
+      "demonstrations/16_complete_workflows/06_device_characterization.py",
+      "demonstrations/17_signal_generation/01_signal_builder_comprehensive.py",
+      "demonstrations/17_signal_generation/02_protocol_generation.py",
+      "demonstrations/17_signal_generation/03_impairment_simulation.py",
+      "demonstrations/18_comparison_testing/01_golden_reference.py",
+      "demonstrations/18_comparison_testing/02_limit_testing.py",
+      "demonstrations/18_comparison_testing/03_mask_testing.py",
+      "demonstrations/18_comparison_testing/04_regression_testing.py",
+      "demonstrations/19_standards_compliance/01_ieee_181.py",
+      "demonstrations/19_standards_compliance/02_ieee_1241.py",
+      "demonstrations/19_standards_compliance/03_ieee_1459.py",
+      "demonstrations/19_standards_compliance/04_ieee_2414.py"
+    ],
+    "phase_2_migrate_from_demos": [
+      {
+        "source": "demos/02_file_format_io/vcd_loader_demo.py",
+        "target": "demonstrations/01_data_loading/vcd_advanced_demo.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/03_custom_daq/simple_loader.py",
+        "target": "demonstrations/01_data_loading/custom_loader_simple.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/03_custom_daq/chunked_loader.py",
+        "target": "demonstrations/01_data_loading/custom_loader_chunked.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/03_custom_daq/optimal_streaming_loader.py",
+        "target": "demonstrations/01_data_loading/custom_loader_streaming.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/01_waveform_analysis/comprehensive_wfm_analysis.py",
+        "target": "demonstrations/02_basic_analysis/waveform_comprehensive.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/11_mixed_signal/comprehensive_mixed_signal_demo.py",
+        "target": "demonstrations/02_basic_analysis/mixed_signal.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/12_spectral_compliance/comprehensive_spectral_demo.py",
+        "target": "demonstrations/02_basic_analysis/spectral_compliance.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/04_serial_protocols/i2s_demo.py",
+        "target": "demonstrations/03_protocol_decoding/i2s.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/04_serial_protocols/jtag_demo.py",
+        "target": "demonstrations/03_protocol_decoding/jtag.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/04_serial_protocols/manchester_demo.py",
+        "target": "demonstrations/03_protocol_decoding/manchester.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/04_serial_protocols/onewire_demo.py",
+        "target": "demonstrations/03_protocol_decoding/onewire.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/04_serial_protocols/swd_demo.py",
+        "target": "demonstrations/03_protocol_decoding/swd.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/04_serial_protocols/usb_demo.py",
+        "target": "demonstrations/03_protocol_decoding/usb.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/05_protocol_decoding/comprehensive_protocol_demo.py",
+        "target": "demonstrations/03_protocol_decoding/protocol_comprehensive.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/06_udp_packet_analysis/comprehensive_udp_analysis.py",
+        "target": "demonstrations/03_protocol_decoding/udp_analysis.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/13_jitter_analysis/ddj_dcd_demo.py",
+        "target": "demonstrations/04_advanced_analysis/jitter_ddj_dcd.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/13_jitter_analysis/bathtub_curve_demo.py",
+        "target": "demonstrations/04_advanced_analysis/jitter_bathtub.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/14_power_analysis/dcdc_efficiency_demo.py",
+        "target": "demonstrations/04_advanced_analysis/power_dcdc.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/14_power_analysis/ripple_analysis_demo.py",
+        "target": "demonstrations/04_advanced_analysis/power_ripple.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/15_signal_integrity/tdr_impedance_demo.py",
+        "target": "demonstrations/04_advanced_analysis/signal_integrity_tdr.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/15_signal_integrity/setup_hold_timing_demo.py",
+        "target": "demonstrations/04_advanced_analysis/signal_integrity_timing.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/15_signal_integrity/sparams_demo.py",
+        "target": "demonstrations/04_advanced_analysis/signal_integrity_sparams.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/08_automotive_protocols/lin_demo.py",
+        "target": "demonstrations/05_domain_specific/automotive_lin.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/08_automotive_protocols/flexray_demo.py",
+        "target": "demonstrations/05_domain_specific/automotive_flexray.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/09_automotive/comprehensive_automotive_demo.py",
+        "target": "demonstrations/05_domain_specific/automotive_comprehensive.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/16_emc_compliance/comprehensive_emc_demo.py",
+        "target": "demonstrations/05_domain_specific/emc_comprehensive.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/10_timing_measurements/ieee_181_pulse_demo.py",
+        "target": "demonstrations/05_domain_specific/timing_ieee181.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/07_protocol_inference/crc_reverse_demo.py",
+        "target": "demonstrations/06_reverse_engineering/crc_reverse.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/07_protocol_inference/state_machine_learning.py",
+        "target": "demonstrations/06_reverse_engineering/state_machine_learning.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/07_protocol_inference/wireshark_dissector_demo.py",
+        "target": "demonstrations/06_reverse_engineering/wireshark_dissector.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/17_signal_reverse_engineering/comprehensive_re.py",
+        "target": "demonstrations/06_reverse_engineering/re_comprehensive.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/17_signal_reverse_engineering/exploratory_analysis.py",
+        "target": "demonstrations/06_reverse_engineering/re_exploratory.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/17_signal_reverse_engineering/reverse_engineer_tool.py",
+        "target": "demonstrations/06_reverse_engineering/re_tool.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/18_advanced_inference/bayesian_inference_demo.py",
+        "target": "demonstrations/06_reverse_engineering/inference_bayesian.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/18_advanced_inference/protocol_dsl_demo.py",
+        "target": "demonstrations/06_reverse_engineering/inference_dsl.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/18_advanced_inference/active_learning_demo.py",
+        "target": "demonstrations/06_reverse_engineering/inference_active_learning.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/01_waveform_analysis/all_output_formats.py",
+        "target": "demonstrations/15_export_visualization/all_export_formats.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/19_complete_workflows/automotive_full_workflow.py",
+        "target": "demonstrations/16_complete_workflows/automotive_workflow.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/19_complete_workflows/network_analysis_workflow.py",
+        "target": "demonstrations/16_complete_workflows/network_workflow.py",
+        "action": "copy_and_adapt"
+      },
+      {
+        "source": "demos/19_complete_workflows/unknown_signal_workflow.py",
+        "target": "demonstrations/16_complete_workflows/unknown_signal_workflow.py",
+        "action": "copy_and_adapt"
+      }
+    ],
+    "phase_3_merge_or_rename": [],
+    "phase_4_cleanup": [
+      "Delete all content from demos/ directory",
+      "Remove demos/common/",
+      "Remove demos/data_generation/",
+      "Update CONTRIBUTING.md to reference only demonstrations/",
+      "Update demonstrations/README.md with new structure"
+    ],
+    "summary": {
+      "total_categories": 20,
+      "files_from_demonstrations": 112,
+      "files_from_demos": 40,
+      "total_final_files": 152
+    }
+  }
+}

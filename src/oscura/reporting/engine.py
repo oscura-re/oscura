@@ -88,45 +88,369 @@ class AnalysisEngine:
         Raises:
             ValueError: If input type cannot be determined.
         """
-        # If path provided, detect from extension
+        # Try path-based detection first
         if input_path is not None:
-            ext = input_path.suffix.lower()
+            path_type = self._detect_from_extension(input_path)
+            if path_type is not None:
+                return path_type
 
-            # Waveform formats
-            if ext in {".wfm", ".csv", ".npz", ".h5", ".hdf5", ".wav", ".tdms"}:
-                return InputType.WAVEFORM
-            # Digital formats
-            elif ext in {".vcd", ".sr"}:
-                return InputType.DIGITAL
-            # Packet formats
-            elif ext in {".pcap", ".pcapng"}:
-                return InputType.PCAP
-            # Binary formats
-            elif ext in {".bin", ".raw"}:
-                return InputType.BINARY
-            # S-parameter/Touchstone formats
-            elif ext in {".s1p", ".s2p", ".s3p", ".s4p", ".s5p", ".s6p", ".s7p", ".s8p"}:
-                return InputType.SPARAMS
+        # Fallback to data object characteristics
+        data_type = self._detect_from_data_object(data)
+        if data_type is not None:
+            return data_type
 
-        # Detect from data object characteristics
-        if hasattr(data, "s_matrix") and hasattr(data, "frequencies"):
-            # SParameterData
+        raise ValueError("Unable to determine input type from path or data characteristics")
+
+    def _detect_from_extension(self, input_path: Path) -> InputType | None:
+        """Detect input type from file extension."""
+        ext = input_path.suffix.lower()
+
+        # Waveform formats
+        if ext in {".wfm", ".csv", ".npz", ".h5", ".hdf5", ".wav", ".tdms"}:
+            return InputType.WAVEFORM
+
+        # Digital formats
+        if ext in {".vcd", ".sr"}:
+            return InputType.DIGITAL
+
+        # Packet formats
+        if ext in {".pcap", ".pcapng"}:
+            return InputType.PCAP
+
+        # Binary formats
+        if ext in {".bin", ".raw"}:
+            return InputType.BINARY
+
+        # S-parameter/Touchstone formats
+        if ext in {".s1p", ".s2p", ".s3p", ".s4p", ".s5p", ".s6p", ".s7p", ".s8p"}:
             return InputType.SPARAMS
-        elif hasattr(data, "data") and hasattr(data, "metadata"):
-            # WaveformTrace or DigitalTrace
+
+        return None
+
+    def _detect_from_data_object(self, data: Any) -> InputType | None:
+        """Detect input type from data object characteristics."""
+        # SParameterData
+        if hasattr(data, "s_matrix") and hasattr(data, "frequencies"):
+            return InputType.SPARAMS
+
+        # WaveformTrace or DigitalTrace
+        if hasattr(data, "data") and hasattr(data, "metadata"):
             if hasattr(data.metadata, "is_digital") and data.metadata.is_digital:
                 return InputType.DIGITAL
             return InputType.WAVEFORM
-        elif isinstance(data, bytes | bytearray):
+
+        # Raw binary data
+        if isinstance(data, bytes | bytearray):
             return InputType.BINARY
-        elif isinstance(data, list):
-            # Assume packet list
+
+        # Packet list
+        if isinstance(data, list):
             return InputType.PACKETS
-        elif isinstance(data, np.ndarray):
-            # Assume waveform
+
+        # NumPy array (assume waveform)
+        if isinstance(data, np.ndarray):
             return InputType.WAVEFORM
 
-        raise ValueError("Unable to determine input type from path or data characteristics")
+        return None
+
+    def _initialize_engine(self, input_path: Path | None) -> None:
+        """Initialize engine state for analysis run.
+
+        Args:
+            input_path: Input file path (or None for in-memory data).
+        """
+        self._start_time = time.time()
+        self._input_path = input_path
+        default_sample_rate = self.config.default_sample_rate or 1e6
+        self._arg_preparer = ArgumentPreparer(
+            input_path=input_path, default_sample_rate=default_sample_rate
+        )
+
+    def _check_memory_and_adjust(self) -> None:
+        """Check available memory and adjust parallelism if needed."""
+        from oscura.core.memory_guard import check_memory_available
+
+        min_required_mb = 500
+        if not check_memory_available(min_required_mb):
+            logger.warning(
+                f"Low memory available (< {min_required_mb} MB). "
+                f"Reducing parallel workers to conserve memory."
+            )
+            self.config.parallel_domains = False
+
+    def _load_input_data(
+        self,
+        input_path: Path | None,
+        data: Any,
+        progress_callback: Callable[[ProgressInfo], None] | None,
+    ) -> Any:
+        """Load input data from file or validate in-memory data.
+
+        Args:
+            input_path: Path to input file (or None).
+            data: In-memory data (or None).
+            progress_callback: Progress callback.
+
+        Returns:
+            Loaded or provided data.
+
+        Raises:
+            FileNotFoundError: If file not found.
+        """
+        if progress_callback:
+            progress_callback(
+                ProgressInfo(
+                    phase="loading",
+                    domain=None,
+                    function=None,
+                    percent=0.0,
+                    message="Loading input data",
+                    elapsed_seconds=0.0,
+                    estimated_remaining_seconds=None,
+                )
+            )
+
+        if data is None:
+            if input_path is None or not input_path.exists():
+                raise FileNotFoundError(f"Input file not found: {input_path}")
+            from oscura.loaders import load
+
+            return load(input_path)
+        return data
+
+    def _report_detection(
+        self,
+        input_type: InputType,
+        progress_callback: Callable[[ProgressInfo], None] | None,
+    ) -> None:
+        """Report input type detection progress.
+
+        Args:
+            input_type: Detected input type.
+            progress_callback: Progress callback.
+        """
+        if progress_callback:
+            progress_callback(
+                ProgressInfo(
+                    phase="detecting",
+                    domain=None,
+                    function=None,
+                    percent=5.0,
+                    message=f"Detected input type: {input_type.value}",
+                    elapsed_seconds=time.time() - self._start_time,
+                    estimated_remaining_seconds=None,
+                )
+            )
+
+    def _plan_analysis_domains(
+        self,
+        input_type: InputType,
+        progress_callback: Callable[[ProgressInfo], None] | None,
+    ) -> list[AnalysisDomain]:
+        """Determine enabled analysis domains.
+
+        Args:
+            input_type: Input data type.
+            progress_callback: Progress callback.
+
+        Returns:
+            List of enabled domains.
+        """
+        applicable_domains = get_available_analyses(input_type)
+        enabled_domains = [d for d in applicable_domains if self.config.is_domain_enabled(d)]
+
+        if progress_callback:
+            progress_callback(
+                ProgressInfo(
+                    phase="planning",
+                    domain=None,
+                    function=None,
+                    percent=10.0,
+                    message=f"Planning analysis across {len(enabled_domains)} domains",
+                    elapsed_seconds=time.time() - self._start_time,
+                    estimated_remaining_seconds=None,
+                )
+            )
+        return enabled_domains
+
+    def _execute_domains_parallel(
+        self,
+        enabled_domains: list[AnalysisDomain],
+        data: Any,
+        progress_callback: Callable[[ProgressInfo], None] | None,
+    ) -> tuple[dict[AnalysisDomain, dict[str, Any]], list[AnalysisError]]:
+        """Execute analysis domains in parallel.
+
+        Args:
+            enabled_domains: List of domains to analyze.
+            data: Input data.
+            progress_callback: Progress callback.
+
+        Returns:
+            Tuple of (results dict, errors list).
+        """
+        import concurrent.futures
+
+        results: dict[AnalysisDomain, dict[str, Any]] = {}
+        errors: list[AnalysisError] = []
+        total_domains = len(enabled_domains)
+        max_workers = min(self.config.max_parallel_workers, len(enabled_domains))
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(self._execute_domain, domain, data): domain
+                for domain in enabled_domains
+            }
+
+            for completed, future in enumerate(concurrent.futures.as_completed(futures), 1):
+                domain = futures[future]
+                domain_percent = 10.0 + (completed / total_domains) * 80.0
+
+                if progress_callback:
+                    progress_callback(
+                        ProgressInfo(
+                            phase="analyzing",
+                            domain=domain,
+                            function=None,
+                            percent=domain_percent,
+                            message=f"Completed domain: {domain.value}",
+                            elapsed_seconds=time.time() - self._start_time,
+                            estimated_remaining_seconds=None,
+                        )
+                    )
+
+                self._handle_domain_future(future, domain, results, errors)
+
+        return results, errors
+
+    def _handle_domain_future(
+        self,
+        future: Any,
+        domain: AnalysisDomain,
+        results: dict[AnalysisDomain, dict[str, Any]],
+        errors: list[AnalysisError],
+    ) -> None:
+        """Handle completed domain future.
+
+        Args:
+            future: Completed future.
+            domain: Domain being analyzed.
+            results: Results accumulator.
+            errors: Errors accumulator.
+        """
+        import concurrent.futures
+
+        try:
+            timeout_seconds = self.config.timeout_per_analysis or 30.0
+            domain_results, domain_errors = future.result(timeout=timeout_seconds * 10)
+            if domain_results:
+                results[domain] = domain_results
+            errors.extend(domain_errors)
+        except concurrent.futures.TimeoutError:
+            logger.error(f"Domain {domain.value} exceeded timeout")
+            errors.append(
+                AnalysisError(
+                    domain=domain,
+                    function=f"{domain.value}.*",
+                    error_type="TimeoutError",
+                    error_message="Domain execution exceeded timeout",
+                    traceback=None,
+                    duration_ms=timeout_seconds * 10 * 1000,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Domain {domain.value} failed: {e}")
+            errors.append(
+                AnalysisError(
+                    domain=domain,
+                    function=f"{domain.value}.*",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    traceback=traceback.format_exc(),
+                    duration_ms=0.0,
+                )
+            )
+
+    def _execute_domains_sequential(
+        self,
+        enabled_domains: list[AnalysisDomain],
+        data: Any,
+        progress_callback: Callable[[ProgressInfo], None] | None,
+    ) -> tuple[dict[AnalysisDomain, dict[str, Any]], list[AnalysisError]]:
+        """Execute analysis domains sequentially.
+
+        Args:
+            enabled_domains: List of domains to analyze.
+            data: Input data.
+            progress_callback: Progress callback.
+
+        Returns:
+            Tuple of (results dict, errors list).
+        """
+        results: dict[AnalysisDomain, dict[str, Any]] = {}
+        errors: list[AnalysisError] = []
+        total_domains = len(enabled_domains)
+
+        for idx, domain in enumerate(enabled_domains):
+            domain_percent = 10.0 + (idx / total_domains) * 80.0
+
+            if progress_callback:
+                progress_callback(
+                    ProgressInfo(
+                        phase="analyzing",
+                        domain=domain,
+                        function=None,
+                        percent=domain_percent,
+                        message=f"Analyzing domain: {domain.value}",
+                        elapsed_seconds=time.time() - self._start_time,
+                        estimated_remaining_seconds=None,
+                    )
+                )
+
+            domain_results, domain_errors = self._execute_domain(domain, data)
+            if domain_results:
+                results[domain] = domain_results
+            errors.extend(domain_errors)
+
+        return results, errors
+
+    def _calculate_statistics(
+        self,
+        results: dict[AnalysisDomain, dict[str, Any]],
+        errors: list[AnalysisError],
+        enabled_domains: list[AnalysisDomain],
+        input_type: InputType,
+        total_duration: float,
+    ) -> dict[str, Any]:
+        """Calculate execution statistics.
+
+        Args:
+            results: Analysis results.
+            errors: Analysis errors.
+            enabled_domains: List of enabled domains.
+            input_type: Input data type.
+            total_duration: Total execution time.
+
+        Returns:
+            Statistics dictionary.
+        """
+        total_analyses = sum(len(dr) for dr in results.values())
+        successful_analyses = sum(
+            1 for dr in results.values() for v in dr.values() if not isinstance(v, Exception)
+        )
+        failed_analyses = len(errors)
+
+        return {
+            "input_type": input_type.value,
+            "total_domains": len(enabled_domains),
+            "total_analyses": total_analyses,
+            "successful_analyses": successful_analyses,
+            "failed_analyses": failed_analyses,
+            "success_rate": (successful_analyses / total_analyses * 100.0)
+            if total_analyses > 0
+            else 0.0,
+            "duration_seconds": total_duration,
+        }
 
     def run(
         self,
@@ -159,180 +483,25 @@ class AnalysisEngine:
         if input_path is None and data is None:
             raise ValueError("Must provide either input_path or data")
 
-        self._start_time = time.time()
-        self._input_path = input_path
-
-        # Initialize argument preparer with input path and default sample rate
-        default_sample_rate = self.config.default_sample_rate or 1e6
-        self._arg_preparer = ArgumentPreparer(
-            input_path=input_path, default_sample_rate=default_sample_rate
-        )
-
-        # Check available memory and adjust parallelism if needed
-        from oscura.core.memory_guard import check_memory_available
-
-        min_required_mb = 500  # Minimum 500MB needed for analysis
-        if not check_memory_available(min_required_mb):
-            logger.warning(
-                f"Low memory available (< {min_required_mb} MB). "
-                f"Reducing parallel workers to conserve memory."
-            )
-            # Temporarily reduce parallelism to conserve memory
-            self.config.parallel_domains = False
-
-        # Phase 1: Load data
-        if progress_callback:
-            progress_callback(
-                ProgressInfo(
-                    phase="loading",
-                    domain=None,
-                    function=None,
-                    percent=0.0,
-                    message="Loading input data",
-                    elapsed_seconds=0.0,
-                    estimated_remaining_seconds=None,
-                )
-            )
-
-        if data is None:
-            if input_path is None or not input_path.exists():
-                raise FileNotFoundError(f"Input file not found: {input_path}")
-
-            # Load using oscura loaders
-            from oscura.loaders import load
-
-            data = load(input_path)
-
-        # Phase 2: Detect input type
+        self._initialize_engine(input_path)
+        self._check_memory_and_adjust()
+        data = self._load_input_data(input_path, data, progress_callback)
         input_type = self.detect_input_type(input_path, data)
+        self._report_detection(input_type, progress_callback)
+        enabled_domains = self._plan_analysis_domains(input_type, progress_callback)
 
-        if progress_callback:
-            progress_callback(
-                ProgressInfo(
-                    phase="detecting",
-                    domain=None,
-                    function=None,
-                    percent=5.0,
-                    message=f"Detected input type: {input_type.value}",
-                    elapsed_seconds=time.time() - self._start_time,
-                    estimated_remaining_seconds=None,
-                )
-            )
-
-        # Phase 3: Determine applicable domains
-        applicable_domains = get_available_analyses(input_type)
-
-        # Filter by configuration
-        enabled_domains = [d for d in applicable_domains if self.config.is_domain_enabled(d)]
-
-        if progress_callback:
-            progress_callback(
-                ProgressInfo(
-                    phase="planning",
-                    domain=None,
-                    function=None,
-                    percent=10.0,
-                    message=f"Planning analysis across {len(enabled_domains)} domains",
-                    elapsed_seconds=time.time() - self._start_time,
-                    estimated_remaining_seconds=None,
-                )
-            )
-
-        # Phase 4: Execute analyses
-        results: dict[AnalysisDomain, dict[str, Any]] = {}
-        errors: list[AnalysisError] = []
-
-        total_domains = len(enabled_domains)
-
-        # Execute domains in parallel if enabled and multiple domains exist
+        # Execute analyses (parallel or sequential)
         if self.config.parallel_domains and len(enabled_domains) > 1:
-            import concurrent.futures
-
-            # Use ThreadPoolExecutor with bounded workers from config
-            max_workers = min(self.config.max_parallel_workers, len(enabled_domains))
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Submit all domain executions
-                futures = {
-                    executor.submit(self._execute_domain, domain, data): domain
-                    for domain in enabled_domains
-                }
-
-                # Process results as they complete
-                for completed, future in enumerate(concurrent.futures.as_completed(futures), 1):
-                    domain = futures[future]
-                    domain_percent = 10.0 + (completed / total_domains) * 80.0
-
-                    if progress_callback:
-                        progress_callback(
-                            ProgressInfo(
-                                phase="analyzing",
-                                domain=domain,
-                                function=None,
-                                percent=domain_percent,
-                                message=f"Completed domain: {domain.value}",
-                                elapsed_seconds=time.time() - self._start_time,
-                                estimated_remaining_seconds=None,
-                            )
-                        )
-
-                    try:
-                        # Retrieve result with timeout
-                        timeout_seconds = self.config.timeout_per_analysis or 30.0
-                        domain_results, domain_errors = future.result(timeout=timeout_seconds * 10)
-                        if domain_results:
-                            results[domain] = domain_results
-                        errors.extend(domain_errors)
-                    except concurrent.futures.TimeoutError:
-                        logger.error(f"Domain {domain.value} exceeded timeout")
-                        errors.append(
-                            AnalysisError(
-                                domain=domain,
-                                function=f"{domain.value}.*",
-                                error_type="TimeoutError",
-                                error_message="Domain execution exceeded timeout",
-                                traceback=None,
-                                duration_ms=timeout_seconds * 10 * 1000,
-                            )
-                        )
-                    except Exception as e:
-                        logger.error(f"Domain {domain.value} failed: {e}")
-                        errors.append(
-                            AnalysisError(
-                                domain=domain,
-                                function=f"{domain.value}.*",
-                                error_type=type(e).__name__,
-                                error_message=str(e),
-                                traceback=traceback.format_exc(),
-                                duration_ms=0.0,
-                            )
-                        )
+            results, errors = self._execute_domains_parallel(
+                enabled_domains, data, progress_callback
+            )
         else:
-            # Sequential fallback (existing code)
-            for idx, domain in enumerate(enabled_domains):
-                domain_percent = 10.0 + (idx / total_domains) * 80.0
+            results, errors = self._execute_domains_sequential(
+                enabled_domains, data, progress_callback
+            )
 
-                if progress_callback:
-                    progress_callback(
-                        ProgressInfo(
-                            phase="analyzing",
-                            domain=domain,
-                            function=None,
-                            percent=domain_percent,
-                            message=f"Analyzing domain: {domain.value}",
-                            elapsed_seconds=time.time() - self._start_time,
-                            estimated_remaining_seconds=None,
-                        )
-                    )
-
-                domain_results, domain_errors = self._execute_domain(domain, data)
-                if domain_results:
-                    results[domain] = domain_results
-                errors.extend(domain_errors)
-
-        # Phase 5: Complete
+        # Finalize
         total_duration = time.time() - self._start_time
-
         if progress_callback:
             progress_callback(
                 ProgressInfo(
@@ -346,24 +515,9 @@ class AnalysisEngine:
                 )
             )
 
-        # Calculate statistics
-        total_analyses = sum(len(dr) for dr in results.values())
-        successful_analyses = sum(
-            1 for dr in results.values() for v in dr.values() if not isinstance(v, Exception)
+        stats = self._calculate_statistics(
+            results, errors, enabled_domains, input_type, total_duration
         )
-        failed_analyses = len(errors)
-
-        stats = {
-            "input_type": input_type.value,
-            "total_domains": len(enabled_domains),
-            "total_analyses": total_analyses,
-            "successful_analyses": successful_analyses,
-            "failed_analyses": failed_analyses,
-            "success_rate": (successful_analyses / total_analyses * 100.0)
-            if total_analyses > 0
-            else 0.0,
-            "duration_seconds": total_duration,
-        }
 
         return {
             "results": results,
@@ -797,7 +951,7 @@ class AnalysisEngine:
             Result with quality score attached (if applicable).
         """
         try:
-            from oscura.quality import score_analysis_result
+            from oscura.validation.quality import score_analysis_result
 
             # Extract raw data array for quality assessment
             if hasattr(data, "data"):

@@ -37,10 +37,14 @@ Example:
 """
 
 __all__ = [
+    "UDSECU",
+    "UDSAnalyzer",
     "UDSDecoder",
+    "UDSMessage",
     "UDSNegativeResponse",
     "UDSService",
 ]
 
+from oscura.automotive.uds.analyzer import UDSECU, UDSAnalyzer, UDSMessage
 from oscura.automotive.uds.decoder import UDSDecoder
 from oscura.automotive.uds.models import UDSNegativeResponse, UDSService

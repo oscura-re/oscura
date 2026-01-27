@@ -7,7 +7,7 @@ compatibility.
 
 Example:
     >>> from oscura.sessions import GenericSession
-    >>> from oscura.acquisition import FileSource
+    >>> from oscura.hardware.acquisition import FileSource
     >>>
     >>> # Create generic session
     >>> session = GenericSession(name="Debug Session")
@@ -53,7 +53,7 @@ class GenericSession(AnalysisSession):
 
     Example:
         >>> from oscura.sessions import GenericSession
-        >>> from oscura.acquisition import FileSource
+        >>> from oscura.hardware.acquisition import FileSource
         >>>
         >>> session = GenericSession()
         >>> session.add_recording("test1", FileSource("capture1.wfm"))

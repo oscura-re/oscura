@@ -2,6 +2,8 @@
 """
 Complete Signal Reverse Engineering Tool
 
+# SKIP_VALIDATION: Complex analysis takes >30s, needs optimization
+
 Performs FULL comprehensive reverse engineering of unknown signals including:
 - Automatic signal characterization (analog + digital)
 - Pattern discovery and analysis

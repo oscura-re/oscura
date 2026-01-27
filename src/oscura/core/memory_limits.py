@@ -16,7 +16,7 @@ References:
 import warnings
 from typing import Any
 
-from oscura.config.memory import get_memory_config
+from oscura.core.config.memory import get_memory_config
 from oscura.utils.memory import estimate_memory
 
 
@@ -93,83 +93,123 @@ def apply_memory_limit(
         If parameters cannot be adjusted to fit memory, a warning is issued
         and the original parameters are returned.
     """
-    # Parse memory limit
-    limit_bytes = parse_memory_limit(max_memory)
+    limit_bytes = _get_effective_memory_limit(max_memory)
     if limit_bytes is None:
-        # Use global config
-        config = get_memory_config()
-        limit_bytes = config.max_memory
-        if limit_bytes is None:
-            # No limit, return params unchanged
-            return params
+        return params
 
     samples = int(samples)
-
-    # Estimate with current parameters
     current_estimate = estimate_memory(operation, samples, **params)
 
     if current_estimate.total <= limit_bytes:
-        # Already within limit
         return params
 
-    # Need to adjust parameters
-    adjusted_params = params.copy()
+    adjusted_params = _adjust_parameters_for_operation(
+        operation, samples, limit_bytes, params.copy()
+    )
+    _validate_adjusted_params(operation, samples, adjusted_params, limit_bytes)
 
+    return adjusted_params
+
+
+def _get_effective_memory_limit(max_memory: int | str | None) -> int | None:
+    """Get effective memory limit from parameter or config."""
+    limit_bytes = parse_memory_limit(max_memory)
+    if limit_bytes is not None:
+        return limit_bytes
+
+    config = get_memory_config()
+    return config.max_memory
+
+
+def _adjust_parameters_for_operation(
+    operation: str, samples: int, limit_bytes: int, params: dict[str, Any]
+) -> dict[str, Any]:
+    """Adjust parameters based on operation type."""
     if operation in ("fft", "psd"):
-        # Reduce nfft if specified
-        if "nfft" in adjusted_params:
-            # Try reducing nfft
-            original_nfft = adjusted_params["nfft"]
-            # Binary search for suitable nfft
-            nfft = _find_max_nfft(operation, samples, limit_bytes, **adjusted_params)
-            if nfft < original_nfft:
-                adjusted_params["nfft"] = nfft
-                warnings.warn(
-                    f"Reduced nfft from {original_nfft} to {nfft} to fit {limit_bytes / 1e6:.1f} MB limit",
-                    UserWarning,
-                    stacklevel=2,
-                )
+        return _adjust_fft_params(operation, samples, limit_bytes, params)
 
-    elif operation == "spectrogram":
-        # Adjust nperseg and/or nfft
-        original_nperseg = adjusted_params.get("nperseg", 256)
-        original_nfft = adjusted_params.get("nfft", original_nperseg)
+    if operation == "spectrogram":
+        return _adjust_spectrogram_params(samples, limit_bytes, params)
 
-        # Try reducing nperseg first
-        nperseg = _find_max_nperseg(samples, limit_bytes, noverlap=adjusted_params.get("noverlap"))
-        if nperseg < original_nperseg:
-            adjusted_params["nperseg"] = nperseg
-            # Adjust noverlap proportionally
-            if "noverlap" in adjusted_params:
-                overlap_ratio = adjusted_params["noverlap"] / original_nperseg
-                adjusted_params["noverlap"] = int(nperseg * overlap_ratio)
-            warnings.warn(
-                f"Reduced nperseg from {original_nperseg} to {nperseg} to fit {limit_bytes / 1e6:.1f} MB limit",
-                UserWarning,
-                stacklevel=2,
-            )
+    if operation == "eye_diagram":
+        return _adjust_eye_diagram_params(limit_bytes, params)
 
-        # Also reduce nfft if needed
-        if "nfft" in adjusted_params and adjusted_params["nfft"] > nperseg:
-            adjusted_params["nfft"] = nperseg
+    return params
 
-    elif operation == "eye_diagram":
-        # Reduce samples_per_ui or num_uis
-        if "num_uis" in adjusted_params:
-            original_num_uis = adjusted_params["num_uis"]
-            # Calculate max num_uis that fits
-            samples_per_ui = adjusted_params.get("samples_per_ui", 100)
-            max_num_uis = _find_max_num_uis(limit_bytes, samples_per_ui)
-            if max_num_uis < original_num_uis:
-                adjusted_params["num_uis"] = max_num_uis
-                warnings.warn(
-                    f"Reduced num_uis from {original_num_uis} to {max_num_uis} to fit {limit_bytes / 1e6:.1f} MB limit",
-                    UserWarning,
-                    stacklevel=2,
-                )
 
-    # Verify final estimate
-    final_estimate = estimate_memory(operation, samples, **adjusted_params)
+def _adjust_fft_params(
+    operation: str, samples: int, limit_bytes: int, params: dict[str, Any]
+) -> dict[str, Any]:
+    """Adjust FFT/PSD parameters to fit memory limit."""
+    if "nfft" not in params:
+        return params
+
+    original_nfft = params["nfft"]
+    nfft = _find_max_nfft(operation, samples, limit_bytes, **params)
+
+    if nfft < original_nfft:
+        params["nfft"] = nfft
+        warnings.warn(
+            f"Reduced nfft from {original_nfft} to {nfft} to fit {limit_bytes / 1e6:.1f} MB limit",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    return params
+
+
+def _adjust_spectrogram_params(
+    samples: int, limit_bytes: int, params: dict[str, Any]
+) -> dict[str, Any]:
+    """Adjust spectrogram parameters to fit memory limit."""
+    original_nperseg = params.get("nperseg", 256)
+    nperseg = _find_max_nperseg(samples, limit_bytes, noverlap=params.get("noverlap"))
+
+    if nperseg < original_nperseg:
+        params["nperseg"] = nperseg
+
+        if "noverlap" in params:
+            overlap_ratio = params["noverlap"] / original_nperseg
+            params["noverlap"] = int(nperseg * overlap_ratio)
+
+        warnings.warn(
+            f"Reduced nperseg from {original_nperseg} to {nperseg} to fit {limit_bytes / 1e6:.1f} MB limit",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    if "nfft" in params and params["nfft"] > nperseg:
+        params["nfft"] = nperseg
+
+    return params
+
+
+def _adjust_eye_diagram_params(limit_bytes: int, params: dict[str, Any]) -> dict[str, Any]:
+    """Adjust eye diagram parameters to fit memory limit."""
+    if "num_uis" not in params:
+        return params
+
+    original_num_uis = params["num_uis"]
+    samples_per_ui = params.get("samples_per_ui", 100)
+    max_num_uis = _find_max_num_uis(limit_bytes, samples_per_ui)
+
+    if max_num_uis < original_num_uis:
+        params["num_uis"] = max_num_uis
+        warnings.warn(
+            f"Reduced num_uis from {original_num_uis} to {max_num_uis} to fit {limit_bytes / 1e6:.1f} MB limit",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    return params
+
+
+def _validate_adjusted_params(
+    operation: str, samples: int, params: dict[str, Any], limit_bytes: int
+) -> None:
+    """Verify that adjusted parameters fit within memory limit."""
+    final_estimate = estimate_memory(operation, samples, **params)
+
     if final_estimate.total > limit_bytes:
         warnings.warn(
             f"Could not adjust parameters to fit {limit_bytes / 1e6:.1f} MB limit. "
@@ -178,8 +218,6 @@ def apply_memory_limit(
             UserWarning,
             stacklevel=2,
         )
-
-    return adjusted_params
 
 
 def _find_max_nfft(operation: str, samples: int, limit_bytes: int, **params: Any) -> int:

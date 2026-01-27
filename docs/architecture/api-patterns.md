@@ -1,8 +1,8 @@
 # Oscura API Patterns
 
-**Version**: 0.5.1 (Phase 0)
-**Status**: Foundation Architecture
-**Last Updated**: 2026-01-20
+**Version**: 0.6.0
+**Status**: Production Release
+**Last Updated**: 2026-01-25
 
 This document provides a decision framework for choosing the right API pattern in Oscura. Use this guide when adding new features or refactoring existing code.
 
@@ -15,7 +15,7 @@ This document provides a decision framework for choosing the right API pattern i
 | One-shot measurement    | Function                | `rise_time(trace)`               |
 | Data transformation     | Function → Trace        | `low_pass(trace, cutoff=1e6)`    |
 | Protocol decoding       | Decoder class           | `UARTDecoder().decode(trace)`    |
-| Data acquisition        | Source subclass         | `FileSource("capture.wfm")`      |
+| Data acquisition        | Source subclass         | `osc.load("capture.wfm")`      |
 | Interactive exploration | Session subclass        | `CANSession()`                   |
 | Automated workflow      | Workflow function (DAG) | `reverse_engineer_signal(trace)` |
 | Sequential composition  | Pipeline                | `low_pass(1e6) \| decimate(4)`   |
@@ -94,7 +94,7 @@ class Source(Protocol):
 
 ```python
 # File acquisition
-source = FileSource("capture.wfm")
+source = osc.load("capture.wfm")
 trace = source.read()
 
 # Hardware acquisition (Phase 2)
@@ -175,8 +175,8 @@ class CANSession(AnalysisSession):
 
 # Usage
 session = CANSession(name="Vehicle Debug")
-session.add_recording("baseline", FileSource("idle.blf"))
-session.add_recording("active", FileSource("running.blf"))
+session.add_recording("baseline", osc.load("idle.blf"))
+session.add_recording("active", osc.load("running.blf"))
 
 # Compare recordings
 diff = session.compare("baseline", "active")
@@ -254,10 +254,10 @@ def reverse_engineer_signal(
 
 # Usage - one function call
 result = reverse_engineer_signal(
-    trace=FileSource("unknown_protocol.wfm").read(),
+    trace=osc.load("unknown_protocol.wfm").read(),
     stimulus_recordings=[
-        ("baseline", FileSource("idle.wfm")),
-        ("button_press", FileSource("pressed.wfm")),
+        ("baseline", osc.load("idle.wfm")),
+        ("button_press", osc.load("pressed.wfm")),
     ],
 )
 
@@ -484,7 +484,7 @@ metrics = quick_spectral(trace, fundamental=1000)
 
 ```python
 # Use Source for explicit control
-source = FileSource("capture.wfm")
+source = osc.load("capture.wfm")
 trace = source.read()
 # Custom analysis with primitives
 freq, mag = fft(trace, nfft=8192, window="hann")
@@ -498,8 +498,8 @@ thd_value = thd(trace, fundamental=1000)
 ```python
 # Use Session for multi-step interactive work
 session = CANSession(name="ECU Debug")
-session.add_recording("baseline", FileSource("idle.blf"))
-session.add_recording("throttle", FileSource("throttle.blf"))
+session.add_recording("baseline", osc.load("idle.blf"))
+session.add_recording("throttle", osc.load("throttle.blf"))
 
 # Explore interactively
 diff = session.compare("baseline", "throttle")
@@ -517,10 +517,10 @@ session.export_dbc("ecu.dbc")
 ```python
 # Use Workflow for automation
 result = discover_can_signals(
-    main=FileSource("capture.blf"),
+    main=osc.load("capture.blf"),
     comparisons=[
-        ("baseline", FileSource("idle.blf")),
-        ("active", FileSource("running.blf")),
+        ("baseline", osc.load("idle.blf")),
+        ("active", osc.load("running.blf")),
     ],
 )
 
@@ -553,9 +553,9 @@ conditioned2 = conditioning(trace2)
 
 ```python
 session = BlackBoxSession()
-session.add_recording("baseline", FileSource("idle.wfm"))
-session.add_recording("stim1", FileSource("button1.wfm"))
-session.add_recording("stim2", FileSource("button2.wfm"))
+session.add_recording("baseline", osc.load("idle.wfm"))
+session.add_recording("stim1", osc.load("button1.wfm"))
+session.add_recording("stim2", osc.load("button2.wfm"))
 
 # Explore differences
 diff1 = session.compare("baseline", "stim1")
@@ -566,7 +566,7 @@ spec = session.generate_protocol_spec()
 print(spec.fields)
 
 # Refine and iterate
-session.add_recording("stim3", FileSource("button3.wfm"))
+session.add_recording("stim3", osc.load("button3.wfm"))
 refined_spec = session.generate_protocol_spec()
 ```
 
@@ -575,11 +575,11 @@ refined_spec = session.generate_protocol_spec()
 ```python
 # Workflow for reproducible analysis
 result = reverse_engineer_signal(
-    trace=FileSource("unknown.wfm").read(),
+    trace=osc.load("unknown.wfm").read(),
     stimulus_recordings=[
-        ("idle", FileSource("idle.wfm")),
-        ("button1", FileSource("btn1.wfm")),
-        ("button2", FileSource("btn2.wfm")),
+        ("idle", osc.load("idle.wfm")),
+        ("button1", osc.load("btn1.wfm")),
+        ("button2", osc.load("btn2.wfm")),
     ],
 )
 

@@ -143,10 +143,8 @@ class TestI2CDecoderSimple:
         scl = DigitalTrace(data=np.ones(100, dtype=bool), metadata=metadata)
 
         # Missing SDA should raise error or return empty
-        try:
+        with pytest.raises((TypeError, KeyError, AttributeError)):
             list(decoder.decode(scl=scl, sample_rate=sample_rate))
-        except (TypeError, KeyError, AttributeError):
-            pass  # Expected - missing required channel
 
     def test_decode_empty_signals(self, sample_rate: float) -> None:
         """Test decode with empty signals."""

@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from oscura.streaming.realtime import (
+from oscura.utils.streaming.realtime import (
     RealtimeAnalyzer,
     RealtimeBuffer,
     RealtimeConfig,

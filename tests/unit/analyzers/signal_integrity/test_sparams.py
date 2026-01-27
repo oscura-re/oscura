@@ -179,7 +179,7 @@ class TestTouchstoneLoading:
 
     def test_load_touchstone_s2p(self, tmp_path: Path) -> None:
         """Test loading a valid S2P Touchstone file."""
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
+        from oscura.loaders import load_touchstone
 
         # Create a simple S2P file
         s2p_content = """! Simple test S2P file
@@ -201,7 +201,7 @@ class TestTouchstoneLoading:
 
     def test_load_touchstone_ma_format(self, tmp_path: Path) -> None:
         """Test loading Touchstone file with MA (magnitude/angle) format."""
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
+        from oscura.loaders import load_touchstone
 
         # Create S2P file with MA format
         s2p_content = """! Test S2P file with MA format
@@ -221,7 +221,7 @@ class TestTouchstoneLoading:
 
     def test_load_touchstone_db_format(self, tmp_path: Path) -> None:
         """Test loading Touchstone file with dB format."""
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
+        from oscura.loaders import load_touchstone
 
         s2p_content = """! Test S2P file with dB format
 # GHz S DB R 50
@@ -241,16 +241,16 @@ class TestTouchstoneLoading:
 
     def test_load_touchstone_file_not_found(self) -> None:
         """Test that missing file raises LoaderError."""
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
         from oscura.core.exceptions import LoaderError
+        from oscura.loaders import load_touchstone
 
         with pytest.raises(LoaderError, match="File not found"):
             load_touchstone("/nonexistent/path/file.s2p")
 
     def test_load_touchstone_unsupported_extension(self, tmp_path: Path) -> None:
         """Test that unsupported extension raises FormatError."""
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
         from oscura.core.exceptions import FormatError
+        from oscura.loaders import load_touchstone
 
         bad_path = tmp_path / "test.txt"
         bad_path.write_text("not a touchstone file")
@@ -260,7 +260,7 @@ class TestTouchstoneLoading:
 
     def test_load_touchstone_s1p(self, tmp_path: Path) -> None:
         """Test loading 1-port Touchstone file."""
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
+        from oscura.loaders import load_touchstone
 
         s1p_content = """! 1-port test file
 # GHz S RI R 50
@@ -277,7 +277,7 @@ class TestTouchstoneLoading:
 
     def test_load_touchstone_preserves_comments(self, tmp_path: Path) -> None:
         """Test that comments are preserved from Touchstone file."""
-        from oscura.analyzers.signal_integrity.sparams import load_touchstone
+        from oscura.loaders import load_touchstone
 
         s2p_content = """! Comment line 1
 ! Comment line 2

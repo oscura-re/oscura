@@ -10,6 +10,10 @@ __all__ = [
     "CANMessageList",
     "CANSession",
     "CANStateMachine",
+    "DBCGenerator",
+    "DBCMessage",
+    "DBCNode",
+    "DBCSignal",
     "DecodedSignal",
     "FrequencyChange",
     "MessageAnalysis",
@@ -24,6 +28,12 @@ __all__ = [
 ]
 
 try:
+    from oscura.automotive.can.dbc_generator import (
+        DBCGenerator,
+        DBCMessage,
+        DBCNode,
+        DBCSignal,
+    )
     from oscura.automotive.can.models import (
         CANMessage,
         CANMessageList,

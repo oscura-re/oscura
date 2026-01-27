@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from oscura.config.pipeline import (
+from oscura.core.config.pipeline import (
     Pipeline,
     PipelineDefinition,
     PipelineExecutionError,
@@ -296,7 +296,7 @@ steps:
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             definition = load_pipeline(pipeline_file)
 
         assert definition.name == "test_pipeline"
@@ -316,7 +316,7 @@ pipeline:
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             definition = load_pipeline(pipeline_file)
 
         assert definition.name == "nested_pipeline"
@@ -353,7 +353,7 @@ steps:
 
         variables = {"INPUT_FILE": "data.bin", "SAMPLE_RATE": 1000000}
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             definition = load_pipeline(pipeline_file, variables=variables)
 
         # Variables are substituted in the YAML content, not in step params directly
@@ -372,7 +372,7 @@ steps: []
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema") as mock_validate:
+        with patch("oscura.core.config.pipeline.validate_against_schema") as mock_validate:
             mock_validate.side_effect = Exception("Schema validation failed")
 
             with pytest.raises(PipelineValidationError, match="validation failed"):
@@ -394,7 +394,7 @@ parallel_groups:
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             definition = load_pipeline(pipeline_file)
 
         assert len(definition.parallel_groups) == 1
@@ -412,7 +412,7 @@ steps:
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             definition = load_pipeline(pipeline_file)
 
         assert definition.source_file is not None
@@ -600,7 +600,7 @@ steps:
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             pipeline = Pipeline.load(pipeline_file)
 
         assert pipeline.definition.name == "loaded_pipeline"
@@ -1081,7 +1081,7 @@ steps:
             steps=[PipelineStep(name="main_step", type="analysis.process")],
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             result = resolve_includes(main_definition, tmp_path)
 
         # Should have steps from both pipelines
@@ -1106,7 +1106,7 @@ steps:
             steps=[],
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             result = resolve_includes(main_definition, tmp_path, namespace_isolation=True)
 
         # Step should be namespaced
@@ -1136,7 +1136,7 @@ steps: []
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             definition = load_pipeline(file_a)
 
             # Error message varies based on nesting, just check it raises
@@ -1157,7 +1157,7 @@ steps: []
 """
             )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             definition = load_pipeline(tmp_path / "level0.yaml")
 
             # The error is wrapped in nested exceptions, so just check it raises
@@ -1441,7 +1441,7 @@ steps:
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             pipeline = Pipeline.load(pipeline_file)
 
             # Register handlers
@@ -1489,7 +1489,7 @@ pipeline:
 """
         )
 
-        with patch("oscura.config.pipeline.validate_against_schema"):
+        with patch("oscura.core.config.pipeline.validate_against_schema"):
             template = PipelineTemplate.load(template_file)
             pipeline = template.instantiate(protocol="uart")
 

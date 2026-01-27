@@ -367,3 +367,238 @@ class TestLoadersBinaryIntegration:
             )
             expected = data[i * chunk_size : (i + 1) * chunk_size]
             np.testing.assert_array_almost_equal(trace.data, expected)
+
+
+class TestMemoryMappedIO:
+    """Test memory-mapped I/O optimizations for large file loading."""
+
+    def test_mmap_basic_load(self, tmp_path: Path) -> None:
+        """Test basic memory-mapped file loading.
+
+        Validates:
+        - Memory-mapped loading produces correct data
+        - Results match non-mmap loading
+        - No data corruption
+        """
+        data = np.arange(1000, dtype=np.float32)
+        file_path = tmp_path / "test_mmap.bin"
+        data.tofile(file_path)
+
+        # Load with and without mmap
+        trace_standard = load_binary(file_path, dtype="float32", sample_rate=1e6, mmap_mode=False)
+        trace_mmap = load_binary(file_path, dtype="float32", sample_rate=1e6, mmap_mode=True)
+
+        # Results should be identical
+        np.testing.assert_array_almost_equal(trace_standard.data, trace_mmap.data)
+        assert trace_standard.metadata.sample_rate == trace_mmap.metadata.sample_rate
+
+    def test_mmap_with_offset(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading with offset.
+
+        Validates:
+        - Offset calculations correct for mmap
+        - Byte offset matches sample offset
+        """
+        data = np.arange(1000, dtype=np.float64)
+        file_path = tmp_path / "test_mmap_offset.bin"
+        data.tofile(file_path)
+
+        offset = 100
+        trace = load_binary(
+            file_path, dtype="float64", sample_rate=1e6, offset=offset, mmap_mode=True
+        )
+
+        expected = data[offset:]
+        np.testing.assert_array_almost_equal(trace.data, expected)
+
+    def test_mmap_with_count(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading with count limit.
+
+        Validates:
+        - Count parameter works with mmap
+        - Correct number of samples loaded
+        """
+        data = np.arange(1000, dtype=np.float32)
+        file_path = tmp_path / "test_mmap_count.bin"
+        data.tofile(file_path)
+
+        count = 200
+        trace = load_binary(
+            file_path, dtype="float32", sample_rate=1e6, count=count, mmap_mode=True
+        )
+
+        expected = data[:count]
+        assert len(trace.data) == count
+        np.testing.assert_array_almost_equal(trace.data, expected)
+
+    def test_mmap_with_offset_and_count(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading with both offset and count.
+
+        Validates:
+        - Combined offset and count work correctly
+        - Byte calculations are accurate
+        """
+        data = np.arange(1000, dtype=np.float64)
+        file_path = tmp_path / "test_mmap_offset_count.bin"
+        data.tofile(file_path)
+
+        offset = 100
+        count = 200
+        trace = load_binary(
+            file_path,
+            dtype="float64",
+            sample_rate=1e6,
+            offset=offset,
+            count=count,
+            mmap_mode=True,
+        )
+
+        expected = data[offset : offset + count]
+        assert len(trace.data) == count
+        np.testing.assert_array_almost_equal(trace.data, expected)
+
+    def test_mmap_large_file(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading of large file.
+
+        Validates:
+        - Can handle multi-MB files efficiently
+        - No memory errors
+        - Results are correct
+        """
+        # Create 5 MB file (~1.25M float32 samples)
+        rng = np.random.default_rng(42)
+        data = rng.standard_normal(1_250_000).astype(np.float32)
+        file_path = tmp_path / "large_mmap.bin"
+        data.tofile(file_path)
+
+        # Load with mmap
+        trace = load_binary(file_path, dtype="float32", sample_rate=1e9, mmap_mode=True)
+
+        # Verify correct length and no NaN/Inf
+        assert len(trace.data) == len(data)
+        assert not np.any(np.isnan(trace.data))
+        assert not np.any(np.isinf(trace.data))
+
+        # Spot check some values
+        np.testing.assert_array_almost_equal(trace.data[:100], data[:100])
+        np.testing.assert_array_almost_equal(trace.data[-100:], data[-100:])
+
+    def test_mmap_multiple_dtypes(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading with different data types.
+
+        Validates:
+        - Correct byte offset calculations for different dtypes
+        - Type conversion works correctly
+        - No precision loss for supported types
+        """
+        for dtype in [np.float32, np.float64, np.int16, np.uint8]:
+            rng = np.random.default_rng(42)
+            if dtype in [np.int16, np.uint8]:
+                data = rng.integers(0, 100, size=1000, dtype=dtype)
+            else:
+                data = rng.standard_normal(1000).astype(dtype)
+
+            file_path = tmp_path / f"test_mmap_{dtype.__name__}.bin"
+            data.tofile(file_path)
+
+            trace = load_binary(
+                file_path,
+                dtype=dtype.__name__,
+                sample_rate=1e6,
+                mmap_mode=True,
+            )
+
+            expected = data.astype(np.float64)
+            np.testing.assert_array_almost_equal(trace.data, expected, decimal=6)
+
+    def test_mmap_multichannel(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading with multi-channel data.
+
+        Validates:
+        - Multi-channel deinterleaving works with mmap
+        - Each channel gets correct data
+        """
+        # Create 2-channel interleaved data
+        ch0 = np.arange(0, 1000, dtype=np.float32)
+        ch1 = np.arange(1000, 2000, dtype=np.float32)
+        interleaved = np.empty(2000, dtype=np.float32)
+        interleaved[0::2] = ch0
+        interleaved[1::2] = ch1
+
+        file_path = tmp_path / "test_mmap_2ch.bin"
+        interleaved.tofile(file_path)
+
+        # Load both channels with mmap
+        trace0 = load_binary(
+            file_path,
+            dtype="float32",
+            sample_rate=1e6,
+            channels=2,
+            channel=0,
+            mmap_mode=True,
+        )
+        trace1 = load_binary(
+            file_path,
+            dtype="float32",
+            sample_rate=1e6,
+            channels=2,
+            channel=1,
+            mmap_mode=True,
+        )
+
+        np.testing.assert_array_almost_equal(trace0.data, ch0)
+        np.testing.assert_array_almost_equal(trace1.data, ch1)
+
+    def test_mmap_partial_last_chunk(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading with non-aligned file size.
+
+        Validates:
+        - Handles files not evenly divisible by sample size
+        - No truncation errors
+        """
+        # Create file with 1005 samples (not a round number)
+        data = np.arange(1005, dtype=np.float32)
+        file_path = tmp_path / "test_mmap_partial.bin"
+        data.tofile(file_path)
+
+        trace = load_binary(file_path, dtype="float32", sample_rate=1e6, mmap_mode=True)
+
+        assert len(trace.data) == 1005
+        np.testing.assert_array_almost_equal(trace.data, data)
+
+    def test_mmap_empty_file(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading of empty file.
+
+        Validates:
+        - Handles empty files gracefully
+        - No crashes or errors
+        """
+        file_path = tmp_path / "empty_mmap.bin"
+        file_path.touch()
+
+        trace = load_binary(file_path, dtype="float32", sample_rate=1e6, mmap_mode=True)
+
+        assert len(trace.data) == 0
+
+    def test_mmap_count_exceeds_file_size(self, tmp_path: Path) -> None:
+        """Test memory-mapped loading when count exceeds file size.
+
+        Validates:
+        - Gracefully handles count > available samples
+        - Returns all available data
+        """
+        data = np.arange(100, dtype=np.float32)
+        file_path = tmp_path / "test_mmap_exceed.bin"
+        data.tofile(file_path)
+
+        trace = load_binary(
+            file_path,
+            dtype="float32",
+            sample_rate=1e6,
+            count=1000,  # Request more than available
+            mmap_mode=True,
+        )
+
+        # Should return all available data
+        assert len(trace.data) == 100
+        np.testing.assert_array_almost_equal(trace.data, data)

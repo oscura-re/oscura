@@ -94,6 +94,137 @@ class DataQuality:
     improvement_suggestions: list[dict[str, str]] = field(default_factory=list)
 
 
+def _extract_trace_data(
+    trace: WaveformTrace | DigitalTrace,
+) -> tuple[NDArray[np.floating[Any]], float, bool]:
+    """Extract data array, sample rate, and type from trace.
+
+    Args:
+        trace: Input trace.
+
+    Returns:
+        Tuple of (data, sample_rate, is_analog).
+
+    Raises:
+        ValueError: If trace is empty.
+    """
+    if len(trace) == 0:
+        raise ValueError("Cannot assess quality of empty trace")
+
+    if isinstance(trace, WaveformTrace):
+        return trace.data, trace.metadata.sample_rate, True
+    else:
+        return trace.data.astype(np.float64), trace.metadata.sample_rate, False
+
+
+def _prepare_quality_assessment(
+    data: NDArray[np.floating[Any]], protocol_params: dict[str, Any] | None
+) -> tuple[dict[str, float], float, dict[str, Any]]:
+    """Prepare data for quality assessment.
+
+    Args:
+        data: Signal data array.
+        protocol_params: Optional protocol parameters.
+
+    Returns:
+        Tuple of (stats, voltage_swing, protocol_params).
+    """
+    stats = basic_stats(data)
+    voltage_swing = stats["max"] - stats["min"]
+    return stats, voltage_swing, protocol_params or {}
+
+
+def _assess_all_quality_metrics(
+    data: NDArray[np.floating[Any]],
+    sample_rate: float,
+    voltage_swing: float,
+    stats: dict[str, float],
+    is_analog: bool,
+    scenario: AnalysisScenario,
+    protocol_params: dict[str, Any],
+) -> list[QualityMetric]:
+    """Assess all quality metrics.
+
+    Args:
+        data: Signal data array.
+        sample_rate: Sample rate in Hz.
+        voltage_swing: Peak-to-peak voltage.
+        stats: Basic statistics.
+        is_analog: Whether signal is analog.
+        scenario: Analysis scenario.
+        protocol_params: Protocol parameters.
+
+    Returns:
+        List of quality metrics.
+    """
+    return [
+        _assess_sample_rate(sample_rate, data, stats, scenario, protocol_params),
+        _assess_resolution(data, voltage_swing, stats, is_analog, scenario),
+        _assess_duration(len(data), sample_rate, data, scenario, protocol_params),
+        _assess_noise(data, voltage_swing, stats, scenario),
+    ]
+
+
+def _determine_overall_quality_status(
+    metrics: list[QualityMetric], strict_mode: bool
+) -> QualityStatus:
+    """Determine overall quality status from individual metrics.
+
+    Args:
+        metrics: List of quality metrics.
+        strict_mode: Whether to fail on warnings.
+
+    Returns:
+        Overall quality status.
+    """
+    failed = [m for m in metrics if m.status == "FAIL"]
+    warnings = [m for m in metrics if m.status == "WARNING"]
+
+    if failed or (strict_mode and warnings):
+        return "FAIL"
+    elif warnings:
+        return "WARNING"
+    else:
+        return "PASS"
+
+
+def _calculate_quality_confidence(metrics: list[QualityMetric]) -> float:
+    """Calculate quality confidence score.
+
+    Args:
+        metrics: List of quality metrics.
+
+    Returns:
+        Confidence score (0.5-1.0).
+    """
+    passed_count = sum(1 for m in metrics if m.passed)
+    return round(0.5 + (passed_count / len(metrics)) * 0.5, 2)
+
+
+def _generate_improvement_suggestions(metrics: list[QualityMetric]) -> list[dict[str, str]]:
+    """Generate improvement suggestions from failed metrics.
+
+    Args:
+        metrics: List of quality metrics.
+
+    Returns:
+        List of suggestion dictionaries.
+    """
+    suggestions = []
+    for metric in metrics:
+        if not metric.passed and metric.recommendation:
+            suggestions.append(
+                {
+                    "action": metric.recommendation,
+                    "expected_benefit": f"Improves {metric.name.lower()} to required level",
+                    "difficulty_level": "Easy"
+                    if "setting" in metric.recommendation.lower()
+                    else "Medium",
+                }
+            )
+    return suggestions
+
+
 def assess_data_quality(
     trace: WaveformTrace | DigitalTrace,
     *,
@@ -129,75 +260,19 @@ def assess_data_quality(
     References:
         DISC-009: Data Quality Assessment
     """
-    # Validate input
-    if len(trace) == 0:
-        raise ValueError("Cannot assess quality of empty trace")
+    # Setup: extract and prepare signal data
+    data, sample_rate, is_analog = _extract_trace_data(trace)
+    stats, voltage_swing, protocol_params = _prepare_quality_assessment(data, protocol_params)
 
-    # Get signal data
-    if isinstance(trace, WaveformTrace):
-        data = trace.data
-        sample_rate = trace.metadata.sample_rate
-        is_analog = True
-    else:
-        data = trace.data.astype(np.float64)
-        sample_rate = trace.metadata.sample_rate
-        is_analog = False
+    # Processing: assess individual metrics
+    metrics = _assess_all_quality_metrics(
+        data, sample_rate, voltage_swing, stats, is_analog, scenario, protocol_params
+    )
 
-    # Compute basic statistics
-    stats = basic_stats(data)
-    voltage_swing = stats["max"] - stats["min"]
-
-    # Protocol parameters
-    if protocol_params is None:
-        protocol_params = {}
-
-    # Assess individual metrics
-    metrics: list[QualityMetric] = []
-
-    # 1. Sample Rate Assessment
-    sample_rate_metric = _assess_sample_rate(sample_rate, data, stats, scenario, protocol_params)
-    metrics.append(sample_rate_metric)
-
-    # 2. Resolution Assessment
-    resolution_metric = _assess_resolution(data, voltage_swing, stats, is_analog, scenario)
-    metrics.append(resolution_metric)
-
-    # 3. Duration Assessment
-    duration_metric = _assess_duration(len(data), sample_rate, data, scenario, protocol_params)
-    metrics.append(duration_metric)
-
-    # 4. Noise Level Assessment
-    noise_metric = _assess_noise(data, voltage_swing, stats, scenario)
-    metrics.append(noise_metric)
-
-    # Determine overall status
-    failed_metrics = [m for m in metrics if m.status == "FAIL"]
-    warning_metrics = [m for m in metrics if m.status == "WARNING"]
-
-    if failed_metrics or (strict_mode and warning_metrics):
-        overall_status: QualityStatus = "FAIL"
-    elif warning_metrics:
-        overall_status = "WARNING"
-    else:
-        overall_status = "PASS"
-
-    # Calculate confidence (higher when more metrics pass)
-    passed_count = sum(1 for m in metrics if m.passed)
-    confidence = round(0.5 + (passed_count / len(metrics)) * 0.5, 2)
-
-    # Generate improvement suggestions
-    suggestions = []
-    for metric in metrics:
-        if not metric.passed and metric.recommendation:
-            suggestions.append(
-                {
-                    "action": metric.recommendation,
-                    "expected_benefit": f"Improves {metric.name.lower()} to required level",
-                    "difficulty_level": "Easy"
-                    if "setting" in metric.recommendation.lower()
-                    else "Medium",
-                }
-            )
+    # Formatting: determine overall status and generate report
+    overall_status = _determine_overall_quality_status(metrics, strict_mode)
+    confidence = _calculate_quality_confidence(metrics)
+    suggestions = _generate_improvement_suggestions(metrics)
 
     return DataQuality(
         status=overall_status,
@@ -272,7 +347,10 @@ def _assess_sample_rate(
         status = "WARNING"
         passed = False
         explanation = f"Sample rate is {abs(margin_percent):.0f}% below recommended"
-        recommendation = f"Increase sample rate to {required_rate / 1e6:.0f} MS/s (currently {sample_rate / 1e6:.0f} MS/s)"
+        recommendation = (
+            f"Increase sample rate to {required_rate / 1e6:.0f} MS/s "
+            f"(currently {sample_rate / 1e6:.0f} MS/s)"
+        )
     else:
         status = "FAIL"
         passed = False
@@ -423,8 +501,14 @@ def _assess_duration(
     elif num_periods >= required_periods * 0.5:
         status = "WARNING"
         passed = False
-        explanation = f"Captured only {num_periods:.0f} signal periods, recommended minimum is {required_periods}"
-        recommendation = f"Increase capture duration to at least {required_duration * 1e3:.1f} ms (currently {duration_sec * 1e3:.1f} ms)"
+        explanation = (
+            f"Captured only {num_periods:.0f} signal periods, "
+            f"recommended minimum is {required_periods}"
+        )
+        recommendation = (
+            f"Increase capture duration to at least {required_duration * 1e3:.1f} ms "
+            f"(currently {duration_sec * 1e3:.1f} ms)"
+        )
     else:
         status = "FAIL"
         passed = False
@@ -496,7 +580,10 @@ def _assess_noise(
     elif noise_percent <= max_noise_percent * 1.5:
         status = "WARNING"
         passed = False
-        explanation = f"Noise level is {noise_percent:.1f}% of signal swing (max recommended: {max_noise_percent:.0f}%)"
+        explanation = (
+            f"Noise level is {noise_percent:.1f}% of signal swing "
+            f"(max recommended: {max_noise_percent:.0f}%)"
+        )
         recommendation = "Reduce noise sources, check grounding, or use averaging"
     else:
         status = "FAIL"

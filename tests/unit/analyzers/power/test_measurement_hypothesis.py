@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 
 from tests.hypothesis_strategies import power_traces
 
@@ -22,8 +22,7 @@ class TestPowerMeasurementProperties:
     @settings(max_examples=30, deadline=None)
     def test_average_power_non_negative(self, power: np.ndarray) -> None:
         """Property: Average power is non-negative."""
-        if len(power) == 0:
-            pytest.skip("Empty power trace")
+        assume(len(power) > 0)
 
         avg_power = np.mean(power)
 
@@ -33,8 +32,7 @@ class TestPowerMeasurementProperties:
     @settings(max_examples=30, deadline=None)
     def test_peak_power_greater_than_average(self, power: np.ndarray) -> None:
         """Property: Peak power >= average power."""
-        if len(power) == 0:
-            pytest.skip("Empty power trace")
+        assume(len(power) > 0)
 
         avg_power = np.mean(power)
         peak_power = np.max(power)

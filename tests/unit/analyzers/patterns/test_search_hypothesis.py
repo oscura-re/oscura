@@ -1,7 +1,7 @@
 """Property-based tests for pattern search algorithms."""
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from tests.hypothesis_strategies import pattern_sequences
@@ -34,8 +34,7 @@ class TestPatternSearchProperties:
     @settings(max_examples=30, deadline=None)
     def test_search_deterministic(self, data: bytes) -> None:
         """Property: Pattern search is deterministic."""
-        if len(data) < 4:
-            pytest.skip("Data too short")
+        assume(len(data) >= 4)
 
         pattern = data[:4]
 

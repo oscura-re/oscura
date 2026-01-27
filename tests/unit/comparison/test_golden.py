@@ -10,7 +10,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from oscura.comparison.golden import (
+from oscura.core.exceptions import AnalysisError, LoaderError
+from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.comparison.golden import (
     GoldenComparisonResult,
     GoldenReference,
     batch_compare_to_golden,
@@ -19,8 +21,6 @@ from oscura.comparison.golden import (
     golden_from_average,
     tolerance_envelope,
 )
-from oscura.core.exceptions import AnalysisError, LoaderError
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 pytestmark = pytest.mark.unit
 

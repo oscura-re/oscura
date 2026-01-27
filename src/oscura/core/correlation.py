@@ -20,8 +20,8 @@ import asyncio
 import contextvars
 import functools
 import uuid
-from collections.abc import Callable
-from typing import Any, ParamSpec, TypeVar
+from collections.abc import Callable, Coroutine
+from typing import Any, ParamSpec, TypeVar, cast
 
 # Context variable for correlation ID (thread-safe and async-safe)
 _correlation_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
@@ -180,9 +180,8 @@ def with_correlation_id(
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 with CorrelationContext(corr_id):
                     # func returns a Coroutine, we need to await it
-                    coro = func(*args, **kwargs)
-                    # Type assertion for mypy - we know this is a coroutine
-                    return await coro  # type: ignore[misc, no-any-return]
+                    coro = cast("Coroutine[Any, Any, R]", func(*args, **kwargs))
+                    return await coro
 
             return async_wrapper  # type: ignore[return-value]
         else:
@@ -192,7 +191,7 @@ def with_correlation_id(
                 with CorrelationContext(corr_id):
                     return func(*args, **kwargs)
 
-            return sync_wrapper  # type: ignore[return-value]
+            return sync_wrapper
 
     return decorator
 

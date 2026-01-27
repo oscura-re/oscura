@@ -396,25 +396,34 @@ def _detect_transitions_boundary_scan(
     Returns:
         List of detected transitions
     """
-    data_len = len(data)
-
-    # Region size for comparison - use window or adaptive size
-    region_size = min(window, data_len // 3)
-    if region_size < 8:
-        region_size = max(8, data_len // 4)
-
+    region_size = _determine_boundary_scan_region_size(len(data), window)
     if region_size < 4:
         return []
 
-    transitions = []
-    last_offset = -min_gap - 1
+    scan_start, scan_end = _compute_boundary_scan_range(len(data), region_size)
+    if scan_start >= scan_end:
+        return []
 
-    # Track best transition found
-    best_transition = None
-    best_delta = 0.0
+    best_transition = _find_best_boundary_transition(
+        data, region_size, scan_start, scan_end, threshold, min_gap
+    )
 
-    # Scan potential boundary points
-    # We need at least region_size bytes on each side
+    if best_transition is None:
+        return []
+
+    return _accumulate_all_boundary_transitions(data, best_transition, window, threshold, min_gap)
+
+
+def _determine_boundary_scan_region_size(data_len: int, window: int) -> int:
+    """Determine region size for boundary scanning."""
+    region_size = min(window, data_len // 3)
+    if region_size < 8:
+        region_size = max(8, data_len // 4)
+    return region_size
+
+
+def _compute_boundary_scan_range(data_len: int, region_size: int) -> tuple[int, int]:
+    """Compute scan range for boundary detection."""
     scan_start = region_size
     scan_end = data_len - region_size
 
@@ -424,16 +433,25 @@ def _detect_transitions_boundary_scan(
         scan_start = region_size
         scan_end = data_len - region_size
 
-    if scan_start >= scan_end:
-        return []
+    return scan_start, scan_end
 
-    # Use a step size to avoid scanning every byte
+
+def _find_best_boundary_transition(
+    data: bytes,
+    region_size: int,
+    scan_start: int,
+    scan_end: int,
+    threshold: float,
+    min_gap: int,
+) -> EntropyTransition | None:
+    """Find the strongest boundary transition in scan range."""
+    best_transition = None
+    best_delta = 0.0
+    last_offset = -min_gap - 1
     scan_step = max(1, region_size // 4)
 
     for offset in range(scan_start, scan_end + 1, scan_step):
-        # Compute entropy of region BEFORE this point
         region_before = data[offset - region_size : offset]
-        # Compute entropy of region AFTER this point
         region_after = data[offset : offset + region_size]
 
         if len(region_before) < 4 or len(region_after) < 4:
@@ -448,43 +466,50 @@ def _detect_transitions_boundary_scan(
         delta = entropy_after - entropy_before
 
         # Track the strongest transition that exceeds threshold
-        if abs(delta) >= threshold:
-            # Check min_gap constraint
-            if offset - last_offset >= min_gap:
-                if abs(delta) > abs(best_delta):
-                    best_delta = delta
-                    best_transition = EntropyTransition(
-                        offset=offset,
-                        entropy_before=entropy_before,
-                        entropy_after=entropy_after,
-                        delta=delta,
-                        transition_type="low_to_high" if delta > 0 else "high_to_low",
-                    )
+        if abs(delta) >= threshold and offset - last_offset >= min_gap:
+            if abs(delta) > abs(best_delta):
+                best_delta = delta
+                best_transition = EntropyTransition(
+                    offset=offset,
+                    entropy_before=entropy_before,
+                    entropy_after=entropy_after,
+                    delta=delta,
+                    transition_type="low_to_high" if delta > 0 else "high_to_low",
+                )
 
-    if best_transition is not None:
-        transitions.append(best_transition)
-        last_offset = best_transition.offset
+    return best_transition
 
-        # Continue scanning for more transitions after this one
-        # (for data with multiple transitions)
-        remaining_transitions = _detect_transitions_boundary_scan(
-            data[best_transition.offset :],
-            window,
-            threshold,
-            min_gap,
+
+def _accumulate_all_boundary_transitions(
+    data: bytes,
+    best_transition: EntropyTransition,
+    window: int,
+    threshold: float,
+    min_gap: int,
+) -> list[EntropyTransition]:
+    """Accumulate all boundary transitions including recursive finds."""
+    transitions = [best_transition]
+    last_offset = best_transition.offset
+
+    # Continue scanning for more transitions after this one
+    remaining_transitions = _detect_transitions_boundary_scan(
+        data[best_transition.offset :],
+        window,
+        threshold,
+        min_gap,
+    )
+
+    for t in remaining_transitions:
+        adjusted_t = EntropyTransition(
+            offset=t.offset + best_transition.offset,
+            entropy_before=t.entropy_before,
+            entropy_after=t.entropy_after,
+            delta=t.delta,
+            transition_type=t.transition_type,
         )
-        for t in remaining_transitions:
-            # Adjust offset to be relative to original data
-            adjusted_t = EntropyTransition(
-                offset=t.offset + best_transition.offset,
-                entropy_before=t.entropy_before,
-                entropy_after=t.entropy_after,
-                delta=t.delta,
-                transition_type=t.transition_type,
-            )
-            if adjusted_t.offset - last_offset >= min_gap:
-                transitions.append(adjusted_t)
-                last_offset = adjusted_t.offset
+        if adjusted_t.offset - last_offset >= min_gap:
+            transitions.append(adjusted_t)
+            last_offset = adjusted_t.offset
 
     return transitions
 

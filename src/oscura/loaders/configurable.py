@@ -637,97 +637,21 @@ class ConfigurablePacketLoader:
         """
         path = Path(path)
 
-        # Check if packets are variable-length
-        is_variable_length = (
-            isinstance(self.format_config.packet_size, str)
-            and self.format_config.packet_size == "variable"
-        )
-
-        if is_variable_length:
-            # Validate configuration for variable-length packets
-            if not self.format_config.length_field:
-                raise ConfigurationError(
-                    "Variable-length packets require 'length_field' in packet configuration",
-                    config_key="packet.length_field",
-                    fix_hint="Specify which header field contains the packet length",
-                )
-
-        # Determine fixed packet size (if not variable)
-        fixed_packet_size = None
-        if not is_variable_length:
-            if isinstance(self.format_config.packet_size, str):
-                fixed_packet_size = int(self.format_config.packet_size)
-            else:
-                fixed_packet_size = self.format_config.packet_size
+        # Validate and determine packet size mode
+        is_variable_length, fixed_packet_size = self._determine_packet_mode()
 
         try:
             with open(path, "rb") as f:
                 packet_index = 0
                 while True:
-                    if is_variable_length:
-                        # Read header first to determine packet size
-                        header_data = f.read(self.format_config.header_size)
-                        if not header_data:
-                            break
+                    # Read packet data
+                    packet_data = self._read_next_packet(
+                        f, packet_index, is_variable_length, fixed_packet_size
+                    )
+                    if packet_data is None:
+                        break
 
-                        if len(header_data) < self.format_config.header_size:
-                            logger.warning(
-                                "Incomplete header at end of file (packet %d): got %d bytes, expected %d",
-                                packet_index,
-                                len(header_data),
-                                self.format_config.header_size,
-                            )
-                            break
-
-                        # Parse header to get length field
-                        header_dict = {}
-                        for field_def in self.format_config.header_fields:
-                            value = self._extract_field(header_data, field_def)
-                            header_dict[field_def.name] = value
-
-                        # Get packet length from header
-                        if self.format_config.length_field not in header_dict:
-                            raise FormatError(
-                                f"Length field '{self.format_config.length_field}' not found in header (packet {packet_index})"
-                            )
-
-                        packet_length = header_dict[self.format_config.length_field]
-
-                        # Calculate payload size
-                        if self.format_config.length_includes_header:
-                            payload_size = packet_length - self.format_config.header_size
-                        else:
-                            payload_size = packet_length
-
-                        # Read remaining packet data
-                        payload_data = f.read(payload_size)
-                        if len(payload_data) < payload_size:
-                            logger.warning(
-                                "Incomplete payload at end of file (packet %d): got %d bytes, expected %d",
-                                packet_index,
-                                len(payload_data),
-                                payload_size,
-                            )
-                            break
-
-                        # Combine header and payload
-                        packet_data = header_data + payload_data
-                    else:
-                        # Fixed-length packets
-                        assert fixed_packet_size is not None
-                        packet_data = f.read(fixed_packet_size)
-                        if not packet_data:
-                            break
-
-                        if len(packet_data) < fixed_packet_size:
-                            logger.warning(
-                                "Incomplete packet at end of file (packet %d): got %d bytes, expected %d",
-                                packet_index,
-                                len(packet_data),
-                                fixed_packet_size,
-                            )
-                            break
-
+                    # Parse and yield packet
                     try:
                         packet = self._parse_packet(packet_data, packet_index)
                         yield packet
@@ -742,6 +666,194 @@ class ConfigurablePacketLoader:
                 file_path=str(path),
                 details=str(e),
             ) from e
+
+    def _determine_packet_mode(self) -> tuple[bool, int | None]:
+        """Determine if packets are variable-length and get fixed size if applicable.
+
+        Returns:
+            Tuple of (is_variable_length, fixed_packet_size).
+
+        Raises:
+            ConfigurationError: If variable-length config is invalid.
+        """
+        is_variable_length = (
+            isinstance(self.format_config.packet_size, str)
+            and self.format_config.packet_size == "variable"
+        )
+
+        if is_variable_length:
+            # Validate configuration for variable-length packets
+            if not self.format_config.length_field:
+                raise ConfigurationError(
+                    "Variable-length packets require 'length_field' in packet configuration",
+                    config_key="packet.length_field",
+                    fix_hint="Specify which header field contains the packet length",
+                )
+            return True, None
+
+        # Determine fixed packet size
+        if isinstance(self.format_config.packet_size, str):
+            fixed_packet_size = int(self.format_config.packet_size)
+        else:
+            fixed_packet_size = self.format_config.packet_size
+
+        return False, fixed_packet_size
+
+    def _read_next_packet(
+        self,
+        file_handle: Any,
+        packet_index: int,
+        is_variable_length: bool,
+        fixed_packet_size: int | None,
+    ) -> bytes | None:
+        """Read next packet from file.
+
+        Args:
+            file_handle: Open file handle.
+            packet_index: Current packet index.
+            is_variable_length: Whether packets are variable-length.
+            fixed_packet_size: Fixed packet size (if not variable).
+
+        Returns:
+            Packet bytes or None if end of file.
+
+        Raises:
+            FormatError: If packet format is invalid.
+        """
+        if is_variable_length:
+            return self._read_variable_length_packet(file_handle, packet_index)
+        else:
+            assert fixed_packet_size is not None
+            return self._read_fixed_length_packet(file_handle, packet_index, fixed_packet_size)
+
+    def _read_variable_length_packet(self, file_handle: Any, packet_index: int) -> bytes | None:
+        """Read a variable-length packet.
+
+        Args:
+            file_handle: Open file handle.
+            packet_index: Current packet index.
+
+        Returns:
+            Packet bytes or None if end of file.
+
+        Raises:
+            FormatError: If packet format is invalid.
+        """
+        # Read header first to determine packet size
+        header_data = file_handle.read(self.format_config.header_size)
+        if not header_data:
+            return None
+
+        if len(header_data) < self.format_config.header_size:
+            logger.warning(
+                "Incomplete header at end of file (packet %d): got %d bytes, expected %d",
+                packet_index,
+                len(header_data),
+                self.format_config.header_size,
+            )
+            return None
+
+        # Parse header to get length field
+        header_dict = self._parse_header_fields(header_data)
+
+        # Get packet length from header
+        packet_length = self._extract_packet_length(header_dict, packet_index)
+
+        # Calculate payload size
+        payload_size = self._calculate_payload_size(packet_length)
+
+        # Read remaining packet data
+        payload_data = file_handle.read(payload_size)
+        if len(payload_data) < payload_size:
+            logger.warning(
+                "Incomplete payload at end of file (packet %d): got %d bytes, expected %d",
+                packet_index,
+                len(payload_data),
+                payload_size,
+            )
+            return None
+
+        # Combine header and payload
+        combined: bytes = header_data + payload_data
+        return combined
+
+    def _read_fixed_length_packet(
+        self, file_handle: Any, packet_index: int, packet_size: int
+    ) -> bytes | None:
+        """Read a fixed-length packet.
+
+        Args:
+            file_handle: Open file handle.
+            packet_index: Current packet index.
+            packet_size: Expected packet size.
+
+        Returns:
+            Packet bytes or None if end of file.
+        """
+        packet_data = file_handle.read(packet_size)
+        if not packet_data:
+            return None
+
+        if len(packet_data) < packet_size:
+            logger.warning(
+                "Incomplete packet at end of file (packet %d): got %d bytes, expected %d",
+                packet_index,
+                len(packet_data),
+                packet_size,
+            )
+            return None
+
+        result: bytes = bytes(packet_data)
+        return result
+
+    def _parse_header_fields(self, header_data: bytes) -> dict[str, Any]:
+        """Parse all header fields from header data.
+
+        Args:
+            header_data: Raw header bytes.
+
+        Returns:
+            Dictionary of field name to value.
+        """
+        header_dict = {}
+        for field_def in self.format_config.header_fields:
+            value = self._extract_field(header_data, field_def)
+            header_dict[field_def.name] = value
+        return header_dict
+
+    def _extract_packet_length(self, header_dict: dict[str, Any], packet_index: int) -> int:
+        """Extract packet length from parsed header.
+
+        Args:
+            header_dict: Parsed header fields.
+            packet_index: Current packet index.
+
+        Returns:
+            Packet length in bytes.
+
+        Raises:
+            FormatError: If length field not found.
+        """
+        if self.format_config.length_field not in header_dict:
+            raise FormatError(
+                f"Length field '{self.format_config.length_field}' not found in header (packet {packet_index})"
+            )
+        length: int = int(header_dict[self.format_config.length_field])
+        return length
+
+    def _calculate_payload_size(self, packet_length: int) -> int:
+        """Calculate payload size from packet length.
+
+        Args:
+            packet_length: Total packet length from header.
+
+        Returns:
+            Payload size in bytes.
+        """
+        if self.format_config.length_includes_header:
+            return packet_length - self.format_config.header_size
+        else:
+            return packet_length
 
     def _parse_packet(self, packet_data: bytes, packet_index: int) -> dict[str, Any]:
         """Parse a single packet.

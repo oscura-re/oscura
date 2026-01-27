@@ -35,10 +35,12 @@ from oscura.analyzers.signal_integrity.sparams import (
     SParameterData,
     abcd_to_s,
     insertion_loss,
-    load_touchstone,
     return_loss,
     s_to_abcd,
 )
+
+# Import load_touchstone from loaders module
+from oscura.loaders.touchstone import load_touchstone
 
 __all__ = [
     "CTLEResult",
@@ -56,6 +58,7 @@ __all__ = [
     "embed",
     "ffe_equalize",
     "insertion_loss",
+    # Touchstone loader (for convenience)
     "load_touchstone",
     "optimize_ffe",
     "return_loss",

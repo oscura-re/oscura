@@ -1,7 +1,7 @@
 # Migration Guide: v0.x to v1.0
 
-**Version**: 0.5.1 → 1.0.0 (Future)
-**Last Updated**: 2026-01-20
+**Version**: 0.6.0 → 1.0.0 (Future)
+**Last Updated**: 2026-01-25
 
 This guide helps you migrate from Oscura v0.x to v1.0 when released. While v1.0 is not yet available, this document tracks breaking changes and provides migration paths for each change introduced during the 0.x series.
 

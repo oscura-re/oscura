@@ -150,76 +150,73 @@ class TestWFMAnalysisPipelines:
         if not wfm_files:
             pytest.skip("No WFM files available")
 
-        try:
-            from oscura import load, low_pass
-            from oscura.core.types import IQTrace
+        from oscura import load, low_pass
+        from oscura.core.types import IQTrace
 
-            wfm_path = wfm_files[0]
-            trace = load(wfm_path)
+        wfm_path = wfm_files[0]
+        trace = load(wfm_path)
 
-            # Skip IQ traces (they have i_data/q_data, not data)
-            if isinstance(trace, IQTrace):
-                pytest.skip("IQ trace filtering not tested here")
+        # Skip IQ traces (they have i_data/q_data, not data)
+        if isinstance(trace, IQTrace):
+            pytest.skip("IQ trace filtering not tested here")
 
-            # Apply low-pass filter
-            if hasattr(trace.metadata, "sample_rate") and trace.metadata.sample_rate:
-                cutoff = trace.metadata.sample_rate * 0.1
-            else:
-                cutoff = 1e5
+        # Apply low-pass filter
+        if hasattr(trace.metadata, "sample_rate") and trace.metadata.sample_rate:
+            cutoff = trace.metadata.sample_rate * 0.1
+        else:
+            cutoff = 1e5
 
-            filtered = low_pass(trace, cutoff=cutoff)
+        filtered = low_pass(trace, cutoff=cutoff)
 
-            assert len(filtered.data) == len(trace.data)
-            assert np.isfinite(filtered.data).all()
-
-        except Exception as e:
-            pytest.skip(f"WFM filtering test skipped: {e}")
+        assert len(filtered.data) == len(trace.data)
+        assert np.isfinite(filtered.data).all()
 
     def test_wfm_to_digital_conversion(self, wfm_files: list[Path]) -> None:
         """Test WFM to digital conversion edge cases."""
         if not wfm_files:
             pytest.skip("No WFM files available")
 
-        try:
-            from oscura import detect_edges, load, to_digital
-            from oscura.core.types import IQTrace
+        from oscura import detect_edges, load, to_digital
+        from oscura.core.types import IQTrace
 
-            wfm_path = wfm_files[0]
-            trace = load(wfm_path)
+        wfm_path = wfm_files[0]
+        trace = load(wfm_path)
 
-            # Skip IQ traces (they have i_data/q_data, not data)
-            if isinstance(trace, IQTrace):
-                pytest.skip("IQ trace digital conversion not tested here")
+        # Skip IQ traces (they have i_data/q_data, not data)
+        if isinstance(trace, IQTrace):
+            pytest.skip("IQ trace digital conversion not tested here")
 
-            # Convert to digital
-            digital = to_digital(trace.data)
-            assert len(digital) == len(trace.data)
+        # Convert to digital
+        digital = to_digital(trace.data)
+        assert len(digital) == len(trace.data)
 
-            # Detect edges
-            edges = detect_edges(trace.data)
-            assert edges is not None
-
-        except Exception as e:
-            pytest.skip(f"Digital analysis failed: {e}")
+        # Detect edges
+        edges = detect_edges(trace.data)
+        assert edges is not None
 
     def test_multi_channel_loading(self, wfm_files: list[Path]) -> None:
         """Test loading all channels from WFM."""
         if not wfm_files:
             pytest.skip("No WFM files available")
 
-        try:
-            from oscura import load_all_channels, mean
+        from oscura import load_all_channels, mean
+        from oscura.core.types import IQTrace, WaveformTrace
 
-            wfm_path = wfm_files[0]
+        wfm_path = wfm_files[0]
 
-            channels = load_all_channels(wfm_path)
+        channels = load_all_channels(wfm_path)
 
-            for name, trace in channels.items():
+        for name, trace in channels.items():
+            # Only compute mean for WaveformTrace (not IQTrace or DigitalTrace)
+            if isinstance(trace, WaveformTrace):
                 m = mean(trace)
                 assert np.isfinite(m), f"Channel {name} has invalid mean"
-
-        except Exception as e:
-            pytest.skip(f"Multi-channel test skipped: {e}")
+            elif isinstance(trace, IQTrace):
+                # For IQTrace, verify I and Q data separately
+                assert len(trace.i_data) > 0
+                assert len(trace.q_data) > 0
+                assert np.isfinite(trace.i_data).all()
+                assert np.isfinite(trace.q_data).all()
 
 
 @pytest.mark.integration
@@ -257,6 +254,10 @@ class TestRealUDPCaptures:
         try:
             from oscura.analyzers.statistical.entropy import calculate_entropy
         except ImportError:
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
+            # SKIP: Valid - Optional entropy analysis module
+            # Only skip if entropy analyzers not available
             pytest.skip("Entropy analysis not available")
 
         for segment_name, path in real_udp_packets.items():

@@ -195,53 +195,165 @@ class GridSearch:
             early_stop: Stop if score reaches this threshold
 
         Returns:
-            Optimization result
+            Optimization result with best parameters and all evaluated combinations.
         """
         start_time = time.time()
         all_results: list[tuple[dict[str, Any], float]] = []
         best_params: dict[str, Any] = {}
-        best_score = float("-inf") if maximize else float("inf")
+        best_score = self._initial_best_score(maximize)
 
-        # Generate all combinations
-        param_names = [s.name for s in self.param_spaces]
-        param_values = [list(s) for s in self.param_spaces]
-
+        param_names, param_values = self._prepare_parameter_grid()
         total = self.num_combinations
+
         if self.verbose:
             logger.info(f"Grid search: {total} combinations")
 
         for i, values in enumerate(itertools.product(*param_values)):
             params = dict(zip(param_names, values, strict=False))
-
-            try:
-                score = objective(params, data)
-            except Exception as e:
-                logger.warning(f"Objective failed for {params}: {e}")
-                score = float("-inf") if maximize else float("inf")
+            score = self._evaluate_objective(objective, params, data, maximize)
 
             all_results.append((params, score))
+            best_score, best_params = self._update_best(
+                score, params, best_score, best_params, maximize
+            )
 
-            # Update best
-            if maximize:
-                if score > best_score:
-                    best_score = score
-                    best_params = params.copy()
-            elif score < best_score:
-                best_score = score
-                best_params = params.copy()
+            self._report_progress(i + 1, total)
 
-            # Progress
-            if self._progress_callback:
-                self._progress_callback(i + 1, total)
-
-            # Early stopping
-            if early_stop is not None and (
-                (maximize and score >= early_stop) or (not maximize and score <= early_stop)
-            ):
-                if self.verbose:
-                    logger.info(f"Early stop at {i + 1}/{total}")
+            if self._should_stop_early(score, early_stop, maximize, i + 1, total):
                 break
 
+        return self._build_result(best_params, best_score, all_results, start_time)
+
+    def _initial_best_score(self, maximize: bool) -> float:
+        """Get initial best score for optimization.
+
+        Args:
+            maximize: Whether maximizing or minimizing.
+
+        Returns:
+            Initial best score value.
+        """
+        return float("-inf") if maximize else float("inf")
+
+    def _prepare_parameter_grid(self) -> tuple[list[str], list[list[Any]]]:
+        """Prepare parameter grid for iteration.
+
+        Returns:
+            Tuple of (parameter names, parameter values).
+        """
+        param_names = [s.name for s in self.param_spaces]
+        param_values = [list(s) for s in self.param_spaces]
+        return param_names, param_values
+
+    def _evaluate_objective(
+        self,
+        objective: Callable[[dict[str, Any], Any], float],
+        params: dict[str, Any],
+        data: Any,
+        maximize: bool,
+    ) -> float:
+        """Evaluate objective function with error handling.
+
+        Args:
+            objective: Objective function to evaluate.
+            params: Parameter combination.
+            data: Data for objective.
+            maximize: Whether maximizing.
+
+        Returns:
+            Score from objective or fallback on error.
+        """
+        try:
+            return objective(params, data)
+        except Exception as e:
+            logger.warning(f"Objective failed for {params}: {e}")
+            return float("-inf") if maximize else float("inf")
+
+    def _update_best(
+        self,
+        score: float,
+        params: dict[str, Any],
+        best_score: float,
+        best_params: dict[str, Any],
+        maximize: bool,
+    ) -> tuple[float, dict[str, Any]]:
+        """Update best score and parameters if improved.
+
+        Args:
+            score: Current score.
+            params: Current parameters.
+            best_score: Current best score.
+            best_params: Current best parameters.
+            maximize: Whether maximizing.
+
+        Returns:
+            Tuple of (updated best score, updated best params).
+        """
+        is_better = score > best_score if maximize else score < best_score
+        if is_better:
+            # NECESSARY COPY: Preserves best parameters snapshot.
+            # Each iteration's best params must be isolated from current mutations.
+            return score, params.copy()
+        return best_score, best_params
+
+    def _report_progress(self, current: int, total: int) -> None:
+        """Report progress to callback if registered.
+
+        Args:
+            current: Current iteration.
+            total: Total iterations.
+        """
+        if self._progress_callback:
+            self._progress_callback(current, total)
+
+    def _should_stop_early(
+        self,
+        score: float,
+        early_stop: float | None,
+        maximize: bool,
+        current: int,
+        total: int,
+    ) -> bool:
+        """Check if early stopping criteria met.
+
+        Args:
+            score: Current score.
+            early_stop: Early stop threshold.
+            maximize: Whether maximizing.
+            current: Current iteration.
+            total: Total iterations.
+
+        Returns:
+            True if should stop early.
+        """
+        if early_stop is None:
+            return False
+
+        should_stop = (maximize and score >= early_stop) or (not maximize and score <= early_stop)
+
+        if should_stop and self.verbose:
+            logger.info(f"Early stop at {current}/{total}")
+
+        return should_stop
+
+    def _build_result(
+        self,
+        best_params: dict[str, Any],
+        best_score: float,
+        all_results: list[tuple[dict[str, Any], float]],
+        start_time: float,
+    ) -> OptimizationResult:
+        """Build optimization result object.
+
+        Args:
+            best_params: Best parameters found.
+            best_score: Best score achieved.
+            all_results: All evaluated combinations.
+            start_time: Start time of optimization.
+
+        Returns:
+            OptimizationResult object.
+        """
         elapsed = time.time() - start_time
 
         if self.verbose:
@@ -322,9 +434,11 @@ class RandomSearch:
             if maximize:
                 if score > best_score:
                     best_score = score
+                    # NECESSARY COPY: Isolates best params from current/future mutations.
                     best_params = params.copy()
             elif score < best_score:
                 best_score = score
+                # NECESSARY COPY: Isolates best params from current/future mutations.
                 best_params = params.copy()
 
         return OptimizationResult(
