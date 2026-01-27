@@ -95,6 +95,7 @@ from oscura.loaders import (
     csv,
     hdf5,
 )
+from oscura.loaders.binary import load_binary
 
 # Import configurable binary loading functionality
 from oscura.loaders.configurable import (
@@ -640,6 +641,7 @@ __all__ = [
     "hdf5",
     "load",
     "load_all_channels",
+    "load_binary",
     "load_binary_packets",
     "load_lazy",
     "load_packets_streaming",

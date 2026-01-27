@@ -187,12 +187,16 @@ class TestFuzzyTimingMatchWithTrace:
         assert 0.0003 < result.period < 0.0007
 
     def test_trace_without_sample_rate_fails(self) -> None:
-        """Test that trace without sample_rate raises error."""
+        """Test that trace without sample_rate parameter and missing metadata raises error."""
         data = np.array([0, 1, 0, 1, 0])
+        # Create trace with sample_rate, but don't pass it to function
         trace = WaveformTrace(
             data=data,
-            metadata=TraceMetadata(),  # No sample rate
+            metadata=TraceMetadata(sample_rate=1e6),
         )
+
+        # Temporarily set sample_rate to None in metadata to trigger the error
+        trace.metadata.sample_rate = None  # type: ignore[assignment]
 
         with pytest.raises(ValueError, match="sample_rate"):
             fuzzy_timing_match(trace, expected_period=1e-6)
@@ -200,13 +204,10 @@ class TestFuzzyTimingMatchWithTrace:
     def test_trace_with_invalid_sample_rate(self) -> None:
         """Test that trace with invalid sample_rate raises error."""
         data = np.array([0, 1, 0, 1, 0])
-        trace = WaveformTrace(
-            data=data,
-            metadata=TraceMetadata(sample_rate=0),
-        )
 
+        # TraceMetadata validates sample_rate in __post_init__, so it raises on creation
         with pytest.raises(ValueError, match="sample_rate"):
-            fuzzy_timing_match(trace, expected_period=1e-6)
+            TraceMetadata(sample_rate=0)
 
     def test_trace_with_few_edges(self) -> None:
         """Test trace with insufficient edges."""

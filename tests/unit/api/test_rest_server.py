@@ -454,7 +454,10 @@ def test_list_sessions_endpoint(test_client: TestClient) -> None:
 
 
 def test_get_session_endpoint(
-    test_client: TestClient, sample_file_data: bytes, mock_complete_re_result: Mock
+    test_client: TestClient,
+    api_server: RESTAPIServer,
+    sample_file_data: bytes,
+    mock_complete_re_result: Mock,
 ) -> None:
     """Test getting session details endpoint."""
     # Create a session first
@@ -520,7 +523,10 @@ def test_list_protocols_endpoint(test_client: TestClient) -> None:
 
 
 def test_export_endpoint(
-    test_client: TestClient, sample_file_data: bytes, mock_complete_re_result: Mock
+    test_client: TestClient,
+    api_server: RESTAPIServer,
+    sample_file_data: bytes,
+    mock_complete_re_result: Mock,
 ) -> None:
     """Test export endpoint."""
     # Create and complete a session
@@ -546,7 +552,10 @@ def test_export_endpoint(
 
 
 def test_export_invalid_format(
-    test_client: TestClient, sample_file_data: bytes, mock_complete_re_result: Mock
+    test_client: TestClient,
+    api_server: RESTAPIServer,
+    sample_file_data: bytes,
+    mock_complete_re_result: Mock,
 ) -> None:
     """Test export with invalid format."""
     # Create and complete a session
@@ -594,6 +603,7 @@ def test_export_incomplete_session(test_client: TestClient, sample_file_data: by
 def test_complete_workflow(
     mock_full_re: Mock,
     test_client: TestClient,
+    api_server: RESTAPIServer,
     sample_file_data: bytes,
     mock_complete_re_result: Mock,
 ) -> None:

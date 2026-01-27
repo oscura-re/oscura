@@ -192,12 +192,10 @@ class TestIntegration:
             metadata=TraceMetadata(sample_rate=1000.0),
         )
 
-        # Mock the underlying plot_waveform
-        with patch("oscura.visualization.waveform.plot_waveform") as mock:
-            # Import fresh to get patched version
-            from oscura.visualization import plot as plot_module
-
-            plot_module.plot_trace(trace)
+        # Mock the underlying plot_waveform at module import level
+        with patch("oscura.visualization.plot.plot_waveform") as mock:
+            # Call plot_trace which should delegate to plot_waveform
+            plot.plot_trace(trace)
 
             # Should have called the mocked function
             assert mock.called
