@@ -93,7 +93,10 @@ def _validate_and_clean_data(data: NDArray[np.float64]) -> NDArray[np.float64]:
 
 
 def _filter_outliers(data: NDArray[np.float64], outlier_threshold: float) -> NDArray[np.float64]:
-    """Filter outliers using robust MAD-based z-scores."""
+    """Filter outliers using robust MAD-based z-scores.
+
+    Falls back to standard deviation when MAD = 0 (highly concentrated data).
+    """
     median = np.median(data)
     mad = np.median(np.abs(data - median))
     robust_std = 1.4826 * mad  # MAD to std conversion
@@ -102,6 +105,15 @@ def _filter_outliers(data: NDArray[np.float64], outlier_threshold: float) -> NDA
         z_scores = np.abs(data - median) / robust_std
         filtered: NDArray[np.float64] = data[z_scores <= outlier_threshold]
         return filtered
+
+    # Fallback to standard deviation when MAD = 0
+    mean = np.mean(data)
+    std = np.std(data)
+    if std > 0:
+        z_scores = np.abs(data - mean) / std
+        filtered = data[z_scores <= outlier_threshold]
+        return filtered
+
     return data
 
 
@@ -124,7 +136,16 @@ def _check_clipping(
 
 
 def _select_smart_margin(n_samples: int, margin_percent: float) -> float:
-    """Select margin based on data density."""
+    """Select margin based on data density.
+
+    Only applies smart margin when using default value (5.0%).
+    Otherwise respects user's explicit margin_percent.
+    """
+    # Always respect explicit user values (non-default)
+    if margin_percent != 5.0:
+        return margin_percent / 100.0
+
+    # Apply smart margin only for default value
     if n_samples > 10000:
         return 0.02  # Dense data: smaller margin
     elif n_samples < 100:
@@ -135,6 +156,11 @@ def _select_smart_margin(n_samples: int, margin_percent: float) -> float:
 def _symmetric_range(data_min: float, data_max: float, margin: float) -> tuple[float, float]:
     """Calculate symmetric range for bipolar signals."""
     max_abs = max(abs(data_min), abs(data_max))
+
+    # Handle constant data
+    if max_abs == 0:
+        return (-0.5, 0.5)  # Default range for constant zero
+
     margin_value = max_abs * margin
     return (-(max_abs + margin_value), max_abs + margin_value)
 
@@ -142,6 +168,13 @@ def _symmetric_range(data_min: float, data_max: float, margin: float) -> tuple[f
 def _asymmetric_range(data_min: float, data_max: float, margin: float) -> tuple[float, float]:
     """Calculate asymmetric range."""
     data_range = data_max - data_min
+
+    # Handle constant data (range = 0)
+    if data_range == 0:
+        # Add fixed margin for constant data
+        default_margin = 0.5 if data_min == 0 else abs(data_min) * 0.1
+        return (data_min - default_margin, data_max + default_margin)
+
     margin_value = data_range * margin
     return (data_min - margin_value, data_max + margin_value)
 
@@ -659,7 +692,7 @@ def detect_interesting_regions(
     edge_threshold: float | None = None,
     glitch_sigma: float = 3.0,
     anomaly_threshold: float = 3.0,
-    min_region_samples: int = 10,
+    min_region_samples: int = 1,
     max_regions: int = 10,
 ) -> list[InterestingRegion]:
     """Detect interesting regions in a signal for automatic zoom/focus.
@@ -673,7 +706,7 @@ def detect_interesting_regions(
         edge_threshold: Edge detection threshold (default: auto from signal stddev)
         glitch_sigma: Sigma threshold for glitch detection (default: 3.0)
         anomaly_threshold: Threshold for anomaly detection in sigma (default: 3.0)
-        min_region_samples: Minimum samples per region (default: 10)
+        min_region_samples: Minimum samples per region (default: 1)
         max_regions: Maximum number of regions to return (default: 10)
 
     Returns:
@@ -700,7 +733,6 @@ def detect_interesting_regions(
         raise ValueError("min_region_samples must be >= 1")
 
     regions: list[InterestingRegion] = []
-    1.0 / sample_rate
 
     # 1. Edge detection using first derivative
     edges = _detect_edges(signal, sample_rate, edge_threshold)

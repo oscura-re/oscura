@@ -44,8 +44,8 @@ class TestCalculateOptimalYRange:
 
     def test_outlier_exclusion(self) -> None:
         """Test that outliers are excluded from range."""
-        # Normal data with outlier
-        data = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 100.0])
+        # Normal data with outlier (use enough samples to avoid clipping warning)
+        data = np.concatenate([np.linspace(1.0, 5.0, 100), [100.0]])
         y_min, y_max = calculate_optimal_y_range(data, outlier_threshold=3.0)
 
         # Should not be affected by outlier
