@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **CalibrationInfo** (src/oscura/core/types.py): Added `timebase_accuracy` field to support timebase accuracy specification in ppm (19 tests)
+- **Dependency Enforcement** (.claude/hooks/validate_dependency_install.py): CRITICAL - Created mandatory dependency validator enforcing ALL dependencies installed in dev/test environments, prevents configuration drift between local and CI (6/6 validators passing)
 
 ### Fixed
+- **Infrastructure Policy** (pyproject.toml, .github/actions/setup-python-env/action.yml): CRITICAL - Enforced mandatory `--all-extras` installation policy for ALL dev/test environments, added verification checks in CI, documented zero-tolerance policy for optional dependencies during development/testing to eliminate configuration drift
 - **UDS Decoder** (src/oscura/automotive/uds/models.py): Corrected response SID handling to store actual message SID values (5 tests)
 - **StreamingStats** (src/oscura/analyzers/statistics/streaming.py): Implemented proper infinity handling for mean calculations (1 test)
 - **Waveform Measurements** (src/oscura/analyzers/waveform/measurements.py): Fixed `_find_levels` to handle constant and NaN signals correctly (2 tests)

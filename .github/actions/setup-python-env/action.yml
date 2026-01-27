@@ -15,11 +15,11 @@ inputs:
     required: false
     default: "true"
   extras:
-    description: "Extra dependencies to install (--all-extras, --dev, etc.)"
+    description: "Extra dependencies to install (MUST be --all-extras for dev/test)"
     required: false
     default: "--all-extras"
   dev-group:
-    description: "Install dev dependency group (adds --group dev)"
+    description: "Install dev dependency group (MANDATORY for all test environments)"
     required: false
     default: "true"
 
@@ -39,13 +39,29 @@ runs:
     - name: Install dependencies
       if: inputs.install-deps == 'true'
       run: |
-        # Build sync command with extras and dev group
+        # CRITICAL: ALL test/dev environments MUST install ALL dependencies
+        # Configuration drift between local and CI causes test failures
         SYNC_CMD="uv sync ${{ inputs.extras }}"
         if [ "${{ inputs.dev-group }}" == "true" ]; then
           SYNC_CMD="$SYNC_CMD --group dev"
         fi
+
+        # ENFORCE: extras must be --all-extras for test environments
+        if [[ "${{ inputs.extras }}" != *"--all-extras"* ]] && [[ "${{ inputs.extras }}" != "--no-dev" ]]; then
+          echo "::warning::POLICY VIOLATION: Test environments must use --all-extras"
+          echo "::warning::Current extras: ${{ inputs.extras }}"
+          echo "::warning::Forcing --all-extras to prevent configuration drift"
+          SYNC_CMD="uv sync --all-extras --group dev"
+        fi
+
         echo "Running: $SYNC_CMD"
         $SYNC_CMD
+
+        # Verify critical dependencies are installed
+        echo "::group::Dependency Verification"
+        uv pip list | grep -E "(pytest|matplotlib|numpy|scipy|cantools|hypothesis)" || \
+          (echo "::error::CRITICAL: Core test dependencies missing!" && exit 1)
+        echo "::endgroup::"
       shell: bash
 
     - name: Verify installation

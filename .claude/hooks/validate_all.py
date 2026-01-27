@@ -10,13 +10,15 @@ Validators:
 - validate_portability.py: Infrastructure portability across projects
 - validate_config.py: Configuration file validity
 - validate_ssot.py: Single Source of Truth compliance
+- validate_dependency_install.py: Verify ALL dependencies installed (dev/test)
 
 Exit codes:
     0: All validations passed
     1: Some validations failed
 
-Version: 1.0.0
+Version: 1.1.0
 Created: 2026-01-22
+Updated: 2026-01-27 - Added dependency validation
 """
 
 import subprocess
@@ -29,6 +31,12 @@ HOOKS_DIR = Path(__file__).parent
 
 # Validators to run (in order)
 VALIDATORS = [
+    {
+        "name": "Dependency installation",
+        "script": "validate_dependency_install.py",
+        "description": "Verify ALL dependencies installed",
+        "critical": True,  # CRITICAL: Must pass before other validators
+    },
     {
         "name": "Agent validation",
         "script": "validate_agents.py",
