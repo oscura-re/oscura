@@ -48,7 +48,7 @@ def sine_trace() -> WaveformTrace:
         sample_rate=fs,
         vertical_scale=1.0,
         vertical_offset=0.0,
-        calibration_info=CalibrationInfo(vertical_resolution=8, timebase_accuracy=25.0),
+        calibration_info=CalibrationInfo(instrument="Test Oscilloscope", vertical_resolution=8),
     )
     return WaveformTrace(data=data, metadata=metadata)
 
@@ -95,7 +95,9 @@ class TestRiseTime:
         t = np.linspace(0, 100e-9, 1000)
         data = np.where(t < 10e-9, 0.0, np.where(t < 20e-9, (t - 10e-9) / 10e-9, 1.0))
 
-        calibration = CalibrationInfo(vertical_resolution=12, timebase_accuracy=10.0)
+        calibration = CalibrationInfo(
+            instrument="Test Oscilloscope", vertical_resolution=12, timebase_accuracy=25.0
+        )
         metadata = TraceMetadata(
             sample_rate=10e9,
             vertical_scale=0.2,
@@ -234,13 +236,15 @@ class TestFrequency:
             assert np.isnan(result.uncertainty)
 
     def test_frequency_high_accuracy(self) -> None:
-        """Test frequency with high sample rate and calibration."""
-        fs = 1e9  # 1 GHz sample rate
+        """Test frequency with very high sample rate and calibration."""
+        fs = 10e9  # 10 GHz sample rate (needed for <0.1% uncertainty)
         f = 10e6  # 10 MHz signal
-        t = np.linspace(0, 100e-6, 100000)
+        t = np.linspace(0, 100e-6, 1000000)
         data = np.sin(2 * np.pi * f * t)
 
-        calibration = CalibrationInfo(timebase_accuracy=1.0)  # Very accurate
+        calibration = CalibrationInfo(
+            instrument="Test Oscilloscope", timebase_accuracy=1.0
+        )  # Very accurate (1 ppm)
         metadata = TraceMetadata(
             sample_rate=fs,
             calibration_info=calibration,
@@ -249,7 +253,7 @@ class TestFrequency:
 
         result = meas_u.frequency(trace)
 
-        # Should have very small relative uncertainty
+        # With 10 GHz sampling and 1 ppm timebase, uncertainty should be <0.1%
         assert result.relative_uncertainty < 0.001
 
 
@@ -302,7 +306,9 @@ class TestAmplitude:
         """Test amplitude with calibration info."""
         data = np.sin(2 * np.pi * 1e6 * np.linspace(0, 10e-6, 1000)) * 2.0
 
-        calibration = CalibrationInfo(vertical_resolution=12)
+        calibration = CalibrationInfo(
+            instrument="Test Oscilloscope", vertical_resolution=12, timebase_accuracy=25.0
+        )
         metadata = TraceMetadata(
             sample_rate=100e6,
             calibration_info=calibration,

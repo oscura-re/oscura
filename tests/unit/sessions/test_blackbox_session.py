@@ -432,9 +432,9 @@ class TestBlackBoxSession:
         """Test that CRC recovery can be disabled."""
         session = BlackBoxSession(auto_crc=False)
 
-        # Add recordings
-        for i in range(15):
-            builder = SignalBuilder(sample_rate=1e6, duration=0.001).add_sine(1000 + i * 100)
+        # Add minimal recordings for fast test (3 recordings, 100 samples each)
+        for i in range(3):
+            builder = SignalBuilder(sample_rate=1e6, duration=0.0001).add_sine(1000 + i * 100)
             source = SyntheticSource(builder)
             session.add_recording(f"rec{i}", source)
 

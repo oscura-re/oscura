@@ -87,9 +87,8 @@ class TestVISASource:
         """Test handling of missing pyvisa library."""
         source = VISASource()
 
-        with patch(
-            "oscura.hardware.acquisition.visa.pyvisa", side_effect=ImportError("pyvisa not found")
-        ):
+        # Patch pyvisa to be None (simulating import failure at module level)
+        with patch("oscura.hardware.acquisition.visa.pyvisa", None):
             with pytest.raises(ImportError, match="VISA source requires pyvisa library"):
                 source._ensure_connection()
 
@@ -239,7 +238,8 @@ class TestVISASource:
 
         assert isinstance(trace, WaveformTrace)
         assert len(trace.data) == 1000
-        assert trace.metadata.sample_rate == 1e9  # From preamble x_increment
+        # Use approx for floating point comparison (1.0 / 1e-9 has rounding error)
+        assert trace.metadata.sample_rate == pytest.approx(1e9, rel=1e-6)
         assert "CH1" in trace.metadata.channel_name
         assert "visa://" in trace.metadata.source_file
 
@@ -319,13 +319,13 @@ class TestVISASource:
         source = VISASource(resource="USB0::0x1234::0x5678::INSTR")
         source.configure(channels=[1])
 
-        # Stream for 2 seconds with 0.5 second intervals (should yield ~4 traces)
+        # Stream for 2.1 seconds with 0.5 second intervals (should yield 4 traces)
         with patch("oscura.hardware.acquisition.visa.time.time") as mock_time:
             mock_time.side_effect = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5]  # Simulated time progression
 
-            chunks = list(source.stream(duration=2.0, interval=0.5))
+            chunks = list(source.stream(duration=2.1, interval=0.5))
 
-            # Should get 4 traces
+            # Should get 4 traces (at t=0.5, 1.0, 1.5, 2.0)
             assert len(chunks) == 4
 
             for chunk in chunks:
@@ -344,13 +344,16 @@ class TestVISASource:
     def test_close(self) -> None:
         """Test closing source."""
         source = VISASource()
-        source.instrument = MagicMock()
-        source.rm = MagicMock()
-        source._ensure_connection()  # Initialize instrument
+        # Manually set mocks to test close() behavior
+        mock_instrument = MagicMock()
+        mock_rm = MagicMock()
+        source.instrument = mock_instrument
+        source.rm = mock_rm
+
         source.close()
 
-        source.instrument.close.assert_called_once()
-        source.rm.close.assert_called_once()
+        mock_instrument.close.assert_called_once()
+        mock_rm.close.assert_called_once()
         assert source.instrument is None
         assert source.rm is None
         assert source._closed is True
@@ -417,6 +420,7 @@ class TestVISASource:
         mock_instrument = MagicMock()
 
         mock_instrument.query.side_effect = [
+            "CUSTOM,INSTRUMENT,SN12345,v2.0\n",  # *IDN? in _ensure_connection
             "1,0,0,0,1e-9,0,0,0,0",  # Preamble
             "CUSTOM,INSTRUMENT,SN12345,v2.0\n",  # *IDN? for calibration
         ]

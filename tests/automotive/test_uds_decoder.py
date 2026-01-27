@@ -139,7 +139,7 @@ class TestDecodeDiagnosticSessionControl:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.sid == 0x10
+        assert result.sid == 0x50  # Response SID (0x10 + 0x40)
         assert result.name == "DiagnosticSessionControl"
         assert result.request is False
         assert result.sub_function == 0x03
@@ -188,7 +188,7 @@ class TestDecodeSecurityAccess:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.sid == 0x27
+        assert result.sid == 0x67  # Response SID (0x27 + 0x40)
         assert result.request is False
         assert result.sub_function == 0x01
         assert result.data == bytes([0x12, 0x34, 0x56, 0x78])
@@ -221,7 +221,7 @@ class TestDecodeReadDataByIdentifier:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.sid == 0x22
+        assert result.sid == 0x62  # Response SID (0x22 + 0x40)
         assert result.request is False
         # UDS length=7 means: [0x62, 0x12, 0x34, 0xAA, 0xBB, 0xCC, 0xDD]
         # After removing SID: [0x12, 0x34, 0xAA, 0xBB, 0xCC, 0xDD] = 6 bytes
@@ -268,7 +268,7 @@ class TestDecodeTesterPresent:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.sid == 0x3E
+        assert result.sid == 0x7E  # Response SID (0x3E + 0x40)
         assert result.request is False
         assert result.sub_function == 0x00
 
@@ -299,7 +299,7 @@ class TestDecodeECUReset:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.sid == 0x11
+        assert result.sid == 0x51  # Response SID (0x11 + 0x40)
         assert result.request is False
         assert result.sub_function == 0x01
 

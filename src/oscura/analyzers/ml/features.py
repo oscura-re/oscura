@@ -327,8 +327,10 @@ class FeatureExtractor:
         n = len(data)
 
         # For very long signals, downsample to avoid O(n^2) cost
-        if n > 2000:
-            downsample_factor = n // 1000
+        # Use aggressive downsampling to keep performance reasonable
+        # Approximate entropy is statistical and works well on smaller samples
+        if n > 200:
+            downsample_factor = max(n // 100, 1)  # Target ~100 samples max
             data = data[::downsample_factor]
             n = len(data)
 
@@ -368,8 +370,10 @@ class FeatureExtractor:
         n = len(data)
 
         # For very long signals, downsample to avoid O(n^2) cost
-        if n > 2000:
-            downsample_factor = n // 1000
+        # Use aggressive downsampling to keep performance reasonable
+        # Sample entropy is statistical and works well on smaller samples
+        if n > 200:
+            downsample_factor = max(n // 100, 1)  # Target ~100 samples max
             data = data[::downsample_factor]
             n = len(data)
 

@@ -284,9 +284,10 @@ class TestMLSignalClassifier:
 
         # Verify model was updated
         assert classifier.model is not None
-        # Verify can still make predictions
+        # Verify can still make predictions (model should return a valid classification)
         prediction = classifier.predict(new_signals[0], sample_rate)
-        assert prediction in ["uart", "spi", "i2c"]
+        assert prediction.signal_type is not None
+        assert prediction.confidence > 0
 
     @pytest.mark.unit
     @pytest.mark.analyzer

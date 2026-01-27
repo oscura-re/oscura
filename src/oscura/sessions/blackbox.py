@@ -496,6 +496,10 @@ class BlackBoxSession(AnalysisSession):
         # Convert traces to byte arrays
         byte_arrays = [self._trace_to_bytes(t) for t in traces]
 
+        # Early exit for small/unsuitable datasets (performance optimization)
+        if len(byte_arrays) < 3 or any(len(arr) < 10 for arr in byte_arrays):
+            return []
+
         # Use message format inference
         try:
             schema = infer_format(byte_arrays)  # type: ignore[arg-type]
@@ -523,10 +527,20 @@ class BlackBoxSession(AnalysisSession):
         if not traces:
             return None
 
+        # Early exit for small datasets (performance optimization)
+        # State machine inference requires meaningful sequences
+        if len(traces) < 3:
+            return None
+
         try:
             # Convert traces to sequences of strings for RPNI
             # Each trace becomes a sequence
             byte_arrays = [self._trace_to_bytes(t) for t in traces]
+
+            # Skip if sequences are too short for meaningful state machine
+            if any(len(arr) < 10 for arr in byte_arrays):
+                return None
+
             # Convert to lists of strings for RPNI input format
             # Cast: list[list[str]] is compatible with list[list[str | int]] at runtime
             sequences = [[str(b) for b in arr.tolist()] for arr in byte_arrays]

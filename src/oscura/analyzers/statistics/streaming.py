@@ -46,6 +46,8 @@ class StreamingStats:
         self.m2 = 0.0  # Sum of squared differences from mean
         self.min_val = float("inf")
         self.max_val = float("-inf")
+        self.has_pos_inf = False
+        self.has_neg_inf = False
 
     def update(self, data: NDArray[np.floating[Any]]) -> None:
         """Update statistics with new data chunk.
@@ -59,10 +61,19 @@ class StreamingStats:
 
         for value in data:
             self.count += 1
-            delta = value - self.mean
-            self.mean += delta / self.count
-            delta2 = value - self.mean
-            self.m2 += delta * delta2
+
+            # Track infinities for proper mean calculation
+            if np.isposinf(value):
+                self.has_pos_inf = True
+            elif np.isneginf(value):
+                self.has_neg_inf = True
+
+            # Only update Welford's algorithm for finite values when no inf present
+            if not (self.has_pos_inf or self.has_neg_inf):
+                delta = value - self.mean
+                self.mean += delta / self.count
+                delta2 = value - self.mean
+                self.m2 += delta * delta2
 
             # Update min/max
             if value < self.min_val:
@@ -76,6 +87,20 @@ class StreamingStats:
         Returns:
             StreamingStatsResult with mean, variance, std, min, max, count.
         """
+        # Handle infinities in mean calculation
+        if self.has_pos_inf and self.has_neg_inf:
+            # Both +inf and -inf present: mean is undefined (NaN)
+            mean = float("nan")
+        elif self.has_pos_inf:
+            # Only +inf present: mean is +inf
+            mean = float("inf")
+        elif self.has_neg_inf:
+            # Only -inf present: mean is -inf
+            mean = float("-inf")
+        else:
+            # No infinities: use Welford's result
+            mean = self.mean
+
         if self.count < 2:
             variance = 0.0
             std = 0.0
@@ -84,7 +109,7 @@ class StreamingStats:
             std = np.sqrt(variance)
 
         return StreamingStatsResult(
-            mean=self.mean,
+            mean=mean,
             variance=variance,
             std=std,
             min=self.min_val if self.min_val != float("inf") else 0.0,

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -347,20 +348,14 @@ class TestMultiProtocolCorrelator:
 
     def test_build_dependency_graph_without_networkx(self) -> None:
         """Test that graph building fails gracefully without networkx."""
-        # This test only runs if networkx is not installed
-        # Skip if networkx is available
-        try:
-            import networkx  # noqa: F401
-
-        except ImportError:
-            pass
-
         correlator = MultiProtocolCorrelator()
         msg = ProtocolMessage(protocol="can", timestamp=1.0)
         correlator.add_message(msg)
 
-        with pytest.raises(ImportError, match="networkx is required"):
-            correlator.build_dependency_graph()
+        # Simulate networkx not being available
+        with patch.dict("sys.modules", {"networkx": None}):
+            with pytest.raises(ImportError, match="networkx is required"):
+                correlator.build_dependency_graph()
 
     def test_extract_sessions_single(self) -> None:
         """Test session extraction with single session."""
@@ -466,13 +461,6 @@ class TestMultiProtocolCorrelator:
 
     def test_visualize_flow_without_matplotlib(self) -> None:
         """Test that visualization fails gracefully without matplotlib."""
-        # Skip if matplotlib is available
-        try:
-            import matplotlib  # noqa: F401
-
-        except ImportError:
-            pass
-
         correlator = MultiProtocolCorrelator()
         msg = ProtocolMessage(protocol="can", timestamp=1.0)
         correlator.add_message(msg)
@@ -485,8 +473,10 @@ class TestMultiProtocolCorrelator:
             protocols={"can"},
         )
 
-        with pytest.raises(ImportError, match="matplotlib is required"):
-            correlator.visualize_flow(session, Path("output.png"))
+        # Simulate matplotlib not being available
+        with patch.dict("sys.modules", {"matplotlib": None, "matplotlib.pyplot": None}):
+            with pytest.raises(ImportError, match="matplotlib is required"):
+                correlator.visualize_flow(session, Path("output.png"))
 
     def test_export_json(self, tmp_path: Path) -> None:
         """Test JSON export."""

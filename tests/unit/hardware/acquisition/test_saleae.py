@@ -75,9 +75,8 @@ class TestSaleaeSource:
         """Test handling of missing saleae library."""
         source = SaleaeSource()
 
-        with patch(
-            "oscura.hardware.acquisition.saleae.saleae", side_effect=ImportError("saleae not found")
-        ):
+        # Patch saleae to be None (simulating import failure at module level)
+        with patch("oscura.hardware.acquisition.saleae.saleae", None):
             with pytest.raises(ImportError, match="Saleae source requires saleae library"):
                 source._ensure_connection()
 
