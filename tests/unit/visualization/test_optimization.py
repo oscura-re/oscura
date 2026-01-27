@@ -431,7 +431,7 @@ class TestDecimateForDisplay:
         data = np.sin(time)
 
         with pytest.raises(ValueError, match="Invalid decimation method"):
-            decimate_for_display(time, data, max_points=100, method="invalid")  # type: ignore
+            decimate_for_display(time, data, max_points=100, method="invalid")  # type: ignore[arg-type]
 
     def test_very_small_signal_not_decimated(self) -> None:
         """Test that very small signals (<10 points) are not decimated."""
@@ -613,7 +613,7 @@ class TestInterestingRegionDataclass:
                 end_idx=10,
                 start_time=0.0,
                 end_time=0.01,
-                type=type_val,  # type: ignore
+                type=type_val,  # type: ignore[arg-type]
                 significance=0.5,
                 metadata={},
             )
@@ -668,7 +668,7 @@ class TestEdgeCases:
         int_data = np.array([1, 2, 3, 4, 5], dtype=np.int32)
         float_data = np.array([1.0, 2.0, 3.0, 4.0, 5.0], dtype=np.float64)
 
-        y_min_int, y_max_int = calculate_optimal_y_range(int_data)
+        y_min_int, y_max_int = calculate_optimal_y_range(int_data)  # type: ignore[arg-type]
         y_min_float, y_max_float = calculate_optimal_y_range(float_data)
 
         # Results should be similar
