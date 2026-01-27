@@ -66,19 +66,19 @@ class TestSessionManagerComprehensive:
 
     def test_session_cleanup_removes_only_expired(self) -> None:
         """Test cleanup only removes timed-out sessions."""
-        manager = SessionManager(max_sessions=10, session_timeout=0.5)
+        manager = SessionManager(max_sessions=2, session_timeout=0.5)
 
         # Create first session
         sid1 = manager.create_session("file1.bin", b"data1", {})
 
         # Wait a bit
-        time.sleep(0.3)
+        time.sleep(0.4)  # Increased for timing precision
 
         # Create second session (fresh)
         sid2 = manager.create_session("file2.bin", b"data2", {})
 
         # Wait for first session to timeout
-        time.sleep(0.3)
+        time.sleep(0.4)  # Increased to ensure timeout (0.4+0.4=0.8s > 0.5s)
 
         # Trigger cleanup by creating new session
         sid3 = manager.create_session("file3.bin", b"data3", {})
@@ -462,7 +462,7 @@ class TestRESTAPIServerComprehensive:
         sid = server.session_manager.create_session("test.bin", b"invalid", {})
 
         # Mock full_protocol_re to raise an exception
-        with patch("oscura.api.rest_server.full_protocol_re") as mock_func:
+        with patch("oscura.workflows.complete_re.full_protocol_re") as mock_func:
             mock_func.side_effect = ValueError("Invalid data format")
 
             # Run analysis
@@ -474,7 +474,7 @@ class TestRESTAPIServerComprehensive:
             assert session["status"] == "error"
             assert "Invalid data format" in session["error"]
 
-    @patch("oscura.api.rest_server.full_protocol_re")
+    @patch("oscura.workflows.complete_re.full_protocol_re")
     def test_run_analysis_success(
         self, mock_func: Mock, mock_full_protocol_re: Mock, tmp_path: Path
     ) -> None:
@@ -504,7 +504,7 @@ class TestRESTAPIServerComprehensive:
 
         # Create a result with minimal attributes
         result = Mock()
-        result.protocol_spec = Mock()
+        result.protocol_spec = Mock(spec=[])  # spec=[] prevents auto-attribute creation
         # Don't set any attributes
 
         # Should not raise an error

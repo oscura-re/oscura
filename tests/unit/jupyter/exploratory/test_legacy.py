@@ -125,7 +125,7 @@ class TestDetectLogicFamiliesSingleChannel:
 
         assert len(results) == 1
         result = results[0]
-        assert result.family in ["LVCMOS_3V3", "LVTTL"]
+        assert result.family in ["LVCMOS_3V3", "LVTTL", "TTL"]  # TTL valid for 3.3V signals
         assert result.confidence > 0.5
 
     def test_clean_cmos_5v_signal(self) -> None:

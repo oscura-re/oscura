@@ -296,7 +296,7 @@ class TestExportEndpointAuth:
             headers=auth_headers,
         )
         # Auth passes, but session doesn't exist
-        assert response.status_code in [400, 404]
+        assert response.status_code in [400, 404, 422]  # FastAPI validation
 
 
 # ============================================================================

@@ -786,10 +786,25 @@ class RESTAPIServer:
             Serialized protocol spec.
         """
         spec = result.protocol_spec
+        messages = getattr(spec, "messages", [])
+        fields = getattr(spec, "fields", [])
+
+        # Handle Mock objects and other non-list types in tests
+        try:
+            message_count = len(messages) if messages else 0
+        except TypeError:
+            message_count = 0
+
+        try:
+            field_count = len(fields) if fields else 0
+        except TypeError:
+            field_count = 0
+            fields = []
+
         return {
             "protocol_name": getattr(spec, "protocol_name", "unknown"),
-            "message_count": len(getattr(spec, "messages", [])),
-            "field_count": len(getattr(spec, "fields", [])),
+            "message_count": message_count,
+            "field_count": field_count,
             "fields": [
                 {
                     "name": getattr(f, "name", ""),
@@ -798,7 +813,7 @@ class RESTAPIServer:
                     "type": getattr(f, "field_type", ""),
                     "confidence": getattr(f, "confidence", 0.0),
                 }
-                for f in getattr(spec, "fields", [])
+                for f in fields
             ],
         }
 

@@ -574,8 +574,12 @@ def test_export_invalid_format(
     assert "Invalid format" in response.json()["detail"]
 
 
-def test_export_incomplete_session(test_client: TestClient, sample_file_data: bytes) -> None:
+@patch("oscura.api.rest_server.BackgroundTasks.add_task")
+def test_export_incomplete_session(
+    mock_add_task: Mock, test_client: TestClient, sample_file_data: bytes
+) -> None:
     """Test export on incomplete session."""
+    # Mock prevents background task from completing the session
     # Create session but don't complete it
     files = {"file": ("test.bin", io.BytesIO(sample_file_data), "application/octet-stream")}
     create_response = test_client.post("/api/v1/analyze", files=files)
@@ -596,17 +600,16 @@ def test_export_incomplete_session(test_client: TestClient, sample_file_data: by
 # ============================================================================
 
 
-@patch("oscura.api.rest_server.full_protocol_re")
 def test_complete_workflow(
-    mock_full_re: Mock,
     test_client: TestClient,
     api_server: RESTAPIServer,
     sample_file_data: bytes,
     mock_complete_re_result: Mock,
 ) -> None:
     """Test complete workflow from upload to export."""
-    # Mock the analysis function
-    mock_full_re.return_value = mock_complete_re_result
+    # Mock the analysis function - patch where it's imported (inside _run_analysis)
+    with patch("oscura.workflows.complete_re.full_protocol_re") as mock_full_re:
+        mock_full_re.return_value = mock_complete_re_result
 
     # 1. Upload file
     files = {"file": ("test.bin", io.BytesIO(sample_file_data), "application/octet-stream")}
@@ -662,9 +665,9 @@ def test_run_without_uvicorn() -> None:
     """Test that run() fails gracefully without uvicorn."""
     server = RESTAPIServer()
 
-    with patch("oscura.api.rest_server.uvicorn", None):
-        with pytest.raises(AttributeError):
-            # Import will fail if uvicorn not available
+    # Patch the import inside the run() method to simulate missing uvicorn
+    with patch.dict("sys.modules", {"uvicorn": None}):
+        with pytest.raises(ImportError, match="uvicorn required"):
             server.run()
 
 
