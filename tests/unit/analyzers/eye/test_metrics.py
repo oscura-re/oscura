@@ -50,6 +50,9 @@ class MockEyeDiagram:
 @pytest.fixture
 def clean_eye() -> MockEyeDiagram:
     """Create a clean eye diagram with good separation."""
+    # Use fixed seed for reproducible test data
+    rng = np.random.RandomState(42)
+
     samples_per_ui = 100
     num_traces = 200
     time_axis = np.linspace(0, 1, samples_per_ui)
@@ -59,10 +62,10 @@ def clean_eye() -> MockEyeDiagram:
     for i in range(num_traces):
         if i < num_traces // 2:
             # Low level traces (0V with small noise)
-            data[i, :] = np.random.normal(0.0, 0.05, samples_per_ui)
+            data[i, :] = rng.normal(0.0, 0.05, samples_per_ui)
         else:
             # High level traces (1V with small noise)
-            data[i, :] = np.random.normal(1.0, 0.05, samples_per_ui)
+            data[i, :] = rng.normal(1.0, 0.05, samples_per_ui)
 
     return MockEyeDiagram(data=data, time_axis=time_axis, samples_per_ui=samples_per_ui)
 
@@ -70,6 +73,9 @@ def clean_eye() -> MockEyeDiagram:
 @pytest.fixture
 def noisy_eye() -> MockEyeDiagram:
     """Create a noisy eye diagram with reduced separation."""
+    # Use fixed seed for reproducible test data
+    rng = np.random.RandomState(43)
+
     samples_per_ui = 100
     num_traces = 200
     time_axis = np.linspace(0, 1, samples_per_ui)
@@ -79,10 +85,10 @@ def noisy_eye() -> MockEyeDiagram:
     for i in range(num_traces):
         if i < num_traces // 2:
             # Low level traces with more noise
-            data[i, :] = np.random.normal(0.0, 0.2, samples_per_ui)
+            data[i, :] = rng.normal(0.0, 0.2, samples_per_ui)
         else:
             # High level traces with more noise
-            data[i, :] = np.random.normal(1.0, 0.2, samples_per_ui)
+            data[i, :] = rng.normal(1.0, 0.2, samples_per_ui)
 
     return MockEyeDiagram(data=data, time_axis=time_axis, samples_per_ui=samples_per_ui)
 
@@ -90,12 +96,15 @@ def noisy_eye() -> MockEyeDiagram:
 @pytest.fixture
 def closed_eye() -> MockEyeDiagram:
     """Create a closed eye diagram with no separation."""
+    # Use fixed seed for reproducible test data
+    rng = np.random.RandomState(44)
+
     samples_per_ui = 100
     num_traces = 200
     time_axis = np.linspace(0, 1, samples_per_ui)
 
     # All traces overlap around 0.5V
-    data = np.random.normal(0.5, 0.3, (num_traces, samples_per_ui))
+    data = rng.normal(0.5, 0.3, (num_traces, samples_per_ui))
 
     return MockEyeDiagram(data=data, time_axis=time_axis, samples_per_ui=samples_per_ui)
 
