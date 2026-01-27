@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from oscura.core.types import DigitalTrace, ProtocolPacket
+from oscura.core.types import DigitalTrace, ProtocolPacket, TraceMetadata
 
 
 @pytest.fixture
@@ -50,8 +50,7 @@ def sample_digital_trace() -> DigitalTrace:
     """Create sample digital trace for testing."""
     return DigitalTrace(
         data=np.array([0, 1, 1, 0, 1, 0, 0, 1] * 10, dtype=np.uint8),
-        sample_rate=1e6,
-        annotations={"channel": "RX"},
+        metadata=TraceMetadata(sample_rate=1e6, channel_name="RX"),
     )
 
 
@@ -60,19 +59,21 @@ class TestPlotProtocolDecode:
 
     def test_import_error_without_matplotlib(self) -> None:
         """Test ImportError when matplotlib not available."""
+        import importlib
         import sys
         from unittest.mock import patch
 
-        with patch.dict(sys.modules, {"matplotlib": None, "matplotlib.pyplot": None}):
-            # Re-import module to trigger matplotlib check
-            import importlib
+        import oscura.visualization.protocols as protocols_module
 
-            import oscura.visualization.protocols as protocols_module
+        try:
+            with patch.dict(sys.modules, {"matplotlib": None, "matplotlib.pyplot": None}):
+                importlib.reload(protocols_module)
 
+                with pytest.raises(ImportError, match="matplotlib is required"):
+                    protocols_module.plot_protocol_decode([])
+        finally:
+            # Restore module to original state for subsequent tests
             importlib.reload(protocols_module)
-
-            with pytest.raises(ImportError, match="matplotlib is required"):
-                protocols_module.plot_protocol_decode([])
 
     def test_empty_packets_raises(self, matplotlib_available: None) -> None:
         """Test that empty packet list raises ValueError."""
@@ -172,10 +173,12 @@ class TestPlotUartDecode:
         from oscura.visualization.protocols import plot_uart_decode
 
         rx_trace = DigitalTrace(
-            data=np.array([0, 1] * 40, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1] * 40, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
         tx_trace = DigitalTrace(
-            data=np.array([1, 0] * 40, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([1, 0] * 40, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
 
         fig = plot_uart_decode(sample_uart_packets, rx_trace=rx_trace, tx_trace=tx_trace)
@@ -236,7 +239,8 @@ class TestPlotSpiDecode:
         from oscura.visualization.protocols import plot_spi_decode
 
         mosi_trace = DigitalTrace(
-            data=np.array([0, 1] * 40, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1] * 40, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
 
         fig = plot_spi_decode(spi_packets, mosi_trace=mosi_trace)
@@ -250,16 +254,20 @@ class TestPlotSpiDecode:
         from oscura.visualization.protocols import plot_spi_decode
 
         clk_trace = DigitalTrace(
-            data=np.array([0, 1] * 40, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1] * 40, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
         mosi_trace = DigitalTrace(
-            data=np.array([0, 1, 1, 0] * 20, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1, 1, 0] * 20, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
         miso_trace = DigitalTrace(
-            data=np.array([1, 0, 0, 1] * 20, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([1, 0, 0, 1] * 20, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
         cs_trace = DigitalTrace(
-            data=np.array([1] + [0] * 78 + [1], dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([1] + [0] * 78 + [1], dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
 
         fig = plot_spi_decode(
@@ -280,7 +288,8 @@ class TestPlotSpiDecode:
         from oscura.visualization.protocols import plot_spi_decode
 
         mosi_trace = DigitalTrace(
-            data=np.array([0, 1] * 40, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1] * 40, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
 
         # Only show MOSI
@@ -330,10 +339,12 @@ class TestPlotI2cDecode:
         from oscura.visualization.protocols import plot_i2c_decode
 
         sda_trace = DigitalTrace(
-            data=np.array([0, 1] * 40, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1] * 40, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
         scl_trace = DigitalTrace(
-            data=np.array([0, 1, 0, 1] * 20, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1, 0, 1] * 20, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
 
         fig = plot_i2c_decode(i2c_packets, sda_trace=sda_trace, scl_trace=scl_trace)
@@ -403,7 +414,8 @@ class TestPlotCanDecode:
         from oscura.visualization.protocols import plot_can_decode
 
         can_trace = DigitalTrace(
-            data=np.array([0, 1] * 40, dtype=np.uint8), sample_rate=1e6, annotations={}
+            data=np.array([0, 1] * 40, dtype=np.uint8),
+            metadata=TraceMetadata(sample_rate=1e6),
         )
 
         fig = plot_can_decode(can_packets, can_trace=can_trace)
