@@ -457,7 +457,6 @@ def test_get_session_endpoint(
     test_client: TestClient,
     api_server: RESTAPIServer,
     sample_file_data: bytes,
-    mock_complete_re_result: Mock,
 ) -> None:
     """Test getting session details endpoint."""
     # Create a session first
@@ -465,11 +464,9 @@ def test_get_session_endpoint(
     create_response = test_client.post("/api/v1/analyze", files=files)
     session_id = create_response.json()["session_id"]
 
-    # Mock the session result
+    # Update session status (without storing Mock result which can't be serialized)
     test_client.app.extra["session_manager"] = api_server.session_manager
-    api_server.session_manager.update_session(
-        session_id, "complete", result=mock_complete_re_result
-    )
+    api_server.session_manager.update_session(session_id, "complete")
 
     # Get session
     response = test_client.get(f"/api/v1/sessions/{session_id}")
