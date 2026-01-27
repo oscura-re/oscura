@@ -235,6 +235,8 @@ addopts = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    # Matplotlib tight_layout warning in protocol visualization tests
+    "ignore:This figure includes Axes that are not compatible with tight_layout:UserWarning",
     # NOTE: pytest-benchmark warning filter removed - causes ModuleNotFoundError
     # when pytest-benchmark is not installed (e.g., in release smoke tests)
     # "ignore::pytest_benchmark.logger.PytestBenchmarkWarning",

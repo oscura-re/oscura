@@ -26,9 +26,9 @@ class TestRenderThumbnail:
 
     def test_import_error_without_matplotlib(self) -> None:
         """Test ImportError when matplotlib not available."""
+        import importlib
         import sys
         from unittest.mock import patch
-        import importlib
 
         from oscura.visualization import thumbnails
 
