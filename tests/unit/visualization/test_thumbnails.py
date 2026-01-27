@@ -28,18 +28,21 @@ class TestRenderThumbnail:
         """Test ImportError when matplotlib not available."""
         import sys
         from unittest.mock import patch
+        import importlib
 
-        with patch.dict(sys.modules, {"matplotlib": None, "matplotlib.pyplot": None}):
-            import importlib
+        from oscura.visualization import thumbnails
 
-            from oscura.visualization import thumbnails
+        try:
+            with patch.dict(sys.modules, {"matplotlib": None, "matplotlib.pyplot": None}):
+                importlib.reload(thumbnails)
 
+                signal = np.sin(np.linspace(0, 10, 1000))
+
+                with pytest.raises(ImportError, match="matplotlib is required"):
+                    thumbnails.render_thumbnail(signal)
+        finally:
+            # Restore module to original state for subsequent tests
             importlib.reload(thumbnails)
-
-            signal = np.sin(np.linspace(0, 10, 1000))
-
-            with pytest.raises(ImportError, match="matplotlib is required"):
-                thumbnails.render_thumbnail(signal)
 
     def test_basic_thumbnail(self, matplotlib_available: None) -> None:
         """Test basic thumbnail rendering."""

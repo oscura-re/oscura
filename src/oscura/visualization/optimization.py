@@ -230,8 +230,10 @@ def calculate_optimal_x_window(
     active_regions = rms > rms_threshold
 
     if not np.any(active_regions):
-        # No significant activity, return full range
-        return (float(time[0]), float(time[-1]))
+        # No significant activity, return padded full range
+        time_range = time[-1] - time[0]
+        padding = time_range * 0.05  # 5% padding on each side
+        return (float(time[0] - padding), float(time[-1] + padding))
 
     # Find first active region
     active_indices = np.where(active_regions)[0]
@@ -257,21 +259,29 @@ def calculate_optimal_x_window(
 
         if len(crossings) >= 4:
             # Estimate period from crossings (two crossings per cycle)
+            # crossings[::2] already gives full periods (every other crossing)
             periods = np.diff(crossings[::2])
             if len(periods) > 0:
                 median_period = np.median(periods)
-                samples_per_feature = int(median_period * 2)  # Full cycle
+                samples_per_feature = int(median_period)  # Already full cycle from [::2]
 
                 # Calculate window to show target_features
                 total_samples = samples_per_feature * target_features
+
+                # Respect decimation constraint
+                max_window_samples = int(screen_width * samples_per_pixel)
+                total_samples = min(total_samples, max_window_samples)
+
                 window_start = first_active
                 window_end = min(window_start + total_samples, len(time) - 1)
 
                 return (float(time[window_start]), float(time[window_end]))
 
-    # Fallback: zoom to first N% of active region
+    # Fallback: zoom to respect decimation threshold
+    # Limit window to screen_width * samples_per_pixel samples
+    max_window_samples = int(screen_width * samples_per_pixel)
     active_duration = len(active_indices)
-    zoom_samples = min(active_duration, screen_width * int(samples_per_pixel))
+    zoom_samples = min(active_duration, max_window_samples)
     window_end = min(first_active + zoom_samples, len(time) - 1)
 
     return (float(time[first_active]), float(time[window_end]))
