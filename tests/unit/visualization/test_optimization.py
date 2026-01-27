@@ -427,11 +427,11 @@ class TestDecimateForDisplay:
 
     def test_invalid_method_raises(self) -> None:
         """Test that invalid method raises ValueError."""
-        time = np.linspace(0, 1, 1000)
+        time = np.linspace(0, 1, 10000)
         data = np.sin(time)
 
         with pytest.raises(ValueError, match="Invalid decimation method"):
-            decimate_for_display(time, data, method="invalid")  # type: ignore
+            decimate_for_display(time, data, max_points=100, method="invalid")  # type: ignore
 
     def test_very_small_signal_not_decimated(self) -> None:
         """Test that very small signals (<10 points) are not decimated."""

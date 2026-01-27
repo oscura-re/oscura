@@ -759,9 +759,16 @@ def calculate_crc32(data: bytes) -> int:
         Returns:
             Safe Python class name (PascalCase).
         """
-        # Remove non-alphanumeric characters
+        # If name is already PascalCase (first letter uppercase, contains mix of upper/lower),
+        # preserve it as-is after removing non-alphanumeric chars
         clean_name = "".join(c if c.isalnum() else "_" for c in name)
-        # Convert to PascalCase
+
+        # Check if already PascalCase (starts with uppercase, has lowercase letters)
+        if clean_name and clean_name[0].isupper() and any(c.islower() for c in clean_name):
+            # Remove underscores but preserve case
+            return clean_name.replace("_", "")
+
+        # Otherwise convert to PascalCase
         words = clean_name.split("_")
         return "".join(word.capitalize() for word in words if word)
 

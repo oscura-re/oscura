@@ -257,13 +257,15 @@ class TestRESTAPIServerComprehensive:
         server = RESTAPIServer(host="127.0.0.1", port=8000)
         client = TestClient(server.app)
 
-        # Create file with no filename
+        # Create file with no filename (FastAPI rejects with 422)
         files = {"file": ("", b"test_data", "application/octet-stream")}
 
         response = client.post("/api/v1/analyze", files=files)
 
-        assert response.status_code == 400
-        assert "Filename required" in response.json()["detail"]
+        # FastAPI validation rejects before reaching endpoint
+        assert response.status_code == 422
+        data = response.json()
+        assert "detail" in data
 
     def test_analyze_endpoint_max_sessions_exceeded(self) -> None:
         """Test analyze endpoint when max sessions exceeded."""

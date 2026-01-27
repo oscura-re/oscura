@@ -431,13 +431,15 @@ def test_analyze_with_protocol_hint(test_client: TestClient, sample_file_data: b
 
 def test_analyze_no_filename(test_client: TestClient) -> None:
     """Test analysis without filename raises error."""
-    # Create file without filename
+    # Create file without filename (FastAPI rejects this with 422)
     files = {"file": ("", io.BytesIO(b"\x01\x02"), "application/octet-stream")}
 
     response = test_client.post("/api/v1/analyze", files=files)
 
-    assert response.status_code == 400
-    assert "Filename required" in response.json()["detail"]
+    # FastAPI validation rejects before reaching endpoint
+    assert response.status_code == 422
+    data = response.json()
+    assert "detail" in data
 
 
 def test_list_sessions_endpoint(test_client: TestClient) -> None:

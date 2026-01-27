@@ -10,6 +10,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+# Skip all tests if matplotlib not available
+pytest.importorskip("matplotlib")
+
 
 class TestRenderThumbnail:
     """Tests for render_thumbnail function."""
