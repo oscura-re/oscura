@@ -321,7 +321,7 @@ class TestUDSDecoderNegativeResponses:
 
         assert isinstance(result, UDSNegativeResponse)
         assert result.nrc == 0xFF
-        assert result.nrc_name == "unknown"
+        assert result.nrc_name == "unknownNRC_0xFF"
 
 
 class TestUDSDecoderSubFunctions:
