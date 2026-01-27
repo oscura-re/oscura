@@ -11,7 +11,14 @@ import numpy as np
 import pytest
 
 # Skip all tests if matplotlib not available
-pytest.importorskip("matplotlib")
+try:
+    import matplotlib  # noqa: F401
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+
+pytestmark = pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not installed")
 
 
 class TestRenderThumbnail:
