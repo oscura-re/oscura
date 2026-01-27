@@ -509,7 +509,5 @@ print(f"DTCs: {[f'{dtc.code} - {dtc.description}' for dtc in dtcs]}")
 ## See Also
 
 - [Tutorial: CAN Bus Analysis](../tutorials/can-bus-analysis.md)
-- [Tutorial: UDS Diagnostics](../tutorials/uds-diagnostics.md)
-- [API: CAN Session](../api/sessions/can.md)
-- [API: UDS Decoder](../api/protocols/uds.md)
-- [FAQ: Automotive Protocols](../faq/automotive.md)
+
+For CAN session management and UDS decoder API details, see the source code documentation.

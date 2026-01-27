@@ -714,16 +714,11 @@ if response:
 
 ### Related Tutorials
 
-- [UDS Diagnostic Protocol](uds-diagnostics.md)
-- [Multi-Protocol Correlation](multi-protocol-analysis.md)
-- [Vehicle Security Testing](automotive-security.md)
+- [Reverse Engineering Unknown UART Protocol](reverse-engineering-uart.md)
 
 ### Additional Resources
 
-- [CAN Protocol Decoder API](../api/protocols/can.md)
-- [CAN Session Guide](../api/sessions/can.md)
-- [DBC Export Documentation](../api/export/dbc.md)
-- [Signal Extraction Algorithm](../developer-guide/algorithms/signal-extraction.md)
+See the source code documentation for details on CAN protocol decoding, session management, and DBC export functionality.
 
 ---
 

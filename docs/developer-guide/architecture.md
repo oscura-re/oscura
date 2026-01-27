@@ -605,5 +605,3 @@ def test_crc_reversal_finds_valid_crc(message: list[int]):
 
 - [Contributing Guide](../contributing.md)
 - [API Reference](../api/)
-- [Design Principles](design-principles.md)
-- [Plugin Development](custom-protocols.md)
