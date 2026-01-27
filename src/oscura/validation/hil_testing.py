@@ -75,7 +75,7 @@ try:
 except ImportError:
     IP = None  # type: ignore[assignment]
     UDP = None  # type: ignore[assignment]
-    Packet = None  # type: ignore[assignment]
+    Packet = None  # type: ignore[assignment,misc]
     wrpcap = None  # type: ignore[assignment]
 
 import serial  # type: ignore[import-untyped]
@@ -947,7 +947,7 @@ class HILTester:
             # Silently skip if scapy not available
             return
 
-        packets: list = []
+        packets: list[Any] = []
         for timestamp, sent_data, recv_data in self._pcap_packets:
             # Create UDP packet for sent data
             pkt = IP(dst="192.168.1.1") / UDP(dport=12345) / bytes(sent_data)

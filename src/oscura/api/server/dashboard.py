@@ -425,8 +425,8 @@ class WebDashboard:
 
             session_id = self._create_analysis_session(file.filename, file_data, options)
 
-            if background_tasks:
-                background_tasks.add_task(self._run_analysis_with_updates, session_id)
+            # Add background task for analysis (FastAPI auto-injects BackgroundTasks)
+            background_tasks.add_task(self._run_analysis_with_updates, session_id)
 
             return JSONResponse(
                 {
