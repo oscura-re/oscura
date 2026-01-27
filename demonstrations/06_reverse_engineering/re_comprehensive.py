@@ -113,21 +113,14 @@ class SignalReverseEngineeringDemo(BaseDemo):
         print_info("Generating synthetic mystery signal...")
 
         # Create a UART-like signal with some noise
-        signal = (
+        channels = (
             SignalBuilder(sample_rate=self.sample_rate, duration=0.01)
             .add_uart(baud_rate=115200, data=b"Hello Oscura!", amplitude=3.3)
             .add_noise(snr_db=30, channel="uart")
-            .build()
+            .build_channels()
         )
 
-        self.trace = WaveformTrace(
-            data=signal.data["uart"],
-            metadata=TraceMetadata(
-                sample_rate=self.sample_rate,
-                channel_name="Mystery_Signal",
-                source_file="synthetic",
-            ),
-        )
+        self.trace = channels["uart"]
 
         print_result("Sample rate", f"{self.sample_rate / 1e6:.1f}", "MHz")
         print_result("Samples", len(self.trace.data))

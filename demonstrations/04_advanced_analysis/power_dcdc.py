@@ -377,7 +377,7 @@ class DCDCEfficiencyDemo(BaseDemo):
         )
 
         print_result("Overall efficiency", f"{eta * 100:.2f}%")
-        self.results["efficiency"] = eta * 100
+        self.results["efficiency"] = eta  # Store as decimal (0.0-1.0) for validation
 
         # Calculate power values
         p_in = average_power(voltage=self.v_in_trace, current=self.i_in_trace)

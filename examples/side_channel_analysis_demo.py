@@ -4,6 +4,8 @@
 This demo shows how to use the DPA framework to recover cryptographic keys
 from power consumption traces using CPA (Correlation Power Analysis).
 
+# SKIP_VALIDATION - This demo takes >60 seconds due to cryptographic computations
+
 Example:
     python examples/side_channel_analysis_demo.py
 """

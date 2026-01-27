@@ -18,7 +18,7 @@ import tempfile
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -29,6 +29,7 @@ from oscura.api.server.dashboard import (
     ConnectionManager,
     DashboardConfig,
     WebDashboard,
+    main,
 )
 
 # ============================================================================
@@ -135,8 +136,8 @@ class TestConnectionManager:
     def mock_websocket(self) -> Mock:
         """Create mock WebSocket connection."""
         ws = Mock()
-        ws.accept = Mock()
-        ws.send_json = Mock()
+        ws.accept = AsyncMock()
+        ws.send_json = AsyncMock()
         return ws
 
     @pytest.mark.asyncio
@@ -211,7 +212,7 @@ class TestWebDashboardInit:
 
     def test_init_without_fastapi(self) -> None:
         """Test initialization fails without FastAPI."""
-        with patch("oscura.web.dashboard.HAS_FASTAPI", False):
+        with patch("oscura.api.server.dashboard.HAS_FASTAPI", False):
             with pytest.raises(ImportError, match="FastAPI required"):
                 WebDashboard()
 
@@ -362,7 +363,8 @@ class TestAPIEndpoints:
 
         response = test_client.post("/api/upload", files=files)
 
-        assert response.status_code == 400
+        # FastAPI validates filename at framework level and returns 422
+        assert response.status_code == 422
 
     def test_upload_file_too_large(self, test_client: Any, dashboard: WebDashboard) -> None:
         """Test upload fails for oversized file."""
@@ -570,19 +572,20 @@ class TestErrorHandling:
 class TestCLI:
     """Test command-line interface."""
 
-    @patch("oscura.web.dashboard.WebDashboard.run")
+    @patch("oscura.api.server.dashboard.WebDashboard.run")
     def test_main_default_args(self, mock_run: Mock) -> None:
         """Test CLI with default arguments."""
 
         with patch("sys.argv", ["dashboard"]):
-            with pytest.raises(SystemExit):
-                # main() will call run() which we've mocked
-                pass
+            main()
+            # Verify run was called (server would start)
+            mock_run.assert_called_once()
 
-    @patch("oscura.web.dashboard.WebDashboard.run")
+    @patch("oscura.api.server.dashboard.WebDashboard.run")
     @patch("sys.argv", ["dashboard", "--host", "0.0.0.0", "--port", "8080", "--theme", "light"])
     def test_main_custom_args(self, mock_run: Mock) -> None:
         """Test CLI with custom arguments."""
 
-        # This would normally be tested with actual CLI execution
-        # but we're mocking to avoid running the server
+        main()
+        # Verify run was called with custom configuration
+        mock_run.assert_called_once()

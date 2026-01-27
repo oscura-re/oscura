@@ -260,7 +260,7 @@ class CRCReverseDemo(BaseDemo):
         """Reverse engineer CRC parameters for all test cases."""
         print_subheader("CRC Reverse Engineering")
 
-        reverser = CRCReverser(verbose=self.verbose)
+        reverser = CRCReverser(verbose=False)
         self.results["successful_recoveries"] = 0
         self.results["total_tests"] = len(self.test_cases)
         self.results["recovered_algorithms"] = []

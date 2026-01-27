@@ -406,11 +406,11 @@ class WebDashboard:
         @self.app.post("/api/upload", tags=["API"])
         async def upload_file(
             file: UploadFile,
+            background_tasks: BackgroundTasks,
             protocol_hint: str | None = None,
             auto_crc: bool = True,
             detect_crypto: bool = True,
             generate_tests: bool = True,
-            background_tasks: BackgroundTasks | None = None,
         ) -> JSONResponse:
             """Upload file and start analysis."""
             self._validate_upload_file(file)

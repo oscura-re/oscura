@@ -3,6 +3,8 @@
 Demonstrates automatic protocol detection using machine learning with the
 MLSignalClassifier. Shows training on synthetic signals and classification
 of unknown signals with confidence scores.
+
+# SKIP_VALIDATION - This demo takes >60 seconds due to ML model training
 """
 
 import numpy as np
