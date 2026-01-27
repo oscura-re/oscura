@@ -44,9 +44,16 @@ References:
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol, cast
+
+# Optional dependency - import at module level for mocking in tests
+try:
+    import pyvisa
+except ImportError:
+    pyvisa = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from pyvisa import ResourceManager
@@ -130,12 +137,10 @@ class VISASource:
         if self.instrument is not None:
             return
 
-        try:
-            import pyvisa
-        except ImportError as e:
+        if pyvisa is None:
             raise ImportError(
                 "VISA source requires pyvisa library. Install with: pip install pyvisa pyvisa-py"
-            ) from e
+            )
 
         try:
             self.rm = pyvisa.ResourceManager()
@@ -337,8 +342,6 @@ class VISASource:
         """
         if self._closed:
             raise ValueError("Cannot stream from closed source")
-
-        import time
 
         start_time = time.time()
 

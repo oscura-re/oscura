@@ -85,6 +85,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+# Optional dependencies - import at module level for validation
+try:
+    import matplotlib
+except ImportError:
+    matplotlib = None  # type: ignore[assignment]
+
+try:
+    import networkx
+except ImportError:
+    networkx = None  # type: ignore[assignment]
+
 
 @dataclass
 class ProtocolMessage:
@@ -447,6 +458,8 @@ class MultiProtocolCorrelator:
             ...     print(f"  Protocols: {', '.join(session.protocols)}")
             ...     print(f"  Duration: {session.end_time - session.start_time:.3f}s")
         """
+        if networkx is None:
+            raise ImportError("networkx is required for dependency graph building")
         try:
             import networkx as nx
         except ImportError as e:
@@ -711,6 +724,8 @@ class MultiProtocolCorrelator:
         Example:
             >>> correlator.export_analysis(Path("analysis.json"), format="json")
         """
+        if matplotlib is None:
+            raise ImportError("matplotlib is required for flow visualization")
         if format == "json":
             self._export_json(output_path)
         elif format == "csv":

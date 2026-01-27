@@ -346,7 +346,7 @@ class TestVISASource:
         source = VISASource()
         source.instrument = MagicMock()
         source.rm = MagicMock()
-
+        source._ensure_connection()  # Initialize instrument
         source.close()
 
         source.instrument.close.assert_called_once()

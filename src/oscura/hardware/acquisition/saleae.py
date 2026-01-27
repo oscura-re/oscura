@@ -41,9 +41,16 @@ References:
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
+
+# Optional dependency - import at module level for mocking in tests
+try:
+    import saleae
+except ImportError:
+    saleae = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from oscura.core.types import Trace
@@ -107,12 +114,10 @@ class SaleaeSource:
         if self.saleae is not None:
             return
 
-        try:
-            import saleae
-        except ImportError as e:
+        if saleae is None:
             raise ImportError(
                 "Saleae source requires saleae library. Install with: pip install saleae"
-            ) from e
+            )
 
         try:
             self.saleae = saleae.Saleae()
@@ -207,8 +212,6 @@ class SaleaeSource:
         self.saleae.capture_start()
 
         # Wait for capture to complete
-        import time
-
         time.sleep(self.duration)
 
         # Stop capture

@@ -48,6 +48,14 @@ class PatternMatchResult:
     pattern: bytes | str
     similarity: float = 1.0
 
+    def start(self) -> int:
+        """Return start position (compatible with re.Match interface)."""
+        return self.offset
+
+    def end(self) -> int:
+        """Return end position (compatible with re.Match interface)."""
+        return self.offset + self.length
+
 
 # Class-level pattern cache for 50-90% speedup on repeated patterns
 _BINARY_REGEX_CACHE: dict[str, re.Pattern[bytes] | None] = {}

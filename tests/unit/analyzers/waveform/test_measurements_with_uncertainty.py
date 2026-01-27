@@ -26,7 +26,6 @@ def pulse_trace() -> WaveformTrace:
 
     metadata = TraceMetadata(
         sample_rate=10e9,  # 10 GHz
-        time_base=1e-10,  # 0.1 ns
         vertical_scale=0.2,
         vertical_offset=0.0,
     )
@@ -47,10 +46,9 @@ def sine_trace() -> WaveformTrace:
 
     metadata = TraceMetadata(
         sample_rate=fs,
-        time_base=1 / fs,
         vertical_scale=1.0,
         vertical_offset=0.0,
-        calibration_info=CalibrationInfo(vertical_resolution=8, timebase_accuracy_ppm=25.0),
+        calibration_info=CalibrationInfo(vertical_resolution=8, timebase_accuracy=25.0),
     )
     return WaveformTrace(data=data, metadata=metadata)
 
@@ -97,10 +95,9 @@ class TestRiseTime:
         t = np.linspace(0, 100e-9, 1000)
         data = np.where(t < 10e-9, 0.0, np.where(t < 20e-9, (t - 10e-9) / 10e-9, 1.0))
 
-        calibration = CalibrationInfo(vertical_resolution=12, timebase_accuracy_ppm=10.0)
+        calibration = CalibrationInfo(vertical_resolution=12, timebase_accuracy=10.0)
         metadata = TraceMetadata(
             sample_rate=10e9,
-            time_base=1e-10,
             vertical_scale=0.2,
             vertical_offset=0.0,
             calibration_info=calibration,
@@ -243,10 +240,9 @@ class TestFrequency:
         t = np.linspace(0, 100e-6, 100000)
         data = np.sin(2 * np.pi * f * t)
 
-        calibration = CalibrationInfo(timebase_accuracy_ppm=1.0)  # Very accurate
+        calibration = CalibrationInfo(timebase_accuracy=1.0)  # Very accurate
         metadata = TraceMetadata(
             sample_rate=fs,
-            time_base=1 / fs,
             calibration_info=calibration,
         )
         trace = WaveformTrace(data=data, metadata=metadata)
@@ -291,7 +287,6 @@ class TestAmplitude:
 
         metadata = TraceMetadata(
             sample_rate=100e6,
-            time_base=1e-8,
             vertical_scale=2.0,  # 2V/div
             vertical_offset=0.0,
         )
@@ -310,7 +305,6 @@ class TestAmplitude:
         calibration = CalibrationInfo(vertical_resolution=12)
         metadata = TraceMetadata(
             sample_rate=100e6,
-            time_base=1e-8,
             calibration_info=calibration,
         )
         trace = WaveformTrace(data=data, metadata=metadata)
