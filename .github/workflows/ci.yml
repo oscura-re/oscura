@@ -169,7 +169,9 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13"]
         test-group:
-          - "analyzers"
+          - "analyzers-1" # Split analyzers into 3 batches (digital, protocols, waveform, eye, jitter)
+          - "analyzers-2" # (spectral, power, patterns, statistical, statistics)
+          - "analyzers-3" # (packet, ml, side_channel, signal_integrity, root tests)
           - "core-protocols-loaders"
           - "search-filtering-streaming"
           - "cli-ui-reporting"
@@ -213,10 +215,27 @@ jobs:
         id: test-paths
         run: |
           case "${{ matrix.test-group }}" in
-            "analyzers")
-              # Analyzer tests including signal analysis, correlation
-              paths="tests/unit/analyzers/ tests/unit/analysis/"
-              paths="$paths tests/unit/signal/ tests/unit/correlation/"
+            "analyzers-1")
+              # Analyzer batch 1: digital, protocols, waveform, eye, jitter (~2000 tests)
+              paths="tests/unit/analyzers/digital/ tests/unit/analyzers/protocols/"
+              paths="$paths tests/unit/analyzers/waveform/ tests/unit/analyzers/eye/"
+              paths="$paths tests/unit/analyzers/jitter/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-2")
+              # Analyzer batch 2: spectral, power, patterns, statistical, statistics (~1800 tests)
+              paths="tests/unit/analyzers/spectral/ tests/unit/analyzers/power/"
+              paths="$paths tests/unit/analyzers/patterns/ tests/unit/analyzers/statistical/"
+              paths="$paths tests/unit/analyzers/statistics/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3")
+              # Analyzer batch 3: packet, ml, side_channel, signal_integrity, root tests (~1300 tests)
+              paths="tests/unit/analyzers/packet/ tests/unit/analyzers/ml/"
+              paths="$paths tests/unit/analyzers/side_channel/ tests/unit/analyzers/signal_integrity/"
+              paths="$paths tests/unit/analyzers/test_*.py"
+              # Include related directories
+              paths="$paths tests/unit/analysis/ tests/unit/signal/ tests/unit/correlation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "core-protocols-loaders")
@@ -276,27 +295,27 @@ jobs:
           echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
 
           # Determine optimal worker count based on test group memory requirements
-          # Memory-intensive groups (analyzers, non-unit-tests): Use 2 workers
-          # CRITICAL WORKAROUND: analyzer tests hang with full CI settings
-          # Root cause: Unknown pytest hang when running all 5000+ analyzer tests together
-          # Workaround: Run sequentially without parallelization for analyzers group
-          # TODO: Investigate and fix the root cause (tracked in PR #12)
-          if [[ "${{ matrix.test-group }}" == "analyzers" ]]; then
-            echo "⚠️  Running analyzers sequentially to avoid CI hang"
-            XDIST_ARGS=""  # No parallelization for analyzers
-            TIMEOUT_ARGS="--timeout=120"  # 2min timeout per test
+          # CRITICAL FIX: Split analyzer tests into 3 batches to avoid timeout/hang
+          # Each batch ~1500-2000 tests, can run in parallel within 25min timeout
+          # Memory-intensive groups use 2 workers, standard groups use 4 workers
+          if [[ "${{ matrix.test-group }}" =~ ^analyzers- ]]; then
+            # Analyzer batches: 2 workers (memory-intensive signal processing)
+            WORKERS=2
+            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
+            TIMEOUT_ARGS="--timeout=300"  # 5min timeout per test
+            echo "Using 2 workers for analyzer batch: ${{ matrix.test-group }}"
+          elif [[ "${{ matrix.test-group }}" == "non-unit-tests" ]]; then
+            # Non-unit tests: 2 workers (integration tests can be memory-intensive)
+            WORKERS=2
+            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
+            TIMEOUT_ARGS="--timeout=300"
+            echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
           else
-            # Standard groups: Use appropriate worker count
-            if [[ "${{ matrix.test-group }}" == "non-unit-tests" ]]; then
-              WORKERS=2
-              XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
-              echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
-            else
-              WORKERS=4
-              XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
-              echo "Using 4 workers for standard test group: ${{ matrix.test-group }}"
-            fi
-            TIMEOUT_ARGS="--timeout=300"  # 5min timeout per test for parallel
+            # Standard groups: 4 workers
+            WORKERS=4
+            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
+            TIMEOUT_ARGS="--timeout=300"
+            echo "Using 4 workers for standard test group: ${{ matrix.test-group }}"
           fi
 
           # Run tests and capture exit code
