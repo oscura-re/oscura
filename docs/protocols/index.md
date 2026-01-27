@@ -20,9 +20,9 @@ Oscura supports 16+ built-in protocol decoders across automotive, industrial, Io
 
 **Reverse Engineering Unknown Protocol:**
 
-- Start with [BlackBox Session](../api/sessions/blackbox.md)
-- Use differential analysis
+- Use BlackBox session for differential analysis
 - Auto-detect protocol family
+- See API Reference for session management
 
 **Analyzing Known Protocol:**
 
@@ -34,32 +34,28 @@ Oscura supports 16+ built-in protocol decoders across automotive, industrial, Io
 - [CAN/CAN-FD](automotive.md#can-and-can-fd)
 - [LIN](automotive.md#lin)
 - [FlexRay](automotive.md#flexray)
-- [UDS Diagnostics](automotive.md#uds)
+- [UDS Diagnostics](automotive.md#uds-unified-diagnostic-services)
 
 **Embedded Debugging:**
 
-- [UART](serial.md#uart)
-- [SPI](serial.md#spi)
-- [I2C](serial.md#i2c)
-- [JTAG](debug.md#jtag)
-- [SWD](debug.md#swd)
+- UART, SPI, I2C serial protocols
+- JTAG, SWD debug interfaces
+- See source code documentation for protocol details
 
 **Industrial Control:**
 
-- [Modbus RTU](industrial.md#modbus-rtu)
-- [PROFIBUS](industrial.md#profibus)
+- Modbus RTU, PROFIBUS protocols
+- See source code documentation for protocol details
 
 ---
 
 ## Protocol Pages
 
-Detailed documentation for each protocol family:
+Detailed documentation:
 
 - **[Automotive Protocols](automotive.md)** - CAN, CAN-FD, LIN, FlexRay, UDS
-- **[Serial Protocols](serial.md)** - UART, SPI, I2C, 1-Wire
-- **[Debug Protocols](debug.md)** - JTAG, SWD
-- **[Industrial Protocols](industrial.md)** - Modbus, PROFIBUS
-- **[Encoding Schemes](encoding.md)** - Manchester, HDLC
+
+Additional protocol documentation is available in the source code.
 
 ---
 
@@ -165,7 +161,7 @@ class MyCustomProtocol(ProtocolDecoder):
         pass
 ```
 
-See [Developer Guide: Custom Protocol Decoders](../developer-guide/custom-protocols.md) for complete documentation.
+See the [Oscura source code](https://github.com/oscura-re/oscura) for implementation examples.
 
 ---
 
@@ -271,7 +267,6 @@ _Benchmarked on Intel i7-9700K @ 3.6GHz_
 We welcome contributions of new protocol decoders! See:
 
 - [Contributing Guide](../contributing.md)
-- [Developer Guide: Protocol Decoders](../developer-guide/protocol-decoders.md)
 - [Protocol Decoder Template](https://github.com/oscura-re/oscura/tree/main/templates/protocol_decoder.py)
 
 ---
@@ -281,4 +276,3 @@ We welcome contributions of new protocol decoders! See:
 - [API Reference: Protocol Decoders](../api/protocols/)
 - [Tutorial: Reverse Engineering Unknown UART](../tutorials/reverse-engineering-uart.md)
 - [Tutorial: CAN Bus Analysis](../tutorials/can-bus-analysis.md)
-- [FAQ: Protocol Detection](../faq/protocol-detection.md)

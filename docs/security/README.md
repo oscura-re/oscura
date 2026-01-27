@@ -68,7 +68,7 @@ When deploying Oscura in production:
 
 ## Reporting Vulnerabilities
 
-See [SECURITY.md](../../SECURITY.md) for our responsible disclosure policy.
+See `SECURITY.md` in the repository root for our responsible disclosure policy.
 
 ## Security Changelog
 

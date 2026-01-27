@@ -739,15 +739,10 @@ The HTML report includes:
 ### Related Tutorials
 
 - [CAN Bus Analysis Tutorial](can-bus-analysis.md)
-- [SPI Protocol Reverse Engineering](spi-reverse-engineering.md)
-- [Multi-Protocol Correlation](multi-protocol-analysis.md)
 
 ### Additional Resources
 
-- [UART Protocol Decoder API](../api/protocols/uart.md)
-- [BlackBox Session Guide](../api/sessions/blackbox.md)
-- [CRC Recovery Documentation](../api/inference/crc.md)
-- [Wireshark Dissector Export](../api/export/wireshark.md)
+See the source code documentation for details on UART protocol decoding, BlackBox session management, CRC recovery, and Wireshark dissector export.
 
 ---
 
