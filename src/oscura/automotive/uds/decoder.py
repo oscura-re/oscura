@@ -128,10 +128,13 @@ class UDSDecoder:
         # Handle ISO-TP single frame
         if message.data[0] <= 0x07:
             first_byte = message.data[1]
+            # Negative response needs: PCI + 0x7F + Requested SID + NRC = 4 bytes minimum
+            if first_byte == 0x7F:
+                return len(message.data) >= 4
         else:
             first_byte = message.data[0]
 
-        # Negative response
+        # Negative response (non-ISO-TP format)
         if first_byte == 0x7F:
             return len(message.data) >= 3
 
@@ -175,11 +178,13 @@ class UDSDecoder:
         if sid_info is None:
             return None
 
-        sid, is_request = sid_info
-        service_name = _SERVICE_NAMES[sid]
+        sid, canonical_sid, is_request = sid_info
+        service_name = _SERVICE_NAMES[canonical_sid]
 
         # Extract sub-function and payload
-        sub_function, payload = UDSDecoder._extract_subfunction_and_payload(data, sid, is_request)
+        sub_function, payload = UDSDecoder._extract_subfunction_and_payload(
+            data, canonical_sid, is_request
+        )
 
         return UDSService(
             sid=sid,
@@ -237,14 +242,17 @@ class UDSDecoder:
         )
 
     @staticmethod
-    def _parse_sid_byte(first_byte: int) -> tuple[int, bool] | None:
+    def _parse_sid_byte(first_byte: int) -> tuple[int, int, bool] | None:
         """Parse SID and request/response type from first UDS byte.
 
         Args:
             first_byte: First byte of UDS payload.
 
         Returns:
-            Tuple of (sid, is_request) or None if unknown service.
+            Tuple of (actual_sid, canonical_sid, is_request) or None if unknown service.
+            - actual_sid: The SID byte from message (0x50 for responses, 0x10 for requests)
+            - canonical_sid: The canonical service ID for name lookup (always 0x10)
+            - is_request: True if request, False if response
 
         Notes:
             - Response SIDs: 0x40-0x7F (request 0x00-0x3F + 0x40)
@@ -253,22 +261,25 @@ class UDSDecoder:
         """
         if 0x40 <= first_byte < 0x80:
             # Positive response to service 0x00-0x3F
-            sid = first_byte - 0x40
+            sid = first_byte  # Keep actual response SID (e.g., 0x50)
+            canonical_sid = first_byte - 0x40  # Request SID for validation (e.g., 0x10)
             is_request = False
         elif first_byte >= 0xC0:
             # Positive response to service 0x80-0xBF
-            sid = first_byte - 0x40
+            sid = first_byte  # Keep actual response SID
+            canonical_sid = first_byte - 0x40  # Request SID for validation
             is_request = False
         else:
             # Request (0x00-0x3F or 0x80-0xBF)
             sid = first_byte
+            canonical_sid = first_byte
             is_request = True
 
-        # Validate service is known
-        if sid not in _SERVICE_NAMES:
+        # Validate service is known (use canonical request SID)
+        if canonical_sid not in _SERVICE_NAMES:
             return None
 
-        return (sid, is_request)
+        return (sid, canonical_sid, is_request)
 
     @staticmethod
     def _extract_subfunction_and_payload(

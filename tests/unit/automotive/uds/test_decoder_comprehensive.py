@@ -176,8 +176,8 @@ class TestUDSDecoderServiceDecoding:
 
         assert result is not None
         assert isinstance(result, UDSService)
-        assert result.service_id == 0x10
-        assert result.service_name == "DiagnosticSessionControl"
+        assert result.sid == 0x10
+        assert result.name == "DiagnosticSessionControl"
         assert result.sub_function == 0x01
 
     def test_decode_service_read_data_by_identifier(self):
@@ -193,8 +193,8 @@ class TestUDSDecoderServiceDecoding:
 
         assert result is not None
         assert isinstance(result, UDSService)
-        assert result.service_id == 0x22
-        assert result.service_name == "ReadDataByIdentifier"
+        assert result.sid == 0x22
+        assert result.name == "ReadDataByIdentifier"
         # Data should contain DID (0xF190)
         assert len(result.data) >= 2
 
@@ -210,8 +210,8 @@ class TestUDSDecoderServiceDecoding:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.service_id == 0x3E
-        assert result.service_name == "TesterPresent"
+        assert result.sid == 0x3E
+        assert result.name == "TesterPresent"
         assert result.sub_function == 0x00
 
     def test_decode_service_negative_response(self):
@@ -245,7 +245,7 @@ class TestUDSDecoderServiceDecoding:
 
         assert result is not None
         assert isinstance(result, UDSService)
-        assert result.service_id == 0x50
+        assert result.sid == 0x50
         assert result.is_response is True
 
     def test_decode_service_too_short(self):
@@ -342,7 +342,7 @@ class TestUDSDecoderSubFunctions:
             result = UDSDecoder.decode_service(msg)
 
             assert result is not None
-            assert result.service_id == sid
+            assert result.sid == sid
             assert result.sub_function == 0x01
 
     def test_decode_service_without_subfunction(self):
@@ -400,7 +400,7 @@ class TestUDSDecoderEdgeCases:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.service_id == 0x10
+        assert result.sid == 0x10
 
     def test_decode_security_access_request(self):
         """Test decoding SecurityAccess service."""
@@ -414,8 +414,8 @@ class TestUDSDecoderEdgeCases:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.service_id == 0x27
-        assert result.service_name == "SecurityAccess"
+        assert result.sid == 0x27
+        assert result.name == "SecurityAccess"
         assert result.sub_function == 0x01
 
     def test_decode_routine_control(self):
@@ -430,8 +430,8 @@ class TestUDSDecoderEdgeCases:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.service_id == 0x31
-        assert result.service_name == "RoutineControl"
+        assert result.sid == 0x31
+        assert result.name == "RoutineControl"
         assert result.sub_function == 0x01
 
     def test_decode_transfer_data(self):
@@ -446,5 +446,5 @@ class TestUDSDecoderEdgeCases:
         result = UDSDecoder.decode_service(msg)
 
         assert result is not None
-        assert result.service_id == 0x36
-        assert result.service_name == "TransferData"
+        assert result.sid == 0x36
+        assert result.name == "TransferData"
