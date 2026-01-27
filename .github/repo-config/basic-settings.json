@@ -1,0 +1,1 @@
+{"default_branch":"main","description":"Workflow automation for hardware reverse engineering. Chains sigrok, ChipWhisperer, scipy into unified Python workflows. Protocol discovery, DBC generation, Wireshark dissectors.","homepage":"https://github.com/oscura-re/oscura","is_template":false,"license":"MIT","name":"oscura","visibility":"public"}
