@@ -336,8 +336,8 @@ class TestCANDecoder:
 
         # Should decode at least one frame
         assert len(frames) > 0, "Expected at least one decoded frame"
-        # Verify frame structure
-        assert hasattr(frames[0], "arbitration_id")
+        # Verify frame structure (ProtocolPacket stores CAN fields in annotations)
+        assert "arbitration_id" in frames[0].annotations
         assert hasattr(frames[0], "data")
 
     def test_decoder_reset(self, can_trace_standard: DigitalTrace):
