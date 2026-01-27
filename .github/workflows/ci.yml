@@ -277,15 +277,26 @@ jobs:
 
           # Determine optimal worker count based on test group memory requirements
           # Memory-intensive groups (analyzers, non-unit-tests): Use 2 workers
-          # Standard groups: Use 4 workers
-          if [[ "${{ matrix.test-group }}" =~ ^(analyzers|non-unit-tests)$ ]]; then
-            WORKERS=2
-            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
-            echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
+          # CRITICAL WORKAROUND: analyzer tests hang with full CI settings
+          # Root cause: Unknown pytest hang when running all 5000+ analyzer tests together
+          # Workaround: Run sequentially without parallelization for analyzers group
+          # TODO: Investigate and fix the root cause (tracked in PR #12)
+          if [[ "${{ matrix.test-group }}" == "analyzers" ]]; then
+            echo "⚠️  Running analyzers sequentially to avoid CI hang"
+            XDIST_ARGS=""  # No parallelization for analyzers
+            TIMEOUT_ARGS="--timeout=120"  # 2min timeout per test
           else
-            WORKERS=4
-            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
-            echo "Using 4 workers for standard test group: ${{ matrix.test-group }}"
+            # Standard groups: Use appropriate worker count
+            if [[ "${{ matrix.test-group }}" == "non-unit-tests" ]]; then
+              WORKERS=2
+              XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
+              echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
+            else
+              WORKERS=4
+              XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
+              echo "Using 4 workers for standard test group: ${{ matrix.test-group }}"
+            fi
+            TIMEOUT_ARGS="--timeout=300"  # 5min timeout per test for parallel
           fi
 
           # Run tests and capture exit code
@@ -294,6 +305,7 @@ jobs:
             -v \
             -m "not slow and not performance" \
             $XDIST_ARGS \
+            $TIMEOUT_ARGS \
             --hypothesis-profile=ci \
             -p no:benchmark \
             --cov=oscura \

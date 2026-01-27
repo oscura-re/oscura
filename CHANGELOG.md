@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dependency Enforcement** (.claude/hooks/validate_dependency_install.py): CRITICAL - Created mandatory dependency validator enforcing ALL dependencies installed in dev/test environments, prevents configuration drift between local and CI (6/6 validators passing)
 
 ### Fixed
+- **CI Workflow** (.github/workflows/ci.yml): CRITICAL WORKAROUND - Disabled parallelization for analyzer test group to prevent CI hang (tests run sequentially with 120s timeout per test); root cause under investigation - tests hang after ~15 minutes when run in parallel with full CI settings but work fine locally and in subdirectory batches; temporary workaround ensures CI completion while maintaining test coverage
 - **Infrastructure Policy** (pyproject.toml, .github/actions/setup-python-env/action.yml): CRITICAL - Enforced mandatory `--all-extras` installation policy for ALL dev/test environments, added verification checks in CI, documented zero-tolerance policy for optional dependencies during development/testing to eliminate configuration drift
 - **UDS Decoder** (src/oscura/automotive/uds/models.py): Corrected response SID handling to store actual message SID values (5 tests)
 - **StreamingStats** (src/oscura/analyzers/statistics/streaming.py): Implemented proper infinity handling for mean calculations (1 test)
