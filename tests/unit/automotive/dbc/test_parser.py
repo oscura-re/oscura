@@ -120,8 +120,8 @@ class TestDBCParser:
         data = bytearray(8)
         data[0] = 0x00
         data[1] = 0x00
-        data[2] = 0x1F  # RPM high byte
-        data[3] = 0x40  # RPM low byte
+        data[2] = 0x40  # RPM low byte (little-endian)
+        data[3] = 0x1F  # RPM high byte (little-endian)
         data[4] = 0x7D  # Temp
         data[5] = 0x7F  # Load
         data[6] = 0x00
@@ -322,8 +322,8 @@ class TestDBCIntegration:
             raw_rpm = int(rpm / 0.25)
 
             data = bytearray(8)
-            data[2] = (raw_rpm >> 8) & 0xFF
-            data[3] = raw_rpm & 0xFF
+            data[2] = raw_rpm & 0xFF  # Low byte (little-endian)
+            data[3] = (raw_rpm >> 8) & 0xFF  # High byte (little-endian)
 
             msg = CANMessage(
                 arbitration_id=256,
