@@ -26,7 +26,11 @@ except ImportError:
 
 from oscura.visualization.power import plot_power_profile
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 # =============================================================================

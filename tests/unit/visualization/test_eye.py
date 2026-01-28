@@ -10,7 +10,11 @@ from oscura.core.exceptions import InsufficientDataError
 from oscura.core.types import TraceMetadata, WaveformTrace
 from oscura.visualization.eye import plot_bathtub, plot_eye
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 @pytest.fixture

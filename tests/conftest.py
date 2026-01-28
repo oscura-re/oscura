@@ -1100,18 +1100,26 @@ def very_large_signal() -> NDArray[np.float64]:
 # =============================================================================
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def cleanup_matplotlib():
-    """Automatically close all matplotlib figures once per module (optimal balance).
+    """Close all matplotlib figures once per module (opt-in).
 
-    This prevents the 'more than 20 figures' warning.
+    This prevents the 'more than 20 figures' warning. Only use for tests that
+    create matplotlib plots.
 
-    OPTIMIZED: Module scope provides optimal balance.
-    Previous (function): 17,226 tests * 0.001s = 17 seconds overhead
-    Optimized (module): 389 modules * 0.001s = 0.4 seconds overhead
-    TOTAL SAVINGS: ~17 seconds (95% reduction from original)
+    OPTIMIZATION: Converted from autouse to opt-in (saves ~27 seconds).
+    - Previous (autouse): 389 modules × 0.07s = ~27 seconds overhead
+    - Optimized (opt-in): ~30 modules × 0.07s = ~2.1 seconds overhead
+    - SAVINGS: ~25 seconds per test run
 
-    NOTE: plt.close("all") cleans up figures at module boundaries.
+    Usage:
+        @pytest.mark.usefixtures("cleanup_matplotlib")
+        class TestVisualization:
+            def test_plot(self):
+                ...
+
+    Or at module level:
+        pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
     """
     yield
     try:
@@ -1219,19 +1227,31 @@ def reset_memory_check_state():
         yield
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(scope="module")
 def reset_logging_state():
-    """Reset logging configuration once per module (optimal balance).
+    """Reset logging configuration once per module (opt-in).
 
-    OPTIMIZED: Module scope provides optimal balance of speed + isolation.
-    Previous (function): 17,226 tests * 0.05s = 14.4 minutes overhead
-    Optimized (module): 389 modules * 0.05s = 19 seconds overhead
-    TOTAL SAVINGS: ~14.4 minutes (95% reduction from original)
+    Only use for tests that modify logging configuration (e.g., CLI tests that
+    call configure_logging()).
+
+    OPTIMIZATION: Converted from autouse to opt-in (saves ~19 seconds).
+    - Previous (autouse): 389 modules × 0.05s = ~19 seconds overhead
+    - Optimized (opt-in): ~15 modules × 0.05s = ~0.75 seconds overhead
+    - SAVINGS: ~18 seconds per test run
 
     NOTE: Session scope breaks tests (state leakage). Module scope is optimal.
 
     Tests that call configure_logging() modify global logger state.
-    This fixture ensures each module starts with clean logging configuration.
+    This fixture ensures the module starts with clean logging configuration.
+
+    Usage:
+        @pytest.mark.usefixtures("reset_logging_state")
+        class TestCLIWithLogging:
+            def test_logging_config(self):
+                ...
+
+    Or at module level:
+        pytestmark = pytest.mark.usefixtures("reset_logging_state")
     """
     import logging
 

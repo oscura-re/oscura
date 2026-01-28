@@ -23,7 +23,9 @@ try:
 except ImportError:
     HAS_VIZ = False
 
-pytestmark = pytest.mark.skipif(not HAS_VIZ, reason="visualization module not available")
+pytestmark = [pytest.mark.skipif, pytest.mark.usefixtures("cleanup_matplotlib")](
+    not HAS_VIZ, reason="visualization module not available"
+)
 
 
 # ============================================================================

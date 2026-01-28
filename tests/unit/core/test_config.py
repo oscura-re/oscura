@@ -28,7 +28,11 @@ from oscura.core.config import (
 from oscura.core.config.legacy import validate_config
 from oscura.core.exceptions import ConfigurationError
 
-pytestmark = [pytest.mark.unit, pytest.mark.core]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.core,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 # ==============================================================================

@@ -21,7 +21,11 @@ try:
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 @pytest.fixture

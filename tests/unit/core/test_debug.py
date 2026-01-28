@@ -23,7 +23,11 @@ from oscura.core.debug import (
     should_log_debug,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.core]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.core,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 @pytest.fixture(autouse=True)

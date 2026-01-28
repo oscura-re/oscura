@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 from oscura.visualization.layout import (
+
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
     Annotation,
     ChannelLayout,
     PlacedAnnotation,

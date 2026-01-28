@@ -26,7 +26,11 @@ from oscura.visualization.palettes import (
     simulate_colorblindness,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 class TestGetPalette:

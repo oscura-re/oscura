@@ -19,6 +19,9 @@ import numpy as np
 import pytest
 
 from oscura.visualization.optimization import (
+
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
     InterestingRegion,
     calculate_grid_spacing,
     calculate_optimal_x_window,

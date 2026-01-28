@@ -10,7 +10,11 @@ import pytest
 
 from oscura.core.types import TraceMetadata, WaveformTrace
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 @pytest.fixture

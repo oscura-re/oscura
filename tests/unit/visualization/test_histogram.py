@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 from oscura.visualization.histogram import (
+
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
     _auto_select_method,
     _freedman_diaconis_bins,
     _scott_bins,

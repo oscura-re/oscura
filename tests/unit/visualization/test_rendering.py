@@ -36,7 +36,11 @@ from oscura.visualization.rendering import (
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 # Fixtures
