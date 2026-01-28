@@ -172,7 +172,8 @@ jobs:
           - "analyzers-1"
           - "analyzers-2"
           - "analyzers-3a"
-          - "analyzers-3b"
+          - "analyzers-3b-part1"
+          - "analyzers-3b-part2"
           - "analyzers-3c"
           - "analyzers-3d"
           - "analyzers-3e"
@@ -238,12 +239,16 @@ jobs:
               paths="tests/unit/analyzers/ml/ tests/unit/analyzers/side_channel/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "analyzers-3b")
-              # Packet analyzer - fast tests (exclude hypothesis tests)
+            "analyzers-3b-part1")
+              # Packet analyzer - fast tests part 1
               paths="tests/unit/analyzers/packet/test_parser.py"
               paths="$paths tests/unit/analyzers/packet/test_stream.py"
               paths="$paths tests/unit/analyzers/packet/test_metrics.py"
-              paths="$paths tests/unit/analyzers/packet/test_daq.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-part2")
+              # Packet analyzer - fast tests part 2
+              paths="tests/unit/analyzers/packet/test_daq.py"
               paths="$paths tests/unit/analyzers/packet/test_payload.py"
               paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
