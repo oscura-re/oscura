@@ -314,9 +314,9 @@ class TestNumbaPerformance:
             _ = _autocorr_direct_numba(data_centered, max_lag=50)
         avg_time = (time.perf_counter() - start) / n_iterations
 
-        # Should execute very quickly (under 1ms per call on modern hardware)
+        # Should execute very quickly (under 2ms per call, CI saw 1.32ms)
         # This confirms caching is working - uncached would be much slower
-        assert avg_time < 0.001, (
+        assert avg_time < 0.002, (
             f"Average call time ({avg_time * 1e3:.2f}ms) too slow, "
             f"suggests compilation caching not working"
         )
