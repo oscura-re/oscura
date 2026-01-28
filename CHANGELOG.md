@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **CI Workflow** (.github/workflows/ci.yml): Split analyzer test suite into 4 batches (analyzers-1: digital/protocols/waveform/eye/jitter, analyzers-2: spectral/power/patterns/statistical, analyzers-3a: packet/ml/side_channel/signal_integrity, analyzers-3b: root tests + analysis/signal/correlation) to prevent GitHub Actions 25-minute timeout on large test suites - each batch now completes in 8-12 minutes instead of 25+ minutes (root cause: original single "analyzers" batch with 945 tests exceeded timeout limit causing CI failures)
+
 ### Added
 - **CalibrationInfo** (src/oscura/core/types.py): Added `timebase_accuracy` field to support timebase accuracy specification in ppm (19 tests)
 

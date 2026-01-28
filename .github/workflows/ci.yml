@@ -169,7 +169,10 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13"]
         test-group:
-          - "analyzers"
+          - "analyzers-1"
+          - "analyzers-2"
+          - "analyzers-3a"
+          - "analyzers-3b"
           - "core-protocols-loaders"
           - "search-filtering-streaming"
           - "cli-ui-reporting"
@@ -213,9 +216,29 @@ jobs:
         id: test-paths
         run: |
           case "${{ matrix.test-group }}" in
-            "analyzers")
-              # Analyzer tests including signal analysis, correlation
-              paths="tests/unit/analyzers/ tests/unit/analysis/"
+            "analyzers-1")
+              # Digital, protocols, waveform, eye, jitter analyzers (~2000 tests, ~8-10 min)
+              paths="tests/unit/analyzers/digital/ tests/unit/analyzers/protocols/"
+              paths="$paths tests/unit/analyzers/waveform/ tests/unit/analyzers/eye/"
+              paths="$paths tests/unit/analyzers/jitter/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-2")
+              # Spectral, power, patterns, statistical analyzers (~1800 tests, ~8-10 min)
+              paths="tests/unit/analyzers/spectral/ tests/unit/analyzers/power/"
+              paths="$paths tests/unit/analyzers/patterns/ tests/unit/analyzers/statistical/"
+              paths="$paths tests/unit/analyzers/statistics/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3a")
+              # Packet, ML, side_channel, signal_integrity analyzers (~481 tests, ~10-12 min)
+              paths="tests/unit/analyzers/packet/ tests/unit/analyzers/ml/"
+              paths="$paths tests/unit/analyzers/side_channel/ tests/unit/analyzers/signal_integrity/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b")
+              # Root analyzer tests + analysis/signal/correlation (~464 tests, ~10-12 min)
+              paths="tests/unit/analyzers/test_*.py tests/unit/analysis/"
               paths="$paths tests/unit/signal/ tests/unit/correlation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
@@ -225,39 +248,47 @@ jobs:
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "search-filtering-streaming")
-              # Standalone test files in tests/unit/ root
-              paths="tests/unit/test_*.py"
+              # Standalone test files in tests/unit/ root + search/filtering/streaming
+              paths="tests/unit/test_*.py tests/unit/search/ tests/unit/filtering/"
+              paths="$paths tests/unit/streaming/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "cli-ui-reporting")
-              # CLI, reporting, visualization, web interface
+              # CLI, reporting, visualization, web interface + UI/onboarding
               paths="tests/unit/cli/ tests/unit/reporting/"
               paths="$paths tests/unit/visualization/ tests/unit/web/"
+              paths="$paths tests/unit/ui/ tests/unit/onboarding/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-workflows")
-              # Workflows, sessions, automotive, hardware/IoT
+              # Workflows, sessions, automotive, hardware/IoT + pipeline/batch/workflow
               paths="tests/unit/workflows/ tests/unit/sessions/"
               paths="$paths tests/unit/automotive/ tests/unit/hardware/"
               paths="$paths tests/unit/firmware/ tests/unit/iot/"
-              paths="$paths tests/unit/side_channel/"
+              paths="$paths tests/unit/side_channel/ tests/unit/pipeline/"
+              paths="$paths tests/unit/batch/ tests/unit/workflow/ tests/unit/session/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-exploratory")
-              # Inference, discovery, guidance, compliance
+              # Inference, discovery, guidance, compliance + exploratory/dsl/extensibility
               paths="tests/unit/inference/ tests/unit/discovery/"
               paths="$paths tests/unit/guidance/ tests/unit/compliance/"
-              paths="$paths tests/unit/requirements/"
+              paths="$paths tests/unit/requirements/ tests/unit/exploratory/"
+              paths="$paths tests/unit/dsl/ tests/unit/extensibility/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-utils")
-              # Utilities, config, API, helpers, exports
+              # Utilities, config, API, helpers, exports + builders/integrations/plugins/quality
               paths="tests/unit/utils/ tests/unit/config/ tests/unit/hooks/"
               paths="$paths tests/unit/api/ tests/unit/jupyter/"
               paths="$paths tests/unit/component/ tests/unit/comparison/"
               paths="$paths tests/unit/convenience/ tests/unit/export/"
               paths="$paths tests/unit/storage/ tests/unit/validation/"
               paths="$paths tests/unit/security/ tests/unit/performance/"
+              paths="$paths tests/unit/builders/ tests/unit/integrations/"
+              paths="$paths tests/unit/plugins/ tests/unit/quality/ tests/unit/schemas/"
+              paths="$paths tests/unit/exporters/ tests/unit/testing/ tests/unit/triggering/"
+              paths="$paths tests/unit/acquisition/ tests/unit/math/ tests/unit/optimization/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "non-unit-tests")
@@ -276,9 +307,9 @@ jobs:
           echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
 
           # Determine optimal worker count based on test group memory requirements
-          # Memory-intensive groups (analyzers, non-unit-tests): Use 2 workers
+          # Memory-intensive groups (analyzers-*, non-unit-tests): Use 2 workers
           # Standard groups: Use 4 workers
-          if [[ "${{ matrix.test-group }}" =~ ^(analyzers|non-unit-tests)$ ]]; then
+          if [[ "${{ matrix.test-group }}" =~ ^(analyzers-|non-unit-tests) ]]; then
             WORKERS=2
             XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
             echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
