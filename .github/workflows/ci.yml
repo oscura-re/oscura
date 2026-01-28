@@ -174,6 +174,7 @@ jobs:
           - "analyzers-3a"
           - "analyzers-3b"
           - "analyzers-3c"
+          - "analyzers-3d"
           - "core-protocols-loaders"
           - "search-filtering-streaming"
           - "cli-ui-reporting"
@@ -237,14 +238,19 @@ jobs:
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b")
-              # Packet and signal_integrity analyzers
-              paths="tests/unit/analyzers/packet/ tests/unit/analyzers/signal_integrity/"
+              # Packet analyzer only
+              paths="tests/unit/analyzers/packet/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3c")
               # Root analyzer tests + analysis/signal/correlation
               paths="tests/unit/analyzers/test_*.py tests/unit/analysis/"
               paths="$paths tests/unit/signal/ tests/unit/correlation/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3d")
+              # Signal integrity analyzer only
+              paths="tests/unit/analyzers/signal_integrity/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "core-protocols-loaders")
