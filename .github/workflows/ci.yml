@@ -182,8 +182,7 @@ jobs:
           - "unit-workflows"
           - "unit-discovery-inference"
           - "unit-utils"
-          - "integration-tests-1"
-          - "integration-tests-2"
+          - "integration-tests"
           - "compliance-validation"
     steps:
       - uses: actions/checkout@v6
@@ -319,14 +318,10 @@ jobs:
               paths="$paths tests/unit/security/ tests/unit/performance/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "integration-tests-1")
-              # Integration tests - examples only (217 tests, ~11-12min)
-              paths="tests/integration/test_examples.py"
-              echo "paths=$paths" >> $GITHUB_OUTPUT
-              ;;
-            "integration-tests-2")
-              # Integration tests - all except examples (187 tests, ~10-11min)
-              # Explicitly list all test files except test_examples.py
+            "integration-tests")
+              # Integration tests excluding test_examples.py (187 tests, ~10-11min)
+              # test_examples.py runs 217 example scripts (slow, fragile) - excluded from regular CI
+              # Explicitly list all test files to exclude test_examples.py
               paths="tests/integration/test_binary_to_protocol.py"
               paths="$paths tests/integration/test_complete_workflows.py"
               paths="$paths tests/integration/test_complex_scenarios.py"

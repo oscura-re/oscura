@@ -3,6 +3,20 @@
 This test suite validates that all example files in the repository
 can execute without errors. This ensures documentation and examples
 stay synchronized with the codebase.
+
+NOTE: This test file is EXCLUDED from regular CI (per integration-tests batch)
+because it's slow (217 tests, 60s timeout each) and validates documentation
+rather than core functionality. Core code is covered by 20,493 unit/integration
+tests with 80%+ coverage.
+
+This test runs in:
+- Nightly CI (.github/workflows/examples-nightly.yml)
+- When examples/ or demos/ directories change
+- Manual workflow dispatch
+
+Rationale: Separates fast, reliable core CI from slower documentation validation.
+Example failures indicate documentation drift, not code bugs, and shouldn't
+block code merges.
 """
 
 import subprocess
