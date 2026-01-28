@@ -176,6 +176,7 @@ jobs:
           - "analyzers-3b-1"
           - "analyzers-3b-2"
           - "analyzers-3b-3"
+          - "analyzers-3b-4"
           - "analyzers-3c"
           - "core-protocols-loaders"
           - "unit-root-tests"
@@ -254,22 +255,26 @@ jobs:
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b-1")
-              # Packet analyzer batch 1 - parser, metrics (89 tests, ~6-7 min)
+              # Packet analyzer batch 1 - parser, metrics (89 tests, ~5-6 min)
               paths="tests/unit/analyzers/packet/test_parser.py"
               paths="$paths tests/unit/analyzers/packet/test_metrics.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b-2")
-              # Packet analyzer batch 2 - stream, daq (106 tests, ~8-10 min)
-              # test_stream.py is slow, isolated to batch with moderate test count
+              # Packet analyzer batch 2 - stream ONLY (50 tests, ~10-15 min)
+              # test_stream.py is extremely slow, completely isolated in dedicated batch
               paths="tests/unit/analyzers/packet/test_stream.py"
-              paths="$paths tests/unit/analyzers/packet/test_daq.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b-3")
-              # Packet analyzer batch 3 - payload, extraction (89 tests, ~6-7 min)
-              paths="tests/unit/analyzers/packet/test_payload.py"
+              # Packet analyzer batch 3 - daq, extraction (90 tests, ~5-6 min)
+              paths="tests/unit/analyzers/packet/test_daq.py"
               paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-4")
+              # Packet analyzer batch 4 - payload (55 tests, ~4-5 min)
+              paths="tests/unit/analyzers/packet/test_payload.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3c")
