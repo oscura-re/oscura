@@ -169,15 +169,13 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13"]
         test-group:
-          - "analyzers-1"
+          - "analyzers-1a"
+          - "analyzers-1b"
           - "analyzers-2"
-          - "analyzers-3a"
-          - "analyzers-3b-parser"
-          - "analyzers-3b-stream"
-          - "analyzers-3b-metrics"
-          - "analyzers-3b-part2"
+          - "analyzers-3a-3d"
+          - "analyzers-3b-fast"
+          - "analyzers-3b-hypothesis"
           - "analyzers-3c"
-          - "analyzers-3d"
           - "analyzers-3e"
           - "core-protocols-loaders"
           - "unit-root-tests"
@@ -214,6 +212,14 @@ jobs:
             hypothesis-${{ runner.os }}-${{ matrix.python-version }}-
             hypothesis-${{ runner.os }}-
 
+      - name: Cache Numba JIT
+        uses: actions/cache@v5
+        with:
+          path: ~/.numba
+          key: numba-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('src/**/*.py') }}
+          restore-keys: |
+            numba-${{ runner.os }}-py${{ matrix.python-version }}-
+
       - name: Verify test data (optional)
         run: ./scripts/testing/verify_test_data.sh
         continue-on-error: true
@@ -222,11 +228,15 @@ jobs:
         id: test-paths
         run: |
           case "${{ matrix.test-group }}" in
-            "analyzers-1")
-              # Digital, protocols, waveform, eye, jitter analyzers (~2000 tests, ~8-10 min)
-              paths="tests/unit/analyzers/digital/ tests/unit/analyzers/protocols/"
-              paths="$paths tests/unit/analyzers/waveform/ tests/unit/analyzers/eye/"
-              paths="$paths tests/unit/analyzers/jitter/"
+            "analyzers-1a")
+              # Protocols analyzers (~16K lines, ~8-10 min)
+              paths="tests/unit/analyzers/protocols/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-1b")
+              # Digital, waveform, eye, jitter analyzers (~15K lines, ~8-10 min)
+              paths="tests/unit/analyzers/digital/ tests/unit/analyzers/waveform/"
+              paths="$paths tests/unit/analyzers/eye/ tests/unit/analyzers/jitter/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-2")
@@ -236,31 +246,26 @@ jobs:
               paths="$paths tests/unit/analyzers/statistics/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "analyzers-3a")
-              # ML and side_channel analyzers (slow - machine learning and crypto)
+            "analyzers-3a-3d")
+              # ML, side_channel, and signal_integrity analyzers (merged small groups)
               paths="tests/unit/analyzers/ml/ tests/unit/analyzers/side_channel/"
+              paths="$paths tests/unit/analyzers/signal_integrity/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "analyzers-3b-parser")
-              # Packet analyzer - parser tests only
+            "analyzers-3b-fast")
+              # Packet analyzer - fast tests (parser, stream, metrics, daq, payload, extraction)
               paths="tests/unit/analyzers/packet/test_parser.py"
-              echo "paths=$paths" >> $GITHUB_OUTPUT
-              ;;
-            "analyzers-3b-stream")
-              # Packet analyzer - stream tests only
-              paths="tests/unit/analyzers/packet/test_stream.py"
-              echo "paths=$paths" >> $GITHUB_OUTPUT
-              ;;
-            "analyzers-3b-metrics")
-              # Packet analyzer - metrics tests only
-              paths="tests/unit/analyzers/packet/test_metrics.py"
-              echo "paths=$paths" >> $GITHUB_OUTPUT
-              ;;
-            "analyzers-3b-part2")
-              # Packet analyzer - fast tests part 2
-              paths="tests/unit/analyzers/packet/test_daq.py"
+              paths="$paths tests/unit/analyzers/packet/test_stream.py"
+              paths="$paths tests/unit/analyzers/packet/test_metrics.py"
+              paths="$paths tests/unit/analyzers/packet/test_daq.py"
               paths="$paths tests/unit/analyzers/packet/test_payload.py"
               paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-hypothesis")
+              # Packet analyzer - slow hypothesis tests only
+              paths="tests/unit/analyzers/packet/test_checksum_hypothesis.py"
+              paths="$paths tests/unit/analyzers/packet/test_framing_hypothesis.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3c")
@@ -269,15 +274,10 @@ jobs:
               paths="$paths tests/unit/signal/ tests/unit/correlation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "analyzers-3d")
-              # Signal integrity analyzer only
-              paths="tests/unit/analyzers/signal_integrity/"
-              echo "paths=$paths" >> $GITHUB_OUTPUT
-              ;;
             "analyzers-3e")
-              # Packet analyzer - slow hypothesis tests only
-              paths="tests/unit/analyzers/packet/test_checksum_hypothesis.py"
-              paths="$paths tests/unit/analyzers/packet/test_framing_hypothesis.py"
+              # Packet analyzer - edge case and protocol tests
+              paths="tests/unit/analyzers/packet/test_edge_cases.py"
+              paths="$paths tests/unit/analyzers/packet/test_protocol.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "core-protocols-loaders")
@@ -334,6 +334,10 @@ jobs:
 
       - name: Run tests with coverage (${{ matrix.test-group }})
         id: run-tests
+        env:
+          NUMBA_CACHE_DIR: ~/.numba
+          COVERAGE_CORE: sysmon
+          HYPOTHESIS_PROFILE: ci
         run: |
           # Record start time
           START_TIME=$(date +%s)
@@ -366,7 +370,7 @@ jobs:
             --cov-fail-under=0 \
             --maxfail=10 \
             --tb=short \
-            --durations=10 \
+            --durations=20 \
             --reruns 2 \
             --reruns-delay 1 \
             --junit-xml=test-results-${{ matrix.python-version }}-${{ matrix.test-group }}.xml
@@ -387,7 +391,8 @@ jobs:
         run: |
           DURATION="${{ steps.run-tests.outputs.duration_seconds }}"
           TIMEOUT_SECONDS=$((25 * 60))  # 25 minutes in seconds
-          THRESHOLD=$((TIMEOUT_SECONDS * 80 / 100))  # 80% of timeout (20 minutes)
+          WARNING_THRESHOLD=$((TIMEOUT_SECONDS * 70 / 100))  # 70% of timeout (1050s / 17.5m)
+          ERROR_THRESHOLD=$((TIMEOUT_SECONDS * 85 / 100))    # 85% of timeout (1275s / 21.25m)
 
           # Handle case where duration wasn't recorded (shouldn't happen but be safe)
           if [ -z "$DURATION" ]; then
@@ -395,13 +400,28 @@ jobs:
             exit 0
           fi
 
-          if [ "$DURATION" -gt "$THRESHOLD" ]; then
+          # Fail build if exceeding 85% threshold
+          if [ "$DURATION" -gt "$ERROR_THRESHOLD" ]; then
             MIN=$((DURATION / 60))
-            echo "::warning::Test took ${DURATION}s (${MIN}m), approaching 25m timeout. Consider splitting test group."
+            SEC=$((DURATION % 60))
+            echo "::error::Test took ${DURATION}s (${MIN}m ${SEC}s), exceeding 85% of 25m timeout. MUST split!"
+            echo "Duration: ${DURATION}s ($((DURATION / 60))m $((DURATION % 60))s)"
+            echo "Warning threshold (70%): ${WARNING_THRESHOLD}s ($((WARNING_THRESHOLD / 60))m)"
+            echo "Error threshold (85%): ${ERROR_THRESHOLD}s ($((ERROR_THRESHOLD / 60))m)"
+            echo "Timeout: ${TIMEOUT_SECONDS}s (25m)"
+            exit 1
+          fi
+
+          # Warning if exceeding 70% threshold
+          if [ "$DURATION" -gt "$WARNING_THRESHOLD" ]; then
+            MIN=$((DURATION / 60))
+            SEC=$((DURATION % 60))
+            echo "::warning::Test took ${DURATION}s (${MIN}m ${SEC}s), approaching 25m timeout. Split?"
           fi
 
           echo "Duration: ${DURATION}s ($((DURATION / 60))m $((DURATION % 60))s)"
-          echo "Threshold: ${THRESHOLD}s ($((THRESHOLD / 60))m)"
+          echo "Warning threshold (70%): ${WARNING_THRESHOLD}s ($((WARNING_THRESHOLD / 60))m)"
+          echo "Error threshold (85%): ${ERROR_THRESHOLD}s ($((ERROR_THRESHOLD / 60))m)"
           echo "Timeout: ${TIMEOUT_SECONDS}s (25m)"
 
       - name: Upload test results
