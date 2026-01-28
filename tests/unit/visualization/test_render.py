@@ -10,13 +10,12 @@ from __future__ import annotations
 import pytest
 
 from oscura.visualization.render import (
-
-pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
-
     RenderPreset,
     apply_rendering_config,
     configure_dpi_rendering,
 )
+
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
 
 
 class TestConfigureDpiRendering:

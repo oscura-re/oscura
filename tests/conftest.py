@@ -1108,8 +1108,8 @@ def cleanup_matplotlib():
     create matplotlib plots.
 
     OPTIMIZATION: Converted from autouse to opt-in (saves ~27 seconds).
-    - Previous (autouse): 389 modules × 0.07s = ~27 seconds overhead
-    - Optimized (opt-in): ~30 modules × 0.07s = ~2.1 seconds overhead
+    - Previous (autouse): 389 modules x 0.07s = ~27 seconds overhead
+    - Optimized (opt-in): ~30 modules x 0.07s = ~2.1 seconds overhead
     - SAVINGS: ~25 seconds per test run
 
     Usage:
@@ -1235,8 +1235,8 @@ def reset_logging_state():
     call configure_logging()).
 
     OPTIMIZATION: Converted from autouse to opt-in (saves ~19 seconds).
-    - Previous (autouse): 389 modules × 0.05s = ~19 seconds overhead
-    - Optimized (opt-in): ~15 modules × 0.05s = ~0.75 seconds overhead
+    - Previous (autouse): 389 modules x 0.05s = ~19 seconds overhead
+    - Optimized (opt-in): ~15 modules x 0.05s = ~0.75 seconds overhead
     - SAVINGS: ~18 seconds per test run
 
     NOTE: Session scope breaks tests (state leakage). Module scope is optimal.

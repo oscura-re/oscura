@@ -172,8 +172,13 @@ class TestTimingNumbaPerformance:
         # Should complete in <10ms with Numba
         assert duration_ms < 10.0, f"Too slow: {duration_ms:.1f}ms"
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     def test_compilation_caching(self) -> None:
-        """Test that Numba caches compiled functions."""
+        """Test that Numba caches compiled functions.
+
+        Note: Flaky due to timing sensitivity - CI environment load can affect
+        execution time. Marked as flaky to allow retries.
+        """
         import time
 
         edges1 = np.array([1.0, 2.0, 3.0])

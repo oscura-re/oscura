@@ -3,9 +3,6 @@
 import pytest
 
 from oscura.visualization.styles import (
-
-pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
-
     PRESENTATION_PRESET,
     PRESETS,
     PRINT_PRESET,
@@ -20,6 +17,8 @@ pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
 )
 
 pytest.importorskip("matplotlib")
+
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
 
 
 class TestStylePreset:

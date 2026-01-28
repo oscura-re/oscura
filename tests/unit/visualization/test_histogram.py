@@ -4,9 +4,6 @@ import numpy as np
 import pytest
 
 from oscura.visualization.histogram import (
-
-pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
-
     _auto_select_method,
     _freedman_diaconis_bins,
     _scott_bins,
@@ -14,6 +11,8 @@ pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
     calculate_bin_edges,
     calculate_optimal_bins,
 )
+
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
 
 
 class TestCalculateOptimalBins:
