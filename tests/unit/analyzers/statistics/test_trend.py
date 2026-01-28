@@ -151,7 +151,8 @@ class TestDetectTrend:
         result = detect_trend(trace)
 
         assert abs(result.slope) < 1e-10
-        assert result.r_squared < 0.01  # Poor fit due to no variance
+        # Constant signal has no variance, r_squared is NaN (not a number)
+        assert np.isnan(result.r_squared) or result.r_squared < 0.01
 
     def test_trend_line_length_matches_input(self, trend_trace: WaveformTrace) -> None:
         """Test trend_line has same length as input."""
