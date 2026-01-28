@@ -64,7 +64,7 @@ empty=()
 
 for dir in "${test_dirs[@]}"; do
   # Check if directory has any test files
-  test_file_count=$(find "$TEST_DIR/$dir" -name "test_*.py" -o -name "*_test.py" 2>/dev/null | wc -l)
+  test_file_count=$(find "$TEST_DIR/$dir" -name "test_*.py" -o -name "*_test.py" 2> /dev/null | wc -l)
 
   if [[ $test_file_count -eq 0 ]]; then
     # Skip empty directories - they don't need CI coverage
