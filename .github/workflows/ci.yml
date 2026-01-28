@@ -175,6 +175,7 @@ jobs:
           - "analyzers-3b"
           - "analyzers-3c"
           - "analyzers-3d"
+          - "analyzers-3e"
           - "core-protocols-loaders"
           - "search-filtering-streaming"
           - "cli-ui-reporting"
@@ -238,8 +239,13 @@ jobs:
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b")
-              # Packet analyzer only
-              paths="tests/unit/analyzers/packet/"
+              # Packet analyzer - fast tests (exclude hypothesis tests)
+              paths="tests/unit/analyzers/packet/test_parser.py"
+              paths="$paths tests/unit/analyzers/packet/test_stream.py"
+              paths="$paths tests/unit/analyzers/packet/test_metrics.py"
+              paths="$paths tests/unit/analyzers/packet/test_daq.py"
+              paths="$paths tests/unit/analyzers/packet/test_payload.py"
+              paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3c")
@@ -251,6 +257,12 @@ jobs:
             "analyzers-3d")
               # Signal integrity analyzer only
               paths="tests/unit/analyzers/signal_integrity/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3e")
+              # Packet analyzer - slow hypothesis tests only
+              paths="tests/unit/analyzers/packet/test_checksum_hypothesis.py"
+              paths="$paths tests/unit/analyzers/packet/test_framing_hypothesis.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "core-protocols-loaders")
