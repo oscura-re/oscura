@@ -173,6 +173,7 @@ jobs:
           - "analyzers-2"
           - "analyzers-3a"
           - "analyzers-3b"
+          - "analyzers-3c"
           - "core-protocols-loaders"
           - "search-filtering-streaming"
           - "cli-ui-reporting"
@@ -231,13 +232,17 @@ jobs:
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3a")
-              # Packet, ML, side_channel, signal_integrity analyzers (~481 tests, ~10-12 min)
-              paths="tests/unit/analyzers/packet/ tests/unit/analyzers/ml/"
-              paths="$paths tests/unit/analyzers/side_channel/ tests/unit/analyzers/signal_integrity/"
+              # ML and side_channel analyzers (slow - machine learning and crypto)
+              paths="tests/unit/analyzers/ml/ tests/unit/analyzers/side_channel/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b")
-              # Root analyzer tests + analysis/signal/correlation (~464 tests, ~10-12 min)
+              # Packet and signal_integrity analyzers
+              paths="tests/unit/analyzers/packet/ tests/unit/analyzers/signal_integrity/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3c")
+              # Root analyzer tests + analysis/signal/correlation
               paths="tests/unit/analyzers/test_*.py tests/unit/analysis/"
               paths="$paths tests/unit/signal/ tests/unit/correlation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
