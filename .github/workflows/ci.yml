@@ -173,7 +173,8 @@ jobs:
           - "analyzers-1b"
           - "analyzers-2"
           - "analyzers-3a-3d"
-          - "analyzers-3b-fast"
+          - "analyzers-3b-1"
+          - "analyzers-3b-2"
           - "analyzers-3b-hypothesis"
           - "analyzers-3c"
           - "core-protocols-loaders"
@@ -252,12 +253,16 @@ jobs:
               paths="$paths tests/unit/analyzers/signal_integrity/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "analyzers-3b-fast")
-              # Packet analyzer - fast tests (parser, stream, metrics, daq, payload, extraction)
+            "analyzers-3b-1")
+              # Packet analyzer batch 1 - parser, stream, metrics (139 tests, ~13 min)
               paths="tests/unit/analyzers/packet/test_parser.py"
               paths="$paths tests/unit/analyzers/packet/test_stream.py"
               paths="$paths tests/unit/analyzers/packet/test_metrics.py"
-              paths="$paths tests/unit/analyzers/packet/test_daq.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-2")
+              # Packet analyzer batch 2 - daq, payload, extraction (145 tests, ~13 min)
+              paths="tests/unit/analyzers/packet/test_daq.py"
               paths="$paths tests/unit/analyzers/packet/test_payload.py"
               paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
