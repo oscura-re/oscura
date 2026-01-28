@@ -326,9 +326,19 @@ jobs:
               ;;
             "integration-tests-2")
               # Integration tests - all except examples (187 tests, ~10-11min)
-              paths="tests/integration/"
-              # Exclude test_examples.py by listing all other files
-              paths="$paths --ignore=tests/integration/test_examples.py"
+              # Explicitly list all test files except test_examples.py
+              paths="tests/integration/test_binary_to_protocol.py"
+              paths="$paths tests/integration/test_complete_workflows.py"
+              paths="$paths tests/integration/test_complex_scenarios.py"
+              paths="$paths tests/integration/test_config_driven.py"
+              paths="$paths tests/integration/test_database_workflows.py"
+              paths="$paths tests/integration/test_export_roundtrips.py"
+              paths="$paths tests/integration/test_integration_workflows.py"
+              paths="$paths tests/integration/test_multi_format_pipelines.py"
+              paths="$paths tests/integration/test_pcap_to_inference.py"
+              paths="$paths tests/integration/test_protocol_analysis_workflows.py"
+              paths="$paths tests/integration/test_wfm_loading.py"
+              paths="$paths tests/integration/reporting/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "compliance-validation")
