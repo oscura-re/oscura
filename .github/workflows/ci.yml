@@ -325,6 +325,17 @@ jobs:
               ;;
           esac
 
+          # Validate that test paths exist (fail fast if misconfigured)
+          echo "Validating test paths..."
+          for path in $paths; do
+            if [[ ! -e "$path" ]]; then
+              echo "ERROR: Test path does not exist: $path"
+              echo "This indicates a CI configuration error in test-group: ${{ matrix.test-group }}"
+              exit 1
+            fi
+          done
+          echo "✓ All test paths validated for ${{ matrix.test-group }}"
+
       - name: Run tests with coverage (${{ matrix.test-group }})
         id: run-tests
         env:
