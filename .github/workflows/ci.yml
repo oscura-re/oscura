@@ -317,15 +317,12 @@ jobs:
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "integration-tests")
-              # Integration tests excluding test_examples.py (187 tests, ~10-11min)
-              # test_examples.py runs 217 example scripts (slow, fragile) - excluded from regular CI
-              # Explicitly list all test files to exclude test_examples.py
+              # Integration tests (144 tests, ~9-10min)
+              # Removed misplaced unit tests (test_config_driven, test_database_workflows, test_export_roundtrips)
+              # test_examples.py excluded (documentation validation, in nightly CI)
               paths="tests/integration/test_binary_to_protocol.py"
               paths="$paths tests/integration/test_complete_workflows.py"
               paths="$paths tests/integration/test_complex_scenarios.py"
-              paths="$paths tests/integration/test_config_driven.py"
-              paths="$paths tests/integration/test_database_workflows.py"
-              paths="$paths tests/integration/test_export_roundtrips.py"
               paths="$paths tests/integration/test_integration_workflows.py"
               paths="$paths tests/integration/test_multi_format_pipelines.py"
               paths="$paths tests/integration/test_pcap_to_inference.py"
