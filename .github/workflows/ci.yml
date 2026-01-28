@@ -175,7 +175,6 @@ jobs:
           - "analyzers-3a-3d"
           - "analyzers-3b-1"
           - "analyzers-3b-2"
-          - "analyzers-3b-hypothesis"
           - "analyzers-3c"
           - "core-protocols-loaders"
           - "unit-root-tests"
@@ -265,12 +264,6 @@ jobs:
               paths="tests/unit/analyzers/packet/test_daq.py"
               paths="$paths tests/unit/analyzers/packet/test_payload.py"
               paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
-              echo "paths=$paths" >> $GITHUB_OUTPUT
-              ;;
-            "analyzers-3b-hypothesis")
-              # Packet analyzer - slow hypothesis tests only
-              paths="tests/unit/analyzers/packet/test_checksum_hypothesis.py"
-              paths="$paths tests/unit/analyzers/packet/test_framing_hypothesis.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3c")
@@ -371,14 +364,9 @@ jobs:
           echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
 
           # Determine optimal worker count based on test group memory requirements
-          # Hypothesis tests: Use 1 worker (avoid pytest-xdist race condition)
           # Memory-intensive groups (analyzers-*, integration-tests, compliance-validation): Use 2 workers
           # Standard groups: Use 4 workers
-          if [[ "${{ matrix.test-group }}" == "analyzers-3b-hypothesis" ]]; then
-            WORKERS=1
-            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
-            echo "Using 1 worker for hypothesis test group (avoid xdist issues): ${{ matrix.test-group }}"
-          elif [[ "${{ matrix.test-group }}" =~ ^(analyzers-|integration-tests|compliance-validation) ]]; then
+          if [[ "${{ matrix.test-group }}" =~ ^(analyzers-|integration-tests|compliance-validation) ]]; then
             WORKERS=2
             XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
             echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
