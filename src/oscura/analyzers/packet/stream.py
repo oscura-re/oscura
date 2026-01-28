@@ -60,6 +60,9 @@ def stream_file(
         >>> for chunk in stream_file("large_capture.bin"):
         ...     process_chunk(chunk)
     """
+    if chunk_size <= 0:
+        raise ValueError(f"chunk_size must be positive, got {chunk_size}")
+
     path = Path(file_path)
 
     with open(path, "rb") as f:
@@ -87,6 +90,9 @@ def stream_records(
         >>> for record in stream_records("data.bin", record_size=128):
         ...     parse_record(record)
     """
+    if record_size <= 0:
+        raise ValueError(f"record_size must be positive, got {record_size}")
+
     if isinstance(file_or_buffer, bytes):
         buffer: BinaryIO = io.BytesIO(file_or_buffer)
         should_close = True
@@ -206,6 +212,11 @@ def stream_delimited(
         >>> for line in stream_delimited("log.txt", b"\\n"):
         ...     process_line(line)
     """
+    if max_record_size <= 0:
+        raise ValueError(f"max_record_size must be positive, got {max_record_size}")
+    if not delimiter:
+        raise ValueError("delimiter cannot be empty")
+
     if isinstance(file_or_buffer, bytes):
         buffer: BinaryIO = io.BytesIO(file_or_buffer)
         should_close = True
@@ -299,6 +310,9 @@ def batch(
         >>> for batch_items in batch(stream_packets(f), size=100):
         ...     process_batch(batch_items)
     """
+    if size <= 0:
+        raise ValueError(f"size must be positive, got {size}")
+
     current_batch: list[T] = []
 
     for item in source:
@@ -321,6 +335,9 @@ def take(source: Iterator[T], n: int) -> Iterator[T]:
     Yields:
         First n items.
     """
+    if n < 0:
+        raise ValueError(f"n must be non-negative, got {n}")
+
     count = 0
     for item in source:
         if count >= n:
@@ -339,6 +356,9 @@ def skip(source: Iterator[T], n: int) -> Iterator[T]:
     Yields:
         Items after first n.
     """
+    if n < 0:
+        raise ValueError(f"n must be non-negative, got {n}")
+
     count = 0
     for item in source:
         if count >= n:
