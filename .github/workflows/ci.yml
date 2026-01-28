@@ -182,7 +182,8 @@ jobs:
           - "unit-workflows"
           - "unit-discovery-inference"
           - "unit-utils"
-          - "non-unit-tests"
+          - "integration-tests"
+          - "compliance-validation"
     steps:
       - uses: actions/checkout@v6
         with:
@@ -317,10 +318,14 @@ jobs:
               paths="$paths tests/unit/security/ tests/unit/performance/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "non-unit-tests")
+            "integration-tests")
+              # Integration tests only (404 tests, ~13-14min)
               paths="tests/integration/"
-              paths="$paths tests/compliance/"
-              paths="$paths tests/validation/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "compliance-validation")
+              # Compliance and validation tests (262 tests, ~9-10min)
+              paths="tests/compliance/ tests/validation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
           esac
@@ -349,13 +354,13 @@ jobs:
 
           # Determine optimal worker count based on test group memory requirements
           # Hypothesis tests: Use 1 worker (avoid pytest-xdist race condition)
-          # Memory-intensive groups (analyzers-*, non-unit-tests): Use 2 workers
+          # Memory-intensive groups (analyzers-*, integration-tests, compliance-validation): Use 2 workers
           # Standard groups: Use 4 workers
           if [[ "${{ matrix.test-group }}" == "analyzers-3b-hypothesis" ]]; then
             WORKERS=1
             XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
             echo "Using 1 worker for hypothesis test group (avoid xdist issues): ${{ matrix.test-group }}"
-          elif [[ "${{ matrix.test-group }}" =~ ^(analyzers-|non-unit-tests) ]]; then
+          elif [[ "${{ matrix.test-group }}" =~ ^(analyzers-|integration-tests|compliance-validation) ]]; then
             WORKERS=2
             XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
             echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
