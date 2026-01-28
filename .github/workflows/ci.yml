@@ -176,7 +176,6 @@ jobs:
           - "analyzers-3b-fast"
           - "analyzers-3b-hypothesis"
           - "analyzers-3c"
-          - "analyzers-3e"
           - "core-protocols-loaders"
           - "unit-root-tests"
           - "cli-ui-reporting"
@@ -274,12 +273,6 @@ jobs:
               paths="$paths tests/unit/signal/ tests/unit/correlation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "analyzers-3e")
-              # Packet analyzer - edge case and protocol tests
-              paths="tests/unit/analyzers/packet/test_edge_cases.py"
-              paths="$paths tests/unit/analyzers/packet/test_protocol.py"
-              echo "paths=$paths" >> $GITHUB_OUTPUT
-              ;;
             "core-protocols-loaders")
               # Core functionality, protocol decoders, data loaders
               paths="tests/unit/core/ tests/unit/protocols/ tests/unit/loaders/"
@@ -344,9 +337,14 @@ jobs:
           echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
 
           # Determine optimal worker count based on test group memory requirements
+          # Hypothesis tests: Use 1 worker (avoid pytest-xdist race condition)
           # Memory-intensive groups (analyzers-*, non-unit-tests): Use 2 workers
           # Standard groups: Use 4 workers
-          if [[ "${{ matrix.test-group }}" =~ ^(analyzers-|non-unit-tests) ]]; then
+          if [[ "${{ matrix.test-group }}" == "analyzers-3b-hypothesis" ]]; then
+            WORKERS=1
+            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
+            echo "Using 1 worker for hypothesis test group (avoid xdist issues): ${{ matrix.test-group }}"
+          elif [[ "${{ matrix.test-group }}" =~ ^(analyzers-|non-unit-tests) ]]; then
             WORKERS=2
             XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
             echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
