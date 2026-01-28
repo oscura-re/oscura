@@ -142,9 +142,9 @@ class TestI2CDecoderSimple:
         # Create simple idle signal
         scl = DigitalTrace(data=np.ones(100, dtype=bool), metadata=metadata)
 
-        # Missing SDA should raise error or return empty
-        with pytest.raises((TypeError, KeyError, AttributeError)):
-            list(decoder.decode(scl=scl, sample_rate=sample_rate))
+        # Missing SDA should return empty (decoder gracefully handles None)
+        result = list(decoder.decode(scl=scl, sample_rate=sample_rate))
+        assert len(result) == 0, "Should return empty when SDA is missing"
 
     def test_decode_empty_signals(self, sample_rate: float) -> None:
         """Test decode with empty signals."""
