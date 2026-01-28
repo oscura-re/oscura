@@ -175,6 +175,7 @@ jobs:
           - "analyzers-3a-3d"
           - "analyzers-3b-1"
           - "analyzers-3b-2"
+          - "analyzers-3b-3"
           - "analyzers-3c"
           - "core-protocols-loaders"
           - "unit-root-tests"
@@ -253,16 +254,21 @@ jobs:
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b-1")
-              # Packet analyzer batch 1 - parser, stream, metrics (139 tests, ~13 min)
+              # Packet analyzer batch 1 - parser, metrics (89 tests, ~6-7 min)
               paths="tests/unit/analyzers/packet/test_parser.py"
-              paths="$paths tests/unit/analyzers/packet/test_stream.py"
               paths="$paths tests/unit/analyzers/packet/test_metrics.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "analyzers-3b-2")
-              # Packet analyzer batch 2 - daq, payload, extraction (145 tests, ~13 min)
-              paths="tests/unit/analyzers/packet/test_daq.py"
-              paths="$paths tests/unit/analyzers/packet/test_payload.py"
+              # Packet analyzer batch 2 - stream, daq (106 tests, ~8-10 min)
+              # test_stream.py is slow, isolated to batch with moderate test count
+              paths="tests/unit/analyzers/packet/test_stream.py"
+              paths="$paths tests/unit/analyzers/packet/test_daq.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-3")
+              # Packet analyzer batch 3 - payload, extraction (89 tests, ~6-7 min)
+              paths="tests/unit/analyzers/packet/test_payload.py"
               paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
