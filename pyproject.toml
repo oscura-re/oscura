@@ -235,6 +235,8 @@ addopts = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    # Coverage sysmon warning - Python 3.12 doesn't support branch coverage with sysmon
+    "ignore:Can't use core=sysmon.*:coverage.exceptions.CoverageWarning",
     # Matplotlib tight_layout warning in protocol visualization tests
     "ignore:This figure includes Axes that are not compatible with tight_layout:UserWarning",
     # NOTE: pytest-benchmark warning filter removed - causes ModuleNotFoundError
