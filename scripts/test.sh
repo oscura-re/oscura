@@ -240,6 +240,9 @@ fi
 
 print_section "Executing tests"
 
+# Enable coverage optimization for Python 3.12+ (sysmon monitoring)
+export COVERAGE_CORE=sysmon
+
 # Run pytest via uv
 if uv run python -m pytest "${PYTEST_ARGS[@]}"; then
   EXIT_CODE=0

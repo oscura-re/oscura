@@ -1343,13 +1343,13 @@ def pytest_configure(config: pytest.Config) -> None:
             "debug", max_examples=10, verbosity=Verbosity.verbose, print_blob=True
         )
 
-        # Load the profile based on environment, defaulting to "ultrafast" for max speed
-        # AGGRESSIVE: Use ultrafast profile (5 examples) by default for sub-2-min target
+        # Load the profile based on environment, defaulting to "fast" for balanced coverage
+        # BALANCED: Use fast profile (20 examples) by default for better local coverage
         # Override with: HYPOTHESIS_PROFILE=ci pytest ... (comprehensive, 500 examples)
-        #                HYPOTHESIS_PROFILE=fast pytest ... (balanced, 20 examples)
+        #                HYPOTHESIS_PROFILE=ultrafast pytest ... (minimal, 5 examples)
         import os
 
-        profile = os.getenv("HYPOTHESIS_PROFILE", "ultrafast")
+        profile = os.getenv("HYPOTHESIS_PROFILE", "fast")
         settings.load_profile(profile)
     except ImportError:
         pass  # Hypothesis not installed

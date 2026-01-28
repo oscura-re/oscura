@@ -309,11 +309,10 @@ markers = [
     # Requirements Traceability
     "requirement: Links test to specific requirement ID",
 ]
-# NOTE: timeout settings commented out - requires pytest-timeout plugin
-# Uncomment if pytest-timeout is installed:
-# timeout = 60
-# timeout_method = "thread"
-# timeout_func_only = false
+# Timeout configuration (requires pytest-timeout plugin, installed via dev dependencies)
+timeout = 300
+timeout_method = "thread"
+timeout_func_only = false
 console_output_style = "progress"
 
 python_files = ["test_*.py"]
@@ -336,6 +335,7 @@ norecursedirs = [".*", "build", "dist", "*.egg", "node_modules", "__pycache__", 
 source = ["oscura"]
 branch = true
 parallel = true
+concurrency = ["thread", "multiprocessing"]
 data_file = ".coverage"
 relative_files = true
 omit = [

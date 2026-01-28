@@ -432,6 +432,33 @@ jobs:
           path: test-results-${{ matrix.python-version }}-${{ matrix.test-group }}.xml
           retention-days: ${{ env.RETENTION_SHORT }}
 
+      - name: Create test duration report
+        if: always()
+        run: |
+          # Create JSON report with duration metrics
+          DURATION=${{ steps.run-tests.outputs.duration_seconds || 0 }}
+          cat > test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}.json <<EOF
+          {
+            "test_group": "${{ matrix.test-group }}",
+            "python_version": "${{ matrix.python-version }}",
+            "duration_seconds": ${DURATION},
+            "duration_minutes": $(echo "scale=2; ${DURATION} / 60" | bc -l),
+            "timeout_seconds": $((25 * 60)),
+            "warning_threshold_percent": 70,
+            "error_threshold_percent": 85,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          cat test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}.json
+
+      - name: Upload test duration metrics
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}
+          path: test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}.json
+          retention-days: ${{ env.RETENTION_MEDIUM }}
+
       - name: Combine coverage data
         if: matrix.python-version == '3.12'
         run: |
