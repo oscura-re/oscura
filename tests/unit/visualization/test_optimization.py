@@ -28,6 +28,8 @@ from oscura.visualization.optimization import (
     optimize_db_range,
 )
 
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
 
 class TestCalculateOptimalYRange:
     """Tests for calculate_optimal_y_range function."""

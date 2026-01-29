@@ -11,6 +11,8 @@ from oscura.visualization.layout import (
     optimize_annotation_placement,
 )
 
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
 
 class TestChannelLayout:
     """Test ChannelLayout dataclass."""

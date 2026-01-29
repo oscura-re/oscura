@@ -42,6 +42,7 @@ def find_test_files() -> list[Path]:
         "tests/stress/test_realtime_streaming_load.py",  # Only stress/slow tests (all filtered)
         "tests/unit/workflow/test_dag_performance.py",  # Only performance tests (all filtered)
         "tests/unit/hooks/datetime_utils_for_test.py",  # Helper module, not a test file
+        "tests/unit/analyzers/packet/test_stream.py",  # Timeouts in isolation (50 tests, needs xdist)
     ]
     test_files = [
         f for f in test_files if not any(str(f).endswith(pattern) for pattern in excluded_patterns)

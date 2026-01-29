@@ -17,6 +17,8 @@ from oscura.visualization.colors import (
     select_optimal_palette,
 )
 
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
 
 class TestSelectOptimalPalette:
     """Test select_optimal_palette function."""

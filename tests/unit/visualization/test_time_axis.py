@@ -18,7 +18,11 @@ from oscura.visualization.time_axis import (
     select_time_unit,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 @pytest.mark.unit

@@ -904,6 +904,8 @@ def _hierarchical_clustering(
     distance_threshold: float | None,
 ) -> np.ndarray[tuple[int], np.dtype[np.int_]]:
     """Perform agglomerative hierarchical clustering."""
+    MAX_ITERATIONS = 10000  # Prevent infinite loops in malformed distance matrices
+
     n = dist_matrix.shape[0]
 
     # Initialize: each point is its own cluster
@@ -911,7 +913,15 @@ def _hierarchical_clustering(
     _cluster_distances = dist_matrix.copy()
 
     # Merge until desired number of clusters
+    iteration_count = 0
     while len(clusters) > 1:
+        iteration_count += 1
+        if iteration_count > MAX_ITERATIONS:
+            raise RuntimeError(
+                f"Hierarchical clustering exceeded maximum iterations ({MAX_ITERATIONS}). "
+                "This may indicate a malformed distance matrix or insufficient convergence criteria."
+            )
+
         if num_clusters is not None and len(clusters) <= num_clusters:
             break
 

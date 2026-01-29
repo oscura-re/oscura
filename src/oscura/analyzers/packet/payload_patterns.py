@@ -352,7 +352,21 @@ def _evaluate_delimiter_candidate(
 
 
 def _find_delimiter_positions(data: bytes, delim: bytes) -> list[int]:
-    """Find all positions of delimiter in data."""
+    """Find all positions of delimiter in data.
+
+    Args:
+        data: Data to search.
+        delim: Delimiter bytes to find.
+
+    Returns:
+        List of positions where delimiter occurs.
+
+    Raises:
+        ValueError: If delimiter is empty.
+    """
+    if len(delim) == 0:
+        raise ValueError("Delimiter cannot be empty")
+
     positions = []
     pos = 0
     while True:
@@ -548,8 +562,27 @@ def _find_pattern_in_data(
     data: bytes,
     pattern: bytes | str,
     pattern_type: str,
+    max_matches: int = 100000,
 ) -> list[tuple[int, bytes]]:
-    """Find pattern occurrences in data."""
+    """Find pattern occurrences in data.
+
+    Args:
+        data: Data to search.
+        pattern: Pattern to find.
+        pattern_type: Type of pattern (exact, wildcard, regex).
+        max_matches: Maximum number of matches to return (default 100000).
+
+    Returns:
+        List of (offset, matched_bytes) tuples.
+
+    Raises:
+        ValueError: If max_matches exceeded (prevents infinite loops) or pattern is empty.
+    """
+    # Validate pattern is not empty (prevents infinite loops)
+    if isinstance(pattern, (str, bytes)):
+        if len(pattern) == 0:
+            raise ValueError("Pattern cannot be empty")
+
     matches = []
 
     if pattern_type == "exact":
@@ -563,6 +596,13 @@ def _find_pattern_in_data(
             matches.append((pos, pattern))
             pos += 1
 
+            # Prevent infinite loops from excessive matches
+            if len(matches) >= max_matches:
+                raise ValueError(
+                    f"Pattern match limit exceeded ({max_matches} matches). "
+                    "This may indicate a problematic pattern (e.g., empty or too common)."
+                )
+
     elif pattern_type == "wildcard":
         # Convert wildcard pattern to regex
         if isinstance(pattern, bytes):
@@ -571,6 +611,11 @@ def _find_pattern_in_data(
             try:
                 for match in re.finditer(regex_pattern, data, re.DOTALL):
                     matches.append((match.start(), match.group()))
+                    if len(matches) >= max_matches:
+                        raise ValueError(
+                            f"Pattern match limit exceeded ({max_matches} matches). "
+                            "Wildcard pattern may be too permissive."
+                        )
             except re.error:
                 pass
 
@@ -580,6 +625,11 @@ def _find_pattern_in_data(
         try:
             for match in re.finditer(pattern, data, re.DOTALL):
                 matches.append((match.start(), match.group()))
+                if len(matches) >= max_matches:
+                    raise ValueError(
+                        f"Pattern match limit exceeded ({max_matches} matches). "
+                        "Regex pattern may be too broad."
+                    )
         except re.error:
             pass
 

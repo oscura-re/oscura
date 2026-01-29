@@ -18,7 +18,10 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
-pytestmark = pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not installed")
+pytestmark = [
+    pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not installed"),
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 class TestRenderThumbnail:

@@ -36,7 +36,11 @@ from oscura.core.logging_advanced import (
     TriggeredAlert,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.core]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.core,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 # =============================================================================

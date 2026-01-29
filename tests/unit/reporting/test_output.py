@@ -15,7 +15,7 @@ import yaml
 from oscura.reporting.config import AnalysisDomain
 from oscura.reporting.output import OutputManager
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.usefixtures("cleanup_matplotlib")]
 
 
 class TestOutputManagerInit:

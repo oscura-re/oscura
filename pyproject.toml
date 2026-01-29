@@ -235,6 +235,8 @@ addopts = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    # Coverage sysmon warning - Python 3.12 doesn't support branch coverage with sysmon
+    "ignore:Can't use core=sysmon.*:coverage.exceptions.CoverageWarning",
     # Matplotlib tight_layout warning in protocol visualization tests
     "ignore:This figure includes Axes that are not compatible with tight_layout:UserWarning",
     # NOTE: pytest-benchmark warning filter removed - causes ModuleNotFoundError
@@ -309,11 +311,10 @@ markers = [
     # Requirements Traceability
     "requirement: Links test to specific requirement ID",
 ]
-# NOTE: timeout settings commented out - requires pytest-timeout plugin
-# Uncomment if pytest-timeout is installed:
-# timeout = 60
-# timeout_method = "thread"
-# timeout_func_only = false
+# Timeout configuration (requires pytest-timeout plugin, installed via dev dependencies)
+timeout = 300
+timeout_method = "thread"
+timeout_func_only = false
 console_output_style = "progress"
 
 python_files = ["test_*.py"]
@@ -336,6 +337,7 @@ norecursedirs = [".*", "build", "dist", "*.egg", "node_modules", "__pycache__", 
 source = ["oscura"]
 branch = true
 parallel = true
+concurrency = ["thread", "multiprocessing"]
 data_file = ".coverage"
 relative_files = true
 omit = [

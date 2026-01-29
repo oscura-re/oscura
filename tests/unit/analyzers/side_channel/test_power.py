@@ -56,6 +56,61 @@ def test_hamming_distance_array():
     np.testing.assert_array_equal(result, expected)
 
 
+def test_hamming_weight_zero():
+    """Test Hamming weight of zero."""
+    assert hamming_weight(0) == 0
+
+
+def test_hamming_weight_all_ones():
+    """Test Hamming weight with all bits set."""
+    assert hamming_weight(0xFF) == 8
+    assert hamming_weight(0xFFFF) == 16
+    assert hamming_weight(0xFFFFFFFF) == 32
+
+
+def test_hamming_weight_powers_of_two():
+    """Test Hamming weight for powers of two (single bit)."""
+    assert hamming_weight(1) == 1
+    assert hamming_weight(2) == 1
+    assert hamming_weight(4) == 1
+    assert hamming_weight(128) == 1
+
+
+def test_hamming_weight_large_array():
+    """Test Hamming weight with large numpy array for performance."""
+    # Test optimized array implementation
+    values = np.random.randint(0, 256, size=1000, dtype=np.uint8)
+    result = hamming_weight(values)
+
+    # Verify shape and type
+    assert result.shape == values.shape
+    assert result.dtype == np.int32
+
+    # Verify all values are in valid range
+    assert np.all(result >= 0)
+    assert np.all(result <= 8)
+
+
+def test_hamming_weight_empty_array():
+    """Test Hamming weight with empty array."""
+    values = np.array([], dtype=np.uint8)
+    result = hamming_weight(values)
+
+    assert result.shape == (0,)
+
+
+def test_hamming_distance_zero():
+    """Test Hamming distance between identical values."""
+    assert hamming_distance(0xAA, 0xAA) == 0
+    assert hamming_distance(0xFF, 0xFF) == 0
+
+
+def test_hamming_distance_maximum():
+    """Test maximum Hamming distance (all bits differ)."""
+    assert hamming_distance(0x00, 0xFF) == 8
+    assert hamming_distance(0xAA, 0x55) == 8
+
+
 # =============================================================================
 # AES S-box tests
 # =============================================================================

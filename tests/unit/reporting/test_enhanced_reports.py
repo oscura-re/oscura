@@ -18,6 +18,8 @@ from oscura.reporting.enhanced_reports import (
     ReportConfig,
 )
 
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
 
 def _weasyprint_available() -> bool:
     """Check if weasyprint is available.

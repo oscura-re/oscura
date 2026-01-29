@@ -28,7 +28,11 @@ from click.testing import CliRunner
 from oscura.cli.characterize import _perform_characterization, characterize
 from oscura.core.types import TraceMetadata, WaveformTrace
 
-pytestmark = [pytest.mark.unit, pytest.mark.cli]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.cli,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 # =============================================================================

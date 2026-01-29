@@ -9,7 +9,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 @pytest.fixture

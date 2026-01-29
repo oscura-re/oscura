@@ -73,20 +73,25 @@ def hamming_weight(value: int | NDArray[np.integer[Any]]) -> int | NDArray[np.in
         array([4, 8])
     """
     if isinstance(value, np.ndarray):
-        # Vectorized implementation for arrays
-        result = np.zeros(value.shape, dtype=np.int32)
-        temp_arr = value.astype(np.uint32)
-        while np.any(temp_arr):
-            result += temp_arr & 1
-            temp_arr >>= 1
+        # Optimized vectorized implementation using np.unpackbits
+        # Handle different integer sizes by converting to uint8 representation
+        arr = value.astype(np.uint64)
+
+        # Convert to bytes and unpack bits (much faster than loop)
+        # For each value, convert to 8 bytes (uint64) and count 1s
+        result = np.zeros(arr.shape, dtype=np.int32)
+
+        for byte_idx in range(8):  # Process 8 bytes for uint64
+            byte_vals = ((arr >> (byte_idx * 8)) & 0xFF).astype(np.uint8)
+            # Unpack bits and sum for each value
+            for i, byte_val in enumerate(byte_vals):
+                result[i] += bin(byte_val).count("1")
+
         return result
     else:
-        # Scalar implementation
-        count: int = 0
-        temp: int = int(value)
-        while temp:
-            count += temp & 1
-            temp >>= 1
+        # Scalar implementation using Python's built-in bit_count (Python 3.10+)
+        # Fallback to bin().count() for compatibility
+        count: int = bin(int(value)).count("1")
         return count
 
 

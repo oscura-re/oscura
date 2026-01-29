@@ -570,7 +570,7 @@ class TestAdvancedBatchProcessorParallel:
 
     def test_parallel_process_execution(self, tmp_path: Path):
         """Test parallel execution with multiple workers."""
-        from .test_helpers import name_analysis
+        from .batch_helpers import name_analysis
 
         files = [tmp_path / f"file_{i}.txt" for i in range(4)]
         for f in files:

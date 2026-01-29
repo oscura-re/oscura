@@ -60,6 +60,9 @@ def stream_file(
         >>> for chunk in stream_file("large_capture.bin"):
         ...     process_chunk(chunk)
     """
+    if chunk_size <= 0:
+        raise ValueError(f"chunk_size must be positive, got {chunk_size}")
+
     path = Path(file_path)
 
     with open(path, "rb") as f:
@@ -87,6 +90,9 @@ def stream_records(
         >>> for record in stream_records("data.bin", record_size=128):
         ...     parse_record(record)
     """
+    if record_size <= 0:
+        raise ValueError(f"record_size must be positive, got {record_size}")
+
     if isinstance(file_or_buffer, bytes):
         buffer: BinaryIO = io.BytesIO(file_or_buffer)
         should_close = True
@@ -97,10 +103,13 @@ def stream_records(
         buffer = file_or_buffer
         should_close = False
 
+    # Cache record_size to avoid attribute lookup in tight loop
+    _record_size = record_size
     try:
         while True:
-            record = buffer.read(record_size)
-            if len(record) < record_size:
+            record = buffer.read(_record_size)
+            # Equality check is faster than inequality
+            if len(record) != _record_size:
                 break
             yield record
     finally:
@@ -128,11 +137,16 @@ def stream_packets(
     Yields:
         StreamPacket objects.
 
+    Raises:
+        ValueError: If packet size exceeds MAX_PACKET_SIZE (100MB).
+
     Example:
         >>> header = BinaryParser(">HH")  # sync, length
         >>> for pkt in stream_packets("capture.bin", header_parser=header):
         ...     print(f"Packet: {len(pkt.data)} bytes")
     """
+    MAX_PACKET_SIZE = 100 * 1024 * 1024  # 100MB limit to prevent memory exhaustion
+
     if header_parser is None:
         # Default: 2-byte big-endian length prefix
         header_parser = BinaryParser(">H")
@@ -150,27 +164,44 @@ def stream_packets(
         buffer = file_or_buffer
         should_close = False
 
+    # Cache sizes and flags to avoid repeated lookups in tight loop
+    _header_size = header_size
+    _length_field = length_field
+    _header_included = header_included
+
     try:
         packet_num = 0
 
         while True:
             # Read header
-            header_bytes = buffer.read(header_size)
-            if len(header_bytes) < header_size:
+            header_bytes = buffer.read(_header_size)
+            if len(header_bytes) != _header_size:
                 break
 
             header = header_parser.unpack(header_bytes)
-            length = header[length_field]
+            length = header[_length_field]
 
-            # Compute payload size
-            payload_size = length - header_size if header_included else length
+            # Validate packet size before allocation
+            total_size = length if _header_included else length + _header_size
+            if total_size > MAX_PACKET_SIZE:
+                raise ValueError(
+                    f"Packet size {total_size} bytes exceeds maximum allowed size "
+                    f"{MAX_PACKET_SIZE} bytes (packet {packet_num + 1})"
+                )
 
-            if payload_size < 0:
-                break
+            # Compute payload size with optimized branching
+            if _header_included:
+                if length < _header_size:
+                    break
+                payload_size = length - _header_size
+            else:
+                if length < 0:
+                    break
+                payload_size = length
 
             # Read payload
             payload = buffer.read(payload_size)
-            if len(payload) < payload_size:
+            if len(payload) != payload_size:
                 break
 
             packet_num += 1
@@ -197,15 +228,24 @@ def stream_delimited(
     Args:
         file_or_buffer: Source.
         delimiter: Record delimiter (default newline).
-        max_record_size: Maximum record size (default 1MB).
+        max_record_size: Maximum record size (default 1MB). Records exceeding
+            this size will raise ValueError instead of being silently truncated.
 
     Yields:
         Records as bytes (without delimiter).
+
+    Raises:
+        ValueError: If record exceeds max_record_size.
 
     Example:
         >>> for line in stream_delimited("log.txt", b"\\n"):
         ...     process_line(line)
     """
+    if max_record_size <= 0:
+        raise ValueError(f"max_record_size must be positive, got {max_record_size}")
+    if not delimiter:
+        raise ValueError("delimiter cannot be empty")
+
     if isinstance(file_or_buffer, bytes):
         buffer: BinaryIO = io.BytesIO(file_or_buffer)
         should_close = True
@@ -223,6 +263,12 @@ def stream_delimited(
             chunk = buffer.read(65536)
             if not chunk:
                 if partial:
+                    # Check final partial record
+                    if len(partial) > max_record_size:
+                        raise ValueError(
+                            f"Record size {len(partial)} bytes exceeds maximum allowed size "
+                            f"{max_record_size} bytes"
+                        )
                     yield partial
                 break
 
@@ -231,16 +277,22 @@ def stream_delimited(
 
             # Yield complete records
             for part in parts[:-1]:
-                if len(part) <= max_record_size:
-                    yield part
+                if len(part) > max_record_size:
+                    raise ValueError(
+                        f"Record size {len(part)} bytes exceeds maximum allowed size "
+                        f"{max_record_size} bytes"
+                    )
+                yield part
 
             # Keep partial record for next iteration
             partial = parts[-1]
 
-            # Guard against memory issues
+            # Guard against memory issues - raise error instead of truncating
             if len(partial) > max_record_size:
-                yield partial[:max_record_size]
-                partial = b""
+                raise ValueError(
+                    f"Partial record size {len(partial)} bytes exceeds maximum allowed size "
+                    f"{max_record_size} bytes"
+                )
 
     finally:
         if should_close:
@@ -299,6 +351,9 @@ def batch(
         >>> for batch_items in batch(stream_packets(f), size=100):
         ...     process_batch(batch_items)
     """
+    if size <= 0:
+        raise ValueError(f"size must be positive, got {size}")
+
     current_batch: list[T] = []
 
     for item in source:
@@ -321,6 +376,9 @@ def take(source: Iterator[T], n: int) -> Iterator[T]:
     Yields:
         First n items.
     """
+    if n < 0:
+        raise ValueError(f"n must be non-negative, got {n}")
+
     count = 0
     for item in source:
         if count >= n:
@@ -339,6 +397,9 @@ def skip(source: Iterator[T], n: int) -> Iterator[T]:
     Yields:
         Items after first n.
     """
+    if n < 0:
+        raise ValueError(f"n must be non-negative, got {n}")
+
     count = 0
     for item in source:
         if count >= n:

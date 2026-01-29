@@ -27,7 +27,11 @@ from oscura.visualization.render import (
     configure_dpi_rendering,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 class TestYAxisRangeOptimization:

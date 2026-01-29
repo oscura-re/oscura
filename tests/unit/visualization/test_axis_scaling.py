@@ -12,7 +12,11 @@ from oscura.visualization.axis_scaling import (
     suggest_tick_spacing,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 @pytest.mark.unit

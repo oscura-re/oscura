@@ -27,7 +27,11 @@ from oscura.visualization.accessibility import (
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 # ============================================================================

@@ -30,7 +30,11 @@ from oscura.visualization.interactive import (
     plot_with_cursors,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 # =============================================================================

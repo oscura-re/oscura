@@ -77,6 +77,22 @@ class TestStreamFile:
         assert len(chunks) == 1
         assert chunks[0] == b"Small"
 
+    def test_stream_file_invalid_chunk_size_zero(self, tmp_path: Path):
+        """Test stream_file rejects zero chunk_size."""
+        test_file = tmp_path / "test.bin"
+        test_file.write_bytes(b"test data")
+
+        with pytest.raises(ValueError, match="chunk_size must be positive"):
+            list(stream_file(test_file, chunk_size=0))
+
+    def test_stream_file_invalid_chunk_size_negative(self, tmp_path: Path):
+        """Test stream_file rejects negative chunk_size."""
+        test_file = tmp_path / "test.bin"
+        test_file.write_bytes(b"test data")
+
+        with pytest.raises(ValueError, match="chunk_size must be positive"):
+            list(stream_file(test_file, chunk_size=-1))
+
 
 @pytest.mark.unit
 class TestStreamRecords:
@@ -243,13 +259,12 @@ class TestStreamDelimited:
         assert len(records) == 3
 
     def test_stream_delimited_max_record_size(self):
-        """Test max record size enforcement."""
+        """Test max record size enforcement raises error."""
         data = b"short\n" + b"A" * 2000000 + b"\nshort2\n"
 
-        records = list(stream_delimited(data, delimiter=b"\n", max_record_size=1000))
-
-        # Long record should be truncated
-        assert len(records) >= 2
+        # Changed behavior: now raises ValueError instead of truncating
+        with pytest.raises(ValueError, match="Partial record size .* exceeds maximum"):
+            list(stream_delimited(data, delimiter=b"\n", max_record_size=1000))
 
     def test_stream_delimited_empty(self):
         """Test streaming empty data."""
@@ -265,6 +280,27 @@ class TestStreamDelimited:
 
         assert len(records) == 3
         assert records[0] == b"record1"
+
+    def test_stream_delimited_invalid_max_record_size_zero(self):
+        """Test stream_delimited rejects zero max_record_size."""
+        data = b"line1\nline2\n"
+
+        with pytest.raises(ValueError, match="max_record_size must be positive"):
+            list(stream_delimited(data, max_record_size=0))
+
+    def test_stream_delimited_invalid_max_record_size_negative(self):
+        """Test stream_delimited rejects negative max_record_size."""
+        data = b"line1\nline2\n"
+
+        with pytest.raises(ValueError, match="max_record_size must be positive"):
+            list(stream_delimited(data, max_record_size=-100))
+
+    def test_stream_delimited_empty_delimiter(self):
+        """Test stream_delimited rejects empty delimiter."""
+        data = b"test data"
+
+        with pytest.raises(ValueError, match="delimiter cannot be empty"):
+            list(stream_delimited(data, delimiter=b""))
 
 
 @pytest.mark.unit
@@ -364,6 +400,20 @@ class TestBatch:
 
         assert len(batches) == 0
 
+    def test_batch_invalid_size_zero(self):
+        """Test batch rejects zero size."""
+        source = iter([1, 2, 3])
+
+        with pytest.raises(ValueError, match="size must be positive"):
+            list(batch(source, size=0))
+
+    def test_batch_invalid_size_negative(self):
+        """Test batch rejects negative size."""
+        source = iter([1, 2, 3])
+
+        with pytest.raises(ValueError, match="size must be positive"):
+            list(batch(source, size=-5))
+
 
 @pytest.mark.unit
 class TestTake:
@@ -397,6 +447,13 @@ class TestTake:
 
         assert result == [0]
 
+    def test_take_invalid_n_negative(self):
+        """Test take rejects negative n."""
+        source = iter([1, 2, 3])
+
+        with pytest.raises(ValueError, match="n must be non-negative"):
+            list(take(source, -1))
+
 
 @pytest.mark.unit
 class TestSkip:
@@ -429,6 +486,13 @@ class TestSkip:
         result = list(skip(source, 3))
 
         assert result == []
+
+    def test_skip_invalid_n_negative(self):
+        """Test skip rejects negative n."""
+        source = iter([1, 2, 3])
+
+        with pytest.raises(ValueError, match="n must be non-negative"):
+            list(skip(source, -1))
 
 
 # =============================================================================

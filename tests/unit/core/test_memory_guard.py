@@ -21,6 +21,8 @@ from oscura.core.memory_guard import (
     safe_array_size,
 )
 
+pytestmark = pytest.mark.usefixtures("reset_logging_state")
+
 
 class TestGetMemoryUsageMb:
     """Tests for get_memory_usage_mb function."""
