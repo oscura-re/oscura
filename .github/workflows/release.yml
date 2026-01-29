@@ -178,10 +178,12 @@ jobs:
         run: |
           echo "::group::Installing built package with ALL dependencies"
           # Create temporary venv and install wheel with ALL extras (per ALL-dependencies policy)
-          # Use --prefer-binary to avoid building scipy/numpy from source
+          # Upgrade pip first for better binary wheel support
+          # Use --only-binary to strictly require binary wheels (fail if unavailable)
           python -m venv /tmp/test-venv
+          /tmp/test-venv/bin/pip install --quiet --upgrade pip
           WHEEL=$(ls dist/*.whl)
-          /tmp/test-venv/bin/pip install --quiet --prefer-binary "${WHEEL}[all]"
+          /tmp/test-venv/bin/pip install --quiet --only-binary=:all: "${WHEEL}[all]"
           echo "::endgroup::"
 
           echo "::group::Testing package import"

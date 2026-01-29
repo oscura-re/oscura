@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **CI/CD** (`.github/actions/setup-python-env/action.yml`): Fix UV setup parameter name from `uv-version` to `version` (correct parameter for astral-sh/setup-uv@v7 action)
+- **Release** (`.github/workflows/release.yml`): Use `--only-binary=:all:` instead of `--prefer-binary` to prevent scipy source builds in smoke test
 
 ## [0.7.0] - TBD
 
