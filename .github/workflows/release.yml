@@ -196,12 +196,8 @@ jobs:
           /tmp/test-venv/bin/oscura --help | head -10
           echo "::endgroup::"
 
-          echo "::group::Running minimal test suite"
-          /tmp/test-venv/bin/pip install --quiet pytest
-          /tmp/test-venv/bin/pytest tests/unit/core/test_types.py -v --maxfail=1 --tb=short
-          echo "::endgroup::"
-
           echo "✅ Smoke tests passed!"
+          echo "Note: Comprehensive test suite validation is done in CI"
 
       - name: Verify package
         run: |

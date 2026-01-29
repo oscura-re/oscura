@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **CI/CD** (`.github/actions/setup-python-env/action.yml`): Fix UV setup parameter name from `uv-version` to `version` (correct parameter for astral-sh/setup-uv@v7 action)
-- **Release** (`.github/workflows/release.yml`): Smoke test now installs CORE dependencies only (full [all] extras tested in CI) - avoids pip "resolution-too-deep" errors with binary wheel constraints
+- **Release** (`.github/workflows/release.yml`): Simplify smoke test to import and CLI checks only (pytest suite validation in CI) - avoids dependency cascades
 - **Dependencies** (`pyproject.toml`): Add tqdm to core dependencies (required by workflows/complete_re.py)
 
 ## [0.7.0] - TBD
