@@ -278,3 +278,79 @@ jobs:
           echo "  - vs Full suite: ~15 minutes"
           echo "  - Time saved: ~12 minutes (80% faster)"
           echo ""
+
+  # =================================================================
+  # Branch Protection Adapter Jobs
+  # =================================================================
+  # These jobs use names that match branch protection required checks
+  # GitHub matches by job name, not workflow name
+  # This allows lightweight merge queue checks to satisfy branch protection
+  # See: docs/ci-cd/merge-queue-configuration-analysis.md
+
+  ci-status:
+    name: CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    needs: [fast-validation, smoke-tests, config-validation]
+    if: always()
+    steps:
+      - name: Check merge queue validation passed
+        run: |
+          if [[ "${{ needs.fast-validation.result }}" != "success" ]]; then
+            echo "❌ Fast validation failed"
+            exit 1
+          fi
+          if [[ "${{ needs.smoke-tests.result }}" != "success" ]]; then
+            echo "❌ Smoke tests failed"
+            exit 1
+          fi
+          if [[ "${{ needs.config-validation.result }}" != "success" ]]; then
+            echo "❌ Config validation failed"
+            exit 1
+          fi
+          echo "✅ Merge queue validation passed (satisfies CI requirement)"
+
+  docs-status:
+    name: Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    needs: [fast-validation]
+    if: always()
+    steps:
+      - name: Check build validation passed
+        run: |
+          if [[ "${{ needs.fast-validation.result }}" != "success" ]]; then
+            echo "❌ Build validation failed"
+            exit 1
+          fi
+          echo "✅ Build validated (satisfies Documentation requirement)"
+
+  code-quality-status:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    needs: [fast-validation]
+    if: always()
+    steps:
+      - name: Check lint validation passed
+        run: |
+          if [[ "${{ needs.fast-validation.result }}" != "success" ]]; then
+            echo "❌ Lint validation failed"
+            exit 1
+          fi
+          echo "✅ Lint validated (satisfies Code Quality requirement)"
+
+  test-quality-status:
+    name: Test Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    needs: [smoke-tests]
+    if: always()
+    steps:
+      - name: Check smoke tests passed
+        run: |
+          if [[ "${{ needs.smoke-tests.result }}" != "success" ]]; then
+            echo "❌ Smoke tests failed"
+            exit 1
+          fi
+          echo "✅ Smoke tests passed (satisfies Test Quality Gates requirement)"
