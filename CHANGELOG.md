@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Release Workflow ALL-Dependencies Policy** (.github/workflows/release.yml, src/oscura/validation/hil_testing.py): Fixed release workflow smoke test to enforce ALL-dependencies policy - updated to install wheel with [all] extras, wrapped pyserial import for graceful degradation; Root cause: Smoke test violated ALL-dependencies policy by installing bare package; Expected impact: Release workflow now passes with full dependencies; 2 files modified
+- **Release Workflow Shell Glob Expansion** (.github/workflows/release.yml): Fixed shell glob expansion for wheel installation with extras - changed from `"dist/*.whl[all]"` to `WHEEL=$(ls dist/*.whl); pip install "${WHEEL}[all]"` to properly expand glob before appending extras syntax; Root cause: Shell wasn't expanding glob pattern when combined with pip extras syntax; Expected impact: Release workflow smoke test now correctly installs package with [all] extras; 1 file modified
 
 ## [0.6.0] - 2026-01-29
 

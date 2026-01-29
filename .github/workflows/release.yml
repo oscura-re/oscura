@@ -174,7 +174,8 @@ jobs:
           echo "::group::Installing built package with ALL dependencies"
           # Create temporary venv and install wheel with ALL extras (per ALL-dependencies policy)
           python -m venv /tmp/test-venv
-          /tmp/test-venv/bin/pip install --quiet "dist/*.whl[all]"
+          WHEEL=$(ls dist/*.whl)
+          /tmp/test-venv/bin/pip install --quiet "${WHEEL}[all]"
           echo "::endgroup::"
 
           echo "::group::Testing package import"
