@@ -86,8 +86,8 @@ class DemoDataGenerator:
                 "name": "Custom DAQ",
                 "dir": "03_custom_daq",
                 "generator": "generate_demo_data.py",
-                "expected_files": 2,
-                "expected_size_mb": 880,  # Large file for streaming demo
+                "expected_files": 1,
+                "expected_size_mb": 80,  # Only small file (skip large to avoid CI timeout)
             },
             "03": {
                 "name": "UDP Packet Analysis",
@@ -220,12 +220,16 @@ class DemoDataGenerator:
             if self.force:
                 cmd.append("--force")
 
+            # Skip large files for Custom DAQ demo (avoids CI timeouts)
+            if info["dir"] == "03_custom_daq":
+                cmd.append("--skip-large")
+
             result = subprocess.run(
                 cmd,
                 cwd=self.project_root,  # Run from project root for proper imports
                 capture_output=True,
                 text=True,
-                timeout=1200,  # 20 minute timeout (increased for large files)
+                timeout=150,  # 2.5 minute timeout per generator
                 check=False,
             )
 
