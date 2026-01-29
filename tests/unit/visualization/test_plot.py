@@ -16,6 +16,8 @@ import pytest
 from oscura.core.types import TraceMetadata, WaveformTrace
 from oscura.visualization import plot
 
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
 
 class TestPlotTrace:
     """Tests for plot_trace function."""

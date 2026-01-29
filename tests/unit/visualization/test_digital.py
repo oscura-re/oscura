@@ -9,7 +9,11 @@ import pytest
 from oscura.core.types import DigitalTrace, TraceMetadata, WaveformTrace
 from oscura.visualization.digital import plot_logic_analyzer, plot_timing
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 @pytest.fixture

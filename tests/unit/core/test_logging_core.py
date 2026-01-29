@@ -28,7 +28,11 @@ from oscura.core.logging import (
     with_correlation_id,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.core]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.core,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 @pytest.fixture(autouse=True)

@@ -22,7 +22,11 @@ from click.testing import CliRunner
 
 from oscura.cli.export import export
 
-pytestmark = [pytest.mark.unit, pytest.mark.cli]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.cli,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 # =============================================================================

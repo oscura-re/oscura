@@ -632,9 +632,11 @@ class ConfigurablePacketLoader:
 
         Raises:
             ConfigurationError: If packet configuration is invalid.
-            LoaderError: If file cannot be read.
+            LoaderError: If file cannot be read or packet limit exceeded.
             FormatError: If packet parsing fails.
         """
+        MAX_PACKET_LIMIT = 10_000_000  # Prevent unbounded memory growth
+
         path = Path(path)
 
         # Validate and determine packet size mode
@@ -644,6 +646,14 @@ class ConfigurablePacketLoader:
             with open(path, "rb") as f:
                 packet_index = 0
                 while True:
+                    # Check packet limit to prevent memory exhaustion
+                    if packet_index >= MAX_PACKET_LIMIT:
+                        raise LoaderError(
+                            f"Exceeded maximum packet limit ({MAX_PACKET_LIMIT})",
+                            file_path=str(path),
+                            fix_hint="Process file in chunks or increase MAX_PACKET_LIMIT if needed",
+                        )
+
                     # Read packet data
                     packet_data = self._read_next_packet(
                         f, packet_index, is_variable_length, fixed_packet_size

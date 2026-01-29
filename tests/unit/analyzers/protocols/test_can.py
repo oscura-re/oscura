@@ -336,9 +336,9 @@ class TestCANDecoder:
 
         # Should decode at least one frame
         assert len(frames) > 0, "Expected at least one decoded frame"
-        # Verify frame structure
-        assert hasattr(frames[0], "arbitration_id")
-        assert hasattr(frames[0], "data")
+        # Verify frame structure (ProtocolPacket stores in annotations)
+        assert "arbitration_id" in frames[0].annotations
+        assert frames[0].data is not None
 
     def test_decoder_reset(self, can_trace_standard: DigitalTrace):
         """Test decoder reset between uses."""

@@ -34,7 +34,11 @@ from oscura.cli.analyze import (
 )
 from oscura.core.types import DigitalTrace, ProtocolPacket, TraceMetadata, WaveformTrace
 
-pytestmark = [pytest.mark.unit, pytest.mark.cli]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.cli,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 # =============================================================================

@@ -37,7 +37,11 @@ from oscura.cli.benchmark import (
 )
 from oscura.core.types import TraceMetadata, WaveformTrace
 
-pytestmark = [pytest.mark.unit, pytest.mark.cli]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.cli,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 # =============================================================================

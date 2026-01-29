@@ -459,6 +459,13 @@ def detect_encrypted_regions(
     window_size = min_length
     step = window_size // 4
 
+    # Validate step to prevent infinite loop
+    if step <= 0:
+        raise ValueError(
+            f"Invalid step size {step} (window_size={window_size}). "
+            "window_size must be at least 4 to produce positive step."
+        )
+
     i = 0
     while i < len(data) - window_size:
         window = data[i : i + window_size]
@@ -513,6 +520,9 @@ def detect_compressed_regions(data: DataType, min_length: int = 64) -> list[Regi
     Returns:
         List of detected compressed regions
 
+    Raises:
+        ValueError: If detected region exceeds MAX_REGION_SIZE (100MB).
+
     Example:
         >>> import gzip
         >>> compressed = gzip.compress(b'Hello World' * 100)
@@ -520,6 +530,8 @@ def detect_compressed_regions(data: DataType, min_length: int = 64) -> list[Regi
         >>> len(regions) > 0
         True
     """
+    MAX_REGION_SIZE = 100 * 1024 * 1024  # 100MB limit
+
     if isinstance(data, np.ndarray):
         data = data.tobytes() if data.dtype == np.uint8 else bytes(data.flatten())
 
@@ -541,6 +553,13 @@ def detect_compressed_regions(data: DataType, min_length: int = 64) -> list[Regi
             # Extend based on high entropy
             window_size = 256
             while region_end < len(data):
+                # Safety check: prevent unbounded region growth
+                if region_end - region_start >= MAX_REGION_SIZE:
+                    raise ValueError(
+                        f"Compressed region size exceeded {MAX_REGION_SIZE // (1024 * 1024)}MB limit. "
+                        f"This may indicate malformed data or incorrect compression signature detection."
+                    )
+
                 window = data[region_end : region_end + window_size]
                 if len(window) < window_size:
                     break

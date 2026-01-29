@@ -25,7 +25,7 @@ from oscura.analyzers.statistics.basic import (
 )
 from oscura.core.types import TraceMetadata, WaveformTrace
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit]
 
 
 # Fixtures

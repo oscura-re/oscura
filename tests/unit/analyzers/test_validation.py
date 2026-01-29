@@ -530,7 +530,7 @@ class TestAnalyzeSignalCharacteristics:
 
         chars = analyze_signal_characteristics(trace)
 
-        assert chars["sufficient_samples"] is False
+        assert chars["sufficient_samples"] == False  # noqa: E712
 
     def test_sufficient_samples_characteristics(self) -> None:
         """Test characteristics with sufficient samples."""
@@ -541,7 +541,7 @@ class TestAnalyzeSignalCharacteristics:
 
         chars = analyze_signal_characteristics(trace)
 
-        assert chars["sufficient_samples"] is True
+        assert chars["sufficient_samples"] == True  # noqa: E712
 
     def test_edge_count_accuracy(self) -> None:
         """Test that edge counts are reasonably accurate."""

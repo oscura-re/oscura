@@ -12,6 +12,8 @@ from oscura.visualization.histogram import (
     calculate_optimal_bins,
 )
 
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
 
 class TestCalculateOptimalBins:
     """Test calculate_optimal_bins function."""

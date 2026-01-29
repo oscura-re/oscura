@@ -18,6 +18,8 @@ from oscura.visualization.styles import (
 
 pytest.importorskip("matplotlib")
 
+pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+
 
 class TestStylePreset:
     """Test StylePreset dataclass."""

@@ -35,7 +35,11 @@ from oscura.cli.config_cmd import (
     config,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.cli]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.cli,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 # =============================================================================

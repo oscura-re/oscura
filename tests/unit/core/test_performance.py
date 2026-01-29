@@ -20,7 +20,11 @@ from oscura.core.performance import (
     timed,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.core]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.core,
+    pytest.mark.usefixtures("reset_logging_state"),
+]
 
 
 class TestPerformanceRecord:

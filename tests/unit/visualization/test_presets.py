@@ -31,7 +31,11 @@ from oscura.visualization.presets import (
     list_presets,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.visualization]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.visualization,
+    pytest.mark.usefixtures("cleanup_matplotlib"),
+]
 
 
 class TestVisualizationPreset:

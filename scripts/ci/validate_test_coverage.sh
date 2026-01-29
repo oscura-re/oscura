@@ -60,9 +60,17 @@ echo ""
 # Check each directory is mentioned in CI config
 missing=()
 covered=()
+empty=()
 
 for dir in "${test_dirs[@]}"; do
-  if grep -q "tests/unit/$dir/" "$CI_CONFIG"; then
+  # Check if directory has any test files
+  test_file_count=$(find "$TEST_DIR/$dir" -name "test_*.py" -o -name "*_test.py" 2> /dev/null | wc -l)
+
+  if [[ $test_file_count -eq 0 ]]; then
+    # Skip empty directories - they don't need CI coverage
+    empty+=("$dir")
+    echo -e "${YELLOW}○${NC} $dir (empty, skipped)"
+  elif grep -q "tests/unit/$dir/" "$CI_CONFIG"; then
     covered+=("$dir")
     echo -e "${GREEN}✓${NC} $dir"
   else
@@ -77,6 +85,7 @@ echo "Results"
 echo "=========================================="
 echo "Total directories: ${#test_dirs[@]}"
 echo -e "${GREEN}Covered: ${#covered[@]}${NC}"
+echo -e "${YELLOW}Empty (skipped): ${#empty[@]}${NC}"
 echo -e "${RED}Missing: ${#missing[@]}${NC}"
 echo ""
 

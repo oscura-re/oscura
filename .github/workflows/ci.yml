@@ -162,21 +162,95 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.test-group }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: ${{ matrix.timeout }}
     needs: [lint] # Only needs lint - typecheck can run in parallel
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.12", "3.13"]
         test-group:
-          - "analyzers"
+          - "analyzers-1a"
+          - "analyzers-1b"
+          - "analyzers-2"
+          - "analyzers-3a-3d"
+          - "analyzers-3b-1"
+          - "analyzers-3b-2"
+          - "analyzers-3b-3"
+          - "analyzers-3b-4"
+          - "analyzers-3c"
           - "core-protocols-loaders"
-          - "search-filtering-streaming"
+          - "unit-root-tests"
           - "cli-ui-reporting"
           - "unit-workflows"
-          - "unit-exploratory"
+          - "unit-discovery-inference"
           - "unit-utils"
-          - "non-unit-tests"
+          - "integration-tests"
+          - "compliance-validation"
+          # CRITICAL RISK: Isolated high-risk tests
+          - "stress-realtime-streaming"
+          - "stress-protocol-decoder"
+          - "isolated-chunked-fft"
+          - "isolated-protocol-dsl"
+          - "isolated-reverse-engineering"
+          # HIGH RISK: Isolated heavy tests
+          - "isolated-logging-advanced"
+          - "isolated-message-format"
+          - "isolated-complex-scenarios"
+        include:
+          # Standard test groups: 25min timeout
+          - test-group: "analyzers-1a"
+            timeout: 25
+          - test-group: "analyzers-1b"
+            timeout: 25
+          - test-group: "analyzers-2"
+            timeout: 25
+          - test-group: "analyzers-3a-3d"
+            timeout: 25
+          - test-group: "analyzers-3b-1"
+            timeout: 25
+          - test-group: "analyzers-3b-2"
+            timeout: 25
+          - test-group: "analyzers-3b-3"
+            timeout: 25
+          - test-group: "analyzers-3b-4"
+            timeout: 25
+          - test-group: "analyzers-3c"
+            timeout: 25
+          - test-group: "core-protocols-loaders"
+            timeout: 25
+          - test-group: "unit-root-tests"
+            timeout: 25
+          - test-group: "cli-ui-reporting"
+            timeout: 25
+          - test-group: "unit-workflows"
+            timeout: 25
+          - test-group: "unit-discovery-inference"
+            timeout: 25
+          - test-group: "unit-utils"
+            timeout: 25
+          - test-group: "integration-tests"
+            timeout: 25
+          - test-group: "compliance-validation"
+            timeout: 25
+          # CRITICAL RISK: Stress tests with extended timeouts
+          - test-group: "stress-realtime-streaming"
+            timeout: 60
+          - test-group: "stress-protocol-decoder"
+            timeout: 45
+          # CRITICAL RISK: Complex validation tests
+          - test-group: "isolated-chunked-fft"
+            timeout: 35
+          - test-group: "isolated-protocol-dsl"
+            timeout: 40
+          - test-group: "isolated-reverse-engineering"
+            timeout: 40
+          # HIGH RISK: Heavy computation tests
+          - test-group: "isolated-logging-advanced"
+            timeout: 35
+          - test-group: "isolated-message-format"
+            timeout: 35
+          - test-group: "isolated-complex-scenarios"
+            timeout: 30
     steps:
       - uses: actions/checkout@v6
         with:
@@ -205,6 +279,14 @@ jobs:
             hypothesis-${{ runner.os }}-${{ matrix.python-version }}-
             hypothesis-${{ runner.os }}-
 
+      - name: Cache Numba JIT
+        uses: actions/cache@v5
+        with:
+          path: ~/.numba
+          key: numba-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('src/**/*.py') }}
+          restore-keys: |
+            numba-${{ runner.os }}-py${{ matrix.python-version }}-
+
       - name: Verify test data (optional)
         run: ./scripts/testing/verify_test_data.sh
         continue-on-error: true
@@ -213,45 +295,125 @@ jobs:
         id: test-paths
         run: |
           case "${{ matrix.test-group }}" in
-            "analyzers")
-              # Analyzer tests including signal analysis, correlation
-              paths="tests/unit/analyzers/ tests/unit/analysis/"
+            "analyzers-1a")
+              # Protocols analyzers (~16K lines, ~8-10 min)
+              paths="tests/unit/analyzers/protocols/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-1b")
+              # Digital, waveform, eye, jitter analyzers (~15K lines, ~8-10 min)
+              paths="tests/unit/analyzers/digital/ tests/unit/analyzers/waveform/"
+              paths="$paths tests/unit/analyzers/eye/ tests/unit/analyzers/jitter/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-2")
+              # Spectral, power, patterns, statistical analyzers (~1800 tests, ~8-10 min)
+              # EXCLUDING test_chunked_fft.py (isolated in dedicated batch)
+              paths="tests/unit/analyzers/spectral/test_chunked.py"
+              paths="$paths tests/unit/analyzers/spectral/test_chunked_wavelet.py"
+              paths="$paths tests/unit/analyzers/spectral/test_fft.py"
+              paths="$paths tests/unit/analyzers/spectral/test_fft_caching.py"
+              paths="$paths tests/unit/analyzers/spectral/test_psd_chunked.py"
+              paths="$paths tests/unit/analyzers/power/"
+              paths="$paths tests/unit/analyzers/patterns/ tests/unit/analyzers/statistical/"
+              paths="$paths tests/unit/analyzers/statistics/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3a-3d")
+              # ML, side_channel, and signal_integrity analyzers (merged small groups)
+              paths="tests/unit/analyzers/ml/ tests/unit/analyzers/side_channel/"
+              paths="$paths tests/unit/analyzers/signal_integrity/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-1")
+              # Packet analyzer batch 1 - parser, metrics (89 tests, ~5-6 min)
+              paths="tests/unit/analyzers/packet/test_parser.py"
+              paths="$paths tests/unit/analyzers/packet/test_metrics.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-2")
+              # Packet analyzer batch 2 - stream ONLY (50 tests, ~10-15 min)
+              # test_stream.py is extremely slow, completely isolated in dedicated batch
+              paths="tests/unit/analyzers/packet/test_stream.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-3")
+              # Packet analyzer batch 3 - daq, extraction (90 tests, ~5-6 min)
+              paths="tests/unit/analyzers/packet/test_daq.py"
+              paths="$paths tests/unit/analyzers/packet/test_payload_extraction.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3b-4")
+              # Packet analyzer batch 4 - payload (55 tests, ~4-5 min)
+              paths="tests/unit/analyzers/packet/test_payload.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-3c")
+              # Root analyzer tests + analysis/signal/correlation
+              paths="tests/unit/analyzers/test_*.py tests/unit/analysis/"
               paths="$paths tests/unit/signal/ tests/unit/correlation/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "core-protocols-loaders")
               # Core functionality, protocol decoders, data loaders
-              paths="tests/unit/core/ tests/unit/protocols/ tests/unit/loaders/"
+              # EXCLUDING test_logging_advanced.py (isolated in dedicated batch)
+              # Note: pytest will expand the glob and skip the specific exclusion
+              paths="tests/unit/protocols/ tests/unit/loaders/"
+              # Add core tests except test_logging_advanced.py using deselect
+              for file in tests/unit/core/test_*.py; do
+                if [[ "$file" != "tests/unit/core/test_logging_advanced.py" ]]; then
+                  paths="$paths $file"
+                fi
+              done
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "search-filtering-streaming")
-              # Standalone test files in tests/unit/ root
+            "unit-root-tests")
+              # Standalone test files in tests/unit/ root only
               paths="tests/unit/test_*.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "cli-ui-reporting")
-              # CLI, reporting, visualization, web interface
+              # CLI, reporting, visualization, web interface (excluding empty: ui, onboarding)
               paths="tests/unit/cli/ tests/unit/reporting/"
               paths="$paths tests/unit/visualization/ tests/unit/web/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-workflows")
-              # Workflows, sessions, automotive, hardware/IoT
+              # Workflows, sessions, automotive, hardware/IoT (excluding empty: pipeline, batch, workflow, session)
               paths="tests/unit/workflows/ tests/unit/sessions/"
               paths="$paths tests/unit/automotive/ tests/unit/hardware/"
               paths="$paths tests/unit/firmware/ tests/unit/iot/"
               paths="$paths tests/unit/side_channel/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "unit-exploratory")
-              # Inference, discovery, guidance, compliance
-              paths="tests/unit/inference/ tests/unit/discovery/"
+            "unit-discovery-inference")
+              # Inference, discovery, guidance, compliance, requirements
+              # EXCLUDING test_protocol_dsl.py and test_message_format.py (isolated in dedicated batches)
+              paths="tests/unit/inference/test_adaptive_tuning.py"
+              paths="$paths tests/unit/inference/test_alignment.py"
+              paths="$paths tests/unit/inference/test_alignment_enhanced.py"
+              paths="$paths tests/unit/inference/test_alignment_hypothesis.py"
+              paths="$paths tests/unit/inference/test_binary.py"
+              paths="$paths tests/unit/inference/test_crc_reverse.py"
+              paths="$paths tests/unit/inference/test_logic.py"
+              paths="$paths tests/unit/inference/test_lstar.py"
+              paths="$paths tests/unit/inference/test_message_format_hypothesis.py"
+              paths="$paths tests/unit/inference/test_protocol.py"
+              paths="$paths tests/unit/inference/test_protocol_library.py"
+              paths="$paths tests/unit/inference/test_sequences.py"
+              paths="$paths tests/unit/inference/test_signal_intelligence.py"
+              paths="$paths tests/unit/inference/test_spectral.py"
+              paths="$paths tests/unit/inference/test_state_machine_hypothesis.py"
+              paths="$paths tests/unit/inference/test_stream.py"
+              paths="$paths tests/unit/discovery/"
               paths="$paths tests/unit/guidance/ tests/unit/compliance/"
               paths="$paths tests/unit/requirements/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
             "unit-utils")
-              # Utilities, config, API, helpers, exports
+              # Utils, config, API, helpers, exports
+              # (excluding empty: builders, integrations, plugins, quality, schemas,
+              #  exporters, testing, triggering, acquisition, math, optimization)
               paths="tests/unit/utils/ tests/unit/config/ tests/unit/hooks/"
               paths="$paths tests/unit/api/ tests/unit/jupyter/"
               paths="$paths tests/unit/component/ tests/unit/comparison/"
@@ -260,39 +422,150 @@ jobs:
               paths="$paths tests/unit/security/ tests/unit/performance/"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
-            "non-unit-tests")
-              paths="tests/integration/"
-              paths="$paths tests/compliance/"
-              paths="$paths tests/validation/"
+            "integration-tests")
+              # Integration tests (~120 tests, ~7-8min)
+              # EXCLUDING test_complex_scenarios.py (isolated in dedicated batch)
+              # test_examples.py excluded (documentation validation, in nightly CI)
+              paths="tests/integration/test_binary_to_protocol.py"
+              paths="$paths tests/integration/test_complete_workflows.py"
+              paths="$paths tests/integration/test_integration_workflows.py"
+              paths="$paths tests/integration/test_multi_format_pipelines.py"
+              paths="$paths tests/integration/test_pcap_to_inference.py"
+              paths="$paths tests/integration/test_protocol_analysis_workflows.py"
+              paths="$paths tests/integration/test_wfm_loading.py"
+              paths="$paths tests/integration/reporting/"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "compliance-validation")
+              # Compliance and validation tests (~200 tests, ~7-8min)
+              # EXCLUDING test_reverse_engineering.py (isolated in dedicated batch)
+              paths="tests/compliance/"
+              # Add validation tests except test_reverse_engineering.py
+              for file in tests/validation/test_*.py; do
+                if [[ "$file" != "tests/validation/test_reverse_engineering.py" ]]; then
+                  paths="$paths $file"
+                fi
+              done
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            # ============================================================================
+            # CRITICAL RISK: Isolated stress tests
+            # ============================================================================
+            "stress-realtime-streaming")
+              # Stress test: Real-time streaming with 1M samples (546 lines, ~30-45 min)
+              # High memory/CPU usage, needs dedicated isolation with extended timeout
+              paths="tests/stress/test_realtime_streaming_load.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "stress-protocol-decoder")
+              # Stress test: Protocol decoder with 10K+ frames (410 lines, ~20-30 min)
+              # Heavy processing load, needs dedicated isolation with extended timeout
+              paths="tests/stress/test_protocol_decoder_load.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            # ============================================================================
+            # CRITICAL RISK: Isolated computation-heavy tests
+            # ============================================================================
+            "isolated-chunked-fft")
+              # Isolated: Chunked FFT tests (1373 lines, 100K FFTs, ~15-25 min)
+              # Heavy FFT computations, memory-intensive
+              paths="tests/unit/analyzers/spectral/test_chunked_fft.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "isolated-protocol-dsl")
+              # Isolated: Protocol DSL tests (2297 lines, complex parsing, ~20-30 min)
+              # Heavy symbolic processing and state machine generation
+              paths="tests/unit/inference/test_protocol_dsl.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "isolated-reverse-engineering")
+              # Isolated: Reverse engineering validation (1621 lines, 40+ parametrized variants, ~20-30 min)
+              # Complex multi-variant testing with heavy processing
+              paths="tests/validation/test_reverse_engineering.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            # ============================================================================
+            # HIGH RISK: Isolated heavy tests
+            # ============================================================================
+            "isolated-logging-advanced")
+              # Isolated: Advanced logging tests (2108 lines, ~15-25 min)
+              # Complex logging scenarios with file I/O and threading
+              paths="tests/unit/core/test_logging_advanced.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "isolated-message-format")
+              # Isolated: Message format inference tests (1529 lines, ~15-25 min)
+              # Heavy pattern matching and format inference computations
+              paths="tests/unit/inference/test_message_format.py"
+              echo "paths=$paths" >> $GITHUB_OUTPUT
+              ;;
+            "isolated-complex-scenarios")
+              # Isolated: Complex integration scenarios (620 lines, ~12-20 min)
+              # Multi-component integration with heavy processing
+              paths="tests/integration/test_complex_scenarios.py"
               echo "paths=$paths" >> $GITHUB_OUTPUT
               ;;
           esac
 
+          # Validate that test paths exist (fail fast if misconfigured)
+          echo "Validating test paths..."
+          for path in $paths; do
+            if [[ ! -e "$path" ]]; then
+              echo "ERROR: Test path does not exist: $path"
+              echo "This indicates a CI configuration error in test-group: ${{ matrix.test-group }}"
+              exit 1
+            fi
+          done
+          echo "✓ All test paths validated for ${{ matrix.test-group }}"
+
       - name: Run tests with coverage (${{ matrix.test-group }})
         id: run-tests
+        env:
+          NUMBA_CACHE_DIR: ~/.numba
+          COVERAGE_CORE: sysmon
+          HYPOTHESIS_PROFILE: ci
         run: |
           # Record start time
           START_TIME=$(date +%s)
           echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
 
           # Determine optimal worker count based on test group memory requirements
-          # Memory-intensive groups (analyzers, non-unit-tests): Use 2 workers
+          # Stress tests: Use 1 worker (extreme memory/CPU requirements)
+          # Isolated heavy tests: Use 1 worker (single complex file, sequential is faster)
+          # Memory-intensive groups (analyzers-*, integration-tests, compliance-validation): Use 2 workers
           # Standard groups: Use 4 workers
-          if [[ "${{ matrix.test-group }}" =~ ^(analyzers|non-unit-tests)$ ]]; then
+          if [[ "${{ matrix.test-group }}" =~ ^(stress-|isolated-) ]]; then
+            # Stress/isolated tests: Single worker for extreme resource requirements
+            WORKERS=1
+            XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
+            echo "Using 1 worker for stress/isolated test group: ${{ matrix.test-group }}"
+          elif [[ "${{ matrix.test-group }}" =~ ^(analyzers-|integration-tests|compliance-validation) ]]; then
+            # Memory-intensive groups: 2 workers
             WORKERS=2
             XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
             echo "Using 2 workers for memory-intensive test group: ${{ matrix.test-group }}"
           else
+            # Standard groups: 4 workers
             WORKERS=4
             XDIST_ARGS="-n $WORKERS --maxprocesses=$WORKERS --dist loadscope"
             echo "Using 4 workers for standard test group: ${{ matrix.test-group }}"
+          fi
+
+          # Determine marker filter based on test group
+          # Stress tests should run slow tests, all others should exclude them
+          if [[ "${{ matrix.test-group }}" =~ ^stress- ]]; then
+            MARKER_FILTER="not performance"
+            echo "Including slow tests for stress test group: ${{ matrix.test-group }}"
+          else
+            MARKER_FILTER="not slow and not performance"
+            echo "Excluding slow tests for standard test group: ${{ matrix.test-group }}"
           fi
 
           # Run tests and capture exit code
           set +e
           uv run python -m pytest ${{ steps.test-paths.outputs.paths }} \
             -v \
-            -m "not slow and not performance" \
+            -m "$MARKER_FILTER" \
             $XDIST_ARGS \
             --hypothesis-profile=ci \
             -p no:benchmark \
@@ -302,7 +575,7 @@ jobs:
             --cov-fail-under=0 \
             --maxfail=10 \
             --tb=short \
-            --durations=10 \
+            --durations=20 \
             --reruns 2 \
             --reruns-delay 1 \
             --junit-xml=test-results-${{ matrix.python-version }}-${{ matrix.test-group }}.xml
@@ -322,8 +595,32 @@ jobs:
         if: always()
         run: |
           DURATION="${{ steps.run-tests.outputs.duration_seconds }}"
-          TIMEOUT_SECONDS=$((25 * 60))  # 25 minutes in seconds
-          THRESHOLD=$((TIMEOUT_SECONDS * 80 / 100))  # 80% of timeout (20 minutes)
+
+          # Determine timeout based on test group (must match matrix.timeout)
+          case "${{ matrix.test-group }}" in
+            stress-realtime-streaming)
+              TIMEOUT_MINUTES=60
+              ;;
+            stress-protocol-decoder)
+              TIMEOUT_MINUTES=45
+              ;;
+            isolated-protocol-dsl|isolated-reverse-engineering)
+              TIMEOUT_MINUTES=40
+              ;;
+            isolated-chunked-fft|isolated-logging-advanced|isolated-message-format)
+              TIMEOUT_MINUTES=35
+              ;;
+            isolated-complex-scenarios)
+              TIMEOUT_MINUTES=30
+              ;;
+            *)
+              TIMEOUT_MINUTES=25
+              ;;
+          esac
+
+          TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+          WARNING_THRESHOLD=$((TIMEOUT_SECONDS * 70 / 100))  # 70% of timeout
+          ERROR_THRESHOLD=$((TIMEOUT_SECONDS * 85 / 100))    # 85% of timeout
 
           # Handle case where duration wasn't recorded (shouldn't happen but be safe)
           if [ -z "$DURATION" ]; then
@@ -331,14 +628,31 @@ jobs:
             exit 0
           fi
 
-          if [ "$DURATION" -gt "$THRESHOLD" ]; then
+          # Fail build if exceeding 85% threshold
+          if [ "$DURATION" -gt "$ERROR_THRESHOLD" ]; then
             MIN=$((DURATION / 60))
-            echo "::warning::Test took ${DURATION}s (${MIN}m), approaching 25m timeout. Consider splitting test group."
+            SEC=$((DURATION % 60))
+            echo "::error::Test took ${DURATION}s (${MIN}m ${SEC}s)," \
+              "exceeding 85% of ${TIMEOUT_MINUTES}m timeout. MUST split!"
+            echo "Duration: ${DURATION}s ($((DURATION / 60))m $((DURATION % 60))s)"
+            echo "Warning threshold (70%): ${WARNING_THRESHOLD}s ($((WARNING_THRESHOLD / 60))m)"
+            echo "Error threshold (85%): ${ERROR_THRESHOLD}s ($((ERROR_THRESHOLD / 60))m)"
+            echo "Timeout: ${TIMEOUT_SECONDS}s (${TIMEOUT_MINUTES}m)"
+            exit 1
+          fi
+
+          # Warning if exceeding 70% threshold
+          if [ "$DURATION" -gt "$WARNING_THRESHOLD" ]; then
+            MIN=$((DURATION / 60))
+            SEC=$((DURATION % 60))
+            echo "::warning::Test took ${DURATION}s (${MIN}m ${SEC}s)," \
+              "approaching ${TIMEOUT_MINUTES}m timeout. Consider splitting?"
           fi
 
           echo "Duration: ${DURATION}s ($((DURATION / 60))m $((DURATION % 60))s)"
-          echo "Threshold: ${THRESHOLD}s ($((THRESHOLD / 60))m)"
-          echo "Timeout: ${TIMEOUT_SECONDS}s (25m)"
+          echo "Warning threshold (70%): ${WARNING_THRESHOLD}s ($((WARNING_THRESHOLD / 60))m)"
+          echo "Error threshold (85%): ${ERROR_THRESHOLD}s ($((ERROR_THRESHOLD / 60))m)"
+          echo "Timeout: ${TIMEOUT_SECONDS}s (${TIMEOUT_MINUTES}m)"
 
       - name: Upload test results
         uses: actions/upload-artifact@v6
@@ -347,6 +661,33 @@ jobs:
           name: test-results-${{ matrix.python-version }}-${{ matrix.test-group }}
           path: test-results-${{ matrix.python-version }}-${{ matrix.test-group }}.xml
           retention-days: ${{ env.RETENTION_SHORT }}
+
+      - name: Create test duration report
+        if: always()
+        run: |
+          # Create JSON report with duration metrics
+          DURATION=${{ steps.run-tests.outputs.duration_seconds || 0 }}
+          cat > test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}.json <<EOF
+          {
+            "test_group": "${{ matrix.test-group }}",
+            "python_version": "${{ matrix.python-version }}",
+            "duration_seconds": ${DURATION},
+            "duration_minutes": $(echo "scale=2; ${DURATION} / 60" | bc -l),
+            "timeout_seconds": $((25 * 60)),
+            "warning_threshold_percent": 70,
+            "error_threshold_percent": 85,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          cat test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}.json
+
+      - name: Upload test duration metrics
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}
+          path: test-duration-${{ matrix.python-version }}-${{ matrix.test-group }}.json
+          retention-days: ${{ env.RETENTION_MEDIUM }}
 
       - name: Combine coverage data
         if: matrix.python-version == '3.12'
