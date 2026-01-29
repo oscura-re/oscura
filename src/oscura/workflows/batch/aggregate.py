@@ -3,13 +3,28 @@
 
 This module provides statistical aggregation and reporting for batch
 analysis results, including outlier detection and export capabilities.
+
+**Requires pandas:**
+This module requires pandas for DataFrame operations. Install with:
+    pip install oscura[dataframes]    # Pandas + Excel export
+    pip install oscura[standard]       # Recommended
 """
 
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-import pandas as pd
+
+try:
+    import pandas as pd
+except ImportError as e:
+    raise ImportError(
+        "Batch aggregation requires pandas.\n\n"
+        "Install with:\n"
+        "  pip install oscura[dataframes]       # Pandas + Excel export\n"
+        "  pip install oscura[standard]         # Recommended\n"
+        "  pip install oscura[all]              # Everything\n"
+    ) from e
 
 
 def aggregate_results(

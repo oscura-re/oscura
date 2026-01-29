@@ -3,6 +3,11 @@
 Provides plotting functions for waveforms, spectra, and other signal data,
 plus optimization utilities, style presets, and intelligent rendering.
 
+**Requires matplotlib:**
+This module requires matplotlib to be installed. Install with:
+    pip install oscura[visualization]    # Just visualization
+    pip install oscura[standard]         # Recommended
+    pip install oscura[all]              # Everything
 
 Example:
     >>> from oscura.visualization import plot_waveform, plot_spectrum
@@ -14,6 +19,10 @@ Example:
     ...     plot_waveform(trace, time_unit="us")
     ...     plt.savefig("figure.pdf")
 """
+
+# NOTE: Matplotlib is optional - individual functions will check and raise
+# helpful errors if matplotlib is not installed when they're called.
+# The module itself can be imported without matplotlib.
 
 # Import plot module as namespace for DSL compatibility
 from oscura.visualization import plot
