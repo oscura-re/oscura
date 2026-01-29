@@ -546,3 +546,35 @@ class TestCANSessionFrequencyCalculation:
 
         # Should return None
         assert freq is None
+
+
+class TestLazyPandasImport:
+    """Test lazy pandas import behavior."""
+
+    def test_inventory_without_pandas(self) -> None:
+        """Test inventory raises helpful error when pandas unavailable."""
+        from unittest.mock import patch
+
+        import pytest
+
+        from oscura.automotive.can.models import CANMessage, CANMessageList
+
+        session = CANSession(name="Test")
+        session._messages = CANMessageList(
+            messages=[
+                CANMessage(
+                    arbitration_id=0x100,
+                    timestamp=1.0,
+                    data=bytes([1, 2, 3]),
+                    is_extended=False,
+                )
+            ]
+        )
+
+        # Mock pandas as unavailable
+        with patch("oscura.automotive.can.session._HAS_PANDAS", False):
+            with pytest.raises(ImportError) as exc_info:
+                session.inventory()
+
+            assert "pandas" in str(exc_info.value).lower()
+            assert "oscura[dataframes]" in str(exc_info.value)

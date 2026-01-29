@@ -831,3 +831,30 @@ class TestEdgeCases:
         # Load and verify
         loaded_checkpoint = resume_batch(tmp_path, "path_test")
         assert len(loaded_checkpoint.completed_files) == 1
+
+
+class TestLazyPandasImportAdvanced:
+    """Test lazy pandas import behavior in AdvancedBatchProcessor."""
+
+    def test_process_without_pandas(self, tmp_path: Path) -> None:
+        """Test process raises helpful error when pandas unavailable."""
+        from unittest.mock import patch
+
+        import pytest
+
+        config = BatchConfig(checkpoint_dir=tmp_path)
+        processor = AdvancedBatchProcessor(config)
+
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("test")
+
+        def simple_analysis(filepath: str | Path) -> dict[str, Any]:
+            return {"result": "ok"}
+
+        # Mock pandas as unavailable
+        with patch("oscura.workflows.batch.advanced._HAS_PANDAS", False):
+            with pytest.raises(ImportError) as exc_info:
+                processor.process([test_file], simple_analysis)
+
+            assert "pandas" in str(exc_info.value).lower()
+            assert "oscura[dataframes]" in str(exc_info.value)

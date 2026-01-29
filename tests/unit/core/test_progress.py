@@ -917,3 +917,27 @@ class TestProgressEdgeCases:
         captured = capsys.readouterr()
         assert "10.0%" in captured.out
         assert "(1000000/10000000)" in captured.out
+
+
+class TestLazyPsutilImport:
+    """Test lazy psutil import behavior."""
+
+    def test_check_memory_available_without_psutil(self) -> None:
+        """Test check_memory_available returns True when psutil unavailable."""
+        import sys
+        from unittest.mock import patch
+
+        # Mock psutil as unavailable
+        with patch("oscura.core.progress._HAS_PSUTIL", False):
+            result = check_memory_available(1_000_000_000)
+            assert result is True  # Should return True when psutil unavailable
+
+    def test_warn_memory_usage_without_psutil(self) -> None:
+        """Test warn_memory_usage silently returns when psutil unavailable."""
+        from unittest.mock import patch
+
+        # Mock psutil as unavailable
+        with patch("oscura.core.progress._HAS_PSUTIL", False):
+            # Should not raise any errors
+            warn_memory_usage(1_000_000_000)
+            # If it gets here without error, the test passes

@@ -684,3 +684,41 @@ class TestEdgeCases:
 
         assert aggregated["metric"]["std"] == 0.0
         assert aggregated["metric"]["outliers"] == []
+
+
+class TestLazyPandasImportAggregate:
+    """Test lazy pandas import behavior in aggregate module."""
+
+    def test_aggregate_module_import_without_pandas(self) -> None:
+        """Test aggregate module raises error when pandas unavailable."""
+        import importlib
+        import sys
+        from unittest.mock import patch
+
+        import pytest
+
+        # Remove the module from cache if it exists
+        if "oscura.workflows.batch.aggregate" in sys.modules:
+            del sys.modules["oscura.workflows.batch.aggregate"]
+
+        # Mock pandas import to fail
+        with patch.dict(sys.modules, {"pandas": None}):
+            with patch("builtins.__import__", side_effect=ImportError) as mock_import:
+                # Configure the mock to only fail for pandas
+                def import_side_effect(name, *args, **kwargs):
+                    if name == "pandas" or name.startswith("pandas."):
+                        raise ImportError("No module named 'pandas'")
+                    return importlib.__import__(name, *args, **kwargs)
+
+                mock_import.side_effect = import_side_effect
+
+                with pytest.raises(ImportError) as exc_info:
+                    import oscura.workflows.batch.aggregate  # noqa: F401
+
+                assert "pandas" in str(exc_info.value).lower()
+                assert "oscura[dataframes]" in str(exc_info.value)
+
+        # Clean up - reimport the module normally
+        if "oscura.workflows.batch.aggregate" in sys.modules:
+            del sys.modules["oscura.workflows.batch.aggregate"]
+        import oscura.workflows.batch.aggregate  # noqa: F401
