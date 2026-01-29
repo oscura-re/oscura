@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-01-29
+
 ### Fixed
 - **Test Marker Format** (tests/unit/visualization/test_layout.py, test_styles.py, test_histogram.py, test_optimization.py, test_plot.py, test_colors.py, test_render.py, test_protocols.py, tests/unit/core/test_memory_guard.py): Fixed pytestmark format validation errors in 9 test files - changed single marker without list `pytestmark = pytest.mark.usefixtures("fixture_name")` to list format `pytestmark = [pytest.mark.usefixtures("fixture_name")]` as required by test marker validator; Root cause: Pre-push hook validation expects all pytestmark declarations to use list syntax even for single markers to ensure consistency; Expected impact: Fixes pre-push hook failures, allows commits to proceed without bypassing validation; 9 files modified
 
