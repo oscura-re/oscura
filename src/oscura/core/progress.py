@@ -23,7 +23,14 @@ import time
 import warnings
 from typing import TYPE_CHECKING, Protocol
 
-import psutil
+# Lazy import for optional system monitoring
+try:
+    import psutil
+
+    _HAS_PSUTIL = True
+except ImportError:
+    psutil = None  # type: ignore
+    _HAS_PSUTIL = False
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -423,6 +430,10 @@ def check_memory_available(required_bytes: int, *, threshold: float = 0.8) -> bo
     References:
         PROG-003: Memory Usage Warnings
     """
+    # If psutil not available, assume memory is sufficient
+    if not _HAS_PSUTIL:
+        return True
+
     memory = psutil.virtual_memory()
     available_bytes = memory.available
     threshold_bytes = available_bytes * threshold
@@ -454,6 +465,10 @@ def warn_memory_usage(
     References:
         PROG-003: Memory Usage Warnings
     """
+    # If psutil not available, skip memory warning
+    if not _HAS_PSUTIL:
+        return
+
     memory = psutil.virtual_memory()
     available_bytes = memory.available
     threshold_bytes = available_bytes * threshold

@@ -20,19 +20,9 @@ Example:
     ...     plt.savefig("figure.pdf")
 """
 
-# Check for matplotlib availability and provide helpful error
-try:
-    import matplotlib  # noqa: F401
-except ImportError as e:
-    raise ImportError(
-        "Visualization features require matplotlib.\n\n"
-        "Install with:\n"
-        "  pip install oscura[visualization]    # Just matplotlib\n"
-        "  pip install oscura[standard]         # Recommended for most users\n"
-        "  pip install oscura[all]              # Everything\n\n"
-        "Or install matplotlib directly:\n"
-        "  pip install matplotlib\n"
-    ) from e
+# NOTE: Matplotlib is optional - individual functions will check and raise
+# helpful errors if matplotlib is not installed when they're called.
+# The module itself can be imported without matplotlib.
 
 # Import plot module as namespace for DSL compatibility
 from oscura.visualization import plot

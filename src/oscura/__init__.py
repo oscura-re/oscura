@@ -453,11 +453,21 @@ from oscura.validation.compliance import (
 )
 
 # Visualization (top-level convenience access)
-from oscura.visualization import (
-    plot_fft,
-    plot_spectrum,
-    plot_waveform,
-)
+# Import conditionally - these require matplotlib
+try:
+    from oscura.visualization import (
+        plot_fft,
+        plot_spectrum,
+        plot_waveform,
+    )
+
+    _HAS_VISUALIZATION = True
+except ImportError:
+    # Visualization features require matplotlib
+    _HAS_VISUALIZATION = False
+    plot_fft = None  # type: ignore
+    plot_spectrum = None  # type: ignore
+    plot_waveform = None  # type: ignore
 
 # Workflows (WRK-001 to WRK-005 + reverse engineering)
 from oscura.workflows import (

@@ -46,16 +46,35 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
-from jinja2 import Environment, FileSystemLoader, Template
+
+# Lazy imports for optional dependencies
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+
+    _HAS_MATPLOTLIB = True
+except ImportError:
+    _HAS_MATPLOTLIB = False
+    matplotlib = None  # type: ignore
+    plt = None  # type: ignore
+
+try:
+    from jinja2 import Environment, FileSystemLoader, Template
+
+    _HAS_JINJA2 = True
+except ImportError:
+    _HAS_JINJA2 = False
+    Environment = None  # type: ignore
+    FileSystemLoader = None  # type: ignore
+    Template = None  # type: ignore
 
 if TYPE_CHECKING:
     from oscura.workflows.complete_re import CompleteREResult
 
 # Use non-interactive backend for plot embedding
-matplotlib.use("Agg")
+if _HAS_MATPLOTLIB:
+    matplotlib.use("Agg")
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +267,9 @@ class EnhancedReportGenerator:
             template_dir: Custom template directory (default: built-in templates).
             static_dir: Custom static assets directory (default: built-in assets).
 
+        Raises:
+            ImportError: If required dependencies (matplotlib, jinja2) are not installed.
+
         Example:
             >>> generator = EnhancedReportGenerator()
             >>> # Use custom templates
@@ -255,6 +277,24 @@ class EnhancedReportGenerator:
             ...     template_dir=Path("my_templates")
             ... )
         """
+        # Check for required dependencies
+        if not _HAS_MATPLOTLIB:
+            raise ImportError(
+                "Enhanced reporting requires matplotlib.\n\n"
+                "Install with:\n"
+                "  pip install oscura[reporting]    # Reporting features\n"
+                "  pip install oscura[standard]     # Recommended\n"
+                "  pip install oscura[all]          # Everything\n"
+            )
+        if not _HAS_JINJA2:
+            raise ImportError(
+                "Enhanced reporting requires jinja2.\n\n"
+                "Install with:\n"
+                "  pip install oscura[reporting]    # Reporting features\n"
+                "  pip install oscura[standard]     # Recommended\n"
+                "  pip install oscura[all]          # Everything\n"
+            )
+
         self.template_dir = template_dir or self._get_builtin_template_dir()
         self.static_dir = static_dir or self._get_builtin_static_dir()
 
