@@ -169,10 +169,16 @@ jobs:
       - name: Build package
         run: uv build
 
+      - name: Install system dependencies for scipy
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libopenblas-dev liblapack-dev gfortran
+
       - name: Smoke test package
         run: |
           echo "::group::Installing built package with ALL dependencies"
           # Create temporary venv and install wheel with ALL extras (per ALL-dependencies policy)
+          # System dependencies (libopenblas, gfortran) installed for scipy build
           python -m venv /tmp/test-venv
           WHEEL=$(ls dist/*.whl)
           /tmp/test-venv/bin/pip install --quiet "${WHEEL}[all]"
