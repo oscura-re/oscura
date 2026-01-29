@@ -12,7 +12,7 @@ from oscura.visualization.histogram import (
     calculate_optimal_bins,
 )
 
-pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+pytestmark = [pytest.mark.usefixtures("cleanup_matplotlib")]
 
 
 class TestCalculateOptimalBins:

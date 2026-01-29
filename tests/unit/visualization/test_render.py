@@ -15,7 +15,7 @@ from oscura.visualization.render import (
     configure_dpi_rendering,
 )
 
-pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+pytestmark = [pytest.mark.usefixtures("cleanup_matplotlib")]
 
 
 class TestConfigureDpiRendering:

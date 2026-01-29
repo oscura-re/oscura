@@ -13,7 +13,7 @@ import pytest
 
 from oscura.core.types import DigitalTrace, ProtocolPacket, TraceMetadata
 
-pytestmark = pytest.mark.usefixtures("cleanup_matplotlib")
+pytestmark = [pytest.mark.usefixtures("cleanup_matplotlib")]
 
 
 @pytest.fixture
