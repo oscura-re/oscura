@@ -551,11 +551,21 @@ jobs:
             echo "Using 4 workers for standard test group: ${{ matrix.test-group }}"
           fi
 
+          # Determine marker filter based on test group
+          # Stress tests should run slow tests, all others should exclude them
+          if [[ "${{ matrix.test-group }}" =~ ^stress- ]]; then
+            MARKER_FILTER="not performance"
+            echo "Including slow tests for stress test group: ${{ matrix.test-group }}"
+          else
+            MARKER_FILTER="not slow and not performance"
+            echo "Excluding slow tests for standard test group: ${{ matrix.test-group }}"
+          fi
+
           # Run tests and capture exit code
           set +e
           uv run python -m pytest ${{ steps.test-paths.outputs.paths }} \
             -v \
-            -m "not slow and not performance" \
+            -m "$MARKER_FILTER" \
             $XDIST_ARGS \
             --hypothesis-profile=ci \
             -p no:benchmark \

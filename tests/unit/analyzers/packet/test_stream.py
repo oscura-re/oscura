@@ -259,13 +259,12 @@ class TestStreamDelimited:
         assert len(records) == 3
 
     def test_stream_delimited_max_record_size(self):
-        """Test max record size enforcement."""
+        """Test max record size enforcement raises error."""
         data = b"short\n" + b"A" * 2000000 + b"\nshort2\n"
 
-        records = list(stream_delimited(data, delimiter=b"\n", max_record_size=1000))
-
-        # Long record should be truncated
-        assert len(records) >= 2
+        # Changed behavior: now raises ValueError instead of truncating
+        with pytest.raises(ValueError, match="Partial record size .* exceeds maximum"):
+            list(stream_delimited(data, delimiter=b"\n", max_record_size=1000))
 
     def test_stream_delimited_empty(self):
         """Test streaming empty data."""
