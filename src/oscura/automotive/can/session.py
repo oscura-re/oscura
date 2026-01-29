@@ -9,7 +9,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import pandas as pd
+# Lazy import for optional dataframe support
+try:
+    import pandas as pd
+
+    _HAS_PANDAS = True
+except ImportError:
+    pd = None  # type: ignore[assignment]
+    _HAS_PANDAS = False
 
 from oscura.automotive.can.analysis import MessageAnalyzer
 from oscura.automotive.can.models import (
@@ -127,7 +134,19 @@ class CANSession(AnalysisSession):
 
         Returns:
             DataFrame with message inventory.
+
+        Raises:
+            ImportError: If pandas is not installed.
         """
+        if not _HAS_PANDAS:
+            raise ImportError(
+                "Message inventory requires pandas.\n\n"
+                "Install with:\n"
+                "  pip install oscura[dataframes]    # DataFrame support\n"
+                "  pip install oscura[standard]      # Recommended\n"
+                "  pip install oscura[all]           # Everything\n"
+            )
+
         unique_ids = sorted(self._messages.unique_ids())
 
         inventory_data = []

@@ -31,6 +31,11 @@ runs:
       with:
         enable-cache: true
         cache-dependency-glob: "uv.lock"
+        # Pin UV version to avoid transient GitHub API failures
+        # Update periodically instead of fetching "latest" on every run
+        uv-version: "0.9.27"
+        # Use GitHub token for higher API rate limits and better reliability
+        github-token: ${{ github.token }}
 
     - name: Set up Python ${{ inputs.python-version }}
       run: uv python install ${{ inputs.python-version }}

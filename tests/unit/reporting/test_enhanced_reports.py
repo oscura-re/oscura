@@ -681,3 +681,35 @@ class TestEdgeCases:
 
         result_path = generator.generate(result, output_path, config)
         assert result_path.exists()
+
+
+class TestLazyDependencyImports:
+    """Test lazy dependency import behavior."""
+
+    def test_enhanced_report_generator_without_matplotlib(self) -> None:
+        """Test EnhancedReportGenerator raises error when matplotlib unavailable."""
+        from unittest.mock import patch
+
+        import pytest
+
+        # Mock matplotlib as unavailable
+        with patch("oscura.reporting.enhanced_reports._HAS_MATPLOTLIB", False):
+            with pytest.raises(ImportError) as exc_info:
+                EnhancedReportGenerator()
+
+            assert "matplotlib" in str(exc_info.value).lower()
+            assert "oscura[reporting]" in str(exc_info.value)
+
+    def test_enhanced_report_generator_without_jinja2(self) -> None:
+        """Test EnhancedReportGenerator raises error when jinja2 unavailable."""
+        from unittest.mock import patch
+
+        import pytest
+
+        # Mock jinja2 as unavailable (but matplotlib available)
+        with patch("oscura.reporting.enhanced_reports._HAS_JINJA2", False):
+            with pytest.raises(ImportError) as exc_info:
+                EnhancedReportGenerator()
+
+            assert "jinja2" in str(exc_info.value).lower()
+            assert "oscura[reporting]" in str(exc_info.value)
