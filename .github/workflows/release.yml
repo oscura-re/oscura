@@ -171,10 +171,10 @@ jobs:
 
       - name: Smoke test package
         run: |
-          echo "::group::Installing built package"
-          # Create temporary venv and install wheel
+          echo "::group::Installing built package with ALL dependencies"
+          # Create temporary venv and install wheel with ALL extras (per ALL-dependencies policy)
           python -m venv /tmp/test-venv
-          /tmp/test-venv/bin/pip install --quiet dist/*.whl
+          /tmp/test-venv/bin/pip install --quiet "dist/*.whl[all]"
           echo "::endgroup::"
 
           echo "::group::Testing package import"

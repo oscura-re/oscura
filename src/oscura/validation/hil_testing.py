@@ -78,7 +78,10 @@ except ImportError:
     Packet = None  # type: ignore[assignment,misc]
     wrpcap = None  # type: ignore[assignment]
 
-import serial  # type: ignore[import-untyped]
+try:
+    import serial  # type: ignore[import-untyped]
+except ImportError:
+    serial = None  # type: ignore[assignment]
 
 from oscura.utils.serial import connect_serial_port
 
