@@ -29,7 +29,7 @@ try:
 
     _HAS_PSUTIL = True
 except ImportError:
-    psutil = None  # type: ignore
+    psutil = None  # type: ignore[assignment]
     _HAS_PSUTIL = False
 
 if TYPE_CHECKING:

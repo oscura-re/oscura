@@ -4,13 +4,11 @@ This module provides utilities for handling optional dependencies gracefully,
 with helpful error messages directing users to install missing extras.
 """
 
-from typing import Any, NoReturn
+from typing import Any
 
 
 class MissingOptionalDependency(ImportError):
     """Raised when an optional dependency is required but not installed."""
-
-    pass
 
 
 def require_matplotlib() -> Any:

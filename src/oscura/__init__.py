@@ -465,9 +465,9 @@ try:
 except ImportError:
     # Visualization features require matplotlib
     _HAS_VISUALIZATION = False
-    plot_fft = None  # type: ignore
-    plot_spectrum = None  # type: ignore
-    plot_waveform = None  # type: ignore
+    plot_fft = None  # type: ignore[assignment]
+    plot_spectrum = None  # type: ignore[assignment]
+    plot_waveform = None  # type: ignore[assignment]
 
 # Workflows (WRK-001 to WRK-005 + reverse engineering)
 from oscura.workflows import (

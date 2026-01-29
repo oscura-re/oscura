@@ -15,7 +15,7 @@ try:
 
     _HAS_PANDAS = True
 except ImportError:
-    pd = None  # type: ignore
+    pd = None  # type: ignore[assignment]
     _HAS_PANDAS = False
 
 from oscura.automotive.can.analysis import MessageAnalyzer

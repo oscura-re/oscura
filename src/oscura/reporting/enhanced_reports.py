@@ -56,8 +56,8 @@ try:
     _HAS_MATPLOTLIB = True
 except ImportError:
     _HAS_MATPLOTLIB = False
-    matplotlib = None  # type: ignore
-    plt = None  # type: ignore
+    matplotlib = None  # type: ignore[assignment]
+    plt = None  # type: ignore[assignment]
 
 try:
     from jinja2 import Environment, FileSystemLoader, Template
@@ -65,9 +65,9 @@ try:
     _HAS_JINJA2 = True
 except ImportError:
     _HAS_JINJA2 = False
-    Environment = None  # type: ignore
-    FileSystemLoader = None  # type: ignore
-    Template = None  # type: ignore
+    Environment = None  # type: ignore[assignment,misc]
+    FileSystemLoader = None  # type: ignore[assignment,misc]
+    Template = None  # type: ignore[assignment,misc]
 
 if TYPE_CHECKING:
     from oscura.workflows.complete_re import CompleteREResult
