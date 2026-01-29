@@ -95,13 +95,7 @@
     "size_bytes": 17836,
     "line_count": 497,
     "docstring": "Supported Formats: Explore all 21+ file formats Oscura loads",
-    "imports": [
-      "__future__.annotations",
-      "sys",
-      "pathlib.Path",
-      "demonstrations.common.BaseDemo",
-      "oscura"
-    ],
+    "imports": ["__future__.annotations", "sys", "pathlib.Path", "demonstrations.common.BaseDemo", "oscura"],
     "oscura_apis": [
       "oscura",
       "oscura.DigitalTrace",
@@ -291,10 +285,7 @@
       "demonstrations.common.validate_approximately",
       "oscura.loaders.binary.load_binary"
     ],
-    "oscura_apis": [
-      "oscura.loaders.binary",
-      "oscura.loaders.binary.load_binary"
-    ],
+    "oscura_apis": ["oscura.loaders.binary", "oscura.loaders.binary.load_binary"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -966,14 +957,7 @@
       "oscura.decode_flexray() - FlexRay decoding for deterministic communication"
     ],
     "related_demos": [],
-    "standards": [
-      "ISO 17987",
-      "ISO 11898-1",
-      "ISO 17458",
-      "ISO 17458-4",
-      "ISO 17458-1",
-      "ISO 17987-1"
-    ]
+    "standards": ["ISO 17987", "ISO 11898-1", "ISO 17458", "ISO 17458-4", "ISO 17458-1", "ISO 17987-1"]
   },
   {
     "path": "demonstrations/03_protocol_decoding/03_debug_protocols.py",
@@ -1053,13 +1037,7 @@
       "oscura.decode_isa() - ISA bus address/data transaction decoding"
     ],
     "related_demos": [],
-    "standards": [
-      "IEEE-488",
-      "IEEE 181",
-      "IEEE 181-2011",
-      "IEEE 488-1978",
-      "IEEE 488"
-    ]
+    "standards": ["IEEE-488", "IEEE 181", "IEEE 181-2011", "IEEE 488-1978", "IEEE 488"]
   },
   {
     "path": "demonstrations/03_protocol_decoding/05_encoded_protocols.py",
@@ -2548,12 +2526,7 @@
       "oscura.rms",
       "oscura.thd"
     ],
-    "oscura_apis": [
-      "oscura.amplitude",
-      "oscura.frequency",
-      "oscura.rms",
-      "oscura.thd"
-    ],
+    "oscura_apis": ["oscura.amplitude", "oscura.frequency", "oscura.rms", "oscura.thd"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -2809,12 +2782,7 @@
       "demonstrations.common.generate_sine_wave",
       "numpy"
     ],
-    "oscura_apis": [
-      "oscura",
-      "oscura.get_measurement_registry",
-      "oscura.list_measurements",
-      "oscura.measure"
-    ],
+    "oscura_apis": ["oscura", "oscura.get_measurement_registry", "oscura.list_measurements", "oscura.measure"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -2847,11 +2815,7 @@
       "demonstrations.common.BaseDemo",
       "shutil"
     ],
-    "oscura_apis": [
-      "oscura",
-      "oscura.PluginTemplate",
-      "oscura.generate_plugin_template"
-    ],
+    "oscura_apis": ["oscura", "oscura.PluginTemplate", "oscura.generate_plugin_template"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -2887,11 +2851,7 @@
       "oscura.core.types.TraceMetadata",
       "oscura.core.types.WaveformTrace"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -3976,11 +3936,7 @@
       "oscura.core.types.DigitalTrace",
       "oscura.core.types.TraceMetadata"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.DigitalTrace",
-      "oscura.core.types.TraceMetadata"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.DigitalTrace", "oscura.core.types.TraceMetadata"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -4050,11 +4006,7 @@
       "reportlab.platypus.Spacer",
       "reportlab.platypus.Table"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -4452,11 +4404,7 @@
       "oscura.core.types.WaveformTrace",
       "tests.fixtures.signal_builders.SignalBuilder"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -4530,11 +4478,7 @@
       "oscura.core.types.WaveformTrace",
       "tests.fixtures.signal_builders.SignalBuilder"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -4906,13 +4850,7 @@
     "size_bytes": 9404,
     "line_count": 298,
     "docstring": "Generate optimal demo data for Waveform Analysis demo.",
-    "imports": [
-      "__future__.annotations",
-      "argparse",
-      "sys",
-      "pathlib.Path",
-      "numpy"
-    ],
+    "imports": ["__future__.annotations", "argparse", "sys", "pathlib.Path", "numpy"],
     "oscura_apis": [],
     "skip_validation": false,
     "skip_reason": null,
@@ -4996,14 +4934,7 @@
     "size_bytes": 8184,
     "line_count": 242,
     "docstring": "Generate optimal demo data for Custom DAQ demo.",
-    "imports": [
-      "__future__.annotations",
-      "argparse",
-      "struct",
-      "sys",
-      "pathlib.Path",
-      "numpy"
-    ],
+    "imports": ["__future__.annotations", "argparse", "struct", "sys", "pathlib.Path", "numpy"],
     "oscura_apis": [],
     "skip_validation": false,
     "skip_reason": null,
@@ -5071,11 +5002,7 @@
       "oscura.core.types.TraceMetadata",
       "oscura.core.types.WaveformTrace"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -5106,10 +5033,7 @@
       "demos.common.formatting.print_subheader",
       "oscura.analyzers.protocols.i2s.decode_i2s"
     ],
-    "oscura_apis": [
-      "oscura.analyzers.protocols.i2s",
-      "oscura.analyzers.protocols.i2s.decode_i2s"
-    ],
+    "oscura_apis": ["oscura.analyzers.protocols.i2s", "oscura.analyzers.protocols.i2s.decode_i2s"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -5175,10 +5099,7 @@
       "demos.common.formatting.print_subheader",
       "oscura.analyzers.protocols.manchester.decode_manchester"
     ],
-    "oscura_apis": [
-      "oscura.analyzers.protocols.manchester",
-      "oscura.analyzers.protocols.manchester.decode_manchester"
-    ],
+    "oscura_apis": ["oscura.analyzers.protocols.manchester", "oscura.analyzers.protocols.manchester.decode_manchester"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -5210,10 +5131,7 @@
       "demos.common.formatting.print_subheader",
       "oscura.analyzers.protocols.onewire.decode_onewire"
     ],
-    "oscura_apis": [
-      "oscura.analyzers.protocols.onewire",
-      "oscura.analyzers.protocols.onewire.decode_onewire"
-    ],
+    "oscura_apis": ["oscura.analyzers.protocols.onewire", "oscura.analyzers.protocols.onewire.decode_onewire"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -5242,10 +5160,7 @@
       "demos.common.formatting.print_subheader",
       "oscura.analyzers.protocols.swd.decode_swd"
     ],
-    "oscura_apis": [
-      "oscura.analyzers.protocols.swd",
-      "oscura.analyzers.protocols.swd.decode_swd"
-    ],
+    "oscura_apis": ["oscura.analyzers.protocols.swd", "oscura.analyzers.protocols.swd.decode_swd"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -5334,13 +5249,7 @@
     "size_bytes": 18665,
     "line_count": 554,
     "docstring": "Generate optimal demo data for Protocol Decoding demo.",
-    "imports": [
-      "__future__.annotations",
-      "argparse",
-      "sys",
-      "pathlib.Path",
-      "numpy"
-    ],
+    "imports": ["__future__.annotations", "argparse", "sys", "pathlib.Path", "numpy"],
     "oscura_apis": [],
     "skip_validation": false,
     "skip_reason": null,
@@ -5507,10 +5416,7 @@
       "demos.common.formatting.print_subheader",
       "oscura.inference.state_machine.StateMachineInferrer"
     ],
-    "oscura_apis": [
-      "oscura.inference.state_machine",
-      "oscura.inference.state_machine.StateMachineInferrer"
-    ],
+    "oscura_apis": ["oscura.inference.state_machine", "oscura.inference.state_machine.StateMachineInferrer"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -5582,10 +5488,7 @@
       "demos.common.formatting.print_subheader",
       "oscura.analyzers.protocols.flexray.decode_flexray"
     ],
-    "oscura_apis": [
-      "oscura.analyzers.protocols.flexray",
-      "oscura.analyzers.protocols.flexray.decode_flexray"
-    ],
+    "oscura_apis": ["oscura.analyzers.protocols.flexray", "oscura.analyzers.protocols.flexray.decode_flexray"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -5821,13 +5724,7 @@
     "size_bytes": 14363,
     "line_count": 431,
     "docstring": "Generate optimal demo data for Mixed Signal demo.",
-    "imports": [
-      "__future__.annotations",
-      "argparse",
-      "sys",
-      "pathlib.Path",
-      "numpy"
-    ],
+    "imports": ["__future__.annotations", "argparse", "sys", "pathlib.Path", "numpy"],
     "oscura_apis": [],
     "skip_validation": false,
     "skip_reason": null,
@@ -5904,13 +5801,7 @@
     "size_bytes": 10638,
     "line_count": 302,
     "docstring": "Generate optimal demo data for Spectral Compliance demo.",
-    "imports": [
-      "__future__.annotations",
-      "argparse",
-      "sys",
-      "pathlib.Path",
-      "numpy"
-    ],
+    "imports": ["__future__.annotations", "argparse", "sys", "pathlib.Path", "numpy"],
     "oscura_apis": [],
     "skip_validation": false,
     "skip_reason": null,
@@ -6027,13 +5918,7 @@
     "size_bytes": 4192,
     "line_count": 150,
     "docstring": "Generate NPZ data files for jitter analysis demos.",
-    "imports": [
-      "__future__.annotations",
-      "pathlib.Path",
-      "typing.Any",
-      "numpy",
-      "numpy.typing"
-    ],
+    "imports": ["__future__.annotations", "pathlib.Path", "typing.Any", "numpy", "numpy.typing"],
     "oscura_apis": [],
     "skip_validation": false,
     "skip_reason": null,
@@ -6265,11 +6150,7 @@
       "oscura.core.types.WaveformTrace",
       "scipy.special.erf"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -6333,11 +6214,7 @@
       "oscura.core.types.WaveformTrace",
       "scipy.signal"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,
@@ -6436,13 +6313,7 @@
     "size_bytes": 14855,
     "line_count": 444,
     "docstring": "Generate optimal demo data for Signal Reverse Engineering demo.",
-    "imports": [
-      "__future__.annotations",
-      "argparse",
-      "sys",
-      "pathlib.Path",
-      "numpy"
-    ],
+    "imports": ["__future__.annotations", "argparse", "sys", "pathlib.Path", "numpy"],
     "oscura_apis": [],
     "skip_validation": false,
     "skip_reason": null,
@@ -6723,11 +6594,7 @@
       "oscura.core.types.TraceMetadata",
       "oscura.core.types.WaveformTrace"
     ],
-    "oscura_apis": [
-      "oscura.core.types",
-      "oscura.core.types.TraceMetadata",
-      "oscura.core.types.WaveformTrace"
-    ],
+    "oscura_apis": ["oscura.core.types", "oscura.core.types.TraceMetadata", "oscura.core.types.WaveformTrace"],
     "skip_validation": false,
     "skip_reason": null,
     "has_main": true,

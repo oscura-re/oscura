@@ -89,6 +89,9 @@ class BaseDemo(ABC):
         name: Demo name (shown in headers)
         description: Brief description
         category: Category for organization
+        capabilities: List of Oscura capabilities demonstrated
+        ieee_standards: Applicable IEEE standards
+        related_demos: Related demonstration paths
         demo_dir: Directory containing demo script
         data_dir: Directory for demo data files
     """
@@ -96,6 +99,9 @@ class BaseDemo(ABC):
     name: str = "Unnamed Demo"
     description: str = ""
     category: str = "general"
+    capabilities: list[str] = []
+    ieee_standards: list[str] = []
+    related_demos: list[str] = []
 
     def __init__(
         self,
@@ -199,6 +205,23 @@ class BaseDemo(ABC):
             print_header(f"OSCURA DEMO: {self.name}")
             if self.description:
                 print_info(self.description)
+
+            # Print metadata if available
+            if self.capabilities:
+                print_info("Capabilities demonstrated:")
+                for cap in self.capabilities:
+                    print(f"    - {cap}")
+
+            if self.ieee_standards:
+                print_info("IEEE standards:")
+                for std in self.ieee_standards:
+                    print(f"    - {std}")
+
+            if self.related_demos:
+                print_info("Related demonstrations:")
+                for demo in self.related_demos:
+                    print(f"    - {demo}")
+
             print()
 
             # Setup

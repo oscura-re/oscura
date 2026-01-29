@@ -2,11 +2,7 @@
   "structure": {
     "00_getting_started": {
       "description": "Introduction to Oscura",
-      "from_demonstrations": [
-        "00_hello_world.py",
-        "01_core_types.py",
-        "02_supported_formats.py"
-      ],
+      "from_demonstrations": ["00_hello_world.py", "01_core_types.py", "02_supported_formats.py"],
       "from_demos": []
     },
     "01_data_loading": {
@@ -203,11 +199,7 @@
     },
     "13_guidance": {
       "description": "User guidance and wizards",
-      "from_demonstrations": [
-        "01_smart_recommendations.py",
-        "02_analysis_wizards.py",
-        "03_onboarding_helpers.py"
-      ],
+      "from_demonstrations": ["01_smart_recommendations.py", "02_analysis_wizards.py", "03_onboarding_helpers.py"],
       "from_demos": []
     },
     "14_exploratory": {
@@ -231,9 +223,7 @@
         "05_visualization_gallery.py",
         "06_comprehensive_export.py"
       ],
-      "from_demos": [
-        "demos/01_waveform_analysis/all_output_formats.py \u2192 all_export_formats.py"
-      ]
+      "from_demos": ["demos/01_waveform_analysis/all_output_formats.py \u2192 all_export_formats.py"]
     },
     "16_complete_workflows": {
       "description": "End-to-end workflows",
@@ -272,12 +262,7 @@
     },
     "19_standards_compliance": {
       "description": "IEEE standards validation",
-      "from_demonstrations": [
-        "01_ieee_181.py",
-        "02_ieee_1241.py",
-        "03_ieee_1459.py",
-        "04_ieee_2414.py"
-      ],
+      "from_demonstrations": ["01_ieee_181.py", "02_ieee_1241.py", "03_ieee_1459.py", "04_ieee_2414.py"],
       "from_demos": []
     }
   },

@@ -1,8 +1,0 @@
-# Ignore all generated data files
-*
-
-# But keep this .gitignore
-!.gitignore
-
-# And keep the README
-!README.md

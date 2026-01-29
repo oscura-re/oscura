@@ -144,7 +144,7 @@ result = osc.auto_decode(trace)
 print(f"Detected {result.protocol}: {len(result.frames)} frames decoded")
 ```
 
-[**6 working examples**](examples/) demonstrating core workflows and analysis patterns.
+**[See demos/README.md](demos/README.md)** for 105+ comprehensive demonstrations organized by skill level.
 
 ---
 
@@ -291,31 +291,49 @@ Built for extensibility:
 
 ## Learn By Doing
 
-### Working Examples
+### Working Demonstrations
 
-Core functionality demonstrated with working code:
+**105+ comprehensive demos** organized into 12 categories covering:
 
-- [Side-Channel Analysis](examples/side_channel_analysis_demo.py) - DPA/CPA attacks, trace analysis
-- [ML Signal Classification](examples/ml_signal_classification_demo.py) - Machine learning for signal identification
-- [Wireshark Dissector Generation](examples/export/wireshark_dissector_demo.py) - Auto-generate protocol dissectors
-- [DBC File Generation](examples/automotive/dbc_generation_example.py) - CAN bus DBC export
-- [LIN Bus Analysis](examples/automotive/lin_analysis_example.py) - LIN protocol decoding
-- [Web Dashboard](examples/web_dashboard_example.py) - Interactive visualization
+- **Data Loading** - All file format loaders (oscilloscopes, logic analyzers, automotive, scientific)
+- **Basic Analysis** - Waveform measurements, digital analysis, spectral analysis, filtering
+- **Protocol Decoding** - UART, SPI, I2C, CAN, LIN, FlexRay, JTAG, SWD, I2S, USB
+- **Advanced Analysis** - Jitter, eye diagrams, power analysis, signal integrity, TDR
+- **Domain Specific** - Automotive diagnostics, EMC compliance, side-channel analysis, IEEE 181 timing
+- **Reverse Engineering** - CRC recovery, state machines, Wireshark dissectors, ML classification
+- **Advanced Features** - Lazy loading, memory management, performance optimization, batch processing
+- **Extensibility** - Custom analyzers, plugins, templates
+- **Integration** - CI/CD, hardware, external tools, web dashboards
+- **Export & Visualization** - All export formats, plotting, reporting
+- **Complete Workflows** - End-to-end production pipelines
+- **Standards Compliance** - IEEE 181/1241/1459/2414, automotive standards
 
-### Run Your First Example
+### Comprehensive Demonstrations
+
+**33+ in-depth demos** organized by skill level and domain:
+
+- **[Getting Started](demos/README.md#beginner-path-2-4-hours)** - File loading, basic measurements, format export (Beginner, 2-4 hours)
+- **[Protocol Decoding](demos/README.md#intermediate-path-6-10-hours)** - UART, SPI, I2C, Manchester, JTAG, USB, PCAP (Intermediate, 6-10 hours)
+- **[Reverse Engineering](demos/README.md#advanced-path-12-20-hours)** - CRC recovery, state machines, Wireshark dissectors, automotive protocols (Advanced, 12-20 hours)
+- **[Standards Compliance](demos/README.md#advanced-path-12-20-hours)** - IEEE 181/1241/1459/2414, CISPR 32, IEC 61000 (Advanced/Expert)
+- **[Complete Workflows](demos/README.md#expert-path-20-40-hours)** - End-to-end production pipelines with ML inference (Expert, 20-40 hours)
+
+**Categories**: Waveform Analysis | File I/O | Custom DAQ | Serial Protocols | Protocol Decoding | UDP Analysis | Protocol Inference | Automotive | Timing | Mixed Signal | Spectral | Jitter | Power | Signal Integrity | EMC | Signal RE | Advanced Inference | Complete Workflows
+
+[**See full demo catalog with learning paths**](demos/README.md)
+
+### Run Your First Demo
 
 ```bash
 # Install development dependencies
 ./scripts/setup.sh
 
-# Side-channel analysis demo
-python examples/side_channel_analysis_demo.py
+# Run your first demo
+python demos/00_getting_started/00_hello_world.py
 
-# ML signal classification
-python examples/ml_signal_classification_demo.py
+# Or try a specific topic
+python demos/05_domain_specific/05_side_channel_basics.py
 ```
-
-[**Browse all examples**](examples/)
 
 ---
 
@@ -408,7 +426,7 @@ python3 .claude/hooks/validate_all.py # Must show 5/5 passing
 | **Real-World Validation**      | Test on your captures, report issues                               | Ensure reliability across use cases             |
 | **Documentation & Case Studies** | Tutorials, sanitized RE workflows, academic papers using Oscura    | Lower entry barrier, demonstrate capabilities   |
 
-[**Contributing Guide**](CONTRIBUTING.md) | [Architecture Documentation](docs/architecture/)
+[**Contributing Guide**](CONTRIBUTING.md) | [Architecture Documentation](docs/developer-guide/architecture.md)
 
 ### Community
 
@@ -436,7 +454,7 @@ python3 .claude/hooks/validate_all.py # Must show 5/5 passing
 
 ### Development
 
-- [Architecture](docs/architecture/) - Design principles and patterns
+- [Architecture](docs/developer-guide/architecture.md) - Design principles and patterns
 - [Testing Guide](docs/testing/) - Test suite architecture
 - [CHANGELOG](CHANGELOG.md) - Version history and migration guides
 

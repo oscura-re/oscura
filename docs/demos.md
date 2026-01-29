@@ -91,10 +91,11 @@ uv run python comprehensive_wfm_analysis.py --wfm-file your_file.wfm
 
 ## Demo Statistics
 
-- **19 comprehensive demos** covering all major features
-- **~4,900 lines** of demo documentation (READMEs)
-- **All validated** via automated checker
-- **Self-testing** - demos include validation
+- **19 categories** with 33+ comprehensive demos covering all major features
+- **Learning paths** organized by skill level: Beginner (2-4h), Intermediate (6-10h), Advanced (12-20h), Expert (20-40h)
+- **All validated** via automated checker (BaseDemo pattern)
+- **Self-testing** - demos include validation suite
+- **Synthetic data** - no external files needed
 
 ---
 
