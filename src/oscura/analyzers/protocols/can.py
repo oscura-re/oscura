@@ -273,7 +273,7 @@ class CANDecoder(AsyncDecoder):
         data: NDArray[np.bool_],
         samples_per_bit: int,
     ) -> list[int]:
-        """Find potential frame start positions.
+        """Find potential frame start positions using vectorized edge detection.
 
         CAN frames start with a Start of Frame (SOF) bit, which is a
         dominant (0) bit following bus idle (recessive/1).
@@ -285,26 +285,37 @@ class CANDecoder(AsyncDecoder):
         Returns:
             List of sample indices for potential frame starts.
         """
-        frame_starts = []
-
-        # Look for falling edges (1 -> 0) after idle period
+        # Optimize using vectorized operations instead of loop
         min_idle_bits = 3  # Minimum idle time before frame
         min_idle_samples = min_idle_bits * samples_per_bit
 
-        i = min_idle_samples
-        while i < len(data) - samples_per_bit:
-            # Check if previous samples are mostly high (idle)
-            idle_region = data[max(0, i - min_idle_samples) : i]
-            if np.mean(idle_region) > 0.8:  # Mostly recessive
-                # Check for falling edge (SOF)
-                if data[i - 1] and not data[i]:
-                    frame_starts.append(i)
-                    # Skip ahead to avoid detecting same frame
-                    i += samples_per_bit * 20  # Skip at least 20 bits
-                    continue
-            i += 1
+        # Detect all falling edges (1 -> 0) using vectorized comparison
+        falling_edges = np.where(data[:-1] & ~data[1:])[0] + 1
 
-        return frame_starts
+        frame_starts = []
+
+        # Check each falling edge for idle condition
+        for edge_idx in falling_edges:
+            if edge_idx < min_idle_samples or edge_idx >= len(data) - samples_per_bit:
+                continue
+
+            # Check if previous samples are mostly high (idle) using vectorized mean
+            idle_region = data[edge_idx - min_idle_samples : edge_idx]
+            if np.mean(idle_region) > 0.8:  # Mostly recessive
+                frame_starts.append(int(edge_idx))
+
+        # Filter out closely spaced detections (same frame)
+        if not frame_starts:
+            return []
+
+        filtered_starts = [frame_starts[0]]
+        min_frame_gap = samples_per_bit * 20  # Minimum gap between frames
+
+        for start in frame_starts[1:]:
+            if start - filtered_starts[-1] >= min_frame_gap:
+                filtered_starts.append(start)
+
+        return filtered_starts
 
     def _decode_frame(
         self,

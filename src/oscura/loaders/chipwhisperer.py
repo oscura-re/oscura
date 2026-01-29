@@ -271,9 +271,31 @@ def load_chipwhisperer_trs(
 
 
 def _read_trs_header(f: Any) -> dict[int, bytes]:
-    """Read TRS header tags in Tag-Length-Value format."""
-    tags = {}
+    """Read TRS header tags in Tag-Length-Value format.
+
+    Args:
+        f: File object to read from.
+
+    Returns:
+        Dictionary mapping tag IDs to values.
+
+    Raises:
+        FormatError: If tag length exceeds MAX_TAG_LENGTH (10MB) or
+                     tag count exceeds MAX_TAG_COUNT (1000).
+    """
+    MAX_TAG_LENGTH = 10 * 1024 * 1024  # 10MB per tag
+    MAX_TAG_COUNT = 1000  # Maximum number of tags
+
+    tags: dict[int, bytes] = {}
     while True:
+        # Safety check: prevent excessive tag counts
+        if len(tags) >= MAX_TAG_COUNT:
+            raise FormatError(
+                f"TRS header tag count exceeded {MAX_TAG_COUNT} limit. "
+                "This may indicate malformed or malicious TRS file.",
+                file_path="<unknown>",
+            )
+
         tag_byte = f.read(1)
         if not tag_byte or tag_byte == b"\x5f":
             break
@@ -283,6 +305,14 @@ def _read_trs_header(f: Any) -> dict[int, bytes]:
 
         if length == 0xFF:
             length = int.from_bytes(f.read(4), byteorder="little")
+
+        # Safety check: prevent excessive tag lengths
+        if length > MAX_TAG_LENGTH:
+            raise FormatError(
+                f"TRS tag length {length} bytes exceeded {MAX_TAG_LENGTH // (1024 * 1024)}MB limit. "
+                "This may indicate malformed or malicious TRS file.",
+                file_path="<unknown>",
+            )
 
         value = f.read(length)
         tags[tag] = value

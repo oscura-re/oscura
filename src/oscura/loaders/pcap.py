@@ -438,10 +438,13 @@ def _read_pcap_packets(
     f: Any, byte_order: str, nanosecond: bool, max_packets: int | None
 ) -> list[ProtocolPacket]:
     """Read all packets from PCAP file."""
+    DEFAULT_MAX_PACKETS = 1_000_000  # Prevent memory exhaustion on unbounded files
+
     packets: list[ProtocolPacket] = []
+    effective_max = max_packets if max_packets is not None else DEFAULT_MAX_PACKETS
 
     while True:
-        if max_packets is not None and len(packets) >= max_packets:
+        if len(packets) >= effective_max:
             break
 
         packet = _read_one_packet(f, byte_order, nanosecond)
