@@ -16,7 +16,14 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-import pandas as pd
+# Lazy import for optional dataframe support
+try:
+    import pandas as pd
+
+    _HAS_PANDAS = True
+except ImportError:
+    pd = None  # type: ignore[assignment]
+    _HAS_PANDAS = False
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -335,9 +342,21 @@ class AdvancedBatchProcessor:
             ...     analysis_fn=analyze_trace
             ... )
 
+        Raises:
+            ImportError: If pandas is not installed.
+
         References:
             API-012: Advanced Batch Control
         """
+        if not _HAS_PANDAS:
+            raise ImportError(
+                "Batch processing requires pandas.\n\n"
+                "Install with:\n"
+                "  pip install oscura[dataframes]    # DataFrame support\n"
+                "  pip install oscura[standard]      # Recommended\n"
+                "  pip install oscura[all]           # Everything\n"
+            )
+
         # Try to resume from checkpoint
         remaining_files = self._resume_or_start(files, checkpoint_name)
 
