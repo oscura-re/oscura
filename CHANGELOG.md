@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **CI/CD** (`.github/actions/setup-python-env/action.yml`): Fix UV setup parameter name from `uv-version` to `version` (correct parameter for astral-sh/setup-uv@v7 action)
-- **Release** (`.github/workflows/release.yml`): Allow npTDMS source build in smoke test (pure Python, no wheels available) while blocking scipy/numpy source builds with `--only-binary=:all:`
+- **Release** (`.github/workflows/release.yml`): Smoke test now installs CORE dependencies only (full [all] extras tested in CI) - avoids pip "resolution-too-deep" errors with binary wheel constraints
 
 ## [0.7.0] - TBD
 
