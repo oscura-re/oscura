@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Optional Dependency Import** (src/oscura/validation/hil_testing.py): Fixed unconditional import of pyserial that caused package import failure when optional dependency not installed - wrapped `import serial` in try/except block consistent with other optional dependencies (can, usb, spidev, etc.); Root cause: Line 81 had bare `import serial` while all other optional imports were properly guarded; Expected impact: Package now imports successfully without pyserial installed, HIL testing features gracefully unavailable when dependency missing
+- **Release Workflow ALL-Dependencies Policy** (.github/workflows/release.yml, src/oscura/validation/hil_testing.py): Fixed release workflow smoke test to enforce ALL-dependencies policy - updated to install wheel with [all] extras, wrapped pyserial import for graceful degradation; Root cause: Smoke test violated ALL-dependencies policy by installing bare package; Expected impact: Release workflow now passes with full dependencies; 2 files modified
 
 ## [0.6.0] - 2026-01-29
 
