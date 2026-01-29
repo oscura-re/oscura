@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **CI/CD** (`.github/actions/setup-python-env/action.yml`): Pin UV version to 0.9.27 and add GitHub token to prevent transient API failures during environment setup
+
 ## [0.7.0] - TBD
 
 ### BREAKING CHANGES
