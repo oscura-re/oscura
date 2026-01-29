@@ -1,8 +1,8 @@
 # Security Audit Report - Oscura v0.6.0
 
-**Date**: 2026-01-25  
-**Auditor**: AI Security Analysis (Claude Code)  
-**Scope**: Complete codebase security assessment for v0.6.0 release  
+**Date**: 2026-01-25
+**Auditor**: Internal Security Analysis
+**Scope**: Complete codebase security assessment for v0.6.0 release
 **Status**: COMPLETED - 7 findings (2 HIGH, 3 MEDIUM, 2 LOW)
 
 ---
@@ -559,6 +559,6 @@ def test_config_edit_rejects_malicious_editor():
 
 ---
 
-**Report Generated**: 2026-01-25  
-**Version**: 1.0  
-**Signed**: AI Security Analysis (Claude Code)
+**Report Generated**: 2026-01-25
+**Version**: 1.0
+**Signed**: Internal Security Analysis
