@@ -713,7 +713,7 @@ class TestLazyPandasImportAggregate:
                 mock_import.side_effect = import_side_effect
 
                 with pytest.raises(ImportError) as exc_info:
-                    import oscura.workflows.batch.aggregate  # noqa: F401
+                    import oscura.workflows.batch.aggregate
 
                 assert "pandas" in str(exc_info.value).lower()
                 assert "oscura[dataframes]" in str(exc_info.value)
@@ -721,4 +721,4 @@ class TestLazyPandasImportAggregate:
         # Clean up - reimport the module normally
         if "oscura.workflows.batch.aggregate" in sys.modules:
             del sys.modules["oscura.workflows.batch.aggregate"]
-        import oscura.workflows.batch.aggregate  # noqa: F401
+        import oscura.workflows.batch.aggregate

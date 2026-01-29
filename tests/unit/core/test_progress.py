@@ -924,7 +924,6 @@ class TestLazyPsutilImport:
 
     def test_check_memory_available_without_psutil(self) -> None:
         """Test check_memory_available returns True when psutil unavailable."""
-        import sys
         from unittest.mock import patch
 
         # Mock psutil as unavailable
