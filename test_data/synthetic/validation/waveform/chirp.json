@@ -1,0 +1,15 @@
+{
+  "file": "chirp.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Frequency sweep/chirp",
+  "expected_domains": ["spectral"],
+  "edge_cases": ["variable_frequency"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "chirp",
+    "f_start": 100.0,
+    "f_end": 10000.0,
+    "expected_issues": ["variable_frequency"]
+  }
+}

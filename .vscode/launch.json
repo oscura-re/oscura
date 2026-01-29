@@ -1,0 +1,222 @@
+{
+  // ==========================================================================
+  // VS Code Launch Configurations for Oscura
+  // ==========================================================================
+  // Use Run > Start Debugging or F5 to launch configurations
+  //
+  // Quick Debug Tips:
+  //   - Set breakpoints by clicking left of line numbers
+  //   - F5: Start debugging
+  //   - F10: Step over
+  //   - F11: Step into
+  //   - Shift+F11: Step out
+  //   - F9: Toggle breakpoint
+  //   - Ctrl+Shift+F5: Restart
+  //   - Shift+F5: Stop
+  //
+  // Test Debugging:
+  //   - "Debug Current Test File": Debug the test file currently open
+  //   - "Debug Single Test": Debug the test under cursor
+  //   - "Debug All Tests": Debug entire test suite
+  //   - "Debug Marked Tests": Debug tests with specific marker
+  // ==========================================================================
+
+  "version": "0.2.0",
+  "configurations": [
+    // ========================================================================
+    // Test Debugging
+    // ========================================================================
+    {
+      "name": "Debug Current Test File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v", "--tb=short", "--strict-markers"],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Debug Single Test (under cursor)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "${file}::${selectedText}",
+        "-v",
+        "--tb=short",
+        "--strict-markers",
+        "-s"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Debug All Unit Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "tests/unit",
+        "-v",
+        "--tb=short",
+        "--strict-markers",
+        "-m",
+        "unit"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Debug Integration Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/integration", "-v", "--tb=short", "-m", "integration"],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Debug Fast Tests Only",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "tests/unit",
+        "-v",
+        "--tb=short",
+        "-m",
+        "unit and not slow and not memory_intensive"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Debug Marked Tests (specify marker)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests", "-v", "--tb=short", "-m", "${input:markerName}"],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Debug with Coverage",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "${file}",
+        "-v",
+        "--tb=short",
+        "--cov=src/oscura",
+        "--cov-report=term-missing",
+        "--cov-report=html"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    // ========================================================================
+    // Application Debugging
+    // ========================================================================
+    {
+      "name": "Debug Oscura CLI",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "oscura.cli.main",
+      "args": ["${input:cliCommand}"],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Debug Current Python File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    // ========================================================================
+    // Validation & Script Debugging
+    // ========================================================================
+    {
+      "name": "Debug Validator (validate_all.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/validate_all.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug Validator (validate_config_consistency.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/validate_config_consistency.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug Validator (validate_ssot.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/validate_ssot.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug Health Check",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/.claude/hooks/health_check.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  // ==========================================================================
+  // Input Variables (prompted at runtime)
+  // ==========================================================================
+  "inputs": [
+    {
+      "id": "markerName",
+      "type": "promptString",
+      "description": "Enter pytest marker name (e.g., unit, slow, analyzer)",
+      "default": "unit"
+    },
+    {
+      "id": "cliCommand",
+      "type": "promptString",
+      "description": "Enter CLI command and arguments",
+      "default": "--help"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "file": "waveform_noisy_50db.npz",
+  "input_type": "waveform",
+  "expected_domains": ["spectral", "statistics"],
+  "expected_metrics": {
+    "frequency_hz": 1000.0,
+    "amplitude_vpp": 2.0,
+    "sample_rate": 1000000.0,
+    "duration_s": 0.01,
+    "snr_db": 50.0
+  },
+  "description": "Noisy sine wave for SNR, SINAD, ENOB testing"
+}

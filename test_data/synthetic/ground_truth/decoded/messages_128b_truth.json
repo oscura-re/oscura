@@ -1,0 +1,13 @@
+{
+  "field_boundaries": [0, 2, 4, 6, 10, 126, 128],
+  "field_types": [
+    "constant",
+    "length",
+    "sequence",
+    "timestamp",
+    "data",
+    "checksum"
+  ],
+  "message_size": 128,
+  "message_count": 500
+}

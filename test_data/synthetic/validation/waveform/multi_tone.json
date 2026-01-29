@@ -1,0 +1,13 @@
+{
+  "file": "multi_tone.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Multi-frequency signal for THD",
+  "expected_domains": ["spectral"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "multi_tone",
+    "frequencies": [1000.0, 2000.0, 3000.0, 5000.0]
+  }
+}

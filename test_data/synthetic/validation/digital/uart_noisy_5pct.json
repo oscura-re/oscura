@@ -1,0 +1,15 @@
+{
+  "file": "uart_noisy_5pct.vcd",
+  "category": "digital",
+  "input_type": "digital",
+  "description": "UART with 5% bit errors",
+  "expected_domains": ["digital", "protocols"],
+  "edge_cases": ["bit_errors"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "uart",
+    "baud_rate": 115200,
+    "message": "Test",
+    "error_rate": 0.05
+  }
+}

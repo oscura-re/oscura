@@ -1,0 +1,13 @@
+{
+  "file": "empty.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Empty binary file",
+  "expected_domains": [],
+  "edge_cases": ["empty"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "empty",
+    "expected_issues": ["no_data"]
+  }
+}

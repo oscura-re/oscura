@@ -1,0 +1,322 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://oscura.io/schemas/bus_configuration.json",
+  "title": "Bus Configuration Schema",
+  "description": "Schema for validating parallel bus configurations for multi-bit protocols (CFG-001).",
+  "type": "object",
+  "required": ["name", "settings"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Bus configuration identifier",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration version",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "settings": {
+      "type": "object",
+      "description": "Global bus settings",
+      "properties": {
+        "active_low": {
+          "type": "boolean",
+          "description": "Signals are active-low (inverted)"
+        },
+        "sample_on": {
+          "type": "string",
+          "enum": ["rising", "falling", "both"],
+          "description": "Sample on clock/timing pulse edge"
+        },
+        "bit_numbering": {
+          "type": "string",
+          "enum": ["lsb_0", "msb_0"],
+          "description": "Bit numbering convention"
+        }
+      },
+      "additionalProperties": false
+    },
+    "data_bus": {
+      "type": "object",
+      "description": "Data bus definition",
+      "required": ["name", "width", "bits"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Bus name",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "description": "Bus width in bits"
+        },
+        "description": {
+          "type": "string",
+          "description": "Bus description"
+        },
+        "active_low": {
+          "type": "boolean",
+          "description": "Override global active_low setting"
+        },
+        "bits": {
+          "type": "array",
+          "description": "Bit mappings from channel to position",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["channel", "bit"],
+            "properties": {
+              "channel": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Source channel index"
+              },
+              "bit": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Bit position in bus"
+              },
+              "name": {
+                "type": "string",
+                "description": "Signal name",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "address_bus": {
+      "type": "object",
+      "description": "Address bus definition",
+      "required": ["name", "width", "bits"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Bus name",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "description": "Bus width in bits"
+        },
+        "description": {
+          "type": "string",
+          "description": "Bus description"
+        },
+        "active_low": {
+          "type": "boolean",
+          "description": "Override global active_low setting"
+        },
+        "bits": {
+          "type": "array",
+          "description": "Bit mappings from channel to position",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["channel", "bit"],
+            "properties": {
+              "channel": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Source channel index"
+              },
+              "bit": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Bit position in bus"
+              },
+              "name": {
+                "type": "string",
+                "description": "Signal name",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "control_signals": {
+      "type": "array",
+      "description": "Control signal definitions",
+      "items": {
+        "type": "object",
+        "required": ["name", "channel"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Signal name",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+          },
+          "channel": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Source channel index"
+          },
+          "active_low": {
+            "type": "boolean",
+            "description": "Signal is active-low"
+          },
+          "description": {
+            "type": "string",
+            "description": "Signal description"
+          },
+          "short_name": {
+            "type": "string",
+            "description": "Short name/abbreviation",
+            "maxLength": 8
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "timing": {
+      "type": "object",
+      "description": "Timing constraints and validation",
+      "properties": {
+        "clock_period_ns": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Clock period in nanoseconds"
+        },
+        "setup_time_ns": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Setup time requirement in nanoseconds"
+        },
+        "hold_time_ns": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Hold time requirement in nanoseconds"
+        },
+        "pulse_width_ns": {
+          "type": "object",
+          "description": "Pulse width requirements by signal type",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "transactions": {
+      "type": "object",
+      "description": "Transaction decoding rules",
+      "properties": {
+        "types": {
+          "type": "array",
+          "description": "Transaction type definitions",
+          "items": {
+            "type": "object",
+            "required": ["name", "conditions"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Transaction type name",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+              },
+              "conditions": {
+                "type": "object",
+                "description": "Signal conditions for this transaction",
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              },
+              "sample_on": {
+                "type": "string",
+                "description": "Control signal to sample on"
+              },
+              "capture": {
+                "type": "object",
+                "description": "Buses/signals to capture",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "instruction_decode": {
+      "type": "object",
+      "description": "Instruction decoding (if data contains opcodes)",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable instruction decoding"
+        },
+        "opcode_bits": {
+          "type": "array",
+          "description": "Bit range for opcode [start, end]",
+          "items": { "type": "integer", "minimum": 0 },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "opcodes": {
+          "type": "object",
+          "description": "Opcode to instruction mappings (keys can be integers or binary/hex strings)",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Instruction mnemonic"
+              },
+              "description": {
+                "type": "string",
+                "description": "Instruction description"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "description": "Output formatting options",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["raw", "transaction", "annotated"],
+          "description": "Output format type"
+        },
+        "timestamp_format": {
+          "type": "string",
+          "enum": ["absolute", "relative_us", "relative_ns", "sample_index"],
+          "description": "Timestamp format"
+        },
+        "include_raw_values": {
+          "type": "boolean",
+          "description": "Include raw values in output"
+        },
+        "hex_format": {
+          "type": "boolean",
+          "description": "Display values in hexadecimal"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

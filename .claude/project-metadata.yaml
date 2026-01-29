@@ -1,0 +1,56 @@
+_meta:
+  schema_version: "1.0.0"
+  version: "4.0.0" # Bumped for template structure
+  last_updated: "2026-01-22"
+
+project:
+  name: "Oscura" # TEMPLATE: {{project_name}}
+  description: "Hardware reverse engineering framework" # TEMPLATE: {{project_description}}
+  type: "library" # library, application, framework
+  license: "MIT" # TEMPLATE: {{license}}
+
+author:
+  name: "Jonathan Allen" # TEMPLATE: {{author_name}}
+  email: "" # TEMPLATE: {{author_email}}
+
+language:
+  primary: "python" # TEMPLATE: {{primary_language}}
+  version: "3.12" # TEMPLATE: {{language_version}}
+
+python:
+  package_manager: "uv"
+  test_framework: "pytest"
+  linter: "ruff"
+  type_checker: "mypy"
+  formatter: "ruff"
+
+vcs:
+  provider: "github" # TEMPLATE: {{vcs_provider}}
+  org: "oscura-re" # TEMPLATE: {{vcs_org}}
+  repo: "oscura" # TEMPLATE: {{vcs_repo}}
+  url: "https://github.com/oscura-re/oscura" # TEMPLATE: {{vcs_url}}
+
+  branches:
+    main: "main"
+    develop: null # No develop branch
+
+claude_code:
+  version: "0.5.0" # Minimum Claude Code version
+
+  configuration_files:
+    primary_config: ".claude/config.yaml"
+    paths: ".claude/paths.yaml"
+    project_metadata: ".claude/project-metadata.yaml"
+    coding_standards: ".claude/coding-standards.yaml"
+
+  generated_files:
+    settings: ".claude/settings.json"
+
+  agents:
+    count: 6
+    discovery_path: ".claude/agents/*.md"
+
+  templates:
+    agent: ".claude/templates/agent-definition.md"
+    command: ".claude/templates/command-definition.md"
+    completion_report: ".claude/templates/completion-report.md"

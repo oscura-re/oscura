@@ -1,0 +1,5 @@
+{
+  "type": "invalid",
+  "issue": "truncated_file",
+  "expected_behavior": "load_error"
+}

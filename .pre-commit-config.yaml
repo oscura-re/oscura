@@ -1,0 +1,154 @@
+# Pre-commit configuration for Oscura
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# https://pre-commit.com
+
+repos:
+  # ==========================================================================
+  # General file checks
+  # ==========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+        args: [--unsafe] # Allow custom YAML tags
+      - id: check-json
+        # Exclude JSONC files (VS Code uses JSON with comments)
+        # Our jsonc.sh handles these with proper comment stripping
+        # Also exclude intentionally corrupt test fixtures
+        exclude: ^(\.vscode/|tsconfig\.json|jsconfig\.json|tests/stress/fixtures/corrupt_registry\.json)
+      - id: check-toml
+      - id: end-of-file-fixer
+        exclude: ^(test_data/comprehensive_validation/binary/empty\.bin)$
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md] # Preserve markdown line breaks
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+        exclude: ^(docs/images/architecture/.*\.svg|test_data/.*|uv\.lock)$
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: detect-private-key
+
+  # ==========================================================================
+  # Python: Ruff (linting + formatting)
+  # ==========================================================================
+  # NOTE: Ruff checks moved to pre-push.sh (scripts/pre-push.sh)
+  # Removed from pre-commit to avoid redundant duplicate checks
+  # - Ruff lint: Checked in pre-push Stage 1
+  # - Ruff format: Checked in pre-push Stage 1
+
+  # ==========================================================================
+  # Python: Documentation quality (interrogate)
+  # ==========================================================================
+  # NOTE: Interrogate moved to pre-push.sh (scripts/pre-push.sh)
+  # Removed from pre-commit to avoid redundant duplicate checks
+  # - Docstring coverage: Checked in pre-push Stage 3
+
+  # ==========================================================================
+  # Python: Docstring validation (darglint)
+  # ==========================================================================
+  # DISABLED: darglint has a critical bug causing crashes on valid Python code
+  # Error: 'PythonSyntaxError' object has no attribute 'function'
+  # Tracking: https://github.com/terrencepreilly/darglint/issues
+  # Alternative: Use pydocstyle in code-quality.yml workflow (informational only)
+  # - repo: https://github.com/terrencepreilly/darglint
+  #   rev: v1.8.1
+  #   hooks:
+  #     - id: darglint
+  #       args: [--docstring-style=google, --strictness=short]
+  #       exclude: ^(tests|demos|scripts|\.claude)/
+
+  # ==========================================================================
+  # Shell scripts: ShellCheck
+  # ==========================================================================
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning]
+
+  # ==========================================================================
+  # YAML: yamllint
+  # ==========================================================================
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint.yaml]
+        exclude: ^(\.pre-commit-config\.yaml|uv\.lock)$
+
+  # ==========================================================================
+  # Markdown: markdownlint
+  # ==========================================================================
+  # Note: markdownlint v0.47.0 requires Node.js >= 20
+  # Using v0.41.0 for compatibility with Node.js 18
+  # CHANGELOG.md excluded from MD024 (duplicate headings) - standard format requires it
+  # CRITICAL: Do NOT exclude .claude/ - it contains important configuration docs
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+        args: [--config, .markdownlint.yaml, --fix]
+        exclude: ^(\.vscode/|test_data/|CHANGELOG\.md|\.claude/reports/archive/|docs/audits/|docs/testing/coverage-audit-.*\.md)
+
+  # ==========================================================================
+  # Local hooks: Test quality gates
+  # ==========================================================================
+  # Note: JSONC validation hook was removed due to CI timeout issues.
+  # The jsonc.sh script can still be run manually: ./scripts/tools/jsonc.sh --check
+  #
+  # NOTE: Several hooks moved to pre-push.sh to avoid redundant checks:
+  # - validate-test-markers: Checked in pre-push Stage 2
+  # - mkdocs-strict-build: Checked in pre-push Stage 3
+  # Keeping only quick smoke tests that catch issues early
+  - repo: local
+    hooks:
+      - id: pytest-smoke-test
+        name: Quick pytest smoke test
+        entry: uv run python -m pytest tests/unit/core/test_types.py -x --strict-markers --strict-config -q
+        language: system
+        pass_filenames: false
+        files: '^(src/.*\.py|tests/.*\.py|pyproject\.toml)$'
+
+      - id: check-test-isolation
+        name: Check test isolation (sample)
+        entry: uv run python scripts/testing/check_test_isolation.py --sample 5 --seed 2
+        language: system
+        files: '^tests/.*test_.*\.py$'
+        pass_filenames: false
+
+      - id: sync-versions
+        name: Sync version numbers across files
+        entry: uv run python .claude/hooks/sync_versions.py
+        language: system
+        files: '^(pyproject\.toml|src/oscura/__init__\.py|src/oscura/automotive/__init__\.py|docs/(index|cli)\.md|docs/api/index\.md)$'
+        pass_filenames: false
+
+      - id: validate-test-coverage
+        name: Validate test directories in CI
+        entry: ./scripts/ci/validate_test_coverage.sh
+        language: script
+        files: '^(tests/unit/.*|\.github/workflows/ci\.yml)$'
+        pass_filenames: false
+
+      - id: validate-workflow-permissions
+        name: Validate workflow permissions
+        entry: ./scripts/ci/validate_workflow_permissions.sh
+        language: script
+        files: '^\.github/workflows/.*\.yml$'
+        pass_filenames: false
+
+# ==========================================================================
+# CI configuration
+# ==========================================================================
+ci:
+  autofix_commit_msg: "style: auto-fix from pre-commit hooks"
+  autofix_prs: true
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "chore: update pre-commit hooks"
+  autoupdate_schedule: monthly
+  skip: [] # Skip hooks that need additional deps in CI
+  submodules: false

@@ -1,0 +1,7 @@
+{
+  "packet_count": 9,
+  "protocol": "tcp",
+  "src_port": 12345,
+  "dst_port": 23,
+  "service": "telnet"
+}

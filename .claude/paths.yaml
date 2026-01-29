@@ -1,0 +1,36 @@
+_meta:
+  schema_version: "1.0.0"
+  version: "2.0.0" # Bumped for restructure
+  last_updated: "2026-01-22"
+
+# All paths relative to project root
+claude:
+  root: ".claude"
+  agents: ".claude/agents"
+  commands: ".claude/commands"
+  hooks: ".claude/hooks"
+  docs: ".claude/docs"
+  templates: ".claude/templates"
+  schemas: ".claude/schemas"
+
+  # Runtime state
+  agent_registry: ".claude/agent-registry.json"
+  agent_outputs: ".claude/agent-outputs"
+  agent_outputs_archive: ".claude/agent-outputs/archive"
+  reports: ".claude/reports"
+  summaries: ".claude/summaries"
+
+coordination:
+  root: ".coordination"
+  checkpoints: ".coordination/checkpoints"
+  archive: ".coordination/archive"
+  workflows: ".coordination/workflows"
+
+# Hook logs and metrics
+logs:
+  root: ".claude/hooks"
+  enforcement: ".claude/hooks/enforcement.log"
+  orchestration: ".claude/hooks/orchestration.log"
+  context: ".claude/hooks/context.log"
+  errors: ".claude/hooks/errors.log"
+  metrics: ".claude/hooks/orchestration-metrics.json"

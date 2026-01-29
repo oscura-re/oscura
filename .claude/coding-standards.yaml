@@ -1,0 +1,74 @@
+_meta:
+  schema_version: "1.0.0"
+  version: "3.0.0" # Bumped for consolidation
+  last_updated: "2026-01-22"
+
+# Code quality standards (NOT orchestration - that's in config.yaml)
+
+code_style:
+  naming:
+    files: "snake_case"
+    functions: "snake_case"
+    classes: "PascalCase"
+    constants: "SCREAMING_SNAKE_CASE"
+    private: "_leading_underscore"
+
+  line_length: 100 # ruff default
+  docstring_style: "google"
+
+  formatting:
+    tool: "ruff"
+    auto_format: true
+
+code_quality:
+  linting:
+    tool: "ruff"
+    config: "pyproject.toml"
+
+  type_checking:
+    tool: "mypy"
+    strict: true
+    config: "pyproject.toml"
+
+  testing:
+    framework: "pytest"
+    min_coverage: 80
+    markers:
+      - unit
+      - integration
+      - stress
+      - performance
+      - compliance
+      - regression
+
+documentation:
+  code:
+    min_docstring_coverage: 95 # Via interrogate
+    docstring_style: "google"
+
+  project:
+    changelog: "CHANGELOG.md"
+    changelog_format: "keep-a-changelog"
+    contributing: "CONTRIBUTING.md"
+    readme: "README.md"
+
+file_organization:
+  ssot_validation:
+    # Allowed duplicate config files (demonstration outputs)
+    allowed_duplicate_configs:
+      - "config.yaml" # demonstrations/data/outputs/configuration_files/config.yaml
+
+ssot:
+  # Single Source of Truth definitions
+  version: "pyproject.toml:[project.version]"
+  dependencies: "pyproject.toml:[project.dependencies]"
+  test_config: "pyproject.toml:[tool.pytest]"
+
+  # Files that should NOT be created (SSOT violations)
+  forbidden_files:
+    - "*_ANALYSIS*.md"
+    - "*_REPORT*.md"
+    - "*_AUDIT*.md"
+    - "*_SUMMARY*.md"
+    - "COMPREHENSIVE_*.md"
+    - "FINAL_*.md"

@@ -1,0 +1,14 @@
+{
+  "file": "spi_1mhz.vcd",
+  "category": "digital",
+  "input_type": "digital",
+  "description": "SPI at 1MHz",
+  "expected_domains": ["digital", "protocols"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "spi",
+    "clock_freq": 1000000.0,
+    "data_hex": "aa5500ff"
+  }
+}

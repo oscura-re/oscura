@@ -1,0 +1,6 @@
+{
+  "signals": ["uart_tx", "uart_rx", "gpio_0", "gpio_1"],
+  "protocols": ["uart"],
+  "baud_rate": 115200,
+  "expected_domains": ["digital", "patterns"]
+}

@@ -1,0 +1,325 @@
+---
+name: route
+description: Force route to specific agent bypassing orchestrator
+arguments: <agent> <task>
+---
+
+# /route - Force Route to Specific Agent
+
+Bypass orchestrator intelligence and route directly to a specific agent.
+
+## Usage
+
+````bash
+/route <agent> <task>                           # Force routing
+/route code_assistant "write a function"        # Bypass orchestrator
+/route knowledge_researcher "research Docker"   # Direct to researcher
+/route technical_writer "document API"          # Direct to docs writer
+```markdown
+
+## Purpose
+
+Give power users explicit control over agent routing when:
+
+- Orchestrator routes to wrong agent
+- Testing specific agent behavior
+- Know exactly which agent you want
+- Debugging routing issues
+- Want deterministic routing (scripts, automation)
+
+## When to Use
+
+✅ **Use /route when**:
+
+- Orchestrator selected wrong agent
+- Want to test specific agent
+- Need deterministic routing for automation
+- Debugging agent behavior
+- Power user who knows the system
+
+❌ **Don't use /route when**:
+
+- Unsure which agent to use (use natural language or explicit commands instead)
+- Learning the system (let orchestrator decide)
+- Normal workflow (use natural language task descriptions instead)
+
+## How It Works
+
+```bash
+/route <agent> <task>
+  ↓
+Skip orchestrator intelligence
+  ↓
+Validate agent exists
+  ↓
+Route directly to agent
+  ↓
+Agent executes task
+  ↓
+Return results
+```markdown
+
+No complexity detection, no keyword matching, no workflow logic.
+
+**For understanding normal routing**: See `.claude/docs/routing-concepts.md`
+
+## Examples
+
+### Example 1: Force Ad-Hoc Code
+
+```bash
+/route code_assistant "implement user authentication"
+```bash
+
+Even though "implement" + "authentication" would normally trigger auto-spec workflow (complexity: 75), this forces ad-hoc code writing.
+
+Warning shown:
+
+```bash
+⚠️ Bypassing orchestrator intelligence
+Task complexity appears high (authentication, security keywords)
+Forcing: code_assistant (ad-hoc, no spec)
+Recommended: Natural language task description instead
+
+Proceed? [y/N]:
+```markdown
+
+### Example 2: Force Different Agent
+
+```bash
+/route knowledge_researcher "write a function to parse JSON"
+```markdown
+
+Forces knowledge_researcher even though this would normally go to code_assistant.
+
+### Example 3: Force Implementation
+
+```bash
+/route technical_writer "document API"
+```markdown
+
+Directly routes to technical_writer for documentation creation.
+
+## Available Agents
+
+|Agent|Purpose|Alternative|
+|---|---|---|
+|`code_assistant`|Code implementation|Natural language task description|
+|`knowledge_researcher`|Web research|Natural language task description|
+|`technical_writer`|Documentation|Natural language task description|
+|`code_reviewer`|Code review|Natural language task description|
+|`git_commit_manager`|Git operations|`/git "message"`|
+|`orchestrator`|Workflow coordination|Natural language (automatic)|
+
+To see full list: `/agents`
+
+## Validation and Safety
+
+When you use `/route`, the system:
+
+1. **Validates agent exists**
+   - Checks `.claude/agents/<agent>.md` exists
+   - If not found: Lists available agents
+
+2. **Checks task appropriateness**
+   - Analyzes if agent can handle task
+   - Warns if mismatch detected
+
+3. **Requires confirmation** (for mismatches)
+   - Shows why mismatch detected
+   - Asks user to confirm
+
+### Example Validation
+
+```bash
+/route technical_writer "fix bug in login"
+```bash
+
+System response:
+
+```bash
+⚠️ Task/Agent Mismatch Detected
+
+Agent: technical_writer
+Expected: Documentation creation, tutorials, guides
+Task: "fix bug in login"
+Analysis: Bug fixing typically requires code_assistant
+
+Did you mean:
+1. "Fix bug in login" (natural language)
+2. /route code_assistant "fix bug in login"
+3. Proceed anyway with technical_writer
+
+Choice [1/2/3]:
+```markdown
+
+## Comparison with Other Approaches
+
+|Approach|Intelligence|Safety|Speed|Use Case|
+|---|---|---|---|---|
+|Natural language|✅ Full|✅ High|⏱️ Medium|Let system decide|
+|`/route <agent> <task>`|❌ None|⚠️ Medium|⚡ Fastest|Manual control|
+
+## Use Cases
+
+### 1. Testing Agent Behavior
+
+```bash
+# Test how code_assistant handles complex task
+/route code_assistant "implement complete REST API"
+
+# See if it warns or proceeds
+```markdown
+
+### 2. Overriding Wrong Routing
+
+```bash
+# User: "write a quick helper function"
+# System routes to knowledge_researcher (wrong!)
+# User corrects:
+/route code_assistant "write a quick helper function"
+```markdown
+
+### 3. Automation/Scripting
+
+```bash
+# In script: deterministic routing
+/route code_assistant "generate migration script"
+/route code_reviewer src/module.py
+/route git_commit_manager "feat: add migrations"
+```markdown
+
+### 4. Agent Development/Debugging
+
+```bash
+# Testing new agent
+/route my_custom_agent "test task"
+```markdown
+
+## Error Handling
+
+### Agent Not Found
+
+```bash
+/route nonexistent_agent "do something"
+```markdown
+
+Response:
+
+```markdown
+❌ Agent Not Found: nonexistent_agent
+
+Available agents:
+- code_assistant
+- knowledge_researcher
+- technical_writer
+- code_reviewer
+- git_commit_manager
+- orchestrator
+
+Use: /agents for details
+```markdown
+
+### Invalid Task
+
+```bash
+/route code_assistant ""
+```bash
+
+Response:
+
+```markdown
+❌ Invalid Task
+
+Task description cannot be empty.
+Usage: /route <agent> <task>
+```python
+
+## Configuration
+
+Routing behavior in `.claude/config.yaml`:
+
+```yaml
+orchestration:
+  workflow:
+    allow_command_overrides: true # Must be true for /route to work
+    show_routing_decisions: true # Show why route succeeded
+```python
+
+## Workflow
+
+```python
+/route → Validate agent exists
+       → Validate task not empty
+       → Check task/agent appropriateness
+       → Warn if mismatch (optional confirmation)
+       → Route directly to agent
+       → Skip all orchestrator logic
+```markdown
+
+## Comparison with Natural Language Routing
+
+|Aspect|Natural Language|/route <agent> <task>|
+|---|---|---|
+|**Intelligence**|Full routing logic|None|
+|**Complexity detection**|✅ Yes|❌ No|
+|**Keyword matching**|✅ Yes|❌ No|
+|**Safety checks**|✅ Yes|⚠️ Basic|
+|**Best for**|Normal use|Power users, testing|
+|**Speed**|Medium|Fastest|
+|**Flexibility**|High|Maximum|
+
+## When NOT to Use /route
+
+**Don't use /route when**:
+
+1. **Unsure which agent**: Use natural language or ask `/agents`
+2. **Normal workflow**: Use natural language task descriptions
+3. **Learning system**: Let orchestrator teach you through routing
+4. **Team projects**: Natural language is clearer than `/route`
+
+## Pro Tips
+
+### 1. Combine with /agents
+
+```bash
+# First, find the right agent
+/agents research
+
+# Then route directly
+/route knowledge_researcher "Docker networking 2026"
+```markdown
+
+### 2. Use for A/B Testing
+
+```bash
+# Try ad-hoc (force code assistant)
+/route code_assistant "implement caching"
+
+# Compare with natural language (let system decide)
+"Implement caching with validation"
+
+# See which approach works better
+```markdown
+
+### 3. Debug Routing Issues
+
+```bash
+# Let orchestrator decide
+"Implement authentication"
+
+# Or override if needed
+/route code_assistant "implement auth"
+```markdown
+
+## See Also
+
+- `.claude/docs/routing-concepts.md` - Complete explanation of normal routing
+- `.claude/commands/agents.md` - List available agents
+- `.claude/agents/orchestrator.md` - Orchestration logic
+
+## Version
+
+v1.0.0 (2026-01-09) - Initial creation as part of utility command system
+v1.1.0 (2026-01-16) - Added reference to routing-concepts.md
+````

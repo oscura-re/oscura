@@ -1,0 +1,16 @@
+{
+  "files_generated": [
+    "test_data/analysis_report_validation/waveform/waveform_sine_1khz.npz",
+    "test_data/analysis_report_validation/waveform/waveform_multitone.npz",
+    "test_data/analysis_report_validation/waveform/waveform_digital_pwm.npz",
+    "test_data/analysis_report_validation/waveform/waveform_noisy_50db.npz",
+    "test_data/analysis_report_validation/waveform/waveform_power_rail.npz",
+    "test_data/analysis_report_validation/waveform/waveform_eye_pattern.npz",
+    "test_data/analysis_report_validation/digital/digital_uart_115200.vcd",
+    "test_data/analysis_report_validation/binary/binary_structured_packets.bin",
+    "test_data/analysis_report_validation/binary/binary_random_data.bin",
+    "test_data/analysis_report_validation/binary/binary_compressed.bin",
+    "test_data/analysis_report_validation/binary/binary_protocol_messages.bin"
+  ],
+  "ground_truth_files": []
+}

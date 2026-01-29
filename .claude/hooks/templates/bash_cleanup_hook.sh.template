@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# =============================================================================
+# {{HOOK_NAME}} - {{HOOK_DESCRIPTION}}
+#
+# {{HOOK_PURPOSE}}
+#
+# Version: 1.0.0
+# Created: {{DATE}}
+# =============================================================================
+
+set -euo pipefail
+
+# =============================================================================
+# Path Resolution (CRITICAL)
+# Always resolve to absolute paths from script location
+# =============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-${REPO_ROOT}}"
+LOG_FILE="${PROJECT_DIR}/.claude/hooks/hook.log"
+
+# Ensure log directory exists
+mkdir -p "$(dirname "${LOG_FILE}")"
+
+# =============================================================================
+# Logging Functions
+# =============================================================================
+
+log() {
+    echo "[$(date -Iseconds)] {{HOOK_NAME}}: $*" >>"${LOG_FILE}"
+}
+
+log_error() {
+    echo "[$(date -Iseconds)] {{HOOK_NAME}}_ERROR: $*" >>"${LOG_FILE}"
+    echo "ERROR: $*" >&2
+}
+
+log_warn() {
+    echo "[$(date -Iseconds)] {{HOOK_NAME}}_WARN: $*" >>"${LOG_FILE}"
+    echo "WARNING: $*" >&2
+}
+
+# =============================================================================
+# Emergency Bypass Check
+# =============================================================================
+
+if [[ "${CLAUDE_BYPASS_HOOKS:-}" = "1" ]]; then
+    log_warn "EMERGENCY BYPASS ACTIVE - skipping hook"
+    echo '{"ok": true, "bypassed": true}'
+    exit 0
+fi
+
+# =============================================================================
+# Dependency Check
+# =============================================================================
+
+check_dependency() {
+    local cmd="$1"
+    local optional="${2:-false}"
+
+    if ! command -v "${cmd}" &>/dev/null; then
+        if [[ "${optional}" = "true" ]]; then
+            log_warn "Optional dependency '${cmd}' not found - some features disabled"
+            return 1
+        else
+            log_error "Required dependency '${cmd}' not found"
+            exit 1
+        fi
+    fi
+    return 0
+}
+
+# Check required dependencies
+check_dependency "find"
+check_dependency "date"
+
+# Check optional dependencies
+HAS_JQ=false
+if check_dependency "jq" "true"; then
+    HAS_JQ=true
+fi
+
+# =============================================================================
+# Configuration
+# =============================================================================
+
+# TODO: Add hook-specific configuration here
+# Example:
+# MAX_AGE_DAYS=30
+# TARGET_DIR="$PROJECT_DIR/.coordination/archive"
+
+# =============================================================================
+# Dry Run Support
+# =============================================================================
+
+DRY_RUN=false
+if [[ "${1:-}" = "--dry-run" ]]; then
+    DRY_RUN=true
+    log "DRY RUN MODE - no changes will be made"
+fi
+
+# =============================================================================
+# Cleanup Logic
+# =============================================================================
+
+cleanup() {
+    local cleaned=0
+    local errors=0
+
+    # TODO: Implement cleanup logic here
+    # Example:
+    # while IFS= read -r -d '' file; do
+    #     if [ "$DRY_RUN" = "true" ]; then
+    #         log "Would clean: $file"
+    #     else
+    #         rm -f "$file" && cleaned=$((cleaned + 1))
+    #     fi
+    # done < <(find "$TARGET_DIR" -type f -mtime +$MAX_AGE_DAYS -print0)
+
+    echo "${cleaned} ${errors}"
+}
+
+# =============================================================================
+# Main Execution
+# =============================================================================
+
+log "Starting cleanup..."
+
+# Run cleanup
+read -r CLEANED ERRORS < <(cleanup)
+
+log "Cleanup complete: ${CLEANED} items cleaned, ${ERRORS} errors"
+
+# =============================================================================
+# Output Result
+# =============================================================================
+
+if [[ "${HAS_JQ}" = "true" ]]; then
+    jq -n \
+        --argjson ok "$([[ "${ERRORS}" -eq 0 ]] && echo true || echo false)" \
+        --argjson cleaned "${CLEANED}" \
+        --argjson errors "${ERRORS}" \
+        --argjson dry_run "${DRY_RUN}" \
+        '{ok: $ok, cleaned: $cleaned, errors: $errors, dry_run: $dry_run}'
+else
+    # Fallback without jq
+    if [[ "${ERRORS}" -eq 0 ]]; then
+        echo "{\"ok\": true, \"cleaned\": ${CLEANED}, \"errors\": 0, \"dry_run\": ${DRY_RUN}}"
+    else
+        echo "{\"ok\": false, \"cleaned\": ${CLEANED}, \"errors\": ${ERRORS}, \"dry_run\": ${DRY_RUN}}"
+    fi
+fi
+
+exit "$([[ "${ERRORS}" -eq 0 ]] && echo 0 || echo 1)"

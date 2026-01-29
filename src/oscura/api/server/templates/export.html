@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Export - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="bi bi-download"></i> Export & Download
+                </h2>
+
+                <p class="lead">Download generated artifacts for protocol analysis tools.</p>
+
+                <hr>
+
+                <div class="row g-3">
+                    {% if artifacts.dissector_path %}
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-puzzle"></i> Wireshark Dissector
+                                </h5>
+                                <p class="card-text">Lua dissector for Wireshark protocol analysis</p>
+                                <a href="/api/download/{{ session_id }}/dissector" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if artifacts.scapy_layer_path %}
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-code-slash"></i> Scapy Layer
+                                </h5>
+                                <p class="card-text">Python Scapy layer for packet manipulation</p>
+                                <a href="/api/download/{{ session_id }}/scapy" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if artifacts.kaitai_path %}
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-file-binary"></i> Kaitai Struct
+                                </h5>
+                                <p class="card-text">Binary parser definition for multiple languages</p>
+                                <a href="/api/download/{{ session_id }}/kaitai" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if artifacts.test_vectors_path %}
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-check2-square"></i> Test Vectors
+                                </h5>
+                                <p class="card-text">Generated test cases for protocol validation</p>
+                                <a href="/api/download/{{ session_id }}/tests" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if artifacts.report_path %}
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-file-text"></i> Analysis Report
+                                </h5>
+                                <p class="card-text">Comprehensive analysis report (HTML/PDF)</p>
+                                <a href="/api/download/{{ session_id }}/report" class="btn btn-primary">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if not artifacts %}
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            No artifacts available yet. Analysis may still be in progress or incomplete.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <hr class="mt-4">
+
+                <div class="d-grid gap-2">
+                    <a href="/session/{{ session_id }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Session
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

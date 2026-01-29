@@ -1,0 +1,12 @@
+{
+  "file": "waveform_digital_pwm.npz",
+  "input_type": "waveform",
+  "expected_domains": ["waveform", "timing", "digital"],
+  "expected_metrics": {
+    "pwm_frequency_hz": 10000.0,
+    "duty_cycle": 0.5,
+    "period_s": 0.0001,
+    "sample_rate": 1000000.0
+  },
+  "description": "PWM signal for digital extraction and timing"
+}

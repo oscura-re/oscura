@@ -1,0 +1,109 @@
+# Markdownlint configuration for Oscura
+# Standardized formatting for project documentation
+# Balances consistency with practical documentation needs
+
+default:
+  true
+
+  # MD001: Heading levels should only increment by one level at a time
+MD001:
+  true
+
+  # MD003: Heading style - use atx style (#)
+MD003:
+  style: atx
+
+  # MD004: Unordered list style - use dash
+MD004:
+  style: dash
+
+  # MD009: Trailing spaces - allow 2 for line breaks
+MD009:
+  br_spaces: 2
+  list_item_empty_lines: false
+  strict: false
+
+  # MD012: Multiple consecutive blank lines
+MD012:
+  maximum: 2
+
+  # MD013: Line length - disabled (documentation needs flexibility)
+MD013:
+  false
+
+  # MD024: Multiple headings with same content
+  # Allow duplicates under different parents (changelogs, repeated sections)
+MD024:
+  siblings_only: true
+
+  # MD025: Multiple top-level headings - allowed
+MD025:
+  false
+
+  # MD026: Trailing punctuation in heading
+MD026:
+  false
+
+  # MD022: Headings should be surrounded by blank lines
+MD022:
+  lines_above: 1
+  lines_below: 1
+
+  # MD031: Fenced code blocks should be surrounded by blank lines
+MD031:
+  list_items: true
+
+  # MD032: Lists should be surrounded by blank lines
+MD032:
+  true
+
+  # MD033: Inline HTML
+MD033:
+  false
+
+  # MD034: Bare URLs
+MD034:
+  false
+
+  # MD035: Horizontal rule style
+MD035:
+  false
+
+  # MD036: Emphasis used instead of heading
+MD036:
+  false
+
+  # MD040: Fenced code blocks should have language - disabled (documentation flexibility)
+MD040:
+  false
+
+  # MD041: First line in file should be a top-level heading
+MD041:
+  false
+
+  # MD046: Code block style - use fenced
+MD046:
+  style: fenced
+
+  # MD048: Code fence style - use backtick
+MD048:
+  style: backtick
+
+  # MD049: Emphasis style - use underscore
+MD049:
+  style: underscore
+
+  # MD050: Strong style - use asterisk
+MD050:
+  style: asterisk
+
+  # MD051: Link fragments should be valid
+  # Disabled for Jinja2 templates with dynamic link fragments
+MD051:
+  false
+
+  # MD060: Table column style - disabled (emojis make alignment impossible)
+  # Oscura standard: Use compact format (no pipe alignment required)
+  # Rationale: Emoji characters have variable display widths, making consistent
+  # pipe alignment impossible across different renderers and editors
+MD060: false

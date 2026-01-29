@@ -1,0 +1,313 @@
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+.env/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# =============================================================================
+# Testing
+# =============================================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+test_output/
+
+# =============================================================================
+# Benchmarking
+# =============================================================================
+# pytest-benchmark autosave directory (machine-specific, CI artifact)
+.benchmarks/
+
+# =============================================================================
+# Type checking / Linting
+# =============================================================================
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# =============================================================================
+# Pre-push / CI Caching
+# =============================================================================
+# Build cache for package build optimization
+.cache/
+
+# =============================================================================
+# Spellcheck
+# =============================================================================
+# cSpell cache (dictionary cache for performance)
+.cspell/.cache/
+
+# =============================================================================
+# Package managers
+# =============================================================================
+# uv cache (if using uv package manager)
+.uv-cache/
+
+# =============================================================================
+# IDE / Editors
+# =============================================================================
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# VS Code - keep config but ignore user-specific
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/markdown.css
+!.vscode/tasks.json
+!.vscode/README.md
+
+# =============================================================================
+# Operating System
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =============================================================================
+# Project-specific
+# =============================================================================
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+*.bak
+
+# Logs
+*.log
+logs/
+
+# Generated outputs
+output/
+demos/output/
+
+# Coverage and work tracking files
+coverage.json
+active_work.json
+
+# =============================================================================
+# Security / Sensitive Files
+# =============================================================================
+# Private keys and certificates
+*.key
+*.pem
+
+# Credentials and secrets
+*credentials*
+.env
+.env.local
+.env.*.local
+secrets.*
+# Keep .env.example as template (not ignored)
+
+# =============================================================================
+# LaTeX Generated Files
+# =============================================================================
+# latexindent backup files
+*.bak[0-9]
+*.bak[0-9][0-9]
+
+# GHDL work files
+work-obj*.cf
+
+# =============================================================================
+# Claude Code Runtime Files
+# =============================================================================
+# Runtime-generated files (not tracked)
+.claude/summaries/*
+!.claude/summaries/.gitkeep
+
+# Runtime state files
+.claude/agent-registry.json
+.claude/*.backup*.json
+.claude/workflow-progress*.json
+.claude/settings.local.json
+
+# Hook logs and caches (generated at runtime)
+.claude/hooks/*.log
+.claude/hooks/errors.archive/
+.claude/hooks/.context_state.json
+.claude/hooks/.settings_hash
+.claude/hooks/orchestration-metrics.json
+.claude/hooks/__pycache__/
+
+# Orchestration activity log (debugging)
+.claude/orchestration.log
+.claude/orchestration.log.*
+.claude/reports/
+.coordination/
+
+# =============================================================================
+# Documentation Generated Files
+# =============================================================================
+# MkDocs generated site
+site/
+
+# Hypothesis testing data
+.hypothesis/
+
+# Changelog fragments (towncrier/scriv)
+changelog.d/
+
+# =============================================================================
+# Oscura-Specific
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Demo Data (Generated)
+# -----------------------------------------------------------------------------
+# All demo data is synthetic and generated by scripts
+# Regenerate with: python demos/generate_all_demo_data.py
+demos/*/demo_data/*
+demos/*/demo_data/*/*
+!demos/*/demo_data/.gitkeep
+!demos/*/demo_data/*/.gitkeep
+
+# Keep demo generation scripts and configs
+!demos/generate_all_demo_data.py
+!demos/*/generate_demo_data.py
+!demos/02_custom_daq/custom_daq_continuous.yml
+
+# -----------------------------------------------------------------------------
+# Test Data
+# -----------------------------------------------------------------------------
+# Test data - exclude large files with potential legal concerns
+test_data/*.zip
+oscura_test_data/
+
+# Performance test data (generated, large files)
+tests/performance/test_data/*.npz
+
+# Include synthetic test data (small, legally safe, reproducible)
+!test_data/synthetic/
+!test_data/README.md
+
+# -----------------------------------------------------------------------------
+# Generated Binary Files (root directory only)
+# -----------------------------------------------------------------------------
+# Large binary test files generated during testing
+/*.bin
+/*.wfm
+/*.tss
+/*.pcap
+/*.npz
+/*.mf4
+
+# Temporary data files in root
+/*.m
+/*.xlsx
+/*.csv
+/*.yml
+/*.yaml
+
+# Exceptions: keep tracked config files
+!pyproject.toml
+!.pre-commit-config.yaml
+!.yamllint.yaml
+!.markdownlint.yaml
+!mkdocs.yml
+!cspell.json
+!lychee.toml
+
+# -----------------------------------------------------------------------------
+# Demo Output Directories
+# -----------------------------------------------------------------------------
+# Generated by demo scripts (can be regenerated by running demos)
+**/signal_re_*/
+**/wfm_outputs*/
+**/ultimate_outputs/
+**/ultimate_re_outputs/
+**/exploratory_outputs/
+**/udp_analysis*/
+
+# Automotive demo generated files
+demos/discovered_signals.dbc
+demos/08_automotive/discovered_signals.dbc
+demos/09_automotive/discovered_signals.dbc
+
+# -----------------------------------------------------------------------------
+# Generated Reports and Artifacts
+# -----------------------------------------------------------------------------
+# Runtime artifacts
+generated_reports/
+generated_dissectors/
+
+# Validation result files
+**/validation_results.json
+**/remediation_results.json
+validation_results/
+
+# -----------------------------------------------------------------------------
+# Temporary Documentation (Claude-generated)
+# -----------------------------------------------------------------------------
+# These should never be committed - use .claude/reports/ for permanent records
+*REPORT*.md
+*SUMMARY*.md
+*ASSESSMENT*.md
+*ANALYSIS*.md
+*AUDIT*.md
+*ACTION_ITEMS*.md
+*INSTRUCTIONS*.md
+*COMPLETE*.md
+*VALIDATION*.md
+*OPTIMIZATION*.md
+*IMPLEMENTATION*.md
+*ISSUES*.md
+*CAPABILITIES*.md
+*APPROACH*.md
+*VERIFICATION*.md
+*FIXES*.md
+*IMPROVEMENTS*.md
+
+# Exceptions: legitimate historical documentation
+!docs/audits/*COMPLETE*.md
+!docs/audits/*IMPLEMENTATION*.md
+
+# =============================================================================
+# GitHub Configuration Exports
+# =============================================================================
+# Exported configuration files (repo-specific, regenerated by export script)
+.github/config/rulesets-all.json
+.github/config/repository-settings.json
+.github/config/environments.json
+.github/config/tag-protection.json
+.github/config/labels.json
+.github/config/topics.json
+
+# Keep template files (these should be tracked)
+!.github/config/*-template.json
+!.github/config/main-branch-ruleset.json
+!.github/config/README.md
+.claude/agent-outputs/
+examples/outputs/

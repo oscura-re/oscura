@@ -1,0 +1,166 @@
+# Oscura Configurable Format - Custom DAQ Continuous Time-Series
+# Format: Preprocessed continuous samples (post-MATLAB processing)
+# Source: UDP packets with headers stripped, samples reshaped
+# File: udp_capture_1.bin (2.9GB)
+
+name: "Custom DAQ Continuous"
+version: "1.0"
+description: "4-lane parallel DAQ @ 100MHz, MATLAB-preprocessed continuous samples"
+
+# Packet configuration (treating entire file as continuous stream)
+packet:
+  size: 8 # bytes per sample
+  byte_order: "little" # Based on data analysis
+
+# No header in preprocessed data
+header:
+  size: 0
+  fields: []
+
+# Sample configuration
+samples:
+  offset: 0 # Samples start immediately
+  count: 1 # 1 sample per packet (8 bytes total)
+  format:
+    size: 8 # 8 bytes per sample
+    type: "uint64" # Treat as 64-bit integer
+    endian: "little"
+    description: "8 bytes per sample, 4 interleaved lanes"
+
+  # Channel extraction - map bytes to channels
+  channel_extraction:
+    # Analysis shows bytes 1,3,5,7 are active (25% activity each)
+    # Bytes 0,2,4,6 are mostly idle (0.5% activity)
+
+    # Interpret as 4 data lanes × 2 bytes each
+    Lane_1:
+      bits: [0, 15] # Bytes 0-1 (16 bits)
+      description: "Data Lane 1 (bytes 0-1)"
+
+    Lane_2:
+      bits: [16, 31] # Bytes 2-3 (16 bits)
+      description: "Data Lane 2 (bytes 2-3)"
+
+    Lane_3:
+      bits: [32, 47] # Bytes 4-5 (16 bits)
+      description: "Data Lane 3 (bytes 4-5)"
+
+    Lane_4:
+      bits: [48, 63] # Bytes 6-7 (16 bits)
+      description: "Data Lane 4 (bytes 6-7)"
+
+    # Alternative: Extract individual bytes
+    Lane_1_Low:
+      bits: [0, 7] # Byte 0
+      description: "Lane 1 LSB"
+
+    Lane_1_High:
+      bits: [8, 15] # Byte 1
+      description: "Lane 1 MSB (active channel)"
+
+    Lane_2_Low:
+      bits: [16, 23] # Byte 2
+      description: "Lane 2 LSB"
+
+    Lane_2_High:
+      bits: [24, 31] # Byte 3
+      description: "Lane 2 MSB (active channel)"
+
+    Lane_3_Low:
+      bits: [32, 39] # Byte 4
+      description: "Lane 3 LSB"
+
+    Lane_3_High:
+      bits: [40, 47] # Byte 5
+      description: "Lane 3 MSB (active channel)"
+
+    Lane_4_Low:
+      bits: [48, 55] # Byte 6
+      description: "Lane 4 LSB"
+
+    Lane_4_High:
+      bits: [56, 63] # Byte 7
+      description: "Lane 4 MSB (active channel)"
+
+# Validation rules
+validation:
+  check_alignment: true
+  expected_alignment: 8 # Must be multiple of 8 bytes
+  warn_on_truncation: true
+
+# Metadata
+metadata:
+  sample_rate: 100000000 # 100 MHz (from documentation)
+  original_format: "Ethernet/UDP packets"
+  preprocessing: "MATLAB script - headers stripped, samples reshaped"
+  data_source: "Custom FPGA-based DAQ"
+  acquisition_lanes: 4
+  bits_per_sample: 64
+  bytes_per_sample: 8
+
+  # Original packet structure (before preprocessing)
+  original_packet_structure:
+    ethernet_header: 14 # bytes
+    ipv4_header: 20 # bytes
+    udp_header: 8 # bytes
+    daq_payload: 1470 # bytes
+    total_packet: 1516 # bytes (max Ethernet frame)
+
+    # DAQ payload breakdown
+    packet_counter: 4 # bytes, big endian
+    fifo_status: 2 # bytes
+    marker: 1 # byte (0xFA)
+    board_id: 1 # byte (0xD3 = Rack Mode Control)
+    lane_id: 1 # byte (1-4)
+    timestamp: 5 # bytes, little endian, 10ns resolution
+    sample_data: 1456 # bytes (182 samples × 8 bytes)
+
+    samples_per_packet: 182
+    timestamp_increment: 182 # @ 100MHz per packet
+
+# Processing notes
+notes: |
+  This format represents preprocessed data from a custom FPGA-based DAQ system.
+
+  Original System:
+  - 4-lane parallel acquisition @ 100 MHz
+  - Ethernet/IPv4/UDP transport
+  - 182 samples per UDP packet
+  - 8 bytes per sample (64 bits total)
+  - Timestamps in 5-byte little-endian format
+  - Packet counters for sequence validation
+
+  MATLAB Preprocessing (matlab_1.m):
+  - Strips all headers (Ethernet/IP/UDP/DAQ)
+  - Extracts 1456-byte sample data from each packet
+  - Reshapes to N×8 array (8 bytes per sample)
+  - Converts to N×64 bit matrix
+  - Trims idle regions using XOR-based edge detection
+  - Outputs continuous time-series binary file
+
+  Data Characteristics:
+  - File size: 3,060,516,480 bytes (2.9 GB)
+  - Total samples: 382,564,560
+  - Duration: ~3.826 seconds @ 100 MHz
+  - Activity pattern: Alternating low/high (interleaved channels)
+    * Bytes 0,2,4,6: ~0.5% active (padding/header remnants)
+    * Bytes 1,3,5,7: ~25% active (actual data channels)
+
+  Usage:
+    import oscura as tk
+    from oscura.loaders.configurable import load_binary_packets, extract_channels
+
+    # Load packets
+    packets = load_binary_packets("udp_capture_1.bin", "custom_daq_continuous.yml")
+
+    # Extract channels
+    channels = extract_channels(packets, {
+        "Lane_1": {"bits": [0, 15]},
+        "Lane_2": {"bits": [16, 31]},
+        "Lane_3": {"bits": [32, 47]},
+        "Lane_4": {"bits": [48, 63]},
+    })
+
+    # Convert to Trace
+    lane1_trace = channels["Lane_1"]
+    print(f"Loaded {len(lane1_trace.data)} samples @ {lane1_trace.sample_rate} Hz")

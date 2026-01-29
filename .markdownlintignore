@@ -1,0 +1,15 @@
+# Markdownlint ignore patterns
+# Files that are not markdown or use special syntax
+
+# CODEOWNERS is GitHub-specific syntax, not Markdown
+.github/CODEOWNERS
+
+# Lock files may contain markdown-like syntax but aren't documentation
+uv.lock
+
+# Generated or external files
+.venv/
+node_modules/
+dist/
+build/
+*.egg-info/

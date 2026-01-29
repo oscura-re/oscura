@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://oscura.io/schemas/device_mapping.json",
+  "title": "Device Mapping Configuration Schema",
+  "description": "Schema for validating device ID to name mappings and device-specific parameters (CFG-001).",
+  "type": "object",
+  "required": ["name", "devices"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Mapping configuration identifier",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration version",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "devices": {
+      "type": "object",
+      "description": "Device ID to configuration mappings (keys can be integers or hex strings)",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "description": "Device configuration (key is hex 0xNN or decimal ID)",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Full device name",
+            "minLength": 1
+          },
+          "short_name": {
+            "type": "string",
+            "description": "Short/abbreviated device name",
+            "maxLength": 16
+          },
+          "description": {
+            "type": "string",
+            "description": "Device description"
+          },
+          "category": {
+            "type": "string",
+            "description": "Device category for grouping"
+          },
+          "sample_rate": {
+            "oneOf": [
+              { "type": "number", "exclusiveMinimum": 0 },
+              {
+                "type": "string",
+                "pattern": "^[0-9]+(\\.[0-9]+)?[eE][+-]?[0-9]+$"
+              }
+            ],
+            "description": "Device sample rate in Hz (number or scientific notation string)"
+          },
+          "channels": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of channels"
+          },
+          "properties": {
+            "type": "object",
+            "description": "Device-specific properties",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "categories": {
+      "type": "object",
+      "description": "Category definitions for grouping and display",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "Category description"
+            },
+            "color": {
+              "type": "string",
+              "description": "Display color (hex format)",
+              "pattern": "^#[0-9A-Fa-f]{6}$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "channels": {
+      "type": "object",
+      "description": "Channel/lane configuration (keys can be integers or numeric strings)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Channel name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Channel description"
+          },
+          "default_threshold": {
+            "type": "number",
+            "description": "Default threshold voltage"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unknown_device": {
+      "type": "object",
+      "description": "Handling for unknown device IDs",
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": ["error", "warn", "ignore"],
+          "description": "Action when unknown device encountered"
+        },
+        "default_name": {
+          "type": "string",
+          "description": "Default name for unknown devices"
+        },
+        "default_category": {
+          "type": "string",
+          "description": "Default category for unknown devices"
+        }
+      },
+      "additionalProperties": false
+    },
+    "filters": {
+      "type": "object",
+      "description": "Device filtering options",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable filtering"
+        },
+        "include_devices": {
+          "type": "array",
+          "description": "Device IDs to include (whitelist)",
+          "items": {
+            "oneOf": [
+              { "type": "integer" },
+              { "type": "string", "pattern": "^0[xX][0-9A-Fa-f]+$" }
+            ]
+          }
+        },
+        "exclude_devices": {
+          "type": "array",
+          "description": "Device IDs to exclude (blacklist)",
+          "items": {
+            "oneOf": [
+              { "type": "integer" },
+              { "type": "string", "pattern": "^0[xX][0-9A-Fa-f]+$" }
+            ]
+          }
+        },
+        "include_categories": {
+          "type": "array",
+          "description": "Categories to include",
+          "items": { "type": "string" }
+        },
+        "exclude_categories": {
+          "type": "array",
+          "description": "Categories to exclude",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

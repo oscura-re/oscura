@@ -1,0 +1,73 @@
+# =============================================================================
+# .lycheeignore - Link Validation Exclusion Patterns for Oscura
+# =============================================================================
+# Patterns for lychee to ignore during link validation
+# Syntax: glob patterns and regex (one per line)
+# =============================================================================
+
+# Node.js dependencies
+**/node_modules/**
+**/package-lock.json
+
+# Python virtual environments
+**/.venv/**
+**/__pycache__/**
+**/*.pyc
+
+# Build artifacts
+**/dist/**
+**/build/**
+**/.next/**
+**/.cache/**
+
+# Generated documentation (MkDocs)
+**/site/**
+
+# Generated files
+**/*link-audit*
+**/*report*
+
+# Archive directories
+**/archive/**
+**/archived/**
+**/old/**
+**/backup/**
+
+# Coordination files (ephemeral)
+**/.coordination/**
+
+# Agent outputs (temporary)
+**/.claude/agent-outputs/**
+**/.claude/checkpoints/**
+**/.claude/summaries/**
+
+# Git
+**/.git/**
+**/.gitignore
+
+# IDE
+**/.vscode/**
+**/.idea/**
+
+# Temporary files
+**/*.tmp
+**/*.temp
+**/.DS_Store
+
+# Documentation generated files
+**/.hypothesis/**
+**/changelog.d/**
+
+# Spellcheck cache
+**/.cspell/**
+
+# Oscura-specific output files (binary, no links to check)
+**/*.npz
+**/*.npy
+**/*.h5
+**/*.hdf5
+
+# Lock files (auto-generated)
+**/uv.lock
+**/poetry.lock
+**/Pipfile.lock

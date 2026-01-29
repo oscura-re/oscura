@@ -1,0 +1,14 @@
+{
+  "file": "glitchy.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Sine wave with random glitches",
+  "expected_domains": ["waveform", "spectral", "statistics"],
+  "edge_cases": ["glitches", "outliers"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "glitchy",
+    "glitch_count": 5,
+    "glitch_positions": [6392, 9712, 9889, 5776, 4798]
+  }
+}

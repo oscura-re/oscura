@@ -1,0 +1,13 @@
+{
+  "file": "waveform_power_rail.npz",
+  "input_type": "waveform",
+  "expected_domains": ["power"],
+  "expected_metrics": {
+    "voltage_v": 3.3,
+    "current_a": 0.5,
+    "power_w": 1.65,
+    "ripple_mvpp": 50.0,
+    "ripple_freq_hz": 100000.0
+  },
+  "description": "Voltage + current pair for power analysis"
+}

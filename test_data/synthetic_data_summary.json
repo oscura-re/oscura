@@ -1,0 +1,241 @@
+{
+  "files_generated": [
+    "binary/synthetic/fixed_length/clean_packets_512b.bin",
+    "ground_truth/decoded/fixed_length_packets_truth.json",
+    "binary/synthetic/variable_length/packets_128b.bin",
+    "binary/synthetic/variable_length/packets_256b.bin",
+    "binary/synthetic/variable_length/packets_1024b.bin",
+    "binary/synthetic/variable_length/packets_2048b.bin",
+    "binary/synthetic/with_errors/noisy_packets_1pct.bin",
+    "binary/synthetic/with_errors/noisy_packets_5pct.bin",
+    "binary/synthetic/with_errors/noisy_packets_10pct.bin",
+    "waveforms/synthetic/square_1MHz.npy",
+    "waveforms/synthetic/square_10MHz.npy",
+    "waveforms/synthetic/square_100MHz.npy",
+    "waveforms/synthetic/uart_9600_hello_world.npy",
+    "binary/synthetic/protocol_messages_64b.bin",
+    "binary/synthetic/protocol_messages_128b.bin",
+    "binary/synthetic/protocol_messages_256b.bin",
+    "statistical/entropy/random_1MB.bin",
+    "statistical/entropy/low_entropy_pattern.bin",
+    "statistical/entropy/english_text.bin",
+    "statistical/patterns/periodic_sine.npy",
+    "statistical/patterns/repeating_sequence.npy",
+    "statistical/patterns/with_anomalies.npy"
+  ],
+  "total_files": 22,
+  "comprehensive_dataset": {
+    "dataset_type": "synthetic_test_data",
+    "generated_files": [
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_packets.bin",
+        "type": "packets",
+        "count": 2000,
+        "ground_truth": {
+          "sequence_numbers": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+          "checksum_offsets": [
+            1022, 2046, 3070, 4094, 5118, 6142, 7166, 8190, 9214, 10238
+          ]
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_000.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 1000000.0,
+          "period_samples": 100
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_001.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_002.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 3000000.0,
+          "period_samples": 33
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_003.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_004.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 5000000.0,
+          "period_samples": 20
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_005.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_006.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 7000000.0,
+          "period_samples": 14
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_007.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_008.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 9000000.0,
+          "period_samples": 11
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_009.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_010.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 11000000.0,
+          "period_samples": 9
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_011.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_012.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 13000000.0,
+          "period_samples": 7
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_013.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_014.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 15000000.0,
+          "period_samples": 6
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_015.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_016.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 17000000.0,
+          "period_samples": 5
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_017.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_018.npy",
+        "type": "signal",
+        "pattern": "square",
+        "ground_truth": {
+          "frequency_hz": 19000000.0,
+          "period_samples": 5
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_signal_019.npy",
+        "type": "signal",
+        "pattern": "uart",
+        "ground_truth": {
+          "frequency_hz": null,
+          "period_samples": null
+        }
+      },
+      {
+        "path": "test_data/binary/synthetic/comprehensive/test_messages.bin",
+        "type": "messages",
+        "count": 1000,
+        "ground_truth": {
+          "field_boundaries": [0, 2, 4, 6, 10, 62, 64],
+          "field_types": [
+            "constant",
+            "length",
+            "sequence",
+            "timestamp",
+            "data",
+            "checksum"
+          ],
+          "message_size": 64
+        }
+      }
+    ],
+    "metadata_file": "test_data/binary/synthetic/comprehensive/dataset_metadata.json"
+  }
+}

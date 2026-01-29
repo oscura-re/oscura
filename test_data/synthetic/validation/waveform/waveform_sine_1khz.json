@@ -1,0 +1,13 @@
+{
+  "file": "waveform_sine_1khz.npz",
+  "input_type": "waveform",
+  "expected_domains": ["waveform", "spectral", "statistics"],
+  "expected_metrics": {
+    "frequency_hz": 1000.0,
+    "amplitude_vpp": 2.0,
+    "sample_rate": 1000000.0,
+    "duration_s": 0.01,
+    "snr_db": null
+  },
+  "description": "Clean 1kHz sine wave for basic testing"
+}

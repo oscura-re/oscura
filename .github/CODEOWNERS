@@ -1,0 +1,23 @@
+# Code Owners for Oscura v0.6.0 Development
+# Auto-assign reviewers based on file paths
+
+# Core workflow
+/src/oscura/workflows/          @oscura-team
+/src/oscura/export/             @oscura-team
+/src/oscura/validation/         @oscura-team
+
+# Protocols
+/src/oscura/protocols/          @oscura-team
+/src/oscura/iot/                @oscura-team
+/src/oscura/automotive/         @oscura-team
+
+# Analysis
+/src/oscura/analyzers/          @oscura-team
+/src/oscura/ml/                 @oscura-team
+
+# Infrastructure
+/.github/                       @oscura-team
+/scripts/                       @oscura-team
+
+# Default fallback
+*                               @oscura-team

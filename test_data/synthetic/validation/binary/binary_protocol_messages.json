@@ -1,0 +1,14 @@
+{
+  "file": "binary_protocol_messages.bin",
+  "input_type": "binary",
+  "expected_domains": ["inference", "packet"],
+  "expected_metrics": {
+    "packet_size": 64,
+    "num_packets": 200,
+    "sync_pattern": "aa55aa55",
+    "has_sequence": true,
+    "has_timestamp": true,
+    "has_crc": true
+  },
+  "description": "Protocol messages for inference testing"
+}

@@ -1,0 +1,13 @@
+{
+  "file": "waveform_eye_pattern.npz",
+  "input_type": "waveform",
+  "expected_domains": ["eye", "jitter"],
+  "expected_metrics": {
+    "bit_rate_bps": 1000000000.0,
+    "samples_per_bit": 10,
+    "jitter_ui": 0.05,
+    "rise_time_ratio": 0.3,
+    "num_bits": 1000
+  },
+  "description": "Serial data for eye diagram and jitter analysis"
+}

@@ -1,0 +1,100 @@
+[importlinter]
+root_package = oscura
+
+# Contract 1: Loaders should not import analyzers
+# Loaders are responsible for loading data, not analyzing it
+[importlinter:contract:loaders-no-analyzers]
+name = Loaders should not import analyzers
+type = forbidden
+source_modules =
+    oscura.loaders
+forbidden_modules =
+    oscura.analyzers
+
+# Contract 2: Analyzers should not import loaders
+# Analyzers work on data structures, not file formats
+[importlinter:contract:analyzers-no-loaders]
+name = Analyzers should not import loaders
+type = forbidden
+source_modules =
+    oscura.analyzers
+forbidden_modules =
+    oscura.loaders
+
+# Contract 3: Exporters should not import loaders
+# Exporters output data, loaders input data - no cross dependency
+[importlinter:contract:exporters-no-loaders]
+name = Exporters should not import loaders
+type = forbidden
+source_modules =
+    oscura.exporters
+forbidden_modules =
+    oscura.loaders
+
+# Contract 4: Inference should not import loaders
+# Inference works on data structures, not file formats
+[importlinter:contract:inference-no-loaders]
+name = Inference should not import loaders
+type = forbidden
+source_modules =
+    oscura.inference
+forbidden_modules =
+    oscura.loaders
+
+# Contract 5: No circular dependencies in core modules
+# Prevent circular imports between major packages
+[importlinter:contract:no-circular-core]
+name = No circular dependencies in core modules
+type = independence
+modules =
+    oscura.loaders
+    oscura.analyzers
+    oscura.exporters
+    oscura.inference
+    oscura.reporting
+    oscura.visualization
+    oscura.workflows
+    oscura.builders
+
+# Contract 6: Visualization should not import loaders
+# Visualization works on data, not file loading
+[importlinter:contract:visualization-no-loaders]
+name = Visualization should not import loaders
+type = forbidden
+source_modules =
+    oscura.visualization
+forbidden_modules =
+    oscura.loaders
+
+# Contract 7: Core should not have circular dependencies
+# Core utilities should be foundational
+[importlinter:contract:core-no-circular]
+name = Core should not import high-level modules
+type = forbidden
+source_modules =
+    oscura.core
+forbidden_modules =
+    oscura.analyzers
+    oscura.reporting
+    oscura.workflows
+    oscura.builders
+
+# Contract 8: Builders should not import loaders
+# Builders create signals, loaders read files - no cross dependency
+[importlinter:contract:builders-no-loaders]
+name = Builders should not import loaders
+type = forbidden
+source_modules =
+    oscura.builders
+forbidden_modules =
+    oscura.loaders
+
+# Contract 9: Workflows can import from most modules (high-level orchestration)
+# But should not import loaders (workflows work on data, not file formats)
+[importlinter:contract:workflows-no-loaders]
+name = Workflows should not import loaders
+type = forbidden
+source_modules =
+    oscura.workflows
+forbidden_modules =
+    oscura.loaders

@@ -1,0 +1,12 @@
+{
+  "file": "waveform_multitone.npz",
+  "input_type": "waveform",
+  "expected_domains": ["spectral"],
+  "expected_metrics": {
+    "fundamental_hz": 1000.0,
+    "harmonics_hz": [2000.0, 3000.0, 4000.0, 5000.0],
+    "thd_expected": 0.013000000000000003,
+    "sample_rate": 1000000.0
+  },
+  "description": "Multi-tone signal for THD, SNR, SFDR testing"
+}

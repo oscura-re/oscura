@@ -1,0 +1,124 @@
+# Yamllint configuration for Oscura
+# https://yamllint.readthedocs.io/
+# Run: yamllint .
+
+extends: default
+
+yaml-files:
+  - "*.yaml"
+  - "*.yml"
+  - ".yamllint"
+  - ".yamllint.yaml"
+
+ignore: |
+  .venv/
+  node_modules/
+  .git/
+  .coordination/
+  changelog.d/
+  .cspell/
+  .pytest_cache/
+  __pycache__/
+  .mypy_cache/
+  .ruff_cache/
+
+rules:
+  # Line length - relaxed to 120 for GitHub Actions workflows
+  # (Workflows often have long conditional expressions that are hard to break)
+  line-length:
+    max: 120
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+  # Indentation - 2 spaces, consistent
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+  # Braces - allow inline for short content
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 0
+
+  # Brackets - allow inline for short arrays
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 0
+
+  # Colons - space after, not before
+  colons:
+    max-spaces-before: 0
+    max-spaces-after: 1
+
+  # Commas - space after, not before
+  commas:
+    max-spaces-before: 0
+    min-spaces-after: 1
+    max-spaces-after: 1
+
+  # Comments - require space after #
+  # NOTE: min-spaces-from-content set to 1 for Prettier compatibility
+  # (Prettier uses single space, yamllint default is 2)
+  comments:
+    require-starting-space: true
+    ignore-shebangs: true
+    min-spaces-from-content: 1
+
+  # Comments indentation - disabled for flexibility
+  # Section headers and formatting comments may differ from content indentation
+  comments-indentation: disable
+
+  # Document markers - allow but don't require
+  document-end: disable
+  document-start: disable
+
+  # Empty lines - max 2 consecutive
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 1
+
+  # Empty values - allow for optional fields
+  empty-values: disable
+
+  # Hyphens - space after list marker
+  hyphens:
+    max-spaces-after: 1
+
+  # Key duplicates - disallow
+  key-duplicates: enable
+
+  # Key ordering - don't enforce alphabetical
+  key-ordering: disable
+
+  # New line at end of file
+  new-line-at-end-of-file: enable
+
+  # New lines - use unix style
+  new-lines:
+    type: unix
+
+  # Octal values - require explicit notation
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: false
+
+  # Quoted strings - allow any style
+  quoted-strings: disable
+
+  # Trailing spaces - disallow
+  trailing-spaces: enable
+
+  # Truthy values - YAML 1.2 compliance (true/false only)
+  # NOTE: YAML 1.2 only recognizes true/false as booleans
+  # yes/no/on/off were YAML 1.1 and can cause ambiguity
+  # GitHub Actions uses 'on' as a key, so we allow it
+  truthy:
+    allowed-values: ["true", "false", "on"]
+    check-keys: false
+    level: warning

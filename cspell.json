@@ -1,0 +1,139 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json",
+  "version": "0.2",
+  "name": "Oscura Spell Checker Configuration",
+  "description": "cSpell configuration for Markdown-only spellchecking",
+
+  "enabledLanguageIds": ["markdown", "text", "plaintext"],
+
+  "language": "en",
+
+  "dictionaries": [
+    "en_US",
+    "companies",
+    "softwareTerms",
+    "python",
+    "workspace-custom"
+  ],
+
+  "dictionaryDefinitions": [
+    {
+      "name": "workspace-custom",
+      "path": ".cspell/custom-dictionary.txt",
+      "addWords": true,
+      "scope": "workspace"
+    }
+  ],
+
+  "ignorePaths": [
+    "**/*.py",
+    "**/*.pyi",
+    "**/*.js",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.jsx",
+    "**/*.lua",
+    "**/*.json",
+    "**/*.jsonc",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.toml",
+    "**/*.lock",
+    "**/*.sh",
+    "**/*.bash",
+    "**/*.zsh",
+    "**/*.fish",
+    "**/*.csv",
+    "**/*.tsv",
+    "**/*.xml",
+    "**/*.html",
+    "**/*.css",
+    "**/*.scss",
+    "**/*.sql",
+    "**/*.graphql",
+    "**/*.ipynb",
+    "**/*.whl",
+    "**/*.egg",
+    "**/Makefile",
+    "**/makefile",
+    "**/*.mk",
+    "**/*.cff",
+    "**/*.cfg",
+    "**/*.conf",
+    "**/*.ini",
+    "**/*.properties",
+    "**/.gitignore",
+    "**/.gitattributes",
+    "**/.editorconfig",
+    "**/.shellcheckrc",
+    "**/.luacheckrc",
+    "**/.lycheeignore",
+    "**/.prettierignore",
+    "**/.prettierrc*",
+    "**/.yamllint*",
+    "**/.markdownlint*",
+    "**/.importlinter",
+    "**/.gitleaks*",
+    "**/.python-version",
+    "**/.node-version",
+    "**/.nvmrc",
+    "**/.pre-commit-config.yaml",
+    "**/poetry.lock",
+    "**/package-lock.json",
+    "**/yarn.lock",
+    "**/pnpm-lock.yaml",
+    "**/Pipfile.lock",
+    "**/uv.lock",
+    "**/.template.lock",
+    "**/node_modules/**",
+    "**/.venv/**",
+    "**/__pycache__/**",
+    "**/.git/**",
+    "**/.github/**",
+    "**/.cspell/**",
+    "**/.coordination/**",
+    "**/.claude/**",
+    "**/.mypy_cache/**",
+    "**/.ruff_cache/**",
+    "**/.pytest_cache/**",
+    "**/.hypothesis/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.egg-info/**",
+    "**/htmlcov/**",
+    "**/generated_dissectors/**",
+    "**/test_data/**"
+  ],
+
+  "ignoreRegExpList": [
+    "https?://[^\\s)>\"']+",
+    "`[^`]+`",
+    "```[\\s\\S]*?```",
+    "<!--[\\s\\S]*?-->"
+  ],
+
+  "words": [],
+
+  "minWordLength": 3,
+
+  "caseSensitive": false,
+
+  "allowCompoundWords": false,
+
+  "flagWords": [
+    "hte",
+    "teh",
+    "adn",
+    "taht",
+    "recieve",
+    "seperate",
+    "definately",
+    "occured"
+  ],
+
+  "cache": {
+    "useCache": true,
+    "cacheLocation": ".cspell/.cache",
+    "cacheStrategy": "content"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "packet_count": 2,
+  "protocol": "coap",
+  "src_port": 12345,
+  "dst_port": 5683
+}

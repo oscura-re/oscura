@@ -1,0 +1,15 @@
+{
+  "file": "all_zeros.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "All zeros (entropy = 0)",
+  "expected_domains": ["entropy", "statistics"],
+  "edge_cases": ["constant", "zero_entropy"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "all_zeros",
+    "size": 65536,
+    "expected_entropy": 0.0,
+    "classification": "constant"
+  }
+}

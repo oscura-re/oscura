@@ -1,0 +1,70 @@
+{
+  "recommendations": [
+    // Python
+    "ms-python.python", // Python language support
+    "ms-python.vscode-pylance", // Language server (intellisense, navigation)
+    "charliermarsh.ruff", // Linting & formatting (replaces black/flake8/isort)
+    "ms-python.mypy-type-checker", // Type checking
+
+    // Shell scripting
+    "mads-hartmann.bash-ide-vscode", // Bash language server
+    "timonwong.shellcheck", // Shell script linting
+
+    // Markdown & documentation
+    "yzhang.markdown-all-in-one", // Markdown editing & TOC
+    "davidanson.vscode-markdownlint", // Markdown linting
+    "bierner.markdown-mermaid", // Mermaid diagram preview
+    "streetsidesoftware.code-spell-checker", // Spell checking for docs
+
+    // Formatting & style
+    "esbenp.prettier-vscode", // Multi-format formatter (MD, YAML, JSON)
+    "editorconfig.editorconfig", // EditorConfig support
+
+    // Data & config files
+    "tamasfe.even-better-toml", // TOML language support
+    "redhat.vscode-yaml", // YAML language support
+    "redhat.vscode-xml", // XML language support
+    "mechatroner.rainbow-csv", // CSV/TSV visualization
+
+    // Templates
+    "samuelcolvin.jinjahtml", // Jinja2 template support
+
+    // Development utilities
+    "mhutchie.git-graph", // Lightweight git history
+    "usernamehw.errorlens", // Inline error display
+    "gruntfuggly.todo-tree", // TODO/FIXME highlighting
+    "christian-kohler.path-intellisense" // Path autocomplete
+  ],
+
+  "unwantedRecommendations": [
+    // Replaced by Ruff
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "ms-python.isort",
+    "ms-python.autopep8",
+    "ms-python.pylint",
+    "himanoa.python-autopep8",
+    "ms-python.bandit",
+
+    // Replaced by better alternatives
+    "wholroyd.jinja", // Use samuelcolvin.jinjahtml
+    "bungcip.better-toml", // Use tamasfe.even-better-toml
+    "janisdd.vscode-edit-csv", // Use mechatroner.rainbow-csv
+    "donjayamanne.githistory", // Use mhutchie.git-graph
+
+    // Conflicts with Pylance
+    "magicstack.MagicPython",
+    "njpwerner.autodocstring",
+    "tushortz.python-extended-snippets",
+
+    // Not applicable to this project
+    "visualstudioexptteam.vscodeintellicode",
+    "eamodio.gitlens",
+    "ms-vscode.vscode-typescript-tslint-plugin",
+    "dbaeumer.vscode-eslint",
+    "ritwickdey.liveserver",
+    "yzane.markdown-pdf",
+    "shd101wyy.markdown-preview-enhanced",
+    "littlefoxteam.vscode-python-test-adapter"
+  ]
+}

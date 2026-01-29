@@ -1,0 +1,6 @@
+{
+  "packet_count": 2,
+  "protocol": "dnp3",
+  "src_port": 12345,
+  "dst_port": 20000
+}

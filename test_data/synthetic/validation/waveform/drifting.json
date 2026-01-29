@@ -1,0 +1,13 @@
+{
+  "file": "drifting.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Sine wave with DC drift",
+  "expected_domains": ["waveform", "spectral", "statistics"],
+  "edge_cases": ["dc_drift"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "drifting",
+    "drift_rate": 0.1
+  }
+}

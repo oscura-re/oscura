@@ -1,0 +1,15 @@
+{
+  "file": "pattern_low_entropy.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Repeating pattern (low entropy ~2.0)",
+  "expected_domains": ["entropy", "patterns"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "low_entropy",
+    "size": 65536,
+    "expected_entropy": 2.0,
+    "classification": "structured"
+  }
+}

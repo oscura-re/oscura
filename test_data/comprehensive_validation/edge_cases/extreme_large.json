@@ -1,0 +1,13 @@
+{
+  "file": "extreme_large.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "Extremely large values (1e100)",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["extreme_large"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "extreme_large",
+    "amplitude": 1e100
+  }
+}

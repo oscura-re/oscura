@@ -1,0 +1,13 @@
+{
+  "file": "single_sample.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "Single sample",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["single_sample"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "single_sample",
+    "expected_issues": ["insufficient_samples"]
+  }
+}

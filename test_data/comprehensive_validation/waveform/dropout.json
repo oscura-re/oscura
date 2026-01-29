@@ -1,0 +1,14 @@
+{
+  "file": "dropout.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Signal with missing data (NaN)",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["nan_values", "missing_data"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "dropout",
+    "dropout_fraction": 0.1,
+    "nan_count": 978
+  }
+}

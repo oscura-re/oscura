@@ -1,0 +1,383 @@
+{
+  // ============================================================================
+  // VS Code Workspace Settings for Oscura
+  // ============================================================================
+  // PHILOSOPHY: This file contains ONLY settings that ensure team consistency
+  // for toolchain behavior, formatting, and project-specific configuration.
+  //
+  // USER PREFERENCES (UI, visual, keybindings, terminal) belong in User Settings.
+  // If a setting doesn't affect code quality or team consistency, remove it.
+  // ============================================================================
+
+  // ==========================================================================
+  // SECTION 1: CORE EDITOR SETTINGS
+  // ==========================================================================
+  // Ensures consistent formatting and code quality across the team
+
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+
+  "files.trimTrailingWhitespace": true,
+
+  // ==========================================================================
+  // SECTION 2: PYTHON CONFIGURATION
+  // ==========================================================================
+  // Tool separation philosophy:
+  //   - Pylance: Language server ONLY (intellisense, navigation, refactoring)
+  //   - Ruff: Linting AND formatting (configuration in pyproject.toml)
+  //   - Mypy: Type checking (configuration in pyproject.toml)
+
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  "python.terminal.activateEnvironment": true,
+
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  "python.languageServer": "Pylance",
+
+  // Pylance: Core features required for proper module resolution and indexing
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.indexing": true,
+
+  // Pylance: Disable ALL diagnostics (use Ruff and Mypy instead to avoid duplicates)
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.diagnosticSeverityOverrides": {
+    // Type checking diagnostics (use mypy)
+    "reportGeneralTypeIssues": "none",
+    "reportOptionalMemberAccess": "none",
+    "reportOptionalSubscript": "none",
+    "reportOptionalCall": "none",
+    "reportOptionalIterable": "none",
+    "reportOptionalContextManager": "none",
+    "reportOptionalOperand": "none",
+    "reportArgumentType": "none",
+    "reportAssignmentType": "none",
+    "reportAttributeAccessIssue": "none",
+    "reportCallIssue": "none",
+    "reportInconsistentOverload": "none",
+    "reportIndexIssue": "none",
+    "reportInvalidTypeArguments": "none",
+    "reportInvalidTypeForm": "none",
+    "reportNoOverloadImplementation": "none",
+    "reportOperatorIssue": "none",
+    "reportPossiblyUnbound": "none",
+    "reportRedeclaration": "none",
+    "reportReturnType": "none",
+    "reportAbstractUsage": "none",
+    "reportFunctionMemberAccess": "none",
+    "reportIncompatibleMethodOverride": "none",
+    "reportIncompatibleVariableOverride": "none",
+    "reportInconsistentConstructor": "none",
+    "reportOverlappingOverload": "none",
+    "reportUninitializedInstanceVariable": "none",
+
+    // Import diagnostics (use Ruff)
+    "reportMissingImports": "none",
+    "reportMissingTypeStubs": "none",
+    "reportMissingModuleSource": "none",
+    "reportPrivateImportUsage": "none",
+    "reportUnusedImport": "none",
+    "reportWildcardImportFromLibrary": "none",
+
+    // Variable/usage diagnostics (use Ruff)
+    "reportUnusedVariable": "none",
+    "reportUnusedClass": "none",
+    "reportUnusedFunction": "none",
+    "reportUnusedExpression": "none",
+    "reportUnusedCoroutine": "none",
+    "reportUnusedExcept": "none",
+    "reportUndefinedVariable": "none",
+    "reportUnboundVariable": "none",
+
+    // Other diagnostics
+    "reportPrivateUsage": "none",
+    "reportConstantRedefinition": "none",
+    "reportDuplicateImport": "none",
+    "reportInvalidStringEscapeSequence": "none",
+    "reportInvalidTypeVarUse": "none",
+    "reportSelfClsParameterName": "none",
+    "reportUnsupportedDunderAll": "none",
+    "reportUnusedCallResult": "none",
+    "reportMatchNotExhaustive": "none",
+    "reportImplicitOverride": "none",
+    "reportShadowedImports": "none",
+    "reportImplicitStringConcatenation": "none",
+    "reportPropertyTypeMismatch": "none",
+    "reportUnnecessaryCast": "none",
+    "reportUnnecessaryComparison": "none",
+    "reportUnnecessaryContains": "none",
+    "reportUnnecessaryIsInstance": "none",
+    "reportUnnecessaryTypeIgnoreComment": "none",
+    "reportDeprecated": "none",
+    "reportInvalidStubStatement": "none",
+    "reportIncompleteStub": "none",
+    "reportAssertAlwaysTrue": "none",
+    "reportMissingSuperCall": "none",
+    "reportUntypedBaseClass": "none",
+    "reportUntypedClassDecorator": "none",
+    "reportUntypedFunctionDecorator": "none",
+    "reportUntypedNamedTuple": "none",
+    "reportCallInDefaultInitializer": "none",
+    "reportImportCycles": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownLambdaType": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownVariableType": "none",
+    "reportMissingParameterType": "none",
+    "reportMissingTypeArgument": "none"
+  },
+
+  // Python Testing: pytest configuration for team consistency
+  // SSOT COMPLIANCE: All pytest config in pyproject.toml [tool.pytest.ini_options]
+  // VS Code uses those settings automatically. Only specify minimal UI-specific args here.
+  // Note: pyproject.toml has --tb=line (CLI optimized), but UI benefits from --tb=short
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "tests",
+    "--tb=short" // UI override for readability (pyproject.toml has --tb=line for CLI speed)
+  ],
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+
+  // Ruff: Linting and formatting (all rules configured in pyproject.toml)
+  "ruff.enable": true,
+  "ruff.importStrategy": "fromEnvironment",
+  "ruff.configurationPreference": "filesystemFirst",
+  "ruff.nativeServer": "auto",
+  "ruff.lint.enable": true,
+
+  // Mypy: Type checking (all rules configured in pyproject.toml)
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "mypy-type-checker.args": ["--config-file=${workspaceFolder}/pyproject.toml"],
+
+  // ==========================================================================
+  // SECTION 3: MARKDOWN CONFIGURATION
+  // ==========================================================================
+
+  "[markdown]": {
+    "editor.defaultFormatter": "yzhang.markdown-all-in-one",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": "explicit"
+    },
+    // Override global setting: Markdown needs trailing spaces for line breaks
+    "files.trimTrailingWhitespace": false
+  },
+
+  // Path autocomplete: Map "/" to workspace root
+  "path-intellisense.mappings": {
+    "/": "${workspaceFolder}"
+  },
+
+  // Markdownlint: Configuration in .markdownlint.yaml
+  "markdownlint.config": {},
+
+  // Markdown All in One: Disable table formatter to preserve compact format
+  // Oscura standard: Use compact tables (unaligned pipes) for emoji compatibility
+  "markdown.extension.tableFormatter.enabled": false,
+
+  // Markdown preview: Use project-specific CSS
+  "markdown.styles": [".vscode/markdown.css"],
+
+  // ==========================================================================
+  // SECTION 4: SPELLCHECK CONFIGURATION (cSpell)
+  // ==========================================================================
+  // Configuration hierarchy:
+  //   1. .vscode/settings.json → Enable extension + import workspace config
+  //   2. cspell.json → Behavior (file types, dictionaries, ignore patterns)
+  //   3. .cspell/custom-dictionary.txt → Project-specific words
+
+  "cSpell.enabled": true,
+  "cSpell.import": ["${workspaceFolder}/cspell.json"],
+
+  // Explicitly enable only for markdown files (updated to current API)
+  "cSpell.enabledFileTypes": {
+    "markdown": true
+  },
+
+  // ==========================================================================
+  // SECTION 5: SHELL SCRIPTS
+  // ==========================================================================
+
+  "[shellscript]": {
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // ShellCheck: Force external source following (-x flag)
+  // Primary configuration in .shellcheckrc
+  "shellcheck.enable": true,
+  "shellcheck.customArgs": ["-x"],
+
+  // ==========================================================================
+  // SECTION 6: CSV FILES
+  // ==========================================================================
+
+  "[csv]": {
+    "editor.wordWrap": "off",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    }
+  },
+
+  // ==========================================================================
+  // SECTION 7: OTHER LANGUAGES (JSON, YAML, TOML)
+  // ==========================================================================
+
+  // Even Better TOML: Disable schema validation (prevents false positives)
+  "evenBetterToml.schema.enabled": false,
+
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml",
+    "editor.formatOnSave": true
+  },
+
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2
+  },
+
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": true
+  },
+
+  // ==========================================================================
+  // SECTION 8: FILE MANAGEMENT
+  // ==========================================================================
+
+  // File type associations for proper syntax highlighting and tooling
+  "files.associations": {
+    // Source files
+    "*.md": "markdown",
+    "*.pyi": "python",
+
+    // Data files
+    "*.csv": "csv",
+    "*.tsv": "csv",
+    "*.html": "html",
+
+    // Config files
+    "pyproject.toml": "toml",
+    "*.toml": "toml",
+    "lychee.toml": "toml",
+    "stylua.toml": "toml",
+
+    // Lock files (plain text to avoid parsing errors)
+    "uv.lock": "plaintext",
+    "*.lock": "plaintext",
+    ".template.lock": "plaintext",
+
+    // Environment files
+    ".env.*": "dotenv",
+    ".env": "dotenv",
+
+    // Git files
+    ".gitignore": "ignore",
+    ".gitattributes": "properties",
+
+    // Ignore pattern files
+    ".claudeignore": "ignore",
+    ".prettierignore": "ignore",
+    ".lycheeignore": "ignore",
+    ".markdownlintignore": "ignore",
+
+    // Shell configuration (use properties to prevent linters from running)
+    ".shellcheckrc": "properties",
+    ".bashrc": "shellscript",
+    ".bash_profile": "shellscript",
+    ".zshrc": "shellscript",
+    ".profile": "shellscript",
+
+    // YAML configuration files
+    ".yamllint.yaml": "yaml",
+    ".prettierrc.yaml": "yaml",
+    ".markdownlint.yaml": "yaml",
+    ".pre-commit-config.yaml": "yaml",
+
+    // JSON configuration
+    "*.jsonc": "jsonc",
+    "cspell.json": "jsonc",
+
+    // Editor configuration
+    ".editorconfig": "editorconfig",
+
+    // Citation files
+    "CITATION.cff": "yaml",
+
+    // Build files
+    "Makefile": "makefile",
+    "makefile": "makefile",
+
+    // Version/plain files
+    "VERSION": "markdown",
+    "LICENSE": "plaintext",
+    "AUTHORS": "plaintext",
+    "CONTRIBUTORS": "plaintext",
+    "CHANGELOG": "markdown",
+    "NEWS": "plaintext",
+
+    // Custom dictionary: Use properties for comment support without linting
+    "custom-dictionary.txt": "properties"
+  },
+
+  // Hide build artifacts and cache directories from explorer
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/*~": true,
+    "**/__pycache__": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/.pytest_cache": true,
+    "**/.cspell/.cache": true,
+    "htmlcov": true,
+    "dist": true,
+    "build": true,
+    "*.egg-info": true
+  },
+
+  // Exclude from file watcher (performance optimization)
+  "files.watcherExclude": {
+    "**/__pycache__/**": true,
+    "**/.mypy_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/.venv/**": true,
+    "**/.cspell/.cache/**": true,
+    "htmlcov/**": true,
+    "dist/**": true,
+    "build/**": true,
+    "*.egg-info/**": true
+  },
+
+  // Exclude from search results
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/.mypy_cache": true,
+    "**/.venv": true,
+    "**/.cspell/.cache": true,
+    "htmlcov": true,
+    "dist": true,
+    "build": true,
+    "*.egg-info": true
+  }
+}

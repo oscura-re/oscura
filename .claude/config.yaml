@@ -1,0 +1,158 @@
+# Claude Code Configuration
+# Schema Version: 2.0.0 (breaking change from 1.x)
+# Last Updated: 2026-01-22
+
+_meta:
+  schema_version: "2.0.0"
+  version: "5.0.0" # Schema-required version field
+  config_version: "5.0.0" # Validator-required version field (bumped major for breaking changes)
+  last_updated: "2026-01-22"
+  min_claude_code_version: "0.5.0"
+  description: "Optimized configuration for Claude Code orchestration"
+
+orchestration:
+  agents:
+    max_concurrent: 3
+    max_batch_size: 3
+    recommended_batch_size: 1
+    polling_interval_seconds: 10
+
+    # Dynamic scaling (future enhancement placeholder)
+    # scaling:
+    #   enabled: false
+    #   min: 1
+    #   max: 5
+
+  context:
+    warning_threshold: 60
+    checkpoint_threshold: 65
+    critical_threshold: 75
+    auto_summarize: true
+
+  routing:
+    fuzzy_matching: true
+    fuzzy_threshold: 80 # 0-100, minimum similarity score
+    fallback_agent: "orchestrator"
+
+  workflow:
+    enable_checkpoints: true
+    checkpoint_interval_phases: 1
+    max_workflow_depth: 5
+
+  checkpointing:
+    enabled: true
+    auto_checkpoint: true
+    checkpoint_between_batches: false
+    checkpoint_on_context_threshold: true
+    checkpoint_interval_phases: 1
+
+  summaries:
+    enabled: true
+    auto_summarize: true
+    immediate_capture: false
+    immediate_summarization: false
+    auto_summarize_threshold_tokens: 5000
+    max_summary_length_tokens: 1000
+    write_summaries_to_file: true
+    max_output_tokens_in_context: 10000
+    format: "markdown"
+
+retention:
+  # Days to retain various artifacts
+  agent_registry: 30
+  agent_outputs: 7
+  agent_summaries: 7
+  reports: 7
+  checkpoints: 7
+  metrics: 90
+
+security:
+  # Path patterns that BLOCK operations
+  denied_reads:
+    - ".git/**"
+    - ".env*"
+    - "**/credentials*"
+    - "**/*.key"
+    - "**/*.pem"
+    - "**/*_key"
+    - "**/*_secret"
+    - ".aws/**"
+    - ".ssh/**"
+    - "__pycache__/**"
+    - ".hypothesis/**"
+    - ".pytest_cache/**"
+    - ".ruff_cache/**"
+    - ".mypy_cache/**"
+    - "*.pyc"
+    - ".nox/**"
+    - ".tox/**"
+    - "dist/**"
+    - "build/**"
+    - "*.egg-info/**"
+    - ".coordination/archive/**"
+    - ".claude/agent-outputs/archive/**"
+
+  denied_writes:
+    - ".git/**"
+    - ".env*"
+    - "**/credentials*"
+    - "**/*.key"
+    - "**/*.pem"
+    - "uv.lock"
+    - "Cargo.lock"
+    - "package-lock.json"
+    - "yarn.lock"
+    - "poetry.lock"
+
+  # Path patterns that WARN but don't block
+  warned_writes:
+    - "pyproject.toml"
+    - "package.json"
+    - "Cargo.toml"
+    - ".claude/settings.json" # Generated file
+    - ".claude/config.yaml" # Self-modification warning
+
+  # FAIL CLOSED on security errors
+  fail_closed: true
+
+enforcement:
+  # Hook enforcement settings
+  enabled: true
+  agent_limit: true
+  path_validation: true
+  ssot_validation: true
+  report_proliferation: true
+
+  # Hook execution timeouts (milliseconds)
+  timeouts:
+    pre_tool_use: 5000
+    post_tool_use: 3000
+    session_start: 10000
+    session_end: 5000
+
+logging:
+  format: "json" # "json" or "text"
+  level: "INFO" # DEBUG, INFO, WARNING, ERROR
+  files:
+    enforcement: ".claude/hooks/enforcement.log"
+    orchestration: ".claude/hooks/orchestration.log"
+    context: ".claude/hooks/context.log"
+    errors: ".claude/hooks/errors.log"
+
+  # Structured logging fields
+  include_timestamp: true
+  include_level: true
+  include_context_id: true
+
+# Monitoring and observability
+monitoring:
+  metrics_enabled: true
+  metrics_file: ".claude/hooks/orchestration-metrics.json"
+  health_checks: true
+  health_check_interval_seconds: 300
+
+# Cleanup automation
+cleanup:
+  auto_cleanup: true
+  cleanup_interval_days: 1
+  archive_before_delete: true

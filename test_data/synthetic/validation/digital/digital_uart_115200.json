@@ -1,0 +1,13 @@
+{
+  "file": "digital_uart_115200.vcd",
+  "input_type": "digital",
+  "expected_domains": ["digital", "protocols", "timing"],
+  "expected_metrics": {
+    "baud_rate": 115200,
+    "message": "Hello, World!",
+    "num_bytes": 13,
+    "sample_rate": 10000000.0,
+    "protocol": "UART"
+  },
+  "description": "UART at 115200 baud for protocol decoding"
+}

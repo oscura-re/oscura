@@ -1,0 +1,5 @@
+{
+  "type": "malformed",
+  "issue": "truncated_packet",
+  "expected_behavior": "error_or_partial_decode"
+}

@@ -1,0 +1,44 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Oscura
+message: >-
+  If you use this software in your research, please cite it
+  using the metadata from this file.
+type: software
+authors:
+  - name: lair-click-bats
+    affiliation: Independent
+repository-code: 'https://github.com/lair-click-bats/oscura'
+url: 'https://github.com/lair-click-bats/oscura'
+abstract: >-
+  Open-source toolkit for signal analysis and reverse engineering from captured
+  waveforms—analog or digital. Features protocol decoding (16+ formats including
+  UART, SPI, I2C, CAN, automotive), spectral/power/jitter analysis, protocol
+  inference (state machines, CRC recovery), and IEEE-compliant measurements
+  (181, 1241, 1459, 2414). Supports oscilloscope, logic analyzer, and DAQ captures.
+keywords:
+  - signal-analysis
+  - reverse-engineering
+  - comprehensive-analysis
+  - data-capture-analysis
+  - waveform-analysis
+  - oscilloscope
+  - logic-analyzer
+  - protocol-decoder
+  - protocol-reverse-engineering
+  - protocol-inference
+  - state-machine-learning
+  - analog-analysis
+  - digital-analysis
+  - automotive-protocols
+  - spectral-analysis
+  - jitter-analysis
+  - signal-integrity
+  - IEEE-compliance
+  - embedded-systems
+  - hardware-security
+license: MIT
+version: 0.6.0
+date-released: '2026-01-25'

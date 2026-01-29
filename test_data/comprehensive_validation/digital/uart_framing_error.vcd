@@ -1,0 +1,29 @@
+$timescale 1ns $end
+$scope module signals $end
+$var wire 1 ! data $end
+$upscope $end
+$enddefinitions $end
+#0
+1!
+#0
+1!
+#0
+0!
+#8600
+1!
+#17200
+0!
+#25800
+1!
+#34400
+0!
+#43000
+1!
+#51600
+0!
+#60200
+1!
+#68800
+0!
+#77400
+0!

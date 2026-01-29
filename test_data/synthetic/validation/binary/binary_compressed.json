@@ -1,0 +1,11 @@
+{
+  "file": "binary_compressed.bin",
+  "input_type": "binary",
+  "expected_domains": ["entropy"],
+  "expected_metrics": {
+    "size": 65536,
+    "expected_entropy": 7.5,
+    "classification": "compressed"
+  },
+  "description": "Compressed-like data for type detection"
+}

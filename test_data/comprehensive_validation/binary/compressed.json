@@ -1,0 +1,15 @@
+{
+  "file": "compressed.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Compressed data (high entropy, structured)",
+  "expected_domains": ["entropy"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "compressed",
+    "size": 65536,
+    "expected_entropy": 7.8,
+    "classification": "compressed"
+  }
+}

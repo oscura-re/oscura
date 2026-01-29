@@ -1,0 +1,106 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Oscura
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please describe your idea below.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What area does this feature relate to?
+      options:
+        - Signal Analysis (new analyzer or measurement)
+        - Protocol Decoding (new protocol support)
+        - File Format Support (new loader)
+        - Hardware Integration (new device support)
+        - API Enhancement (existing feature improvement)
+        - Performance Optimization
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What's the use case?
+      placeholder: |
+        I'm trying to reverse engineer CAN bus signals, but I need to...
+        Currently, I have to manually... which is tedious because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this to work? Include example API if possible.
+      placeholder: |
+        I'd like to be able to:
+
+        ```python
+        from oscura.analyzers import my_new_analyzer
+        result = my_new_analyzer(signal, param1=..., param2=...)
+        ```
+
+        This would allow me to...
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What alternatives have you considered? Current workarounds?
+      placeholder: |
+        I currently work around this by...
+        I looked at other libraries like... but...
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: |
+        Any relevant references:
+        - IEEE standards
+        - Research papers
+        - Similar implementations in other tools
+        - Protocol specifications
+      placeholder: |
+        - IEEE 1241-2010 (ADC testing)
+        - Similar feature in other-tool: https://...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be willing to implement this feature?
+      options:
+        - "Yes, I'd like to implement this myself"
+        - "I could implement with guidance"
+        - "I can help test the implementation"
+        - "I'm requesting someone else implement this"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm you've done the following
+      options:
+        - label: I've searched existing issues to ensure this isn't a duplicate
+          required: true
+        - label: I've checked the documentation to see if this exists
+          required: true

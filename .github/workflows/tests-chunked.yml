@@ -1,0 +1,561 @@
+# Chunked test suite workflow - Comprehensive Nightly Testing
+# Runs complete test suite with fine-grained grouping to prevent OOM
+#
+# PURPOSE: Thorough testing including stress/performance tests
+# WHEN: Nightly at 2 AM UTC + manual dispatch
+# WHY: ci.yml handles PR gating; this catches edge cases and regressions
+#
+# COVERAGE: Fine-grained unit tests + integration + validation + stress + performance
+# UPDATED: 2026-01-11 - Removed PR/push triggers to eliminate redundancy with ci.yml
+
+name: Test Suite (Chunked)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run nightly at 2 AM UTC for comprehensive testing
+    - cron: "0 2 * * *"
+  # NOTE: Removed push trigger - this workflow is for nightly comprehensive testing only
+  # Main CI (ci.yml) handles all PR and push gating
+
+# Auto-cancel outdated runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal permissions
+permissions:
+  contents: read
+  checks: write
+
+env:
+  PYTHON_VERSION_PRIMARY: "3.12"
+  # Artifact retention policy (days)
+  RETENTION_SHORT: 14 # Test results, temporary artifacts
+  RETENTION_MEDIUM: 30 # Code quality, benchmarks
+  RETENTION_LONG: 90 # Security, compliance reports
+
+jobs:
+  # ============================================================================
+  # Determine test strategy
+  # ============================================================================
+
+  setup:
+    name: Setup Test Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      python-versions: ${{ steps.matrix.outputs.python-versions }}
+      run-slow: ${{ steps.matrix.outputs.run-slow }}
+    steps:
+      - name: Determine test matrix
+        id: matrix
+        run: |
+          # Full matrix for main branch pushes and scheduled runs
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo 'python-versions=["3.12", "3.13"]' >> $GITHUB_OUTPUT
+            echo "run-slow=true" >> $GITHUB_OUTPUT
+          else
+            # Reduced matrix for PRs and feature branches
+            echo 'python-versions=["3.12"]' >> $GITHUB_OUTPUT
+            echo "run-slow=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================================================
+  # Unit tests (fast)
+  # ============================================================================
+
+  unit-fast:
+    name: Unit Tests (Fast, ${{ matrix.test-group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: setup
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(needs.setup.outputs.python-versions) }}
+        test-group:
+          # Analyzer tests (split into fine-grained groups for memory management)
+          - "analyzers-digital"
+          - "analyzers-power-spectral"
+          - "analyzers-statistical-waveform"
+          - "analyzers-eye-jitter-packet"
+          - "analyzers-protocols-patterns"
+          - "analyzers-signal-integrity"
+          # Core functionality
+          - "core-protocols-loaders-math"
+          - "search-filtering-batch-streaming"
+          - "cli-ui-reporting-viz-export"
+          - "workflows-pipeline-session-integrations"
+          # Inference and discovery
+          - "inference-discovery-exploratory"
+          # Utils and config
+          - "utils-config-plugins-hooks"
+          - "api-dsl-schemas-optimization"
+          - "quality-testing-requirements-comparison"
+          - "component-jupyter-triggering"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify test data (optional)
+        run: ./scripts/verify_test_data.sh
+        continue-on-error: true
+
+      - name: Determine test paths and worker count
+        id: test-config
+        run: |
+          # Worker configuration:
+          # - 2 workers: Memory-intensive (analyzers, loaders, inference)
+          # - 4 workers: Standard/fast tests (utils, config, etc.)
+
+          case "${{ matrix.test-group }}" in
+            # === ANALYZER GROUPS (memory-intensive: large signals, FFT, etc.) ===
+            "analyzers-digital")
+              echo "paths=tests/unit/analyzers/digital/" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-power-spectral")
+              echo "paths=tests/unit/analyzers/power/ tests/unit/analyzers/spectral/" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-statistical-waveform")
+              echo "paths=tests/unit/analyzers/statistical/ tests/unit/analyzers/waveform/" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-eye-jitter-packet")
+              PATHS="tests/unit/analyzers/eye/ tests/unit/analyzers/jitter/"
+              PATHS="$PATHS tests/unit/analyzers/packet/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-protocols-patterns")
+              echo "paths=tests/unit/analyzers/protocols/ tests/unit/analyzers/patterns/" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+            "analyzers-signal-integrity")
+              echo "paths=tests/unit/analyzers/signal_integrity/" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+
+            # === CORE FUNCTIONALITY (I/O-intensive: file loaders) ===
+            "core-protocols-loaders-math")
+              PATHS="tests/unit/core/ tests/unit/protocols/"
+              PATHS="$PATHS tests/unit/loaders/ tests/unit/math/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+
+            # === SEARCH/FILTERING (CPU-intensive: algorithms) ===
+            "search-filtering-batch-streaming")
+              PATHS="tests/unit/search/ tests/unit/filtering/"
+              PATHS="$PATHS tests/unit/streaming/ tests/unit/batch/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=4" >> $GITHUB_OUTPUT
+              ;;
+
+            # === UI/REPORTING (standard) ===
+            "cli-ui-reporting-viz-export")
+              PATHS="tests/unit/cli/ tests/unit/ui/ tests/unit/reporting/"
+              PATHS="$PATHS tests/unit/visualization/ tests/unit/exporters/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=4" >> $GITHUB_OUTPUT
+              ;;
+
+            # === WORKFLOWS (standard) ===
+            "workflows-pipeline-session-integrations")
+              PATHS="tests/unit/workflow/ tests/unit/workflows/"
+              PATHS="$PATHS tests/unit/pipeline/ tests/unit/session/"
+              PATHS="$PATHS tests/unit/integrations/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=4" >> $GITHUB_OUTPUT
+              ;;
+
+            # === INFERENCE/DISCOVERY (CPU/memory-intensive: ML algorithms) ===
+            "inference-discovery-exploratory")
+              PATHS="tests/unit/inference/ tests/unit/discovery/"
+              PATHS="$PATHS tests/unit/exploratory/ tests/unit/guidance/"
+              PATHS="$PATHS tests/unit/onboarding/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=2" >> $GITHUB_OUTPUT
+              ;;
+
+            # === UTILS/CONFIG (fast) ===
+            "utils-config-plugins-hooks")
+              PATHS="tests/unit/utils/ tests/unit/config/"
+              PATHS="$PATHS tests/unit/plugins/ tests/unit/hooks/"
+              PATHS="$PATHS tests/unit/extensibility/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=4" >> $GITHUB_OUTPUT
+              ;;
+
+            # === API/DSL (fast) ===
+            "api-dsl-schemas-optimization")
+              PATHS="tests/unit/api/ tests/unit/dsl/"
+              PATHS="$PATHS tests/unit/schemas/ tests/unit/optimization/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=4" >> $GITHUB_OUTPUT
+              ;;
+
+            # === QUALITY/TESTING (fast) ===
+            "quality-testing-requirements-comparison")
+              PATHS="tests/unit/quality/ tests/unit/testing/"
+              PATHS="$PATHS tests/unit/requirements/ tests/unit/comparison/"
+              PATHS="$PATHS tests/unit/compliance/"
+              echo "paths=$PATHS" >> $GITHUB_OUTPUT
+              echo "workers=4" >> $GITHUB_OUTPUT
+              ;;
+
+            # === MISC COMPONENTS (fast) ===
+            "component-jupyter-triggering")
+              echo "paths=tests/unit/component/ tests/unit/jupyter/ tests/unit/triggering/" >> $GITHUB_OUTPUT
+              echo "workers=4" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Run fast unit tests (${{ matrix.test-group }})
+        run: |
+          echo "Running tests with ${{ steps.test-config.outputs.workers }} workers"
+          uv run python -m pytest ${{ steps.test-config.outputs.paths }} \
+            -m "unit and not memory_intensive and not slow and not performance" \
+            -n ${{ steps.test-config.outputs.workers }} \
+            --maxprocesses=${{ steps.test-config.outputs.workers }} \
+            --dist loadscope \
+            --hypothesis-profile=ci \
+            --benchmark-disable \
+            --tb=short \
+            --maxfail=10 \
+            --reruns 2 \
+            --reruns-delay 1 \
+            --junit-xml=results-unit-fast-${{ matrix.python-version }}-${{ matrix.test-group }}.xml
+
+      - name: Upload results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: results-unit-fast-${{ matrix.python-version }}-${{ matrix.test-group }}
+          path: results-unit-fast-${{ matrix.python-version }}-${{ matrix.test-group }}.xml
+          retention-days: ${{ env.RETENTION_SHORT }}
+
+  # ============================================================================
+  # NOTE: Removed unit-memory job - no tests currently use memory_intensive marker
+  # Memory-intensive tests are now handled by using 2 workers in analyzer groups
+  # ============================================================================
+
+  # ============================================================================
+  # Integration tests
+  # ============================================================================
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [setup, unit-fast]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(needs.setup.outputs.python-versions) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify test data (optional)
+        run: ./scripts/verify_test_data.sh
+        continue-on-error: true
+
+      - name: Run integration tests
+        run: |
+          uv run python -m pytest tests/integration \
+            -m "integration" \
+            -n 2 \
+            --maxprocesses=2 \
+            --dist loadscope \
+            --hypothesis-profile=ci \
+            --benchmark-disable \
+            -p no:benchmark \
+            --tb=short \
+            --maxfail=10 \
+            --reruns 2 \
+            --reruns-delay 1 \
+            --junit-xml=results-integration-${{ matrix.python-version }}.xml
+
+      - name: Upload results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: results-integration-${{ matrix.python-version }}
+          path: results-integration-${{ matrix.python-version }}.xml
+          retention-days: ${{ env.RETENTION_SHORT }}
+
+  # ============================================================================
+  # Validation tests
+  # ============================================================================
+
+  validation:
+    name: Validation Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [setup, unit-fast]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(needs.setup.outputs.python-versions) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify test data (optional)
+        run: ./scripts/verify_test_data.sh
+        continue-on-error: true
+
+      - name: Run validation tests
+        run: |
+          uv run python -m pytest tests/validation \
+            -m "validation" \
+            -n 2 \
+            --maxprocesses=2 \
+            --dist loadscope \
+            --hypothesis-profile=ci \
+            --benchmark-disable \
+            --tb=short \
+            --maxfail=10 \
+            --reruns 2 \
+            --reruns-delay 1 \
+            --junit-xml=results-validation-${{ matrix.python-version }}.xml
+        continue-on-error: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: results-validation-${{ matrix.python-version }}
+          path: results-validation-${{ matrix.python-version }}.xml
+          retention-days: ${{ env.RETENTION_SHORT }}
+
+  # ============================================================================
+  # Stress tests (only on main/scheduled)
+  # ============================================================================
+
+  stress:
+    name: Stress Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [setup, unit-fast]
+    if: needs.setup.outputs.run-slow == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(needs.setup.outputs.python-versions) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run stress tests
+        run: |
+          uv run python -m pytest tests/stress \
+            -m "stress" \
+            -n 2 \
+            --maxprocesses=2 \
+            --dist loadscope \
+            --hypothesis-profile=ci \
+            --benchmark-disable \
+            --tb=short \
+            --maxfail=5 \
+            --reruns 2 \
+            --reruns-delay 1 \
+            --junit-xml=results-stress-${{ matrix.python-version }}.xml
+        continue-on-error: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: results-stress-${{ matrix.python-version }}
+          path: results-stress-${{ matrix.python-version }}.xml
+          retention-days: ${{ env.RETENTION_SHORT }}
+
+  # ============================================================================
+  # Performance/benchmark tests (only on main/scheduled)
+  # ============================================================================
+
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [setup, unit-fast]
+    if: needs.setup.outputs.run-slow == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(needs.setup.outputs.python-versions) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run performance tests
+        run: |
+          uv run python -m pytest tests/performance \
+            -m "performance or benchmark" \
+            -n 2 \
+            --maxprocesses=2 \
+            --dist loadscope \
+            --hypothesis-profile=ci \
+            --benchmark-disable \
+            --tb=short \
+            --maxfail=10 \
+            --reruns 2 \
+            --reruns-delay 1 \
+            --junit-xml=results-performance-${{ matrix.python-version }}.xml
+        continue-on-error: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: results-performance-${{ matrix.python-version }}
+          path: results-performance-${{ matrix.python-version }}.xml
+          retention-days: ${{ env.RETENTION_SHORT }}
+
+  # ============================================================================
+  # Summary
+  # ============================================================================
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [setup, unit-fast, integration, validation]
+    if: always()
+    steps:
+      - name: Download all results
+        uses: actions/download-artifact@v7
+        with:
+          path: results
+        continue-on-error: true
+
+      - name: Generate summary
+        run: |
+          echo "# Chunked Test Suite Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Python versions**: ${{ needs.setup.outputs.python-versions }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run slow tests**: ${{ needs.setup.outputs.run-slow }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit (Fast, 15 groups) | ${{ needs.unit-fast.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration | ${{ needs.integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validation | ${{ needs.validation.result }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check required jobs
+        run: |
+          REQUIRED_PASSED=true
+
+          if [[ "${{ needs.unit-fast.result }}" != "success" ]]; then
+            echo "::error::Unit (Fast) tests failed"
+            REQUIRED_PASSED=false
+          fi
+
+          if [[ "${{ needs.integration.result }}" != "success" ]]; then
+            echo "::error::Integration tests failed"
+            REQUIRED_PASSED=false
+          fi
+
+          if [[ "$REQUIRED_PASSED" == "false" ]]; then
+            exit 1
+          fi
+
+  # ==========================================================================
+  # Notify on Failure (scheduled runs only)
+  # ==========================================================================
+  notify-failure:
+    name: Notify Test Failures
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [setup, unit-fast, integration, validation, summary]
+    if: failure() && github.event_name == 'schedule'
+    steps:
+      - name: Create issue for test failures
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const body = `## Nightly Test Failure Detected
+
+            The nightly comprehensive test run has detected failures.
+
+            **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            **Failed jobs:**
+            - Unit (Fast): ${{ needs.unit-fast.result }}
+            - Integration: ${{ needs.integration.result }}
+            - Validation: ${{ needs.validation.result }}
+
+            **Next steps:**
+            1. Review the failed test results in the workflow artifacts
+            2. Identify which tests failed
+            3. Fix the test failures or update tests if behavior changed
+            4. Re-run the workflow to verify fixes
+
+            **Note:** This issue was auto-generated by the nightly test workflow.
+            `;
+
+            // Check if issue already exists for today
+            const today = new Date().toISOString().split('T')[0];
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'nightly-test-failure',
+              per_page: 100
+            });
+
+            // Check if there's already an issue from today
+            const todayIssue = issues.data.find(issue =>
+              issue.created_at.startsWith(today)
+            );
+
+            if (!todayIssue) {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Nightly Tests] Failures detected on ${today}`,
+                body: body,
+                labels: ['nightly-test-failure', 'bug', 'testing']
+              });
+            } else {
+              core.info('Issue already exists for today, skipping creation');
+            }

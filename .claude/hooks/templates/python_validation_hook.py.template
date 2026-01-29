@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""
+{{HOOK_NAME}} - {{HOOK_DESCRIPTION}}
+
+{{HOOK_PURPOSE}}
+
+Version: 1.0.0
+Created: {{DATE}}
+"""
+
+import argparse
+import json
+import logging
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+# =============================================================================
+# Configuration
+# =============================================================================
+
+# Resolve paths from script location (prevents working directory issues)
+SCRIPT_DIR = Path(__file__).parent.resolve()
+REPO_ROOT = SCRIPT_DIR.parent.parent
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR", str(REPO_ROOT)))
+
+# Define paths relative to PROJECT_DIR
+LOG_FILE = PROJECT_DIR / ".claude" / "hooks" / "hook.log"
+
+# =============================================================================
+# Logging Setup
+# =============================================================================
+
+LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, mode="a"),
+        logging.StreamHandler(sys.stderr),
+    ],
+)
+logger = logging.getLogger("{{HOOK_NAME}}")
+
+# =============================================================================
+# Emergency Bypass Check
+# =============================================================================
+
+
+def check_bypass() -> bool:
+    """Check if emergency bypass is active."""
+    if os.environ.get("CLAUDE_BYPASS_HOOKS") == "1":
+        logger.warning("EMERGENCY BYPASS ACTIVE - skipping validation")
+        return True
+    return False
+
+
+# =============================================================================
+# Core Validation Logic
+# =============================================================================
+
+
+def validate() -> dict[str, Any]:
+    """
+    Main validation logic.
+
+    Returns:
+        dict with 'ok' (bool) and optional 'errors', 'warnings' fields
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    # TODO: Implement validation logic here
+    # Example:
+    # if not some_condition:
+    #     errors.append("Validation failed: reason")
+
+    return {
+        "ok": len(errors) == 0,
+        "errors": errors,
+        "warnings": warnings,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
+
+
+def main() -> None:
+    """Main entry point with argument parsing and error handling."""
+    parser = argparse.ArgumentParser(description="{{HOOK_DESCRIPTION}}")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be validated without modifying anything",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show detailed output"
+    )
+    args = parser.parse_args()
+
+    try:
+        # Check emergency bypass
+        if check_bypass():
+            print(json.dumps({"ok": True, "bypassed": True}))
+            sys.exit(0)
+
+        # Run validation
+        result = validate()
+
+        # Output result
+        if args.verbose:
+            print(json.dumps(result, indent=2))
+        else:
+            print(json.dumps({"ok": result["ok"], "errors": len(result.get("errors", []))}))
+
+        # Log result
+        if result["ok"]:
+            logger.info("Validation passed")
+        else:
+            logger.error(f"Validation failed: {result.get('errors', [])}")
+
+        sys.exit(0 if result["ok"] else 1)
+
+    except Exception as e:
+        logger.exception("Validation hook failed unexpectedly")
+        # Fail open - don't block on unexpected errors
+        print(json.dumps({"ok": True, "error": str(e), "failed_open": True}))
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

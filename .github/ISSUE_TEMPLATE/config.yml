@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://oscura-re.github.io/oscura
+    about: Check the documentation for usage guides and API reference
+  - name: Discussions
+    url: https://github.com/oscura-re/oscura/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: Security Contact
+    url: mailto:lair-click-bats@users.noreply.github.com
+    about: Report critical security vulnerabilities privately via email

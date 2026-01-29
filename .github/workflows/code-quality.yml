@@ -1,0 +1,429 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Auto-cancel outdated runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal permissions for security
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  PYTHON_VERSION: "3.12"
+  # Artifact retention policy (days)
+  RETENTION_MEDIUM: 30 # Code quality reports
+  RETENTION_LONG: 90 # Long-term quality metrics
+
+jobs:
+  # ==========================================================================
+  # Path Detection - Check if code quality checks should run
+  # ==========================================================================
+  detect-changes:
+    name: Detect Code Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-run: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'src/**/*.py'
+              - 'pyproject.toml'
+              - '.github/workflows/code-quality.yml'
+
+  # NOTE: Docstring coverage is checked in ci.yml via pre-commit hooks
+  # Badge generation happens in docs.yml workflow
+  # This avoids redundant checking across workflows
+
+  # ==========================================================================
+  # Docstring Style (pydocstyle) - INFORMATIONAL
+  # ==========================================================================
+  docstring-style:
+    name: Docstring Style Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run pydocstyle
+        id: pydocstyle
+        continue-on-error: true
+        run: |
+          echo "::group::Docstring Style Violations"
+          uv run pydocstyle src/oscura 2>&1 | tee pydocstyle-report.txt
+          echo "::endgroup::"
+
+          # Count violations
+          violation_count=$(wc -l < pydocstyle-report.txt || echo "0")
+          echo "Found $violation_count docstring style issues"
+
+          # Set output for badge
+          echo "violation_count=$violation_count" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Docstring Style Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f pydocstyle-report.txt ]; then
+            violation_count=$(wc -l < pydocstyle-report.txt)
+            echo "**Total violations:** $violation_count" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "#### Top violation types:" >> $GITHUB_STEP_SUMMARY
+            grep -oP 'D\d+' pydocstyle-report.txt | sort | uniq -c | sort -rn | head -10 >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "✓ No violations found!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pydocstyle-report
+          path: pydocstyle-report.txt
+          retention-days: ${{ env.RETENTION_MEDIUM }}
+          if-no-files-found: ignore
+
+  # ==========================================================================
+  # Dead Code Detection (vulture) - INFORMATIONAL
+  # ==========================================================================
+  dead-code:
+    name: Dead Code Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run vulture
+        id: vulture
+        continue-on-error: true
+        run: |
+          echo "::group::Dead Code Report"
+          uv run vulture src/oscura --min-confidence 80 2>&1 | tee vulture-report.txt
+          echo "::endgroup::"
+
+          # Count findings
+          finding_count=$(wc -l < vulture-report.txt || echo "0")
+          echo "Found $finding_count potential dead code items"
+          echo "finding_count=$finding_count" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Dead Code Detection Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f vulture-report.txt ] && [ -s vulture-report.txt ]; then
+            finding_count=$(wc -l < vulture-report.txt)
+            echo "**Potential dead code items:** $finding_count" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "#### Sample findings:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -10 vulture-report.txt >> $GITHUB_STEP_SUMMARY || true
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✓ No dead code detected!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: vulture-report
+          path: vulture-report.txt
+          retention-days: ${{ env.RETENTION_MEDIUM }}
+          if-no-files-found: ignore
+
+  # ==========================================================================
+  # Cyclomatic Complexity (radon) - WARNING ON HIGH
+  # ==========================================================================
+  complexity:
+    name: Code Complexity Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check cyclomatic complexity
+        id: radon-cc
+        continue-on-error: true
+        run: |
+          echo "::group::Cyclomatic Complexity Report"
+          uv run radon cc src/oscura --min D --show-complexity 2>&1 | tee complexity-report.txt
+          echo "::endgroup::"
+
+          # Count high complexity functions
+          high_complexity=$(grep -E '^\s+[FMC].*- [DEF]' complexity-report.txt | wc -l || echo "0")
+          echo "high_complexity=$high_complexity" >> $GITHUB_OUTPUT
+
+      - name: Check maintainability index
+        id: radon-mi
+        continue-on-error: true
+        run: |
+          echo "::group::Maintainability Index Report"
+          uv run radon mi src/oscura -s 2>&1 | tee maintainability-report.txt
+          echo "::endgroup::"
+
+          # Count low maintainability files
+          low_maintainability=$(grep -E ' - [BCD] ' maintainability-report.txt | wc -l || echo "0")
+          echo "low_maintainability=$low_maintainability" >> $GITHUB_OUTPUT
+
+      - name: Check for critical issues
+        id: check-critical
+        continue-on-error: true
+        run: |
+          # Check for F-rated complexity (extremely high)
+          f_rated=$(grep -E '^\s+[FMC].*- F' complexity-report.txt | wc -l || echo "0")
+
+          # Check for C or worse maintainability
+          c_rated=$(grep -E ' - [CD] ' maintainability-report.txt | wc -l || echo "0")
+
+          echo "f_rated_complexity=$f_rated" >> $GITHUB_OUTPUT
+          echo "c_rated_maintainability=$c_rated" >> $GITHUB_OUTPUT
+
+          # Warn if critical issues found
+          if [ "$f_rated" -gt 0 ] || [ "$c_rated" -gt 0 ]; then
+            echo "::warning::Critical issues: $f_rated F-rated functions, $c_rated low-maintainability files"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Code Complexity Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Complexity summary
+          if [ -f complexity-report.txt ]; then
+            high_complexity=$(grep -E '^\s+[FMC].*- [DEF]' complexity-report.txt | wc -l || echo "0")
+            echo "**High complexity functions (D-F):** $high_complexity" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$high_complexity" -gt 0 ]; then
+              echo "#### Critical complexity issues (F-rated):" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              grep -E '^\s+[FMC].*- F' complexity-report.txt | head -5 >> $GITHUB_STEP_SUMMARY || echo "None"
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Maintainability summary
+          if [ -f maintainability-report.txt ]; then
+            low_maintainability=$(grep -E ' - [BCD] ' maintainability-report.txt | wc -l || echo "0")
+            echo "**Low maintainability files (B-C):** $low_maintainability" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$low_maintainability" -gt 0 ]; then
+              echo "#### Files needing attention:" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              grep -E ' - [BCD] ' maintainability-report.txt >> $GITHUB_STEP_SUMMARY || true
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: Upload complexity report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: complexity-report
+          path: complexity-report.txt
+          retention-days: ${{ env.RETENTION_LONG }}
+          if-no-files-found: ignore
+
+      - name: Upload maintainability report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: maintainability-report
+          path: maintainability-report.txt
+          retention-days: ${{ env.RETENTION_LONG }}
+          if-no-files-found: ignore
+
+  # ==========================================================================
+  # Import Architecture Validation (import-linter) - REQUIRED
+  # ==========================================================================
+  import-architecture:
+    name: Import Architecture Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run import-linter
+        id: import-linter
+        continue-on-error: true
+        run: |
+          echo "::group::Import Architecture Validation"
+          uv run lint-imports 2>&1 | tee import-linter-report.txt
+          echo "::endgroup::"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Import Architecture Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f import-linter-report.txt ]; then
+            # Extract summary
+            kept_count=$(grep "Contracts:" import-linter-report.txt | \
+              grep -oP '\d+ kept' | grep -oP '\d+' || echo "0")
+            broken_count=$(grep "Contracts:" import-linter-report.txt | \
+              grep -oP '\d+ broken' | grep -oP '\d+' || echo "0")
+
+            echo "**Contracts:** $kept_count kept, $broken_count broken" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$broken_count" -gt 0 ]; then
+              echo "⚠️ **Note:** Architecture violations exist (informational only)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### Broken contracts:" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              sed -n '/^Broken contracts/,/^$/p' import-linter-report.txt | head -50 >> $GITHUB_STEP_SUMMARY || true
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✓ All architectural constraints validated" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: import-linter-report
+          path: import-linter-report.txt
+          retention-days: ${{ env.RETENTION_LONG }}
+          if-no-files-found: ignore
+
+  # ==========================================================================
+  # Final Status Check - ALWAYS RUNS
+  # ==========================================================================
+  quality-gates-success:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [detect-changes, docstring-style, dead-code, complexity, import-architecture]
+    if: always()
+    steps:
+      - name: Check code quality results
+        run: |
+          echo "Detect Changes: ${{ needs.detect-changes.result }}"
+          echo "Should Run: ${{ needs.detect-changes.outputs.should-run }}"
+          echo "Docstring Style: ${{ needs.docstring-style.result }}"
+          echo "Dead Code: ${{ needs.dead-code.result }}"
+          echo "Complexity: ${{ needs.complexity.result }}"
+          echo "Import Architecture: ${{ needs.import-architecture.result }}"
+
+          # If no code changes, all quality checks will be skipped (not failed)
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "No code changes detected - quality checks skipped"
+            echo "✅ Code Quality checks passed (no code changes to check)"
+            exit 0
+          fi
+
+          # Check if any required jobs failed (skipped is OK, cancelled is treated as skip)
+          if [[ "${{ needs.docstring-style.result }}" == "failure" || \
+                "${{ needs.dead-code.result }}" == "failure" || \
+                "${{ needs.complexity.result }}" == "failure" || \
+                "${{ needs.import-architecture.result }}" == "failure" ]]; then
+            echo "Some code quality checks failed"
+            exit 1
+          fi
+
+          echo "All code quality checks passed!"
+          exit 0
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "### Code Quality Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.detect-changes.outputs.should-run }}" != "true" ]]; then
+            echo "✅ **No code changes detected - checks skipped**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Code quality checks only run when Python source files" \
+              "or pyproject.toml change." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+            # Note: Docstring coverage is checked in ci.yml (pre-commit hooks)
+            echo "| Docstring Coverage | ✓ (checked in ci.yml) |" >> $GITHUB_STEP_SUMMARY
+
+            # Docstring style result
+            style_result="${{ needs.docstring-style.result }}"
+            style_icon="${{ needs.docstring-style.result == 'success' && '✓' || '⚠' }}"
+            echo "| Docstring Style | $style_icon $style_result (informational) |" >> $GITHUB_STEP_SUMMARY
+
+            # Dead code result
+            dead_result="${{ needs.dead-code.result }}"
+            dead_icon="${{ needs.dead-code.result == 'success' && '✓' || '⚠' }}"
+            echo "| Dead Code Detection | $dead_icon $dead_result (informational) |" >> $GITHUB_STEP_SUMMARY
+
+            # Complexity result
+            complex_result="${{ needs.complexity.result }}"
+            complex_icon="${{ needs.complexity.result == 'success' && '✓' || '⚠' }}"
+            echo "| Complexity Analysis | $complex_icon $complex_result (informational) |" >> $GITHUB_STEP_SUMMARY
+
+            # Import architecture result
+            import_result="${{ needs.import-architecture.result }}"
+            import_icon="${{ needs.import-architecture.result == 'success' && '✓' || '⚠' }}"
+            echo "| Import Architecture | $import_icon $import_result (informational) |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Quality checks completed!**" >> $GITHUB_STEP_SUMMARY
+          fi

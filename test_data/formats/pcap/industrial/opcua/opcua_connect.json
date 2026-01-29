@@ -1,0 +1,6 @@
+{
+  "packet_count": 2,
+  "protocol": "opc-ua",
+  "src_port": 12345,
+  "dst_port": 4840
+}
