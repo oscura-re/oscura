@@ -178,10 +178,10 @@ jobs:
         run: |
           echo "::group::Installing built package with ALL dependencies"
           # Create temporary venv and install wheel with ALL extras (per ALL-dependencies policy)
-          # System dependencies (libopenblas, gfortran) installed for scipy build
+          # Use --prefer-binary to avoid building scipy/numpy from source
           python -m venv /tmp/test-venv
           WHEEL=$(ls dist/*.whl)
-          /tmp/test-venv/bin/pip install --quiet "${WHEEL}[all]"
+          /tmp/test-venv/bin/pip install --quiet --prefer-binary "${WHEEL}[all]"
           echo "::endgroup::"
 
           echo "::group::Testing package import"
