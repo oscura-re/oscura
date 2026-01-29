@@ -60,19 +60,19 @@ class SideChannelBasicsDemo(BaseDemo):
         # Simulate power consumption during crypto operation
         for i in range(num_traces):
             plaintext = np.random.randint(0, 256)
-            
+
             # Base power trace with noise
             trace = np.random.normal(1.0, 0.05, samples_per_trace)
-            
+
             # Add data-dependent power consumption (Hamming weight model)
             hw = bin(plaintext).count('1')
             poi = samples_per_trace // 2
             trace[poi-10:poi+10] += hw * 0.3
-            
+
             # Add clock activity
             t = np.arange(samples_per_trace) / sample_rate
             trace += 0.01 * np.sin(2 * np.pi * 10e6 * t)
-            
+
             metadata = TraceMetadata(sample_rate=sample_rate, channel_name="power")
             self.power_traces.append(WaveformTrace(data=trace, metadata=metadata))
 
