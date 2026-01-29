@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 1
 
       - name: Setup Python Environment
-        uses: ./.github/actions/setup-python
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python-version }}
 
