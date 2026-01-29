@@ -7,8 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - TBD
+
+### BREAKING CHANGES
+
+**Dependency Reorganization - Optimal Structure**
+
+Core dependencies have been minimized to only truly essential packages. Several heavy dependencies moved to optional extras for faster installs and better user choice.
+
+**What Changed:**
+- **Moved to optional**: `matplotlib`, `pandas`, `psutil`, `jinja2` (now in extras groups)
+- **Kept in core**: `numpy`, `scipy` (fundamental for signal processing), `click`, `pyyaml`, file format parsers
+- **Core install** (`pip install oscura`): Now ~30MB smaller, <2 min install (was 5+ min)
+
+**Migration Guide:**
+
+Most users should install `[standard]` preset:
+```bash
+pip install oscura[standard]  # Recommended - includes visualization, dataframes, reporting
+```
+
+Or specific extras as needed:
+```bash
+pip install oscura[visualization]  # Just matplotlib
+pip install oscura[dataframes]     # Pandas + Excel export
+pip install oscura[all]            # Everything (for development)
+```
+
+**Impact:**
+- ✅ **End users**: Faster installs, pay only for what you need
+- ✅ **CI/CD**: No scipy build failures (uses pre-built wheels with `--prefer-binary`)
+- ✅ **Developers**: No change - `uv sync` still installs everything from lock file
+- ⚠️ **Breaking**: `from oscura.visualization import *` requires `pip install oscura[visualization]`
+- ⚠️ **Breaking**: Batch aggregation modules require `pip install oscura[dataframes]`
+
+**Files Modified:**
+- `pyproject.toml` - Restructured dependency groups (6 core deps instead of 10)
+- `src/oscura/utils/imports.py` - Added lazy import helpers
+- `src/oscura/visualization/__init__.py` - Added helpful import error for matplotlib
+- `src/oscura/workflows/batch/aggregate.py` - Added helpful import error for pandas
+
 ### Fixed
 - **Release Workflow Prefer Binary Wheels** (.github/workflows/release.yml): Added `--prefer-binary` flag to pip install in smoke test + system dependencies for scipy build fallback; Root cause: scipy build from source was timing out/failing during Cython compilation in GitHub Actions; Expected impact: pip will prefer pre-built wheels over building from source, smoke test completes faster and more reliably; 1 file modified
+
+### Added
+- **Lazy Import Utilities** (src/oscura/utils/imports.py): Added `require_matplotlib()`, `require_pandas()`, `require_psutil()`, `require_jinja2()` functions with helpful error messages directing users to correct extras; Added `has_*()` check functions for testing availability without raising errors; Enables graceful handling of optional dependencies
+
+### Changed
+- **Dependency Structure** (pyproject.toml): Reorganized optional dependencies into logical groups - `visualization` (matplotlib), `dataframes` (pandas+openpyxl), `reporting` (jinja2+reportlab+python-pptx), `system` (psutil), `standard` (recommended preset), `analysis` (ML/wavelets), plus existing groups (automotive, hardware, dev, etc.); Core reduced from 10 to 6 essential packages; New `[standard]` preset recommended for most users
 
 ## [0.6.0] - 2026-01-29
 

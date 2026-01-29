@@ -59,23 +59,25 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-# Core dependencies - always required for basic functionality
+# =============================================================================
+# CORE DEPENDENCIES - Minimal required for basic functionality
+# =============================================================================
+# Only includes absolutely essential dependencies for:
+# - Protocol decoding and analysis
+# - Signal processing (FFT, filtering, statistics)
+# - File format parsing
+# - CLI interface
+#
+# Heavy optional features (visualization, ML, hardware) are in extras
+# =============================================================================
 dependencies = [
-    # Scientific computing and data manipulation
-    "numpy>=1.24.0,<3.0.0",      # Array operations, signal processing
-    "scipy>=1.10.0,<2.0.0",       # Scientific algorithms (FFT, filters, stats)
-    "pandas>=2.0.0,<3.0.0",       # Data structures, analysis
+    # Scientific computing - ESSENTIAL for signal processing
+    "numpy>=1.24.0,<3.0.0",      # Array operations, fundamental to all signal work
+    "scipy>=1.10.0,<2.0.0",       # Signal processing (FFT, filters, stats) - 93 imports throughout codebase
 
-    # Visualization
-    "matplotlib>=3.7.0,<4.0.0",   # Plotting and visualization
-
-    # CLI and system utilities
+    # CLI and configuration
     "click>=8.1.0,<9.0.0",        # Command-line interface framework
-    "psutil>=5.9.0,<7.0.0",       # System and process utilities
-
-    # Configuration and templating
     "pyyaml>=6.0,<7.0.0",         # YAML configuration parsing
-    "jinja2>=3.1,<4.0.0",         # Template engine for reports
 
     # File format support
     "tm-data-types>=0.3.0,<1.0.0",  # Tektronix WFM file support
@@ -83,7 +85,122 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Development and testing tools
+# =============================================================================
+# VISUALIZATION - Plotting and waveform display
+# =============================================================================
+visualization = [
+    "matplotlib>=3.7.0,<4.0.0",   # Plotting and visualization (107 imports)
+]
+
+# =============================================================================
+# DATAFRAMES - Data manipulation and export
+# =============================================================================
+dataframes = [
+    "pandas>=2.0.0,<3.0.0",       # Data structures, only 7 imports (not core)
+    "openpyxl>=3.0.0,<4.0.0",     # Excel file reading/writing
+]
+
+# =============================================================================
+# REPORTING - Report generation and templates
+# =============================================================================
+reporting = [
+    "jinja2>=3.1,<4.0.0",         # Template engine for reports
+    "reportlab>=4.4.7,<6.0.0",    # PDF report generation
+    "python-pptx>=0.6.21,<1.0.0", # PowerPoint presentation export
+]
+
+# =============================================================================
+# SYSTEM - System utilities and monitoring
+# =============================================================================
+system = [
+    "psutil>=5.9.0,<7.0.0",       # System and process utilities
+]
+
+# =============================================================================
+# STANDARD - Recommended installation for most users
+# =============================================================================
+# Includes: core + visualization + dataframes + reporting + system
+# This is what most users should install
+standard = [
+    "oscura[visualization,dataframes,reporting,system]",
+]
+
+# =============================================================================
+# ANALYSIS - Advanced analysis and machine learning
+# =============================================================================
+analysis = [
+    "networkx>=3.0,<4.0.0",        # Graph analysis for state machines
+    "pywavelets>=1.0.0,<2.0.0",    # Wavelet analysis
+    "scikit-learn>=1.3.0,<2.0.0",  # Machine learning and clustering
+]
+
+# =============================================================================
+# HDF5 - HDF5 file format support
+# =============================================================================
+hdf5 = [
+    "h5py>=3.0.0,<4.0.0",          # HDF5 file reading/writing
+]
+
+# =============================================================================
+# JUPYTER - Jupyter notebook integration
+# =============================================================================
+# SEC-005: nbconvert CVE-2025-53000 affects <=7.16.6 (Windows-only code execution
+# via uncontrolled search path during PDF conversion with SVG to PDF). Latest
+# version (7.16.6) is vulnerable; waiting for 7.17.0 release. Mitigation: Avoid
+# PDF export with SVG content on Windows, or use Linux/macOS (not affected).
+# TRACKED: https://github.com/jupyter/nbconvert/security/advisories
+jupyter = [
+    "ipython>=8.0.0,<9.0.0",             # Enhanced Python shell
+    "jupyter>=1.0.0,<2.0.0",             # Jupyter notebook support
+    "nbconvert>=7.0.0,!=7.16.6,<8.0.0",  # CVE-2025-53000: Exclude vulnerable 7.16.6
+]
+
+# =============================================================================
+# AUTOMOTIVE - Automotive protocol analysis (CAN, J1939, OBD-II, UDS)
+# =============================================================================
+automotive = [
+    "cantools>=39.4.0,<40.0.0",          # DBC parsing and CAN message encoding/decoding
+    "asammdf>=8.0.0,<9.0.0",             # MDF4/MF4 automotive data logging files
+    "python-can>=4.4.0,<5.0.0",          # CAN interface and file formats (BLF, ASC)
+    "scapy>=2.5.0,<3.0.0",               # PCAP parsing for SocketCAN frames
+]
+
+# =============================================================================
+# OSCILLOSCOPES - Additional oscilloscope and data format support
+# =============================================================================
+oscilloscopes = [
+    "rigolwfm>=1.0.0,<2.0.0",            # Rigol oscilloscope WFM file format
+    "npTDMS>=1.7.0,<2.0.0",              # National Instruments TDMS file format
+]
+
+# =============================================================================
+# HARDWARE - Hardware acquisition sources
+# =============================================================================
+hardware = [
+    "pyvisa>=1.13.0,<2.0.0",             # VISA instrument control (oscilloscopes, etc.)
+    "pyvisa-py>=0.7.0,<1.0.0",           # Pure Python VISA backend
+    "pyserial>=3.5,<4.0.0",              # Serial port communication
+]
+
+# =============================================================================
+# IOT - IoT protocol support (LoRaWAN, Zigbee, BLE, etc.)
+# =============================================================================
+# SEC-005 fix: Updated cryptography to >=44.0.1 to address CVE-2024-12797
+# (OpenSSL vulnerability in static binary, MEDIUM severity)
+iot = [
+    "cryptography>=44.0.1,<47.0.0",      # Modern cryptography for LoRaWAN
+]
+
+# =============================================================================
+# FUZZY - Fuzzy string matching (for Claude orchestration routing)
+# =============================================================================
+fuzzy = [
+    "rapidfuzz>=3.0.0,<4.0.0",           # Fuzzy keyword matching for routing
+]
+
+# =============================================================================
+# DEV - Development and testing tools
+# =============================================================================
 # SEC-005 note: "py" package (CVE-2022-42969) is a transitive dependency from
 # older pytest versions. Modern pytest (>=8.0) no longer requires it. The CVE
 # relates to ReDoS in SVN info parsing which Oscura doesn't use. Package will
@@ -93,85 +210,27 @@ dev = [
     "pytest-cov>=6.0,<8.0.0",           # Coverage reporting
     "pytest-timeout>=2.3.0,<3.0.0",     # Test timeout enforcement
     "pytest-benchmark>=4.0.0,<6.0.0",   # Performance benchmarking
+    "pytest-xdist>=3.0,<4.0.0",         # Parallel test execution
+    "pytest-randomly>=3.0,<4.0.0",      # Randomize test order
+    "pytest-rerunfailures>=16.0,<17.0", # Retry flaky tests
+    "pytest-asyncio>=0.23.0,<1.0.0",    # Async test support
+    "pytest-split>=0.10.0,<1.0.0",      # Split tests for CI
     "hypothesis>=6.0.0,<7.0.0",         # Property-based testing
+    "coverage[toml]>=7.0,<8.0.0",       # Coverage measurement
     "types-PyYAML>=6.0,<7.0.0",         # Type stubs for mypy
+    "mypy>=1.0,<2.0.0",                 # Static type checking
+    "ruff>=0.8.0,<1.0.0",               # Fast linting and formatting
     "yamllint>=1.35,<2.0.0",            # YAML linting
     "check-jsonschema>=0.29.0,<1.0.0",  # JSON schema validation
     "interrogate>=1.7.0,<2.0.0",        # Docstring coverage
+    "pre-commit>=4.0.0,<5.0.0",         # Git hooks framework
 ]
 
-# Report generation and export formats
-reporting = [
-    "reportlab>=4.4.7,<6.0.0",          # PDF report generation
-    "python-pptx>=0.6.21,<1.0.0",       # PowerPoint presentation export
-]
-
-# HDF5 file format support
-hdf5 = [
-    "h5py>=3.0.0,<4.0.0",                # HDF5 file reading/writing
-]
-
-# Claude orchestration system routing enhancements
-routing = [
-    "rapidfuzz>=3.0.0,<4.0.0",          # Fuzzy string matching for agent routing
-]
-
-# Jupyter notebook integration
-# SEC-005: nbconvert CVE-2025-53000 affects <=7.16.6 (Windows-only code execution
-# via uncontrolled search path during PDF conversion with SVG to PDF). Latest
-# version (7.16.6) is vulnerable; waiting for 7.17.0 release. Mitigation: Avoid
-# PDF export with SVG content on Windows, or use Linux/macOS (not affected).
-# TRACKED: https://github.com/jupyter/nbconvert/security/advisories
-jupyter = [
-    "ipython>=8.0.0,<9.0.0",             # Enhanced Python shell
-    "jupyter>=1.0.0,<2.0.0",             # Jupyter notebook support
-    "nbconvert>=7.0.0,!=7.16.6,<8.0.0",  # CVE-2025-53000: Exclude vulnerable 7.16.6, awaiting 7.17.0
-]
-
-# Automotive protocol analysis (CAN, J1939, OBD-II, UDS)
-automotive = [
-    "cantools>=39.4.0,<40.0.0",          # DBC parsing and CAN message encoding/decoding
-    "asammdf>=8.0.0,<9.0.0",             # MDF4/MF4 automotive data logging files (8.x required for Python 3.12+)
-    "python-can>=4.4.0,<5.0.0",          # CAN interface and file formats (BLF, ASC)
-    "scapy>=2.5.0,<3.0.0",               # PCAP parsing for SocketCAN frames
-]
-
-# Additional oscilloscope and data format support
-oscilloscopes = [
-    "rigolwfm>=1.0.0,<2.0.0",            # Rigol oscilloscope WFM file format
-    "npTDMS>=1.7.0,<2.0.0",              # National Instruments TDMS file format
-]
-
-# Data analysis and export utilities
-analysis = [
-    "openpyxl>=3.0.0,<4.0.0",            # Excel file reading/writing
-    "networkx>=3.0,<4.0.0",              # Graph analysis for state machines
-    "pywavelets>=1.0.0,<2.0.0",          # Wavelet analysis
-    "scikit-learn>=1.3.0,<2.0.0",        # Machine learning and clustering analysis
-]
-
-# Hardware acquisition sources
-hardware = [
-    "pyvisa>=1.13.0,<2.0.0",             # VISA instrument control (oscilloscopes, etc.)
-    "pyvisa-py>=0.7.0,<1.0.0",           # Pure Python VISA backend
-    "pyserial>=3.5,<4.0.0",              # Serial port communication (validation/replay tests)
-]
-
-# Fuzzy routing enhancements
-fuzzy = [
-    "rapidfuzz>=3.0.0,<4.0.0",           # Fuzzy keyword matching for routing
-]
-
-# IoT protocol support (LoRaWAN, Zigbee, BLE, etc.)
-# SEC-005 fix: Updated cryptography to >=44.0.1 to address CVE-2024-12797
-# (OpenSSL vulnerability in static binary, MEDIUM severity)
-iot = [
-    "cryptography>=44.0.1,<47.0.0",      # Modern cryptography for LoRaWAN (replaces deprecated PyCrypto)
-]
-
-# Install all optional dependencies
+# =============================================================================
+# ALL - Install all optional dependencies (for development/CI)
+# =============================================================================
 all = [
-    "oscura[dev,reporting,hdf5,jupyter,automotive,oscilloscopes,analysis,hardware,fuzzy,iot]",
+    "oscura[standard,analysis,automotive,hardware,oscilloscopes,jupyter,hdf5,iot,fuzzy,dev]",
 ]
 
 [project.scripts]
@@ -191,6 +250,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/oscura"]
+
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -895,49 +955,3 @@ match-dir = "^(?!tests|demos|scripts|\\.venv|build|dist).*"
 # This section is managed by uv and supersedes [project.optional-dependencies]
 # for development workflows. Use: uv sync --group dev
 
-[dependency-groups]
-dev = [
-    "bandit>=1.9.2",
-    "darglint>=1.8.1",
-    "diff-cover>=10.2.0",
-    "fastapi[all]>=0.128.0",
-    "h5py>=3.15.1",
-    "hypothesis>=6.148.8",
-    "import-linter>=2.9",
-    "interrogate>=1.7.0",
-    "jsonschema>=4.25.1",
-    "linkchecker>=10.6.0",
-    "mike>=2.1.3",
-    "mkdocs>=1.6.1",
-    "mkdocs-glightbox>=0.5.2",
-    "mkdocs-material>=9.7.1",
-    "mkdocstrings>=1.0.0",
-    "mkdocstrings-python>=2.0.1",
-    "mypy>=1.13.0",
-    "pre-commit>=4.5.1",
-    "pydeps>=3.0.2",
-    "pydocstyle>=6.3.0",
-    "pylint>=4.0.4",
-    "pytest>=9.0.2",
-    "pytest-asyncio>=1.3.0",
-    "pytest-benchmark>=5.2.3",
-    "pytest-cov>=7.0.0",
-    "pytest-deadfixtures>=3.0.0",
-    "pytest-memray>=1.8.0",
-    "pytest-randomly>=4.0.1",
-    "pytest-rerunfailures>=16.1",
-    "pytest-split>=0.2.0",
-    "pytest-testmon>=2.2.0",
-    "pytest-timeout>=2.4.0",
-    "pytest-xdist>=3.8.0",
-    "pywavelets>=1.9.0",
-    "radon>=6.0.1",
-    "ruff>=0.14.0",
-    "safety>=3.7.0",
-    "uvicorn>=0.40.0",
-    "vulture>=2.14",
-    "wily>=1.12.2",
-]
-reporting = [
-    "reportlab>=4.4.7",
-]
