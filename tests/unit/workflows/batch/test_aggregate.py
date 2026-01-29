@@ -721,4 +721,4 @@ class TestLazyPandasImportAggregate:
         # Clean up - reimport the module normally
         if "oscura.workflows.batch.aggregate" in sys.modules:
             del sys.modules["oscura.workflows.batch.aggregate"]
-        import oscura.workflows.batch.aggregate
+        import oscura.workflows.batch.aggregate  # noqa: F401 - cleanup reimport
