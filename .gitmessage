@@ -1,0 +1,22 @@
+# <type>: <subject>
+#
+# <body>
+#
+# <footer>
+#
+# Type: feat|fix|docs|style|refactor|perf|test|chore
+# Subject: imperative mood, no period, <72 chars
+# Body: what and why vs. how, wrap at 72 chars
+# Footer: Breaking changes, issue references
+#
+# ---------------------------------------------------------------
+# IMPORTANT: Do not include AI tool attribution in commit messages
+# Commits should describe WHAT changed and WHY, not WHO wrote it
+# ---------------------------------------------------------------
+#
+# Examples:
+#   feat: add support for CAN FD protocol decoding
+#   fix: correct byte order handling in DBC parser
+#   docs: update API reference for signal analyzers
+#   refactor: simplify waveform processing pipeline
+#   test: add edge case coverage for packet streaming
