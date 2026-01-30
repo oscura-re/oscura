@@ -545,13 +545,21 @@ def analyze_complete(
             },
         )
 
-        # Add basic measurement sections
+        # Add basic measurement sections - handle BOTH formats
         for analysis_name, analysis_results in results.items():
-            measurements = {
-                k: v
-                for k, v in analysis_results.items()
-                if isinstance(v, (int, float)) and not isinstance(v, bool)
-            }
+            # Extract measurements in both formats:
+            # 1. Unified format: {"value": float, "unit": str}
+            # 2. Legacy format: flat float/int values
+            measurements = {}
+
+            for k, v in analysis_results.items():
+                if isinstance(v, dict) and "value" in v:
+                    # Unified format - extract value for reporting
+                    measurements[k] = v["value"]
+                elif isinstance(v, (int, float)) and not isinstance(v, bool):
+                    # Legacy flat format
+                    measurements[k] = v
+                # Skip arrays, objects, etc.
 
             if measurements:
                 title_map = {
