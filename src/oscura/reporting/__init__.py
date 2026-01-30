@@ -178,10 +178,10 @@ __all__ = [
     "FormatStandards",
     "IndexGenerator",
     "InputType",
-    # Multi-format (REPORT-010)
-    "MultiFormatRenderer",
     # Formatting (REPORT-026)
     "MeasurementFormatter",
+    # Multi-format (REPORT-010)
+    "MultiFormatRenderer",
     "NumberFormatter",
     "OutputManager",
     # PPTX Export (REPORT-023)
@@ -211,6 +211,7 @@ __all__ = [
     "batch_report",
     # Comparison
     "compare_waveforms",
+    "convert_to_measurement_dict",
     # Tables
     "create_comparison_table",
     # Sections
@@ -226,6 +227,8 @@ __all__ = [
     "create_violations_section",
     # Multi-format (REPORT-010)
     "detect_format_from_extension",
+    # HTML Generation
+    "embed_plots",
     "export_multiple_reports",
     "export_pptx",
     "export_report",
@@ -239,13 +242,10 @@ __all__ = [
     "format_with_context",
     "format_with_locale",
     "format_with_units",
-    "convert_to_measurement_dict",
     "generate_auto_report",
     "generate_batch_report",
     "generate_comparison_report",
     "generate_executive_summary",
-    # HTML Generation
-    "embed_plots",
     "generate_html_report",
     # Multi-Channel
     "generate_multichannel_report",

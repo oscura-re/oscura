@@ -115,13 +115,13 @@ __all__ = [
     "ColorScheme",
     # Standards
     "FormatStandards",
+    # Measurements
+    "MeasurementFormatter",
     # Numbers
     "NumberFormatter",
     "Severity",
     # Emphasis
     "VisualEmphasis",
-    # Measurements
-    "MeasurementFormatter",
     "apply_formatting_standards",
     "convert_to_measurement_dict",
     "format_callout_box",

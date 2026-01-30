@@ -7,7 +7,6 @@ Tests for:
 - Complete workflow orchestration (analyze_complete)
 """
 
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -297,7 +296,7 @@ class TestMeasurementMetadata:
         assert "duty_cycle" in MEASUREMENT_METADATA
 
         # Check structure
-        for key, value in MEASUREMENT_METADATA.items():
+        for value in MEASUREMENT_METADATA.values():
             assert "unit" in value
             assert "description" in value
             assert isinstance(value["unit"], str)

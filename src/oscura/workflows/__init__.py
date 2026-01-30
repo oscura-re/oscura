@@ -16,6 +16,7 @@ Example:
     >>> stats = osc.workflows.load_all(["trace1.wfm", "trace2.wfm"])
 """
 
+from oscura.workflows import waveform
 from oscura.workflows.complete_re import CompleteREResult, full_protocol_re
 from oscura.workflows.compliance import emc_compliance_test
 from oscura.workflows.digital import characterize_buffer
@@ -36,7 +37,6 @@ from oscura.workflows.reverse_engineering import (
     reverse_engineer_signal,
 )
 from oscura.workflows.signal_integrity import signal_integrity_audit
-from oscura.workflows import waveform
 
 __all__ = [
     # Multi-trace
