@@ -166,7 +166,9 @@ def print_summary(results: dict[str, Any]) -> None:
     total_measurements = 0
     for domain in results["results"].values():
         for v in domain.values():
-            if (isinstance(v, dict) and "value" in v) or (isinstance(v, (int, float)) and not isinstance(v, bool)):
+            if (isinstance(v, dict) and "value" in v) or (
+                isinstance(v, (int, float)) and not isinstance(v, bool)
+            ):
                 total_measurements += 1
     print(f"Total Measurements: {total_measurements}")
 
