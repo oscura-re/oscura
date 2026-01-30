@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-01-30
+
 ### Added
 - **Loader** (src/oscura/loaders/tss.py): Tektronix session file (.tss) support - ZIP archive loader extracting embedded .wfm files, session.json metadata, measurements, annotations - multi-channel support via load_all_channels() with channel selection by name/index - integrated with existing Tektronix loader for .wfm parsing - comprehensive error handling (corrupted archives, missing metadata, invalid channels, file not found) - defensive JSON parsing with graceful degradation - metadata enrichment from session-level configuration - supports nested directory structures and macOS metadata filtering - registered in SUPPORTED_FORMATS (".tss" → "tss") and _LOADER_REGISTRY - modified load_all_channels() dispatcher for .tss detection - 18 comprehensive tests achieving >85% coverage in test_tss.py (basic loading, channel selection, metadata extraction, error handling, edge cases, integration) - complete API documentation with Google-style docstrings and usage examples (454 LOC + 357 test LOC = 811 LOC total)
 - **Tool** (analyze_waveform.py): Comprehensive waveform analysis reference implementation demonstrating COMPLETE oscura API usage - properly uses ALL core APIs without workarounds - spectral analysis via oscura.analyzers.spectral (FFT, PSD, THD, SNR, SINAD, ENOB, SFDR) instead of manual numpy - digital signal analysis via oscura.analyzers.digital (edge detection, clock recovery, signal quality) for both analog and digital traces - professional report generation via oscura.reporting (Report, ReportConfig, generate_html_report) instead of manual HTML - statistical analysis via oscura.analyzers.statistics (basic_stats, percentiles, zscore_outliers, autocorrelation) - time-domain analysis via oscura waveform APIs (amplitude, frequency, rise/fall time, duty cycle, overshoot) - supports .tss/.wfm/.csv formats with auto-detection - demonstrates proper analyzer API patterns - clean consumer of oscura core APIs without reimplementation - passes mypy --strict (0 errors), ruff (0 issues), all 5 validators - tested on 4 waveform types (sine, square, noisy, complex spectrum) - generates professional HTML reports with CSS styling - comprehensive validation report included (499 LOC production-ready) - replaces previous basic implementation
@@ -33,7 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Release** (`.github/workflows/release.yml`): Simplify smoke test to import and CLI checks only (pytest suite validation in CI) - avoids dependency cascades
 - **Dependencies** (`pyproject.toml`): Add tqdm to core dependencies (required by workflows/complete_re.py)
 
-## [0.7.0] - TBD
 
 ### BREAKING CHANGES
 

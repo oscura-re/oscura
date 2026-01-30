@@ -53,7 +53,7 @@ try:
     __version__ = version("oscura")
 except Exception:
     # Fallback for development/testing when package not installed
-    __version__ = "0.6.0"
+    __version__ = "0.7.0"
 
 __author__ = "Oscura Contributors"
 
