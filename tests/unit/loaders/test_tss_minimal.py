@@ -24,7 +24,7 @@ class TestTSSErrorHandling:
         """Test error when file doesn't exist."""
         nonexistent = tmp_path / "nonexistent.tss"
 
-        with pytest.raises(FileNotFoundError, match="No such file"):
+        with pytest.raises(LoaderError, match="File not found"):
             load_tss(nonexistent)
 
     def test_not_zip_file(self, tmp_path: Path) -> None:
@@ -32,7 +32,7 @@ class TestTSSErrorHandling:
         not_zip = tmp_path / "not_a_zip.tss"
         not_zip.write_text("This is not a ZIP file")
 
-        with pytest.raises(FormatError, match="not a valid ZIP archive"):
+        with pytest.raises(FormatError, match="Not a valid ZIP archive"):
             load_tss(not_zip)
 
     def test_loader_registration(self) -> None:
