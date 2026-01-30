@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
-"""Comprehensive Waveform Analysis - Reference Implementation.
+"""Complete Waveform Analysis with Reverse Engineering - Reference Implementation.
 
-This script demonstrates optimal usage of the Oscura framework for complete
-waveform analysis, leveraging high-level workflow APIs for concise scripting.
+This script demonstrates optimal usage of the Oscura framework for comprehensive
+waveform analysis, including protocol decoding and reverse engineering.
 
 Features:
 - Automatic file format detection (.wfm, .tss, .csv, etc.)
 - Complete multi-domain analysis (time, frequency, digital, statistical)
+- Protocol detection and decoding (UART, SPI, I2C, CAN, etc.)
+- Reverse engineering pipeline (clock recovery, framing, CRC analysis)
+- Pattern recognition and state machine inference
 - Professional visualization with IEEE publication standards
-- Comprehensive HTML reports with embedded plots
-- Minimal code using framework APIs
+- Comprehensive HTML reports with all findings
 
 Example:
+    # Complete analysis with all features
     $ python3 analyze_waveform.py signal.wfm
-    $ python3 analyze_waveform.py capture.tss --channel CH2 --output ./analysis
-    $ python3 analyze_waveform.py data.csv
+
+    # Digital signal with protocol decoding
+    $ python3 analyze_waveform.py capture.tss --output ./analysis
+
+    # Quick analysis without reverse engineering
+    $ python3 analyze_waveform.py data.csv --no-reverse-engineering
+
+    # Deep RE analysis with protocol hints
+    $ python3 analyze_waveform.py unknown.wfm --re-depth deep --protocol-hints uart spi
 
 References:
     IEEE 181-2011: Transitional Waveform Definitions
@@ -26,19 +36,96 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
+
+
+def print_summary(results: dict[str, Any]) -> None:
+    """Print comprehensive analysis summary.
+
+    Args:
+        results: Results dictionary from analyze_complete().
+    """
+    print("\n" + "=" * 80)
+    print("COMPLETE ANALYSIS SUMMARY")
+    print("=" * 80)
+
+    # Basic info
+    print(f"\nFile: {results['filepath'].name}")
+    print(f"Signal Type: {'Digital' if results['is_digital'] else 'Analog'}")
+    print(f"Analyses Run: {len(results['results'])}")
+
+    # Protocol detection
+    if results.get("protocols_detected"):
+        proto_count = len(results["protocols_detected"])
+        print(f"\nProtocols Detected: {proto_count}")
+        for proto in results["protocols_detected"]:
+            conf = proto.get("confidence", 0.0)
+            print(f"  - {proto['protocol'].upper()}: {conf:.1%} confidence")
+
+    # Decoded frames
+    if results.get("decoded_frames"):
+        print(f"\nFrames Decoded: {len(results['decoded_frames'])}")
+
+    # Reverse engineering
+    if results.get("reverse_engineering"):
+        re_res = results["reverse_engineering"]
+        print("\nReverse Engineering:")
+        if re_res.get("baud_rate"):
+            print(f"  - Baud Rate: {re_res['baud_rate']:.0f} Hz")
+        if re_res.get("frame_format"):
+            print(f"  - Frame Format: {re_res['frame_format']}")
+        if re_res.get("sync_patterns"):
+            print(f"  - Sync Pattern: {re_res['sync_patterns']}")
+        if re_res.get("crc_parameters"):
+            print("  - CRC Detected: Yes")
+        if re_res.get("confidence"):
+            print(f"  - Confidence: {re_res['confidence']:.1%}")
+
+    # Pattern recognition
+    if results.get("patterns"):
+        pattern_res = results["patterns"]
+        print("\nPattern Recognition:")
+        if pattern_res.get("anomalies"):
+            print(f"  - Anomalies: {len(pattern_res['anomalies'])}")
+        if pattern_res.get("patterns"):
+            print(f"  - Patterns Discovered: {len(pattern_res['patterns'])}")
+        if pattern_res.get("state_machine"):
+            sm = pattern_res["state_machine"]
+            state_count = len(sm.states) if hasattr(sm, "states") else 0
+            print(f"  - State Machine States: {state_count}")
+
+    # Visualizations
+    print(f"\nPlots Generated: {len(results['plots'])}")
+
+    # Report
+    if results["report_path"]:
+        print(f"\n📄 Report: {results['report_path']}")
+
+    print(f"\n📁 Output Directory: {results['output_dir']}")
+    print("=" * 80 + "\n")
 
 
 def main() -> int:
-    """Main entry point for waveform analysis."""
+    """Main entry point for complete waveform analysis."""
     parser = argparse.ArgumentParser(
-        description="Comprehensive waveform analysis using Oscura framework",
+        description="Complete waveform analysis with reverse engineering",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Complete analysis (all features enabled)
   %(prog)s signal.wfm
-  %(prog)s capture.tss --channel CH2
-  %(prog)s data.csv --output ./my_analysis
+
+  # Specify output directory
+  %(prog)s capture.tss --output ./my_analysis
+
+  # Quick analysis without reverse engineering
+  %(prog)s data.csv --no-reverse-engineering
+
+  # Deep reverse engineering with protocol hints
+  %(prog)s unknown.wfm --re-depth deep --protocol-hints uart spi
+
+  # Disable specific features
+  %(prog)s signal.wfm --no-protocol-decode --no-patterns
 
 Supported formats:
   .wfm   - Tektronix waveform files
@@ -46,15 +133,24 @@ Supported formats:
   .csv   - CSV waveform data
   .isf   - Tektronix internal save format
   .bin   - Binary waveform data
+
+Capabilities:
+  - Time/Frequency/Digital/Statistical Analysis
+  - Protocol Detection & Decoding (UART, SPI, I2C, CAN, etc.)
+  - Reverse Engineering (Clock recovery, CRC analysis, Framing)
+  - Pattern Recognition & State Machine Inference
+  - Comprehensive Reporting with Visualizations
         """,
     )
 
+    # Required arguments
     parser.add_argument(
         "file",
         type=Path,
         help="Input waveform file path",
     )
 
+    # Output configuration
     parser.add_argument(
         "--output",
         "-o",
@@ -63,14 +159,7 @@ Supported formats:
         help="Output directory for analysis results (default: ./waveform_analysis_output)",
     )
 
-    parser.add_argument(
-        "--channel",
-        "-c",
-        type=str,
-        default=None,
-        help="Channel name/index for multi-channel files (e.g., 'CH1', 'CH2', 0, 1)",
-    )
-
+    # Analysis selection
     parser.add_argument(
         "--analyses",
         "-a",
@@ -80,6 +169,42 @@ Supported formats:
         help="Analysis domains to run (default: all)",
     )
 
+    # Protocol decoding options
+    parser.add_argument(
+        "--no-protocol-decode",
+        action="store_true",
+        help="Disable automatic protocol detection and decoding",
+    )
+
+    parser.add_argument(
+        "--protocol-hints",
+        nargs="+",
+        metavar="PROTOCOL",
+        help="Protocol hints for decoder (e.g., uart spi i2c)",
+    )
+
+    # Reverse engineering options
+    parser.add_argument(
+        "--no-reverse-engineering",
+        action="store_true",
+        help="Disable reverse engineering pipeline",
+    )
+
+    parser.add_argument(
+        "--re-depth",
+        choices=["quick", "standard", "deep"],
+        default="standard",
+        help="Reverse engineering analysis depth (default: standard)",
+    )
+
+    # Pattern recognition options
+    parser.add_argument(
+        "--no-patterns",
+        action="store_true",
+        help="Disable pattern recognition and state machine inference",
+    )
+
+    # Output options
     parser.add_argument(
         "--no-plots",
         action="store_true",
@@ -92,6 +217,7 @@ Supported formats:
         help="Disable report generation",
     )
 
+    # Verbosity
     parser.add_argument(
         "--quiet",
         "-q",
@@ -107,7 +233,7 @@ Supported formats:
         return 1
 
     try:
-        # Run complete analysis using framework workflow API
+        # Import workflow module
         from oscura.workflows import waveform
 
         # Convert analyses list format
@@ -117,28 +243,24 @@ Supported formats:
         else:
             analyses = args.analyses
 
+        # Single API call performs COMPLETE analysis including RE
         results = waveform.analyze_complete(
             args.file,
             output_dir=args.output,
             analyses=analyses,
             generate_plots=not args.no_plots,
             generate_report=not args.no_report,
+            enable_protocol_decode=not args.no_protocol_decode,
+            enable_reverse_engineering=not args.no_reverse_engineering,
+            enable_pattern_recognition=not args.no_patterns,
+            protocol_hints=args.protocol_hints,
+            reverse_engineering_depth=args.re_depth,
             verbose=not args.quiet,
         )
 
-        # Print summary
+        # Print comprehensive summary
         if not args.quiet:
-            print("\n" + "=" * 80)
-            print("ANALYSIS SUMMARY")
-            print("=" * 80)
-            print(f"File: {results['filepath'].name}")
-            print(f"Signal Type: {'Digital' if results['is_digital'] else 'Analog'}")
-            print(f"Analyses Run: {len(results['results'])}")
-            print(f"Plots Generated: {len(results['plots'])}")
-            if results["report_path"]:
-                print(f"Report: {results['report_path']}")
-            print(f"Output Directory: {results['output_dir']}")
-            print("=" * 80)
+            print_summary(results)
 
         return 0
 
