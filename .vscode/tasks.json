@@ -1,0 +1,617 @@
+{
+  // ==========================================================================
+  // VS Code Tasks Configuration for Oscura
+  // ==========================================================================
+  // PHILOSOPHY: This file provides quick access to repository scripts and
+  // commands. All task commands use existing scripts (SSOT principle) rather
+  // than duplicating command-line arguments that could drift over time.
+  //
+  // Quick Access:
+  //   - Ctrl+Shift+B (Run Build Task)
+  //   - Ctrl+Shift+P → "Tasks: Run Task"
+  //   - Terminal → Run Task
+  // ==========================================================================
+
+  "version": "2.0.0",
+  "tasks": [
+    // ========================================================================
+    // PRIMARY TASKS (Most Frequently Used)
+    // ========================================================================
+    {
+      "label": "Test: Run All (Fast)",
+      "type": "shell",
+      "command": "./scripts/test.sh",
+      "args": ["--fast"],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run all tests quickly (no coverage) using scripts/test.sh"
+    },
+    {
+      "label": "Test: Run All with Coverage",
+      "type": "shell",
+      "command": "./scripts/test.sh",
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run all tests with coverage report (SSOT: scripts/test.sh)"
+    },
+    {
+      "label": "Quality: Check All",
+      "type": "shell",
+      "command": "./scripts/check.sh",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run all quality checks (lint, type check, format) - MUST pass before commit"
+    },
+    {
+      "label": "Quality: Auto-Fix Issues",
+      "type": "shell",
+      "command": "./scripts/fix.sh",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Auto-fix linting and formatting issues (SSOT: scripts/fix.sh)"
+    },
+    {
+      "label": "Validate: Pre-Commit (All Validators)",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/validate_all.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run all 5 validators - MUST show 5/5 passing before commit"
+    },
+
+    // ========================================================================
+    // TEST TASKS (Granular Test Execution)
+    // ========================================================================
+    {
+      "label": "Test: Unit Tests Only",
+      "type": "shell",
+      "command": "uv",
+      "args": ["run", "pytest", "tests/unit", "-v"],
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run unit tests only (fast, isolated tests)"
+    },
+    {
+      "label": "Test: Integration Tests Only",
+      "type": "shell",
+      "command": "uv",
+      "args": ["run", "pytest", "tests/integration", "-v"],
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run integration tests only"
+    },
+    {
+      "label": "Test: Fast Tests Only",
+      "type": "shell",
+      "command": "uv",
+      "args": ["run", "pytest", "-m", "unit and not slow and not memory_intensive", "-v"],
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run only fast unit tests (excludes slow and memory intensive)"
+    },
+    {
+      "label": "Test: Failed Tests Only",
+      "type": "shell",
+      "command": "uv",
+      "args": ["run", "pytest", "--lf", "-v"],
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Re-run only failed tests from last run"
+    },
+    {
+      "label": "Test: Serial Execution (Debug)",
+      "type": "shell",
+      "command": "./scripts/test-serial.sh",
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run tests serially (useful for debugging race conditions)"
+    },
+
+    // ========================================================================
+    // QUALITY TASKS (Individual Quality Checks)
+    // ========================================================================
+    {
+      "label": "Quality: Lint (Ruff Check)",
+      "type": "shell",
+      "command": "./scripts/tools/ruff.sh",
+      "args": ["--check", "-v"],
+      "problemMatcher": {
+        "owner": "ruff",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run ruff linting (SSOT: scripts/tools/ruff.sh)"
+    },
+    {
+      "label": "Quality: Format Check (Ruff Format)",
+      "type": "shell",
+      "command": "./scripts/tools/ruff.sh",
+      "args": ["--format", "-v"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Check code formatting (SSOT: scripts/tools/ruff.sh)"
+    },
+    {
+      "label": "Quality: Type Check (Mypy)",
+      "type": "shell",
+      "command": "./scripts/tools/mypy.sh",
+      "args": ["-v"],
+      "problemMatcher": {
+        "owner": "mypy",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(error|warning|note):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run type checking (SSOT: scripts/tools/mypy.sh)"
+    },
+    {
+      "label": "Quality: Shell Check",
+      "type": "shell",
+      "command": "./scripts/tools/shellcheck.sh",
+      "args": ["-v"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Check all shell scripts (SSOT: scripts/tools/shellcheck.sh)"
+    },
+
+    // ========================================================================
+    // VALIDATION TASKS (Claude Orchestration Validators)
+    // ========================================================================
+    {
+      "label": "Validate: Config Consistency",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/validate_config_consistency.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Validate Claude orchestration config consistency"
+    },
+    {
+      "label": "Validate: SSOT Compliance",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/validate_ssot.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Validate Single Source of Truth compliance"
+    },
+    {
+      "label": "Validate: Documentation",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/validate_documentation.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Validate documentation consistency and completeness"
+    },
+    {
+      "label": "Validate: Portability",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/validate_portability.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Validate cross-platform portability"
+    },
+    {
+      "label": "Validate: Agents",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/validate_agents.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Validate agent configuration and routing"
+    },
+
+    // ========================================================================
+    // CI/CD SIMULATION TASKS
+    // ========================================================================
+    {
+      "label": "CI: Pre-Push Validation (Full)",
+      "type": "shell",
+      "command": "./scripts/pre-push.sh",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Run full CI validation locally (same as GitHub Actions PR checks)"
+    },
+    {
+      "label": "CI: Doctor (Environment Check)",
+      "type": "shell",
+      "command": "./scripts/doctor.sh",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Check development environment health and dependencies"
+    },
+
+    // ========================================================================
+    // MAINTENANCE TASKS
+    // ========================================================================
+    {
+      "label": "Maintenance: Clean Build Artifacts",
+      "type": "shell",
+      "command": "./scripts/clean.sh",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Remove all build artifacts, caches, and temporary files"
+    },
+    {
+      "label": "Maintenance: Setup Environment",
+      "type": "shell",
+      "command": "./scripts/setup.sh",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Complete project setup (dependencies + git hooks)"
+    },
+    {
+      "label": "Maintenance: Verify Setup",
+      "type": "shell",
+      "command": "./scripts/verify-setup.sh",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Verify environment setup is complete and correct"
+    },
+    {
+      "label": "Maintenance: Audit Scripts",
+      "type": "shell",
+      "command": "./scripts/audit_scripts.sh",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Audit all scripts for consistency and quality"
+    },
+
+    // ========================================================================
+    // PACKAGE MANAGEMENT TASKS
+    // ========================================================================
+    {
+      "label": "Packages: Install All Dependencies",
+      "type": "shell",
+      "command": "uv",
+      "args": ["sync", "--all-extras"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Install all dependencies including optional extras"
+    },
+    {
+      "label": "Packages: Install Dev Dependencies",
+      "type": "shell",
+      "command": "uv",
+      "args": ["sync", "--group", "dev"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Install development dependencies only"
+    },
+    {
+      "label": "Packages: Update Lock File",
+      "type": "shell",
+      "command": "uv",
+      "args": ["lock", "--upgrade"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Update uv.lock file with latest compatible versions"
+    },
+
+    // ========================================================================
+    // COVERAGE TASKS
+    // ========================================================================
+    {
+      "label": "Coverage: Generate HTML Report",
+      "type": "shell",
+      "command": "uv",
+      "args": ["run", "pytest", "--cov=src/oscura", "--cov-report=html", "--cov-report=term"],
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Generate HTML coverage report in htmlcov/"
+    },
+    {
+      "label": "Coverage: Open HTML Report",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "xdg-open htmlcov/index.html 2>/dev/null || open htmlcov/index.html 2>/dev/null || start htmlcov/index.html"
+      ],
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "detail": "Open coverage report in browser (run after generating HTML report)"
+    },
+
+    // ========================================================================
+    // CLAUDE ORCHESTRATION TASKS
+    // ========================================================================
+    {
+      "label": "Claude: Health Check",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/health_check.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Check Claude orchestration system health"
+    },
+    {
+      "label": "Claude: Cleanup Stale Agents",
+      "type": "shell",
+      "command": "python3",
+      "args": [".claude/hooks/cleanup_stale_agents.py"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "detail": "Clean up stale agent processes and artifacts"
+    }
+  ]
+}

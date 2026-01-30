@@ -29,6 +29,7 @@ from oscura.core.types import DigitalTrace, IQTrace, WaveformTrace
 _LOADER_REGISTRY: dict[str, tuple[str, str]] = {
     "tektronix": ("oscura.loaders.tektronix", "load_tektronix_wfm"),
     "tek": ("oscura.loaders.tektronix", "load_tektronix_wfm"),
+    "tss": ("oscura.loaders.tss", "load_tss"),
     "rigol": ("oscura.loaders.rigol", "load_rigol_wfm"),
     "numpy": ("oscura.loaders.numpy_loader", "load_npz"),
     "csv": ("oscura.loaders.csv_loader", "load_csv"),
@@ -180,6 +181,7 @@ logger = logging.getLogger(__name__)
 # Supported format extensions mapped to loader names
 SUPPORTED_FORMATS: dict[str, str] = {
     ".wfm": "auto_wfm",  # Auto-detect Tektronix vs Rigol
+    ".tss": "tss",  # Tektronix session files
     ".npz": "numpy",
     ".csv": "csv",
     ".h5": "hdf5",
@@ -392,8 +394,8 @@ def load_all_channels(
             )
         loader_name = SUPPORTED_FORMATS[ext]
 
-    # Currently only supports Tektronix WFM for multi-channel loading
-    if loader_name in ("auto_wfm", "tektronix", "tek"):
+    # Currently only supports Tektronix WFM and TSS for multi-channel loading
+    if loader_name in ("auto_wfm", "tektronix", "tek", "tss"):
         return _load_all_channels_tektronix(path)
     else:
         # For other formats, try loading as single channel
@@ -405,10 +407,10 @@ def load_all_channels(
 def _load_all_channels_tektronix(
     path: Path,
 ) -> dict[str, WaveformTrace | DigitalTrace | IQTrace]:
-    """Load all channels from a Tektronix WFM file.
+    """Load all channels from a Tektronix WFM or TSS file.
 
     Args:
-        path: Path to the Tektronix .wfm file.
+        path: Path to the Tektronix .wfm or .tss file.
 
     Returns:
         Dictionary mapping channel names to traces.
@@ -416,6 +418,12 @@ def _load_all_channels_tektronix(
     Raises:
         LoaderError: If the file cannot be read or parsed.
     """
+    # Check if this is a .tss session file
+    if path.suffix.lower() == ".tss":
+        from oscura.loaders.tss import load_all_channels_tss
+
+        return load_all_channels_tss(path)
+
     wfm = _read_tektronix_file(path)
     channels: dict[str, WaveformTrace | DigitalTrace | IQTrace] = {}
 

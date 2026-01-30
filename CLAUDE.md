@@ -118,7 +118,28 @@ tests/                   # Test suite
   integration/           # Integration tests (edge cases only)
   conftest.py            # Shared fixtures (MUST use these)
   fixtures/              # Test data builders
-demos/                   # Working demonstrations with validation
+demos/                   # Working demonstrations with validation (33+ demos)
+  01_waveform_analysis/  # Basic oscilloscope file loading (2 demos)
+  02_file_format_io/     # VCD, CSV, HDF5 formats (1 demo)
+  03_custom_daq/         # Memory-efficient loaders (3 demos)
+  04_serial_protocols/   # Manchester, I2S, JTAG, USB (6 demos)
+  05_protocol_decoding/  # Multi-protocol decoder (1 demo)
+  06_udp_packet_analysis/ # PCAP network analysis (1 demo)
+  07_protocol_inference/ # CRC, state machines, dissectors (3 demos)
+  08_automotive_protocols/ # FlexRay, LIN (2 demos)
+  09_automotive/         # OBD-II, UDS, J1939 (1 demo)
+  10_timing_measurements/ # IEEE 181 pulse (1 demo)
+  11_mixed_signal/       # Analog + digital (1 demo)
+  12_spectral_compliance/ # IEEE 1241 FFT/THD (1 demo)
+  13_jitter_analysis/    # IEEE 2414 jitter (2 demos)
+  14_power_analysis/     # IEEE 1459 power (2 demos)
+  15_signal_integrity/   # TDR, S-params (3 demos)
+  16_emc_compliance/     # CISPR/IEC EMC (1 demo)
+  17_signal_reverse_engineering/ # Complete RE workflow (3 demos)
+  18_advanced_inference/ # ML/Bayesian (3 demos)
+  19_complete_workflows/ # End-to-end pipelines (3 demos)
+  common/                # Shared utilities (BaseDemo, ValidationSuite)
+examples/                # High-level workflow examples (6 files)
 docs/                    # User documentation
 scripts/                 # Development utilities
   test.sh                # Run tests (SSOT for pytest config)
@@ -362,7 +383,8 @@ Monitor via: `/context` command
 | Add file format loader   | `src/oscura/loaders/`                                   |
 | Add measurement analyzer | `src/oscura/analyzers/`                                 |
 | Add protocol decoder     | `src/oscura/analyzers/protocols/`                       |
-| Working examples         | `examples/` (organized by category)                     |
+| Working demonstrations   | `demos/` (19 categories, 33+ comprehensive demos)       |
+| High-level examples      | `examples/` (6 workflow examples)                       |
 | Test fixtures            | `tests/conftest.py`, `tests/fixtures/`                  |
 | Test data generation     | `scripts/test-data/generate_comprehensive_test_data.py` |
 | Coding standards         | `.claude/coding-standards.yaml`                         |

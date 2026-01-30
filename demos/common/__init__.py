@@ -7,7 +7,7 @@ This module provides shared infrastructure for all demos including:
 - Plotting helpers (when matplotlib available)
 """
 
-from demos.common.base_demo import BaseDemo, DemoResult
+from demos.common.base_demo import BaseDemo, DemoResult, run_demo_main
 from demos.common.formatting import (
     print_error,
     print_header,
@@ -48,4 +48,5 @@ __all__ = [
     "print_success",
     "print_table",
     "print_warning",
+    "run_demo_main",
 ]
