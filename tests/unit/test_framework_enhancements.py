@@ -109,8 +109,8 @@ class TestBatchVisualization:
         """Test generate_all_plots for analog signals."""
         from oscura.visualization import batch
 
-        # Create test signal
-        data = np.sin(2 * np.pi * 440 * np.linspace(0, 0.01, 1000))
+        # Create test signal (needs >1024 samples for spectrogram NFFT)
+        data = np.sin(2 * np.pi * 440 * np.linspace(0, 0.1, 10000))
         metadata = TraceMetadata(sample_rate=100000)
         trace = WaveformTrace(data=data, metadata=metadata)
 
