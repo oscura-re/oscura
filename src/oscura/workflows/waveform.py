@@ -240,8 +240,15 @@ def analyze_complete(
         try:
             from oscura.analyzers.digital import signal_quality_summary
 
-            if isinstance(trace, WaveformTrace):
-                digital_results_obj = signal_quality_summary(trace)
+            # Convert DigitalTrace to WaveformTrace for analysis
+            analysis_trace = trace
+            if isinstance(trace, DigitalTrace):
+                # Convert bool array to float for analysis
+                waveform_data = trace.data.astype(float)
+                analysis_trace = WaveformTrace(data=waveform_data, metadata=trace.metadata)
+
+            if isinstance(analysis_trace, WaveformTrace):
+                digital_results_obj = signal_quality_summary(analysis_trace)
                 digital_results: dict[str, Any]
                 if hasattr(digital_results_obj, "__dict__"):
                     digital_results = digital_results_obj.__dict__
