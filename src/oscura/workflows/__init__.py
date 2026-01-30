@@ -36,6 +36,7 @@ from oscura.workflows.reverse_engineering import (
     reverse_engineer_signal,
 )
 from oscura.workflows.signal_integrity import signal_integrity_audit
+from oscura.workflows import waveform
 
 __all__ = [
     # Multi-trace
@@ -58,4 +59,5 @@ __all__ = [
     "power_analysis",
     "reverse_engineer_signal",
     "signal_integrity_audit",
+    "waveform",
 ]

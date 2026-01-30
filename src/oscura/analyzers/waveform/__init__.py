@@ -4,6 +4,7 @@ Provides timing and amplitude measurements for analog waveforms.
 """
 
 from oscura.analyzers.waveform.measurements import (
+    MEASUREMENT_METADATA,
     amplitude,
     duty_cycle,
     fall_time,
@@ -20,6 +21,7 @@ from oscura.analyzers.waveform.measurements import (
 )
 
 __all__ = [
+    "MEASUREMENT_METADATA",
     "amplitude",
     "duty_cycle",
     "fall_time",

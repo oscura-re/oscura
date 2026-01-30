@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Framework** (src/oscura/analyzers/waveform/measurements.py): MEASUREMENT_METADATA dictionary providing comprehensive unit information for all waveform measurements - centralizes measurement knowledge (45 measurements: time-domain, frequency-domain, voltage, ratios, percentages, decibels, dimensionless) - maps parameter names to units and descriptions - enables automated formatting without hardcoding units in scripts - exported via oscura.analyzers.waveform module
+- **Framework** (src/oscura/reporting/core.py): Report.add_measurements() convenience method for automatic measurement formatting - accepts measurement dicts with optional unit maps - auto-detects units from MEASUREMENT_METADATA for common measurements - automatically formats with SI prefixes and proper unit handling - supports HTML and plain text output - reduces script complexity by ~45 lines per usage
+- **Framework** (src/oscura/reporting/html.py): embed_plots() public API for embedding base64-encoded plots into HTML content - accepts plot dictionaries and section titles - configurable insertion location (before_closing_div, before_closing_body, append) - eliminates ~28 lines of manual HTML manipulation per usage - exported via oscura.reporting module
+- **Framework** (src/oscura/core/types.py): Signal type detection properties on all trace classes - added is_analog, is_digital, is_iq, signal_type properties to WaveformTrace, DigitalTrace, IQTrace - eliminates isinstance() checks in user code - cleaner API for signal type detection (trace.is_digital instead of isinstance(trace, DigitalTrace))
+- **Framework** (src/oscura/visualization/batch.py): Comprehensive batch visualization module - provides generate_all_plots() for automatic plot generation - 8 plotting functions: plot_waveform, plot_fft_spectrum, plot_histogram, plot_spectrogram, plot_logic_analyzer, plot_statistics_summary, fig_to_base64, generate_all_plots - auto-detects signal type and generates appropriate plots (5 for analog, 2 for digital) - IEEE publication style with colorblind-safe palette - 365 lines of reusable plotting code
+- **Framework** (src/oscura/workflows/waveform.py): Complete waveform analysis workflow orchestration - analyze_complete() function handles entire pipeline: load → analyze → plot → report - supports selective analyses (time_domain, frequency_domain, digital, statistics) - configurable plot and report generation - reduces typical analysis scripts from 1000+ lines to ~40 lines (96% reduction)
+- **Tests** (tests/unit/test_framework_enhancements.py): Comprehensive tests for all Phase 1 & 2 enhancements - covers signal type properties, plot embedding, batch visualization, complete workflow, measurement metadata, Report.add_measurements() - includes unit tests and integration tests - ensures >80% coverage of new features
+
+### Changed
+- **Tool** (analyze_waveform.py): Complete rewrite using framework workflow API - reduced from 1,054 lines to 154 lines (85% reduction) - uses oscura.workflows.waveform.analyze_complete() for entire pipeline - removed 8 plotting functions (now in oscura.visualization.batch) - removed ComprehensiveWaveformAnalyzer class (functionality in workflow) - cleaner command-line interface with proper argument parsing - demonstrates optimal oscura framework usage patterns
+- **Framework** (src/oscura/visualization/__init__.py): Exported batch module for easy access to batch plotting functionality
+- **Framework** (src/oscura/workflows/__init__.py): Exported waveform module for easy access to complete workflow orchestration
+
+### Fixed
+- **Framework** (src/oscura/analyzers/waveform/measurements.py): Fixed critical overshoot/undershoot unit mapping - MEASUREMENT_METADATA now correctly maps overshoot and undershoot to "%" (not "ratio") - measurements return percentages (0-100) not ratios (0-1) - verified in framework source (measurements.py:456, 492) which shows `* 100` multiplication
+- **Tool** (analyze_waveform.py): Fixed overshoot/undershoot display bug that caused 5% to display as 500% - now uses framework MEASUREMENT_METADATA with correct unit mapping
+
 ## [0.7.0] - 2026-01-30
 
 ### Added

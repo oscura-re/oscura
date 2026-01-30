@@ -73,8 +73,12 @@ from oscura.reporting.export import (
     export_report,
 )
 from oscura.reporting.formatting import (
+    MeasurementFormatter,
     NumberFormatter,
+    convert_to_measurement_dict,
     format_margin,
+    format_measurement,
+    format_measurement_dict,
     format_pass_fail,
     format_value,
     format_with_context,
@@ -82,6 +86,7 @@ from oscura.reporting.formatting import (
     format_with_units,
 )
 from oscura.reporting.html import (
+    embed_plots,
     generate_html_report,
     save_html_report,
 )
@@ -176,6 +181,7 @@ __all__ = [
     # Multi-format (REPORT-010)
     "MultiFormatRenderer",
     # Formatting (REPORT-026)
+    "MeasurementFormatter",
     "NumberFormatter",
     "OutputManager",
     # PPTX Export (REPORT-023)
@@ -226,16 +232,20 @@ __all__ = [
     "format_batch_summary_table",
     "format_executive_summary_html",
     "format_margin",
+    "format_measurement",
+    "format_measurement_dict",
     "format_pass_fail",
     "format_value",
     "format_with_context",
     "format_with_locale",
     "format_with_units",
+    "convert_to_measurement_dict",
     "generate_auto_report",
     "generate_batch_report",
     "generate_comparison_report",
     "generate_executive_summary",
     # HTML Generation
+    "embed_plots",
     "generate_html_report",
     # Multi-Channel
     "generate_multichannel_report",

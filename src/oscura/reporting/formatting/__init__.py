@@ -5,6 +5,12 @@ from oscura.reporting.formatting.emphasis import (
     format_callout_box,
     format_severity,
 )
+from oscura.reporting.formatting.measurements import (
+    MeasurementFormatter,
+    convert_to_measurement_dict,
+    format_measurement,
+    format_measurement_dict,
+)
 from oscura.reporting.formatting.numbers import (
     NumberFormatter,
     format_percentage,
@@ -114,10 +120,15 @@ __all__ = [
     "Severity",
     # Emphasis
     "VisualEmphasis",
+    # Measurements
+    "MeasurementFormatter",
     "apply_formatting_standards",
+    "convert_to_measurement_dict",
     "format_callout_box",
     # Convenience
     "format_margin",
+    "format_measurement",
+    "format_measurement_dict",
     "format_pass_fail",
     "format_percentage",
     "format_range",

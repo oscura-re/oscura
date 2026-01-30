@@ -26,6 +26,7 @@ Example:
 
 # Import plot module as namespace for DSL compatibility
 from oscura.visualization import plot
+from oscura.visualization import batch
 from oscura.visualization.accessibility import (
     FAIL_SYMBOL,
     LINE_STYLES,
@@ -187,6 +188,7 @@ from oscura.visualization.waveform import (
 )
 
 __all__ = [
+    "batch",
     "COLORBLIND_SAFE_QUALITATIVE",
     "DARK_THEME_PRESET",
     "DIVERGING_COOLWARM",
