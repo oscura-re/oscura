@@ -255,12 +255,14 @@ def frequency(
     """Measure signal frequency.
 
     Computes frequency either from edge-to-edge period or using FFT.
+    The "edge" method automatically falls back to FFT if edge detection fails
+    (e.g., for sine or triangle waves without clear rising edges).
 
     Args:
         trace: Input waveform trace.
         method: Measurement method:
-            - "edge": 1/period from edge timing (default, more accurate)
-            - "fft": Peak of FFT magnitude spectrum
+            - "edge": 1/period from edge timing with automatic FFT fallback (default)
+            - "fft": Peak of FFT magnitude spectrum (always use FFT)
 
     Returns:
         Frequency in Hz, or np.nan if measurement not possible.
@@ -272,32 +274,65 @@ def frequency(
         >>> f = frequency(trace)
         >>> print(f"Frequency: {f / 1e6:.3f} MHz")
 
+        >>> # Force FFT method for smooth waveforms
+        >>> f = frequency(trace, method="fft")
+
     References:
         IEEE 181-2011 Section 5.3
     """
     if method == "edge":
+        # Try edge detection first (faster and more accurate for square waves)
         T = period(trace, edge_type="rising", return_all=False)
+
+        # Fall back to FFT if edge detection fails
         if np.isnan(T) or T <= 0:
-            return np.nan
+            # Try FFT fallback for smooth waveforms (sine, triangle)
+            return _frequency_fft(trace)
+
         return 1.0 / T
 
     elif method == "fft":
-        if len(trace.data) < 16:
-            return np.nan
-
-        data = trace.data - np.mean(trace.data)  # Remove DC
-        n = len(data)
-        fft_mag = np.abs(np.fft.rfft(data))
-
-        # Find peak (skip DC component)
-        peak_idx = np.argmax(fft_mag[1:]) + 1
-
-        # Calculate frequency
-        freq_resolution = trace.metadata.sample_rate / n
-        return float(peak_idx * freq_resolution)
+        return _frequency_fft(trace)
 
     else:
         raise ValueError(f"Unknown method: {method}")
+
+
+def _frequency_fft(trace: WaveformTrace) -> float | np_floating[Any]:
+    """Compute frequency using FFT peak detection.
+
+    Internal helper function for FFT-based frequency measurement.
+
+    Args:
+        trace: Input waveform trace.
+
+    Returns:
+        Frequency in Hz, or np.nan if measurement not possible.
+    """
+    if len(trace.data) < 16:
+        return np.nan
+
+    # Remove DC offset before FFT
+    data = trace.data - np.mean(trace.data)
+
+    # Check if signal is essentially constant (DC only)
+    if np.std(data) < 1e-10:
+        return np.nan
+
+    n = len(data)
+    fft_mag = np.abs(np.fft.rfft(data))
+
+    # Find peak (skip DC component at index 0)
+    peak_idx = np.argmax(fft_mag[1:]) + 1
+
+    # Verify peak is significant (SNR check)
+    # If the peak is not at least 3x the mean, it's likely noise
+    if fft_mag[peak_idx] < 3.0 * np.mean(fft_mag[1:]):
+        return np.nan
+
+    # Calculate frequency from peak index
+    freq_resolution = trace.metadata.sample_rate / n
+    return float(peak_idx * freq_resolution)
 
 
 def duty_cycle(
@@ -308,13 +343,17 @@ def duty_cycle(
     """Measure duty cycle.
 
     Computes duty cycle as the ratio of positive pulse width to period.
+    Uses robust algorithm that handles extreme duty cycles (1%-99%) and
+    incomplete waveforms (fewer than 2 complete cycles visible).
+
+    Falls back to time-domain calculation when edge-based measurement fails.
 
     Args:
         trace: Input waveform trace.
         percentage: If True, return as percentage (0-100). If False, return ratio (0-1).
 
     Returns:
-        Duty cycle as ratio or percentage.
+        Duty cycle as ratio or percentage, or np.nan if measurement not possible.
 
     Example:
         >>> dc = duty_cycle(trace, percentage=True)
@@ -323,13 +362,49 @@ def duty_cycle(
     References:
         IEEE 181-2011 Section 5.4
     """
+    # Strategy: Use multiple methods depending on what edges are available
+    # Method 1 (best): period + pulse width (needs 2+ rising edges, 1+ falling edge)
+    # Method 2 (fallback): time-based calculation from data samples
+
     pw_pos = pulse_width(trace, polarity="positive", return_all=False)
     T = period(trace, edge_type="rising", return_all=False)
 
-    if np.isnan(pw_pos) or np.isnan(T) or T <= 0:
+    # Method 1: Standard period-based calculation
+    if not np.isnan(pw_pos) and not np.isnan(T) and T > 0:
+        dc = pw_pos / T
+        if percentage:
+            return dc * 100
+        return dc
+
+    # Method 2: Fallback for incomplete waveforms - time-domain calculation
+    # Calculate fraction of time signal spends above midpoint threshold
+    data = trace.data
+    if len(data) < 3:
         return np.nan
 
-    dc = pw_pos / T
+    # Convert boolean data to float if needed
+    if data.dtype == bool:
+        data = data.astype(np.float64)
+
+    low, high = _find_levels(data)
+    amplitude = high - low
+
+    # Check for invalid levels
+    if amplitude <= 0 or np.isnan(amplitude):
+        return np.nan
+
+    # Calculate threshold at 50% of amplitude
+    mid = low + 0.5 * amplitude
+
+    # Count samples above threshold
+    above_threshold = data >= mid
+    samples_high = np.sum(above_threshold)
+    total_samples = len(data)
+
+    if total_samples == 0:
+        return np.nan
+
+    dc = float(samples_high) / total_samples
 
     if percentage:
         return dc * 100
@@ -779,6 +854,9 @@ def measure(
 def _find_levels(data: NDArray[np_floating[Any]]) -> tuple[float, float]:
     """Find low and high levels using histogram method.
 
+    Robust algorithm that handles extreme duty cycles (1%-99%) by using
+    adaptive percentile-based level detection when histogram method fails.
+
     Args:
         data: Waveform data array.
 
@@ -794,12 +872,13 @@ def _find_levels(data: NDArray[np_floating[Any]]) -> tuple[float, float]:
         return float(np.nan), float(np.nan)
 
     # Use percentiles for robust level detection
-    p10, p90 = np.percentile(data, [10, 90])
+    # For extreme duty cycles, use wider percentile range
+    p01, p05, p10, p50, p90, p95, p99 = np.percentile(data, [1, 5, 10, 50, 90, 95, 99])
 
     # Check for constant or near-constant signal
-    data_range = p90 - p10
+    data_range = p99 - p01
     if data_range < 1e-10 or np.isnan(data_range):  # Essentially constant or NaN
-        return float(p10), float(p10)
+        return float(p50), float(p50)
 
     # Refine using histogram peaks
     hist, bin_edges = np.histogram(data, bins=50)
@@ -813,9 +892,11 @@ def _find_levels(data: NDArray[np_floating[Any]]) -> tuple[float, float]:
     low = bin_centers[low_idx]
     high = bin_centers[high_idx]
 
-    # Sanity check
+    # Sanity check - if histogram method failed, use adaptive percentiles
     if high <= low:
-        return float(p10), float(p90)
+        # For extreme duty cycles, use min/max with small outlier rejection
+        # p01 and p99 remove top/bottom 1% outliers (noise, ringing)
+        return float(p01), float(p99)
 
     return float(low), float(high)
 

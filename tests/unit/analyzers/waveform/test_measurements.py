@@ -358,6 +358,84 @@ class TestFrequency:
         with pytest.raises(ValueError, match="Unknown method"):
             frequency(trace, method="invalid")  # type: ignore[arg-type]
 
+    def test_sine_wave_auto_fallback(self) -> None:
+        """Test edge method falls back to FFT for sine waves.
+
+        Sine waves don't have clear rising edges, so the edge method
+        should automatically fall back to FFT.
+        """
+        freq = 1000.0
+        sample_rate = 1e6
+        duration = 0.01
+
+        signal = make_sine_wave(freq, sample_rate, duration)
+        trace = make_trace(signal, sample_rate)
+
+        # Edge method should auto-fallback to FFT
+        f = frequency(trace, method="edge")
+
+        assert not np.isnan(f)
+        assert pytest.approx(f, rel=0.01) == freq
+
+    def test_triangle_wave_auto_fallback(self) -> None:
+        """Test edge method falls back to FFT for triangle waves.
+
+        Triangle waves may not have enough clear edges for accurate
+        edge-based frequency measurement.
+        """
+        freq = 2000.0
+        sample_rate = 1e6
+        duration = 0.005
+
+        # Create triangle wave
+        t = np.arange(0, duration, 1.0 / sample_rate)
+        phase = (freq * t) % 1.0
+        signal = 2.0 * np.abs(2.0 * (phase - 0.5)) - 1.0
+
+        trace = make_trace(signal, sample_rate)
+
+        # Edge method should auto-fallback to FFT
+        f = frequency(trace, method="edge")
+
+        assert not np.isnan(f)
+        assert pytest.approx(f, rel=0.01) == freq
+
+    def test_square_wave_uses_edge_detection(self) -> None:
+        """Test square waves use edge detection (not FFT fallback)."""
+        freq = 5000.0
+        sample_rate = 1e6
+        duration = 0.002
+
+        signal = make_square_wave(freq, sample_rate, duration)
+        trace = make_trace(signal, sample_rate)
+
+        # Should use edge detection successfully
+        f = frequency(trace, method="edge")
+
+        assert not np.isnan(f)
+        assert pytest.approx(f, rel=0.001) == freq  # Very accurate for square waves
+
+    def test_dc_signal_returns_nan(self) -> None:
+        """Test DC signal (no frequency) returns NaN for edge method."""
+        signal = np.ones(1000) * 1.5
+        trace = make_trace(signal)
+
+        # Edge method should fail (no edges)
+        f_edge = frequency(trace, method="edge")
+        assert np.isnan(f_edge)
+
+        # FFT method may return a value (lowest freq bin), but it's not
+        # meaningful for pure DC. This is expected FFT behavior.
+
+    def test_insufficient_samples(self) -> None:
+        """Test with too few samples."""
+        signal = np.array([0.0, 1.0, 0.0, 1.0])
+        trace = make_trace(signal)
+
+        f = frequency(trace, method="fft")
+        # May return NaN or incorrect value for very short signals
+        # At minimum, should not crash
+
 
 # =============================================================================
 # Test Duty Cycle (WFM-005)

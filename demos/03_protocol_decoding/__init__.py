@@ -12,6 +12,6 @@ Each demo is self-contained with synthetic data generation and validation.
 """
 
 __all__ = [
-    "UARTDemo",
     "SPIDemo",
+    "UARTDemo",
 ]

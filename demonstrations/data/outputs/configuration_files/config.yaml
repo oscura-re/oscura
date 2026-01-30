@@ -1,0 +1,34 @@
+# Oscura Analysis Configuration
+version: "1.0"
+
+signal:
+  sample_rate: 100000 # 100 kHz
+  channel: CH1
+  duration: 0.01 # 10 ms
+
+analysis:
+  measurements:
+    - frequency
+    - amplitude
+    - rise_time
+    - fall_time
+    - thd
+
+  spectral:
+    window: hamming
+    nfft: 1024
+    overlap: 0.5
+
+  filters:
+    low_pass:
+      enabled: true
+      cutoff: 50000
+    high_pass:
+      enabled: false
+      cutoff: 100
+
+output:
+  format: json
+  save_plots: true
+  plot_format: png
+  output_dir: ./results

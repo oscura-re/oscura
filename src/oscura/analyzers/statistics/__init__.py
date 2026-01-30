@@ -25,6 +25,7 @@ from oscura.analyzers.statistics.basic import (
     running_stats,
     summary_stats,
     weighted_mean,
+    weighted_std,
 )
 from oscura.analyzers.statistics.correlation import (
     CrossCorrelationResult,
@@ -114,6 +115,7 @@ __all__ = [
     "seasonal_decompose",
     "summary_stats",
     "weighted_mean",
+    "weighted_std",
     # Outlier detection
     "zscore_outliers",
 ]

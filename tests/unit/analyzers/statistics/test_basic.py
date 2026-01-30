@@ -22,6 +22,7 @@ from oscura.analyzers.statistics.basic import (
     running_stats,
     summary_stats,
     weighted_mean,
+    weighted_std,
 )
 from oscura.core.types import TraceMetadata, WaveformTrace
 
@@ -428,3 +429,145 @@ def test_summary_stats_single_value() -> None:
     assert result["mean"] == 42.0
     assert result["median"] == 42.0
     assert result["rms"] == 42.0
+
+
+# Test weighted_std
+
+
+def test_weighted_std_uniform_weights() -> None:
+    """Test weighted_std with uniform weights equals unweighted std."""
+    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    weights = np.ones(len(data))
+
+    wstd = weighted_std(data, weights)
+    std = np.std(data)
+
+    assert wstd == pytest.approx(std)
+
+
+def test_weighted_std_no_weights() -> None:
+    """Test weighted_std with None weights equals unweighted std."""
+    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+
+    wstd = weighted_std(data, weights=None)
+    std = np.std(data)
+
+    assert wstd == pytest.approx(std)
+
+
+def test_weighted_std_with_trace(simple_trace: WaveformTrace) -> None:
+    """Test weighted_std with WaveformTrace."""
+    weights = np.linspace(0.5, 1.0, len(simple_trace.data))
+    wstd = weighted_std(simple_trace, weights)
+
+    assert wstd > 0
+    assert np.isfinite(wstd)
+
+
+def test_weighted_std_ddof() -> None:
+    """Test weighted_std with different ddof values."""
+    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    weights = np.ones(len(data))
+
+    wstd_ddof0 = weighted_std(data, weights, ddof=0)
+    wstd_ddof1 = weighted_std(data, weights, ddof=1)
+
+    # ddof=1 should give larger std (Bessel's correction)
+    assert wstd_ddof1 > wstd_ddof0
+
+
+def test_weighted_std_higher_weight_on_extremes() -> None:
+    """Test weighted_std increases when extremes have higher weights."""
+    data = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+
+    # Uniform weights
+    uniform_weights = np.ones(len(data))
+    wstd_uniform = weighted_std(data, uniform_weights)
+
+    # Higher weights on extremes
+    extreme_weights = np.array([2.0, 1.0, 1.0, 1.0, 2.0])
+    wstd_extreme = weighted_std(data, extreme_weights)
+
+    # Weighted std should be larger when extremes weighted more
+    assert wstd_extreme > wstd_uniform
+
+
+def test_weighted_std_known_values() -> None:
+    """Test weighted_std with known analytical result."""
+    # Simple case: two values with known weights
+    data = np.array([1.0, 3.0])
+    weights = np.array([1.0, 1.0])
+
+    # Weighted mean = (1 + 3) / 2 = 2
+    # Weighted variance = [(1-2)^2 + (3-2)^2] / 2 = [1 + 1] / 2 = 1
+    # Weighted std = sqrt(1) = 1
+    wstd = weighted_std(data, weights)
+    assert wstd == pytest.approx(1.0)
+
+
+def test_weighted_std_different_length_error() -> None:
+    """Test weighted_std raises error when weights and data have different lengths."""
+    data = np.array([1.0, 2.0, 3.0])
+    weights = np.array([1.0, 1.0])  # Wrong length
+
+    with pytest.raises(ValueError, match="must have same length"):
+        weighted_std(data, weights)
+
+
+def test_weighted_std_negative_weights_error() -> None:
+    """Test weighted_std raises error with negative weights."""
+    data = np.array([1.0, 2.0, 3.0])
+    weights = np.array([1.0, -1.0, 1.0])
+
+    with pytest.raises(ValueError, match="must be non-negative"):
+        weighted_std(data, weights)
+
+
+def test_weighted_std_zero_weights() -> None:
+    """Test weighted_std with all zero weights returns nan."""
+    data = np.array([1.0, 2.0, 3.0])
+    weights = np.zeros(len(data))
+
+    wstd = weighted_std(data, weights)
+    assert np.isnan(wstd)
+
+
+def test_weighted_std_empty_array() -> None:
+    """Test weighted_std with empty array returns nan."""
+    data = np.array([])
+    weights = np.array([])
+
+    wstd = weighted_std(data, weights)
+    assert np.isnan(wstd)
+
+
+def test_weighted_std_single_value() -> None:
+    """Test weighted_std with single value returns zero."""
+    data = np.array([42.0])
+    weights = np.array([1.0])
+
+    wstd = weighted_std(data, weights)
+    assert wstd == 0.0
+
+
+def test_weighted_std_linear_weights() -> None:
+    """Test weighted_std with linearly increasing weights."""
+    rng = np.random.default_rng(42)
+    data = rng.normal(0, 1, 100)
+    weights = np.linspace(0.1, 1.0, len(data))
+
+    wstd = weighted_std(data, weights)
+
+    assert wstd > 0
+    assert np.isfinite(wstd)
+
+
+def test_weighted_std_comparison_with_numpy() -> None:
+    """Test weighted_std matches numpy for uniform weights."""
+    data = np.array([10.0, 20.0, 30.0, 40.0, 50.0])
+    weights = np.ones(len(data))
+
+    wstd_ddof0 = weighted_std(data, weights, ddof=0)
+    numpy_std = np.std(data, ddof=0)
+
+    assert wstd_ddof0 == pytest.approx(numpy_std)

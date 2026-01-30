@@ -40,18 +40,18 @@ from oscura.analyzers.jitter.decomposition import (
     extract_pj,
     extract_rj,
 )
-from oscura.analyzers.jitter.measurements import (
+from oscura.analyzers.jitter.spectrum import (
+    JitterSpectrumResult,
+    identify_periodic_components,
+    jitter_spectrum,
+)
+from oscura.analyzers.jitter.timing import (
     CycleJitterResult,
     DutyCycleDistortionResult,
     cycle_to_cycle_jitter,
     measure_dcd,
     period_jitter,
     tie_from_edges,
-)
-from oscura.analyzers.jitter.spectrum import (
-    JitterSpectrumResult,
-    identify_periodic_components,
-    jitter_spectrum,
 )
 
 __all__ = [

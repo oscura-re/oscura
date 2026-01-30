@@ -101,28 +101,36 @@ class SPIDemo(BaseDemo):
 
         self.section("SPI Mode 0 (CPOL=0, CPHA=0)")
         results["mode0"] = self._decode_transaction(
-            *data["mode0"], cpol=0, cpha=0,
+            *data["mode0"],
+            cpol=0,
+            cpha=0,
             expected_master=bytes([0xA5, 0x5A, 0xFF]),
             expected_slave=bytes([0x12, 0x34, 0x56]),
         )
 
         self.section("SPI Mode 1 (CPOL=0, CPHA=1)")
         results["mode1"] = self._decode_transaction(
-            *data["mode1"], cpol=0, cpha=1,
+            *data["mode1"],
+            cpol=0,
+            cpha=1,
             expected_master=bytes([0xDE, 0xAD, 0xBE, 0xEF]),
             expected_slave=bytes([0xCA, 0xFE, 0xBA, 0xBE]),
         )
 
         self.section("SPI Mode 2 (CPOL=1, CPHA=0)")
         results["mode2"] = self._decode_transaction(
-            *data["mode2"], cpol=1, cpha=0,
+            *data["mode2"],
+            cpol=1,
+            cpha=0,
             expected_master=bytes([0x01, 0x23]),
             expected_slave=bytes([0x45, 0x67]),
         )
 
         self.section("SPI Mode 3 (CPOL=1, CPHA=1)")
         results["mode3"] = self._decode_transaction(
-            *data["mode3"], cpol=1, cpha=1,
+            *data["mode3"],
+            cpol=1,
+            cpha=1,
             expected_master=bytes([0xAA, 0x55]),
             expected_slave=bytes([0xF0, 0x0F]),
         )
@@ -221,9 +229,18 @@ class SPIDemo(BaseDemo):
         miso.extend([0] * samples_per_bit)
 
         return (
-            DigitalTrace(np.array(clk, dtype=bool), TraceMetadata(sample_rate=sample_rate, channel_name="spi_clk")),
-            DigitalTrace(np.array(mosi, dtype=bool), TraceMetadata(sample_rate=sample_rate, channel_name="spi_mosi")),
-            DigitalTrace(np.array(miso, dtype=bool), TraceMetadata(sample_rate=sample_rate, channel_name="spi_miso")),
+            DigitalTrace(
+                np.array(clk, dtype=bool),
+                TraceMetadata(sample_rate=sample_rate, channel_name="spi_clk"),
+            ),
+            DigitalTrace(
+                np.array(mosi, dtype=bool),
+                TraceMetadata(sample_rate=sample_rate, channel_name="spi_mosi"),
+            ),
+            DigitalTrace(
+                np.array(miso, dtype=bool),
+                TraceMetadata(sample_rate=sample_rate, channel_name="spi_miso"),
+            ),
         )
 
     def _decode_transaction(

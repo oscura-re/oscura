@@ -1,0 +1,17 @@
+digraph StateMachine {
+    rankdir=LR;
+    node [shape=circle];
+    node [shape=doublecircle]; s0;
+    node [shape=circle];
+    __start__ [shape=point];
+    __start__ -> s0;
+    s0 -> s1 [label="CONNECT (cnt=8)"];
+    s1 -> s1 [label="LOGIN (cnt=7)"];
+    s1 -> s0 [label="LOGOUT (cnt=9)"];
+    s1 -> s1 [label="REQUEST (cnt=4)"];
+    s1 -> s1 [label="RESPONSE (cnt=4)"];
+    s1 -> s0 [label="REQUEST (cnt=3)"];
+    s0 -> s1 [label="RESPONSE (cnt=3)"];
+    s0 -> s0 [label="CONNECT"];
+    s0 -> s1 [label="LOGIN"];
+}

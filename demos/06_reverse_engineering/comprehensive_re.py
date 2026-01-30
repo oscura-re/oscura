@@ -28,10 +28,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import oscura as osc
 from demos.common import BaseDemo, ValidationSuite, print_info, print_result
-from oscura.utils.builders.signal_builder import SignalBuilder
 from demos.common.base_demo import run_demo_main
 from demos.common.formatting import print_subheader
 from oscura.core.types import TraceMetadata, WaveformTrace
+from oscura.utils.builders.signal_builder import SignalBuilder
 
 
 class SignalReverseEngineeringDemo(BaseDemo):

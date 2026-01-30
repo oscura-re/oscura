@@ -1,0 +1,13 @@
+digraph StateMachine {
+    rankdir=LR;
+    node [shape=circle];
+    node [shape=doublecircle]; s0;
+    node [shape=circle];
+    __start__ [shape=point];
+    __start__ -> s0;
+    s0 -> s1 [label="REQUEST (cnt=12)"];
+    s1 -> s0 [label="RESPONSE (cnt=9)"];
+    s0 -> s0 [label="DONE (cnt=7)"];
+    s0 -> s0 [label="ERROR (cnt=2)"];
+    s1 -> s0 [label="TIMEOUT (cnt=3)"];
+}

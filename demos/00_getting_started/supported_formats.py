@@ -42,7 +42,6 @@ class SupportedFormatsDemo(BaseDemo):
 
     def generate_data(self) -> None:
         """No test data needed - this is an informational demo."""
-        pass
 
     def run_analysis(self) -> None:
         """Run the supported formats demonstration."""

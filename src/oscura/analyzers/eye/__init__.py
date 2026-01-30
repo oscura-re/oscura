@@ -15,7 +15,9 @@ References:
     OIF CEI: Common Electrical I/O
 """
 
-from oscura.analyzers.eye.diagram import (
+# Backward compatibility
+from oscura.analyzers.eye import generation as diagram
+from oscura.analyzers.eye.generation import (
     EyeDiagram,
     generate_eye,
     generate_eye_from_edges,

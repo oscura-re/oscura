@@ -1,0 +1,24 @@
+{
+  "signal": [
+    {
+      "name": "CLK",
+      "wave": "1..01.01.."
+    },
+    {
+      "name": "EN",
+      "wave": "0.1.....0."
+    },
+    {
+      "name": "DATA",
+      "wave": "010101.0..",
+      "data": ["D0", "D1", "D2", "D3"]
+    }
+  ],
+  "config": {
+    "hscale": 2
+  },
+  "head": {
+    "text": "Example Timing Diagram",
+    "tick": 0
+  }
+}

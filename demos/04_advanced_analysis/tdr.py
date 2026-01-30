@@ -56,10 +56,14 @@ class TDRDemo(BaseDemo):
         self.tdr_step = self._generate_tdr(impedances=[50, 75], lengths=[5, 5], z_source=50)
 
         # Cable with short
-        self.tdr_short = self._generate_tdr(impedances=[50], lengths=[8], z_source=50, termination="short")
+        self.tdr_short = self._generate_tdr(
+            impedances=[50], lengths=[8], z_source=50, termination="short"
+        )
 
         # Cable with open
-        self.tdr_open = self._generate_tdr(impedances=[50], lengths=[8], z_source=50, termination="open")
+        self.tdr_open = self._generate_tdr(
+            impedances=[50], lengths=[8], z_source=50, termination="open"
+        )
 
     def run_analysis(self) -> None:
         """Analyze TDR traces."""

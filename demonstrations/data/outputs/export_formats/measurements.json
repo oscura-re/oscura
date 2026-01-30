@@ -1,0 +1,14 @@
+{
+  "_metadata": {
+    "format": "oscura_json",
+    "version": "1.0",
+    "exported_at": "2026-01-23T10:13:03.237155"
+  },
+  "data": {
+    "rms": 0.7071067811865475,
+    "peak": 1.0,
+    "frequency": 10000.0,
+    "sample_rate": 1000000.0,
+    "duration": 0.01
+  }
+}

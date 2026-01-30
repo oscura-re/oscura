@@ -11,11 +11,13 @@ for digital signals and binary data, including:
 - Multi-pattern search (Aho-Corasick)
 - Fuzzy/approximate pattern matching
 - Pattern learning and discovery
+- Comprehensive reverse engineering toolkit
 
     - RE-PAT-001: Binary Regex Pattern Matching
     - RE-PAT-002: Multi-Pattern Search (Aho-Corasick)
     - RE-PAT-003: Fuzzy Pattern Matching
     - RE-PAT-004: Pattern Learning and Discovery
+    - RE-PAT-005: Reverse Engineering Toolkit
 
 Author: Oscura Development Team
 """
@@ -91,6 +93,20 @@ detect_period_fft = detect_periods_fft
 # Motif detection functions (aliases for test compatibility)
 from typing import TYPE_CHECKING, Any, cast
 
+# RE-PAT-005: Comprehensive Reverse Engineering Toolkit
+from .reverse_engineering import (
+    BinaryAnalysisResult,
+    FieldDescriptor,
+    ProtocolStructure,
+    ReverseEngineer,
+    byte_frequency_distribution,
+    detect_compressed_regions,
+    detect_encrypted_regions,
+    entropy_profile,
+    search_pattern,
+    shannon_entropy,
+    sliding_entropy,
+)
 from .sequences import (
     NgramResult,
     RepeatingSequence,
@@ -235,9 +251,12 @@ __all__ = [
     "AhoCorasickMatcher",
     # RE-PAT-001: Binary Regex Pattern Matching
     "BinaryRegex",
+    # RE-PAT-005: Reverse Engineering Toolkit
+    "BinaryAnalysisResult",
     "CandidateSignature",
     "ClusterResult",
     "ClusteringResult",
+    "FieldDescriptor",
     "FuzzyMatchResult",
     # RE-PAT-003: Fuzzy Pattern Matching
     "FuzzyMatcher",
@@ -249,11 +268,14 @@ __all__ = [
     "PatternMatchResult",
     "PeriodResult",
     "PeriodicPatternDetector",
+    "ProtocolStructure",
     "RepeatingSequence",
+    "ReverseEngineer",
     "SignatureDiscovery",
     "StructureHypothesis",
     "analyze_cluster",
     "binary_regex_search",
+    "byte_frequency_distribution",
     "cluster_by_edit_distance",
     "cluster_by_hamming",
     "cluster_hierarchical",
@@ -262,12 +284,15 @@ __all__ = [
     "count_pattern_occurrences",
     # Motif detection (compatibility)
     "detect_anomalies",
+    "detect_compressed_regions",
+    "detect_encrypted_regions",
     "detect_period",
     "detect_period_autocorr",
     "detect_period_fft",
     "detect_periods_autocorr",
     "detect_periods_fft",
     "discover_signatures",
+    "entropy_profile",
     "extract_motif",
     "find_approximate_repeats",
     "find_delimiter_candidates",
@@ -284,5 +309,8 @@ __all__ = [
     "learn_patterns_from_data",
     "multi_pattern_search",
     "pattern_similarity",
+    "search_pattern",
+    "shannon_entropy",
+    "sliding_entropy",
     "validate_period",
 ]

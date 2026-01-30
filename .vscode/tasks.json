@@ -147,7 +147,13 @@
       "label": "Test: Fast Tests Only",
       "type": "shell",
       "command": "uv",
-      "args": ["run", "pytest", "-m", "unit and not slow and not memory_intensive", "-v"],
+      "args": [
+        "run",
+        "pytest",
+        "-m",
+        "unit and not slow and not memory_intensive",
+        "-v"
+      ],
       "problemMatcher": [],
       "group": "test",
       "presentation": {
@@ -543,7 +549,13 @@
       "label": "Coverage: Generate HTML Report",
       "type": "shell",
       "command": "uv",
-      "args": ["run", "pytest", "--cov=src/oscura", "--cov-report=html", "--cov-report=term"],
+      "args": [
+        "run",
+        "pytest",
+        "--cov=src/oscura",
+        "--cov-report=html",
+        "--cov-report=term"
+      ],
       "problemMatcher": [],
       "group": "test",
       "presentation": {

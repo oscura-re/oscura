@@ -52,7 +52,7 @@ class I2CDemo(BaseDemo):
         write_standard = self._generate_i2c_transaction(
             address=0x50,  # EEPROM typical address
             is_write=True,
-            data=b"\x00\x10\xAA\x55",  # Address + data bytes
+            data=b"\x00\x10\xaa\x55",  # Address + data bytes
             clock_freq=100e3,
             sample_rate=10e6,
         )
@@ -79,7 +79,7 @@ class I2CDemo(BaseDemo):
         short_txn = self._generate_i2c_transaction(
             address=0x27,
             is_write=True,
-            data=b"\xFF",
+            data=b"\xff",
             clock_freq=100e3,
             sample_rate=10e6,
         )
@@ -99,7 +99,7 @@ class I2CDemo(BaseDemo):
         results["write_standard"] = self._decode_transaction(
             *data["write_standard"],
             expected_addr=0x50,
-            expected_data=b"\x00\x10\xAA\x55",
+            expected_data=b"\x00\x10\xaa\x55",
             clock_freq=100e3,
         )
 
@@ -123,7 +123,7 @@ class I2CDemo(BaseDemo):
         results["short"] = self._decode_transaction(
             *data["short"],
             expected_addr=0x27,
-            expected_data=b"\xFF",
+            expected_data=b"\xff",
             clock_freq=100e3,
         )
 
@@ -214,8 +214,14 @@ class I2CDemo(BaseDemo):
         sda_signal.extend([1] * samples_per_bit)
 
         return (
-            DigitalTrace(np.array(scl_signal, dtype=bool), TraceMetadata(sample_rate=sample_rate, channel_name="i2c_scl")),
-            DigitalTrace(np.array(sda_signal, dtype=bool), TraceMetadata(sample_rate=sample_rate, channel_name="i2c_sda")),
+            DigitalTrace(
+                np.array(scl_signal, dtype=bool),
+                TraceMetadata(sample_rate=sample_rate, channel_name="i2c_scl"),
+            ),
+            DigitalTrace(
+                np.array(sda_signal, dtype=bool),
+                TraceMetadata(sample_rate=sample_rate, channel_name="i2c_sda"),
+            ),
         )
 
     def _decode_transaction(

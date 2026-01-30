@@ -28,12 +28,11 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-import numpy as np
 
 import oscura as osc
 from demos.common import BaseDemo, ValidationSuite, print_info, print_result, print_table
 from demos.common.base_demo import run_demo_main
-from demos.common.data_generation import generate_pulse_train, generate_sine_wave
+from demos.common.data_generation import generate_pulse_train
 from demos.common.formatting import print_subheader
 
 
@@ -90,8 +89,11 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
         )
 
         print_result("Test signal generated", "1 kHz pulse train, 5V, 25% duty cycle")
-        print_result("Sample rate", f"{self.test_signal.metadata.sample_rate/1e6:.1f} MHz")
-        print_result("Duration", f"{len(self.test_signal.data)/self.test_signal.metadata.sample_rate*1e3:.1f} ms")
+        print_result("Sample rate", f"{self.test_signal.metadata.sample_rate / 1e6:.1f} MHz")
+        print_result(
+            "Duration",
+            f"{len(self.test_signal.data) / self.test_signal.metadata.sample_rate * 1e3:.1f} ms",
+        )
 
     def run_analysis(self) -> None:
         """Execute comprehensive measurement suite."""
@@ -122,10 +124,10 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
         measurements["pulse_width"] = osc.pulse_width(self.test_signal)
         measurements["duty_cycle"] = osc.duty_cycle(self.test_signal)
 
-        print_result("Period", f"{measurements['period']*1e3:.6f} ms")
+        print_result("Period", f"{measurements['period'] * 1e3:.6f} ms")
         print_result("Frequency", f"{measurements['frequency']:.3f} Hz")
-        print_result("Pulse width", f"{measurements['pulse_width']*1e6:.3f} µs")
-        print_result("Duty cycle", f"{measurements['duty_cycle']*100:.2f}%")
+        print_result("Pulse width", f"{measurements['pulse_width'] * 1e6:.3f} µs")
+        print_result("Duty cycle", f"{measurements['duty_cycle'] * 100:.2f}%")
 
         # ========== PART 3: EDGE MEASUREMENTS ==========
         print_subheader("Part 3: Edge Measurements (IEEE 181 Section 6)")
@@ -134,18 +136,26 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
         measurements["rise_time"] = osc.rise_time(self.test_signal)
         measurements["fall_time"] = osc.fall_time(self.test_signal)
 
-        print_result("Rise time (10%-90%)", f"{measurements['rise_time']*1e9:.3f} ns")
-        print_result("Fall time (90%-10%)", f"{measurements['fall_time']*1e9:.3f} ns")
+        print_result("Rise time (10%-90%)", f"{measurements['rise_time'] * 1e9:.3f} ns")
+        print_result("Fall time (90%-10%)", f"{measurements['fall_time'] * 1e9:.3f} ns")
 
         # Calculate slew rate
-        slew_rate_rise = measurements["peak_to_peak"] / measurements["rise_time"] if measurements["rise_time"] > 0 else 0
-        slew_rate_fall = measurements["peak_to_peak"] / measurements["fall_time"] if measurements["fall_time"] > 0 else 0
+        slew_rate_rise = (
+            measurements["peak_to_peak"] / measurements["rise_time"]
+            if measurements["rise_time"] > 0
+            else 0
+        )
+        slew_rate_fall = (
+            measurements["peak_to_peak"] / measurements["fall_time"]
+            if measurements["fall_time"] > 0
+            else 0
+        )
 
         measurements["slew_rate_rise"] = slew_rate_rise
         measurements["slew_rate_fall"] = slew_rate_fall
 
-        print_result("Slew rate (rising)", f"{slew_rate_rise/1e9:.3f} V/ns")
-        print_result("Slew rate (falling)", f"{slew_rate_fall/1e9:.3f} V/ns")
+        print_result("Slew rate (rising)", f"{slew_rate_rise / 1e9:.3f} V/ns")
+        print_result("Slew rate (falling)", f"{slew_rate_fall / 1e9:.3f} V/ns")
 
         # ========== PART 4: ABERRATION MEASUREMENTS ==========
         print_subheader("Part 4: Aberration Measurements (IEEE 181 Section 7)")
@@ -197,12 +207,12 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
             ["Minimum", f"{measurements['min']:.4f}", "V", "4.3"],
             ["Mean", f"{measurements['mean']:.4f}", "V", "4.4"],
             ["RMS", f"{measurements['rms']:.4f}", "V", "4.5"],
-            ["Period", f"{measurements['period']*1e3:.6f}", "ms", "5.1"],
+            ["Period", f"{measurements['period'] * 1e3:.6f}", "ms", "5.1"],
             ["Frequency", f"{measurements['frequency']:.3f}", "Hz", "5.2"],
-            ["Pulse Width", f"{measurements['pulse_width']*1e6:.3f}", "µs", "5.3"],
-            ["Duty Cycle", f"{measurements['duty_cycle']*100:.2f}", "%", "5.4"],
-            ["Rise Time", f"{measurements['rise_time']*1e9:.3f}", "ns", "6.1"],
-            ["Fall Time", f"{measurements['fall_time']*1e9:.3f}", "ns", "6.2"],
+            ["Pulse Width", f"{measurements['pulse_width'] * 1e6:.3f}", "µs", "5.3"],
+            ["Duty Cycle", f"{measurements['duty_cycle'] * 100:.2f}", "%", "5.4"],
+            ["Rise Time", f"{measurements['rise_time'] * 1e9:.3f}", "ns", "6.1"],
+            ["Fall Time", f"{measurements['fall_time'] * 1e9:.3f}", "ns", "6.2"],
             ["Overshoot", f"{measurements['overshoot']:.4f}", "V", "7.1"],
             ["Undershoot", f"{measurements['undershoot']:.4f}", "V", "7.2"],
         ]
@@ -218,16 +228,28 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
         print_info("\n[Signal Characterization]")
         print_info(f"  Signal type: Pulse train at {measurements['frequency']:.1f}Hz")
         print_info(f"  Voltage swing: {measurements['min']:.3f}V to {measurements['max']:.3f}V")
-        print_info(f"  Duty cycle: {measurements['duty_cycle']*100:.1f}% → pulse is {measurements['pulse_width']*1e6:.1f}µs of {measurements['period']*1e3:.3f}ms")
+        print_info(
+            f"  Duty cycle: {measurements['duty_cycle'] * 100:.1f}% → pulse is {measurements['pulse_width'] * 1e6:.1f}µs of {measurements['period'] * 1e3:.3f}ms"
+        )
 
         print_info("\n[Edge Performance]")
-        print_info(f"  Rise time: {measurements['rise_time']*1e9:.3f}ns → slew rate {slew_rate_rise/1e9:.3f}V/ns")
-        print_info(f"  Fall time: {measurements['fall_time']*1e9:.3f}ns → slew rate {slew_rate_fall/1e9:.3f}V/ns")
-        print_info(f"  Edge symmetry: {'Symmetric' if abs(measurements['rise_time'] - measurements['fall_time']) < 1e-9 else 'Asymmetric'}")
+        print_info(
+            f"  Rise time: {measurements['rise_time'] * 1e9:.3f}ns → slew rate {slew_rate_rise / 1e9:.3f}V/ns"
+        )
+        print_info(
+            f"  Fall time: {measurements['fall_time'] * 1e9:.3f}ns → slew rate {slew_rate_fall / 1e9:.3f}V/ns"
+        )
+        print_info(
+            f"  Edge symmetry: {'Symmetric' if abs(measurements['rise_time'] - measurements['fall_time']) < 1e-9 else 'Asymmetric'}"
+        )
 
         print_info("\n[Signal Quality]")
-        print_info(f"  Overshoot: {overshoot_pct:.2f}% ({'Acceptable' if overshoot_pct < 10 else 'High'})")
-        print_info(f"  Undershoot: {undershoot_pct:.2f}% ({'Acceptable' if undershoot_pct < 10 else 'High'})")
+        print_info(
+            f"  Overshoot: {overshoot_pct:.2f}% ({'Acceptable' if overshoot_pct < 10 else 'High'})"
+        )
+        print_info(
+            f"  Undershoot: {undershoot_pct:.2f}% ({'Acceptable' if undershoot_pct < 10 else 'High'})"
+        )
         print_info(f"  Form factor: {form_factor:.4f}")
         print_info(f"  Crest factor: {crest_factor:.4f}")
 

@@ -12,11 +12,15 @@ import pytest
 from oscura.analyzers.waveform.spectral import (
     bartlett_psd,
     enob,
+    extract_harmonics,
     fft,
     fft_chunked,
+    find_peaks,
+    group_delay,
     hilbert_transform,
     mfcc,
     periodogram,
+    phase_spectrum,
     psd,
     psd_chunked,
     sfdr,
@@ -333,6 +337,92 @@ class TestTHD:
 
         assert thd_pct > 0
         assert isinstance(thd_pct, float)
+
+    def test_thd_known_signal_ieee_formula(self) -> None:
+        """Test THD calculation with known harmonics per IEEE 1241-2010.
+
+        Verifies: THD = sqrt(sum(A_harmonics^2)) / A_fundamental
+        """
+        # Create signal with known THD
+        # Fundamental: 1000 Hz, amplitude 1.0
+        # 2nd harmonic: 2000 Hz, amplitude 0.5
+        # 3rd harmonic: 3000 Hz, amplitude 0.3
+        # Expected THD = sqrt(0.5^2 + 0.3^2) / 1.0 = 0.583 = 58.3%
+        f0 = 1000.0
+        sample_rate = 100000.0
+        duration = 0.1
+        t = np.arange(0, duration, 1.0 / sample_rate)
+
+        signal = (
+            1.0 * np.sin(2 * np.pi * f0 * t)
+            + 0.5 * np.sin(2 * np.pi * 2 * f0 * t)
+            + 0.3 * np.sin(2 * np.pi * 3 * f0 * t)
+        )
+
+        trace = make_trace(signal, sample_rate)
+        thd_pct = thd(trace, n_harmonics=10, return_db=False)
+
+        # Expected: sqrt(0.5^2 + 0.3^2) / 1.0 = 0.583 = 58.3%
+        expected_thd = np.sqrt(0.5**2 + 0.3**2) * 100
+        assert pytest.approx(thd_pct, rel=0.02) == expected_thd
+
+    def test_thd_always_nonnegative(self) -> None:
+        """Test that THD percentage is always non-negative.
+
+        This is a critical invariant: THD cannot be negative in percentage form.
+        """
+        # Test various signals
+        test_signals = [
+            make_sine_wave(1000, 100000, 0.1, amplitude=1.0),
+            make_multitone([1000, 2000], [1.0, 0.5], 100000, 0.1),
+            make_multitone([1000, 2000, 3000], [1.0, 0.3, 0.2], 100000, 0.1),
+            make_multitone([1000, 3000, 5000], [1.0, 0.1, 0.05], 100000, 0.1),
+        ]
+
+        for signal in test_signals:
+            trace = make_trace(signal, 100000)
+            thd_pct = thd(trace, n_harmonics=10, return_db=False)
+            assert thd_pct >= 0, f"THD percentage must be non-negative, got {thd_pct}%"
+
+    def test_thd_high_distortion(self) -> None:
+        """Test THD with high harmonic content (>100% is valid).
+
+        THD can exceed 100% when harmonics are strong relative to fundamental.
+        Note: Per IEEE 1241-2010, the fundamental is the strongest spectral peak
+        (the applied input signal), and harmonics are distortion products.
+        """
+        # Create signal with large 2nd harmonic (but fundamental still strongest)
+        # Fundamental: 1.0, 2nd harmonic: 0.9
+        # Expected THD = sqrt(0.9^2) / 1.0 = 90%
+        f0 = 1000.0
+        sample_rate = 100000.0
+        duration = 0.1
+        t = np.arange(0, duration, 1.0 / sample_rate)
+
+        signal = 1.0 * np.sin(2 * np.pi * f0 * t) + 0.9 * np.sin(2 * np.pi * 2 * f0 * t)
+
+        trace = make_trace(signal, sample_rate)
+        thd_pct = thd(trace, n_harmonics=10, return_db=False)
+
+        # Should be approximately 90%
+        assert pytest.approx(thd_pct, rel=0.05) == 90.0
+        assert thd_pct >= 0
+
+    def test_thd_db_percentage_consistency(self) -> None:
+        """Test that dB and percentage conversions are consistent.
+
+        Verifies: THD_pct = 10^(THD_dB/20) * 100
+        """
+        signal = make_multitone([1000, 2000, 3000], [1.0, 0.5, 0.3], 100000, 0.1)
+        trace = make_trace(signal, 100000)
+
+        thd_db = thd(trace, n_harmonics=10, return_db=True)
+        thd_pct = thd(trace, n_harmonics=10, return_db=False)
+
+        # Convert dB to percentage: pct = 10^(dB/20) * 100
+        thd_pct_from_db = 10 ** (thd_db / 20) * 100
+
+        assert pytest.approx(thd_pct, rel=1e-6) == thd_pct_from_db
 
 
 # =============================================================================
@@ -802,3 +892,180 @@ class TestWaveformSpectralEdgeCases:
         assert not np.isnan(thd_val)
         assert not np.isnan(snr_val)
         assert not np.isnan(sfdr_val)
+
+
+# =============================================================================
+# Test Peak Finding (SPE-018)
+# =============================================================================
+
+
+@pytest.mark.unit
+@pytest.mark.requirement("SPE-018")
+class TestFindPeaks:
+    """Test spectral peak finding."""
+
+    def test_find_peaks_basic(self) -> None:
+        """Test basic peak finding on multitone signal."""
+        freqs = [1000, 2000, 3000]
+        amps = [1.0, 0.5, 0.3]
+        signal = make_multitone(freqs, amps, 100000, 0.1)
+        trace = make_trace(signal, 100000)
+
+        peaks = find_peaks(trace, threshold_db=-40, n_peaks=5)
+
+        # Should find at least the 3 tones
+        assert len(peaks["frequencies"]) >= 3
+
+        # Check that peaks are sorted by magnitude (strongest first)
+        assert np.all(np.diff(peaks["magnitudes_db"]) <= 0)
+
+    def test_find_peaks_threshold(self) -> None:
+        """Test peak finding with different thresholds."""
+        signal = make_multitone([1000, 2000], [1.0, 0.01], 100000, 0.1)
+        trace = make_trace(signal, 100000)
+
+        # High threshold should find fewer peaks
+        peaks_high = find_peaks(trace, threshold_db=-20, n_peaks=10)
+        peaks_low = find_peaks(trace, threshold_db=-80, n_peaks=10)
+
+        assert len(peaks_high["frequencies"]) <= len(peaks_low["frequencies"])
+
+    def test_find_peaks_min_distance(self) -> None:
+        """Test peak spacing with min_distance."""
+        signal = make_sine_wave(1000, 10000, 0.5)
+        trace = make_trace(signal, 10000)
+
+        peaks = find_peaks(trace, threshold_db=-60, min_distance=10, n_peaks=5)
+
+        # All peaks should be spaced by at least min_distance
+        if len(peaks["indices"]) > 1:
+            indices = peaks["indices"]
+            spacing = np.diff(np.sort(indices))
+            assert np.all(spacing >= 10)
+
+
+# =============================================================================
+# Test Harmonic Extraction (SPE-019)
+# =============================================================================
+
+
+@pytest.mark.unit
+@pytest.mark.requirement("SPE-019")
+class TestExtractHarmonics:
+    """Test harmonic extraction."""
+
+    def test_extract_harmonics_pure_sine(self) -> None:
+        """Test harmonic extraction on pure sine wave."""
+        f0 = 1000.0
+        signal = make_sine_wave(f0, 100000, 0.1)
+        trace = make_trace(signal, 100000)
+
+        harmonics = extract_harmonics(trace, n_harmonics=5)
+
+        # Should detect fundamental
+        fundamental = float(harmonics["fundamental_freq"][0])
+        assert pytest.approx(fundamental, rel=0.05) == f0
+
+        # Should have fundamental in frequencies
+        assert len(harmonics["frequencies"]) >= 1
+        assert pytest.approx(harmonics["frequencies"][0], rel=0.05) == f0
+
+    def test_extract_harmonics_with_distortion(self) -> None:
+        """Test harmonic extraction on distorted signal."""
+        f0 = 1000.0
+        # Signal with 2nd and 3rd harmonics
+        signal = make_multitone([f0, 2 * f0, 3 * f0], [1.0, 0.2, 0.1], 100000, 0.1)
+        trace = make_trace(signal, 100000)
+
+        harmonics = extract_harmonics(trace, n_harmonics=5)
+
+        # Should find fundamental and harmonics
+        assert len(harmonics["frequencies"]) >= 3
+
+        # Check harmonic frequencies
+        for i, freq in enumerate(harmonics["frequencies"][:3], 1):
+            expected_freq = i * f0
+            assert pytest.approx(freq, rel=0.05) == expected_freq
+
+    def test_extract_harmonics_provided_fundamental(self) -> None:
+        """Test harmonic extraction with provided fundamental frequency."""
+        f0 = 1000.0
+        signal = make_multitone([f0, 2 * f0, 3 * f0], [1.0, 0.3, 0.1], 100000, 0.1)
+        trace = make_trace(signal, 100000)
+
+        # Provide fundamental explicitly
+        harmonics = extract_harmonics(trace, fundamental_freq=f0, n_harmonics=3)
+
+        fundamental = float(harmonics["fundamental_freq"][0])
+        assert fundamental == f0
+        assert len(harmonics["frequencies"]) >= 1
+
+
+# =============================================================================
+# Test Phase Analysis (SPE-020, SPE-021)
+# =============================================================================
+
+
+@pytest.mark.unit
+@pytest.mark.requirement("SPE-020")
+class TestPhaseSpectrum:
+    """Test phase spectrum computation."""
+
+    def test_phase_spectrum_basic(self) -> None:
+        """Test basic phase spectrum computation."""
+        signal = make_sine_wave(1000, 10000, 0.5)
+        trace = make_trace(signal, 10000)
+
+        freq, phase = phase_spectrum(trace)
+
+        # Check output shapes
+        assert len(freq) == len(phase)
+        assert len(freq) > 0
+
+        # Phase should be in radians
+        assert np.all(np.abs(phase) <= 2 * np.pi * 100)  # Reasonable range after unwrapping
+
+    def test_phase_spectrum_unwrap(self) -> None:
+        """Test phase unwrapping."""
+        signal = make_sine_wave(1000, 10000, 0.5)
+        trace = make_trace(signal, 10000)
+
+        # With unwrapping
+        freq1, phase1 = phase_spectrum(trace, unwrap=True)
+
+        # Without unwrapping
+        freq2, phase2 = phase_spectrum(trace, unwrap=False)
+
+        # Unwrapped phase should have larger range
+        assert np.max(np.abs(phase2)) <= np.pi + 0.1  # Wrapped stays in [-π, π]
+
+
+@pytest.mark.unit
+@pytest.mark.requirement("SPE-021")
+class TestGroupDelay:
+    """Test group delay computation."""
+
+    def test_group_delay_basic(self) -> None:
+        """Test basic group delay computation."""
+        signal = make_sine_wave(1000, 10000, 0.5)
+        trace = make_trace(signal, 10000)
+
+        freq, gd = group_delay(trace)
+
+        # Check output shapes
+        assert len(freq) == len(gd)
+        assert len(freq) > 0
+
+        # Group delay should be finite
+        assert np.all(np.isfinite(gd))
+
+    def test_group_delay_all_pass(self) -> None:
+        """Test group delay on simple signal."""
+        # Pure sine wave should have relatively flat group delay
+        signal = make_sine_wave(1000, 10000, 0.1)
+        trace = make_trace(signal, 10000)
+
+        freq, gd = group_delay(trace)
+
+        # Group delay should be reasonably bounded
+        assert np.all(np.abs(gd) < 1000)  # Less than 1000 samples

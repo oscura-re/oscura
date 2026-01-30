@@ -18,6 +18,42 @@ from oscura.reporting.auto_report import (
 from oscura.reporting.auto_report import (
     generate_report as generate_auto_report,
 )
+from oscura.reporting.automation import (
+    auto_interpret_results,
+    flag_anomalies,
+    generate_summary,
+    identify_issues,
+    suggest_follow_up_analyses,
+)
+from oscura.reporting.citations import (
+    Citation,
+    CitationManager,
+    auto_cite_measurement,
+    get_standard_info,
+    list_available_standards,
+)
+from oscura.reporting.interpretation import (
+    ComplianceStatus,
+    Finding,
+    MeasurementInterpretation,
+    QualityLevel,
+    compliance_check,
+    generate_finding,
+    interpret_measurement,
+    interpret_results_batch,
+    quality_score,
+)
+from oscura.reporting.summary import (
+    ExecutiveSummarySection,
+    generate_executive_summary,
+    identify_key_findings,
+    recommendations_from_findings,
+    summarize_measurements,
+)
+from oscura.reporting.visualization import (
+    IEEEPlotGenerator,
+    PlotStyler,
+)
 from oscura.reporting.batch import (
     BatchReportResult,
     aggregate_batch_measurements,
@@ -160,19 +196,30 @@ __all__ = [
     "BatchReportResult",
     # Chart Selection (REPORT-028)
     "ChartType",
+    # Citations (NEW)
+    "Citation",
+    "CitationManager",
     # Standards (REPORT-001, REPORT-002, REPORT-004)
     "ColorScheme",
+    # Compliance (NEW)
+    "ComplianceStatus",
     "DataOutputConfig",
     "DomainConfig",
     # Enhanced Reports (Feature 6)
     "EnhancedReportConfig",
     "EnhancedReportGenerator",
     "ExecutiveSummary",
+    # Executive Summary (NEW)
+    "ExecutiveSummarySection",
     # Summary Generation
     "Finding",
     "FormatStandards",
+    # IEEE Visualization (NEW)
+    "IEEEPlotGenerator",
     "IndexGenerator",
     "InputType",
+    # Measurement Interpretation (NEW)
+    "MeasurementInterpretation",
     # Multi-format (REPORT-010)
     "MultiFormatRenderer",
     # Formatting (REPORT-026)
@@ -182,8 +229,12 @@ __all__ = [
     "PPTXPresentation",
     "PPTXSlide",
     "PlotGenerator",
+    # Plot Styling (NEW)
+    "PlotStyler",
     "ProgressCallback",
     "ProgressInfo",
+    # Quality Assessment (NEW)
+    "QualityLevel",
     # Core
     "Report",
     "ReportConfig",
@@ -199,10 +250,15 @@ __all__ = [
     "VisualEmphasis",
     "aggregate_batch_measurements",
     "analyze",
+    # Automation (NEW)
+    "auto_cite_measurement",
+    "auto_interpret_results",
     "auto_select_chart",
     # Export
     "batch_export_formats",
     "batch_report",
+    # Compliance (NEW)
+    "compliance_check",
     # Comparison
     "compare_waveforms",
     # Tables
@@ -223,6 +279,8 @@ __all__ = [
     "export_multiple_reports",
     "export_pptx",
     "export_report",
+    # Anomaly Detection (NEW)
+    "flag_anomalies",
     "format_batch_summary_table",
     "format_executive_summary_html",
     "format_margin",
@@ -235,6 +293,8 @@ __all__ = [
     "generate_batch_report",
     "generate_comparison_report",
     "generate_executive_summary",
+    # Findings (NEW)
+    "generate_finding",
     # HTML Generation
     "generate_html_report",
     # Multi-Channel
@@ -246,12 +306,31 @@ __all__ = [
     "generate_summary",
     "get_available_analyses",
     "get_axis_scaling",
+    # Citations (NEW)
+    "get_standard_info",
+    # Issue Identification (NEW)
+    "identify_issues",
+    # Key Findings (NEW)
+    "identify_key_findings",
+    # Interpretation (NEW)
+    "interpret_measurement",
+    "interpret_results_batch",
+    # Standards (NEW)
+    "list_available_standards",
     "list_templates",
     "load_template",
+    # Quality (NEW)
+    "quality_score",
     "recommend_chart_with_reasoning",
+    # Recommendations (NEW)
+    "recommendations_from_findings",
     "register_plot",
     # Multi-format (REPORT-010)
     "render_all_formats",
     "save_html_report",
     "save_pdf_report",
+    # Follow-up Analysis (NEW)
+    "suggest_follow_up_analyses",
+    # Summary (NEW)
+    "summarize_measurements",
 ]

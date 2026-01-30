@@ -56,7 +56,7 @@ class CANFDDemo(BaseDemo):
         self.can_fd_standard = self._generate_can_fd_signal(
             frame_id=0x123,
             is_extended=False,
-            data=b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C",
+            data=b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c",
             nominal_bitrate=500000,
             data_bitrate=2000000,
             sample_rate=100e6,
@@ -85,7 +85,7 @@ class CANFDDemo(BaseDemo):
 
     def run_analysis(self) -> None:
         """Decode CAN-FD signals and extract frame information."""
-        from demos.common.formatting import print_info, print_subheader
+        from demos.common.formatting import print_subheader
 
         # Decode standard CAN-FD
         print_subheader("Standard CAN-FD (500k/2M)")
@@ -129,7 +129,7 @@ class CANFDDemo(BaseDemo):
             )
 
             # If decoder exists, validate frame structure
-            if "frames" in result and result["frames"]:
+            if result.get("frames"):
                 suite.check_greater_than(
                     f"{config_name}_frames",
                     len(result["frames"]),

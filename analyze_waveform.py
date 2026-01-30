@@ -278,7 +278,6 @@ class ComprehensiveWaveformAnalyzer:
 
             # Signal quality - SimpleQualityMetrics is in signal_quality module
             try:
-
                 # Calculate simple quality metrics (API demonstration)
                 # SimpleQualityMetrics available for detailed signal quality analysis
                 quality_str = (

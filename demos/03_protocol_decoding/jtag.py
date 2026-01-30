@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 import numpy as np
 
 from demos.common import BaseDemo, ValidationSuite
-from oscura.analyzers.protocols.jtag import decode_jtag, JTAG_INSTRUCTIONS
+from oscura.analyzers.protocols.jtag import JTAG_INSTRUCTIONS, decode_jtag
 from oscura.core.types import DigitalTrace, TraceMetadata
 
 
@@ -48,7 +48,9 @@ class JTAGDemo(BaseDemo):
         self.tck_freq = 10e6  # 10 MHz TCK
         self.ir_length = 4  # 4-bit IR typical
 
-    def generate_test_data(self) -> dict[str, tuple[DigitalTrace, DigitalTrace, DigitalTrace, DigitalTrace]]:
+    def generate_test_data(
+        self,
+    ) -> dict[str, tuple[DigitalTrace, DigitalTrace, DigitalTrace, DigitalTrace]]:
         """Generate synthetic JTAG signals."""
         # IDCODE instruction
         idcode_signals = self._generate_jtag_sequence(
@@ -183,10 +185,22 @@ class JTAGDemo(BaseDemo):
             add_cycle(0, 0, 0)
 
         return (
-            DigitalTrace(np.array(tck, dtype=bool), TraceMetadata(sample_rate=self.sample_rate, channel_name="tck")),
-            DigitalTrace(np.array(tms, dtype=bool), TraceMetadata(sample_rate=self.sample_rate, channel_name="tms")),
-            DigitalTrace(np.array(tdi, dtype=bool), TraceMetadata(sample_rate=self.sample_rate, channel_name="tdi")),
-            DigitalTrace(np.array(tdo, dtype=bool), TraceMetadata(sample_rate=self.sample_rate, channel_name="tdo")),
+            DigitalTrace(
+                np.array(tck, dtype=bool),
+                TraceMetadata(sample_rate=self.sample_rate, channel_name="tck"),
+            ),
+            DigitalTrace(
+                np.array(tms, dtype=bool),
+                TraceMetadata(sample_rate=self.sample_rate, channel_name="tms"),
+            ),
+            DigitalTrace(
+                np.array(tdi, dtype=bool),
+                TraceMetadata(sample_rate=self.sample_rate, channel_name="tdi"),
+            ),
+            DigitalTrace(
+                np.array(tdo, dtype=bool),
+                TraceMetadata(sample_rate=self.sample_rate, channel_name="tdo"),
+            ),
         )
 
     def _decode_sequence(

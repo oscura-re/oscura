@@ -86,7 +86,9 @@ class EyeDiagramDemo(BaseDemo):
                     f"{label}: Eye data generated",
                 )
 
-    def _generate_prbs(self, jitter_rms: float, noise_amp: float, isi: bool = False) -> WaveformTrace:
+    def _generate_prbs(
+        self, jitter_rms: float, noise_amp: float, isi: bool = False
+    ) -> WaveformTrace:
         """Generate PRBS data with jitter and noise."""
         bit_period = 1.0 / self.data_rate
         samples_per_bit = int(self.sample_rate * bit_period)

@@ -1,0 +1,31 @@
+
+Wireshark Lua Dissector Installation:
+
+1. Locate Wireshark plugins directory:
+   - Windows: %APPDATA%\Wireshark\plugins
+   - Linux: ~/.local/lib/wireshark/plugins
+   - macOS: ~/.wireshark/plugins
+
+2. Copy Lua dissector:
+   cp uart_dissector.lua <plugins_directory>/
+
+3. Restart Wireshark
+
+4. Open capture file or import protocol data
+
+5. Dissector will automatically decode matching traffic
+
+Testing the Dissector:
+
+1. Generate test PCAP:
+   - Use text2pcap or similar tools
+   - Convert protocol_data.txt to PCAP format
+
+2. Open in Wireshark:
+   - File > Open > protocol_capture.pcap
+   - Custom protocol should be decoded automatically
+
+3. Verify dissection:
+   - Check protocol tree in packet details
+   - Validate field values and annotations
+        

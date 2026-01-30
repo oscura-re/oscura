@@ -646,9 +646,12 @@ def thd(
     nfft: int | None = None,
     return_db: bool = True,
 ) -> float:
-    """Compute Total Harmonic Distortion.
+    """Compute Total Harmonic Distortion per IEEE 1241-2010.
 
-    THD is the ratio of harmonic power to fundamental power.
+    THD is defined as the ratio of RMS harmonic power to fundamental amplitude:
+        THD = sqrt(sum(A_harmonics^2)) / A_fundamental
+
+    where harmonics are the 2nd, 3rd, ..., nth harmonic frequencies.
 
     Args:
         trace: Input waveform trace.
@@ -659,12 +662,14 @@ def thd(
         return_db: If True, return in dB. If False, return percentage.
 
     Returns:
-        THD in dB or percentage.
+        THD in dB (if return_db=True) or percentage (if return_db=False).
+        Always non-negative in percentage form.
 
     Example:
         >>> thd_db = thd(trace)
         >>> thd_pct = thd(trace, return_db=False)
         >>> print(f"THD: {thd_db:.1f} dB ({thd_pct:.2f}%)")
+        >>> assert thd_pct >= 0, "THD percentage must be non-negative"
 
     References:
         IEEE 1241-2010 Section 4.1.4.2
@@ -676,32 +681,41 @@ def thd(
     result = fft(trace, window=window, nfft=nfft, detrend="mean")
     freq, mag_db = result[0], result[1]
 
-    # Convert to linear
+    # Convert to linear magnitude
     magnitude = 10 ** (mag_db / 20)
 
-    # Find fundamental
+    # Find fundamental (strongest peak above DC)
     _fund_idx, fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0 or fund_freq == 0:
         return np.nan
 
-    # Find harmonics
+    # Find harmonic frequencies (2*f0, 3*f0, ..., n*f0)
     harmonic_indices = _find_harmonic_indices(freq, fund_freq, n_harmonics)
 
     if len(harmonic_indices) == 0:
         return 0.0 if not return_db else -np.inf
 
-    # Sum harmonic power
+    # Compute total harmonic power: sum of squared magnitudes
     harmonic_power = sum(magnitude[i] ** 2 for i in harmonic_indices)
 
-    # THD ratio
+    # THD = sqrt(sum(harmonic_power)) / fundamental_amplitude
+    # This is the IEEE 1241-2010 definition
     thd_ratio = np.sqrt(harmonic_power) / fund_mag
+
+    # Validate: THD must always be non-negative
+    if thd_ratio < 0:
+        raise ValueError(
+            f"THD ratio is negative ({thd_ratio:.6f}), indicating a calculation error. "
+            f"Fundamental: {fund_mag:.6f}, Harmonic power: {harmonic_power:.6f}"
+        )
 
     if return_db:
         if thd_ratio <= 0:
             return -np.inf
         return float(20 * np.log10(thd_ratio))
     else:
+        # Return as percentage
         return float(thd_ratio * 100)
 
 
@@ -1936,6 +1950,251 @@ def _extract_fft_segment(
     return segment
 
 
+def find_peaks(
+    trace: WaveformTrace,
+    *,
+    window: str = "hann",
+    nfft: int | None = None,
+    threshold_db: float = -60.0,
+    min_distance: int = 5,
+    n_peaks: int | None = None,
+) -> dict[str, NDArray[np.float64]]:
+    """Find spectral peaks in FFT magnitude spectrum.
+
+    Identifies prominent frequency components above a threshold with
+    minimum spacing between peaks.
+
+    Args:
+        trace: Input waveform trace.
+        window: Window function for FFT.
+        nfft: FFT length.
+        threshold_db: Minimum peak magnitude in dB (relative to max).
+        min_distance: Minimum bin spacing between peaks.
+        n_peaks: Maximum number of peaks to return (None = all).
+
+    Returns:
+        Dictionary with keys:
+            - "frequencies": Peak frequencies in Hz
+            - "magnitudes_db": Peak magnitudes in dB
+            - "indices": FFT bin indices of peaks
+
+    Example:
+        >>> peaks = find_peaks(trace, threshold_db=-40, n_peaks=10)
+        >>> print(f"Found {len(peaks['frequencies'])} peaks")
+        >>> for freq, mag in zip(peaks['frequencies'], peaks['magnitudes_db']):
+        ...     print(f"  {freq:.1f} Hz: {mag:.1f} dB")
+
+    References:
+        IEEE 1241-2010 Section 4.1.5 - Spectral Analysis
+    """
+    from scipy.signal import find_peaks as sp_find_peaks
+
+    result = fft(trace, window=window, nfft=nfft)
+    freq, mag_db = result[0], result[1]
+
+    # Find peaks using scipy
+    # Convert threshold from dB relative to max
+    max_mag_db = np.max(mag_db)
+    abs_threshold = max_mag_db + threshold_db  # threshold_db is negative
+
+    peak_indices, _ = sp_find_peaks(mag_db, height=abs_threshold, distance=min_distance)
+
+    # Sort by magnitude (strongest first)
+    sorted_idx = np.argsort(mag_db[peak_indices])[::-1]
+    peak_indices = peak_indices[sorted_idx]
+
+    # Limit number of peaks
+    if n_peaks is not None:
+        peak_indices = peak_indices[:n_peaks]
+
+    return {
+        "frequencies": freq[peak_indices],
+        "magnitudes_db": mag_db[peak_indices],
+        "indices": peak_indices.astype(np.float64),
+    }
+
+
+def extract_harmonics(
+    trace: WaveformTrace,
+    *,
+    fundamental_freq: float | None = None,
+    n_harmonics: int = 10,
+    window: str = "hann",
+    nfft: int | None = None,
+    search_width_hz: float = 50.0,
+) -> dict[str, NDArray[np.float64]]:
+    """Extract harmonic frequencies and amplitudes from spectrum.
+
+    Identifies fundamental frequency (if not provided) and extracts
+    harmonic series with frequencies and amplitudes.
+
+    Args:
+        trace: Input waveform trace.
+        fundamental_freq: Fundamental frequency in Hz. If None, auto-detected.
+        n_harmonics: Number of harmonics to extract (excluding fundamental).
+        window: Window function for FFT.
+        nfft: FFT length.
+        search_width_hz: Search range around expected harmonic frequencies.
+
+    Returns:
+        Dictionary with keys:
+            - "frequencies": Harmonic frequencies [f0, 2f0, 3f0, ...]
+            - "amplitudes": Harmonic amplitudes (linear scale)
+            - "amplitudes_db": Harmonic amplitudes in dB
+            - "fundamental_freq": Detected or provided fundamental frequency
+
+    Example:
+        >>> harmonics = extract_harmonics(trace, n_harmonics=5)
+        >>> f0 = harmonics["fundamental_freq"]
+        >>> print(f"Fundamental: {f0:.1f} Hz")
+        >>> for i, (freq, amp_db) in enumerate(
+        ...     zip(harmonics["frequencies"], harmonics["amplitudes_db"]), 1
+        ... ):
+        ...     print(f"  H{i}: {freq:.1f} Hz at {amp_db:.1f} dB")
+
+    References:
+        IEEE 1241-2010 Section 4.1.4.2 - Harmonic Analysis
+    """
+    result = fft(trace, window=window, nfft=nfft)
+    freq, mag_db = result[0], result[1]
+    magnitude = 10 ** (mag_db / 20)
+
+    # Auto-detect fundamental if not provided
+    if fundamental_freq is None:
+        _fund_idx, fund_freq, _fund_mag = _find_fundamental(freq, magnitude)
+        fundamental_freq = fund_freq
+
+    if fundamental_freq == 0:
+        # Return empty result
+        return {
+            "frequencies": np.array([]),
+            "amplitudes": np.array([]),
+            "amplitudes_db": np.array([]),
+            "fundamental_freq": np.array([0.0]),
+        }
+
+    # Extract harmonics
+    harmonic_freqs = []
+    harmonic_amps = []
+
+    for h in range(1, n_harmonics + 2):  # Include fundamental (h=1)
+        target_freq = h * fundamental_freq
+        if target_freq > freq[-1]:
+            break
+
+        # Search around expected frequency
+        search_mask = np.abs(freq - target_freq) <= search_width_hz
+        if not np.any(search_mask):
+            continue
+
+        # Find peak in search region
+        search_region_mag = magnitude.copy()
+        search_region_mag[~search_mask] = 0
+        peak_idx = np.argmax(search_region_mag)
+
+        harmonic_freqs.append(float(freq[peak_idx]))
+        harmonic_amps.append(float(magnitude[peak_idx]))
+
+    harmonic_freqs_arr = np.array(harmonic_freqs)
+    harmonic_amps_arr = np.array(harmonic_amps)
+    harmonic_amps_db = 20 * np.log10(np.maximum(harmonic_amps_arr, 1e-20))
+
+    return {
+        "frequencies": harmonic_freqs_arr,
+        "amplitudes": harmonic_amps_arr,
+        "amplitudes_db": harmonic_amps_db,
+        "fundamental_freq": np.array([fundamental_freq]),
+    }
+
+
+def phase_spectrum(
+    trace: WaveformTrace,
+    *,
+    window: str = "hann",
+    nfft: int | None = None,
+    unwrap: bool = True,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Compute phase spectrum from FFT.
+
+    Extracts phase information from frequency domain representation.
+
+    Args:
+        trace: Input waveform trace.
+        window: Window function for FFT.
+        nfft: FFT length.
+        unwrap: If True, unwrap phase to remove 2π discontinuities.
+
+    Returns:
+        (frequencies, phase) where phase is in radians.
+
+    Example:
+        >>> freq, phase = phase_spectrum(trace)
+        >>> plt.plot(freq, phase)
+        >>> plt.xlabel("Frequency (Hz)")
+        >>> plt.ylabel("Phase (radians)")
+
+    References:
+        Oppenheim & Schafer (2009) - Discrete-Time Signal Processing
+    """
+    result = fft(trace, window=window, nfft=nfft, return_phase=True)
+    assert len(result) == 3, "Expected 3-tuple from fft with return_phase=True"
+    freq, _mag_db, phase = result[0], result[1], result[2]
+
+    if unwrap:
+        phase = np.unwrap(phase)
+
+    return freq, phase
+
+
+def group_delay(
+    trace: WaveformTrace,
+    *,
+    window: str = "hann",
+    nfft: int | None = None,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Compute group delay from phase spectrum.
+
+    Group delay is the negative derivative of phase with respect to
+    frequency, representing signal delay at each frequency.
+
+    Args:
+        trace: Input waveform trace.
+        window: Window function for FFT.
+        nfft: FFT length.
+
+    Returns:
+        (frequencies, group_delay_samples) - Delay in samples at each frequency.
+
+    Example:
+        >>> freq, gd = group_delay(trace)
+        >>> plt.plot(freq, gd)
+        >>> plt.xlabel("Frequency (Hz)")
+        >>> plt.ylabel("Group Delay (samples)")
+
+    References:
+        Oppenheim & Schafer (2009) Section 5.1.1
+    """
+    freq, phase = phase_spectrum(trace, window=window, nfft=nfft, unwrap=True)
+
+    # Group delay = -dφ/dω
+    # In discrete frequency: gd[i] ≈ -(φ[i+1] - φ[i]) / (ω[i+1] - ω[i])
+    # Convert frequency to angular frequency: ω = 2π * f
+    omega = 2 * np.pi * freq
+
+    # Compute derivative using central differences
+    gd = np.zeros_like(phase)
+
+    # Central difference for interior points
+    gd[1:-1] = -(phase[2:] - phase[:-2]) / (omega[2:] - omega[:-2])
+
+    # Forward/backward difference for boundaries
+    if len(phase) > 1:
+        gd[0] = -(phase[1] - phase[0]) / (omega[1] - omega[0])
+        gd[-1] = -(phase[-1] - phase[-2]) / (omega[-1] - omega[-2])
+
+    return freq, gd
+
+
 __all__ = [
     "bartlett_psd",
     "clear_fft_cache",
@@ -1943,13 +2202,17 @@ __all__ = [
     "cwt",
     "dwt",
     "enob",
+    "extract_harmonics",
     "fft",
     "fft_chunked",
+    "find_peaks",
     "get_fft_cache_stats",
+    "group_delay",
     "hilbert_transform",
     "idwt",
     "mfcc",
     "periodogram",
+    "phase_spectrum",
     "psd",
     "psd_chunked",
     "sfdr",

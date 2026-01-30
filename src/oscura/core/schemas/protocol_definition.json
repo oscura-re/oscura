@@ -241,7 +241,12 @@
         },
         "value": {
           "description": "Expected constant value for validation",
-          "oneOf": [{ "type": "integer" }, { "type": "number" }, { "type": "string" }, { "type": "array" }]
+          "oneOf": [
+            { "type": "integer" },
+            { "type": "number" },
+            { "type": "string" },
+            { "type": "array" }
+          ]
         },
         "condition": {
           "type": "string",
@@ -326,7 +331,12 @@
             },
             "expected": {
               "description": "Expected value",
-              "oneOf": [{ "type": "integer" }, { "type": "number" }, { "type": "string" }, { "type": "array" }]
+              "oneOf": [
+                { "type": "integer" },
+                { "type": "number" },
+                { "type": "string" },
+                { "type": "array" }
+              ]
             },
             "on_mismatch": {
               "type": "string",

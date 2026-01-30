@@ -26,7 +26,6 @@ import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
 from demos.common.validation import ValidationSuite
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 
 class SignalIntegrityDemo(BaseDemo):
@@ -50,13 +49,19 @@ class SignalIntegrityDemo(BaseDemo):
         freqs = np.logspace(6, 10, 100)  # 1 MHz to 10 GHz
 
         # Good transmission line (50Ω matched)
-        self.good_s11, self.good_s21 = self._generate_sparams(freqs, z0=50, zl=50, loss_db_per_ghz=1.0)
+        self.good_s11, self.good_s21 = self._generate_sparams(
+            freqs, z0=50, zl=50, loss_db_per_ghz=1.0
+        )
 
         # Mismatched load
-        self.mismatch_s11, self.mismatch_s21 = self._generate_sparams(freqs, z0=50, zl=75, loss_db_per_ghz=1.0)
+        self.mismatch_s11, self.mismatch_s21 = self._generate_sparams(
+            freqs, z0=50, zl=75, loss_db_per_ghz=1.0
+        )
 
         # Lossy line
-        self.lossy_s11, self.lossy_s21 = self._generate_sparams(freqs, z0=50, zl=50, loss_db_per_ghz=5.0)
+        self.lossy_s11, self.lossy_s21 = self._generate_sparams(
+            freqs, z0=50, zl=50, loss_db_per_ghz=5.0
+        )
 
         self.freqs = freqs
 
@@ -65,7 +70,9 @@ class SignalIntegrityDemo(BaseDemo):
         from demos.common.formatting import print_subheader
 
         print_subheader("Matched 50Ω Line")
-        self.results["good"] = self._analyze_sparams(self.freqs, self.good_s11, self.good_s21, "Good")
+        self.results["good"] = self._analyze_sparams(
+            self.freqs, self.good_s11, self.good_s21, "Good"
+        )
 
         print_subheader("Mismatched Load (75Ω)")
         self.results["mismatch"] = self._analyze_sparams(
@@ -76,7 +83,9 @@ class SignalIntegrityDemo(BaseDemo):
         )
 
         print_subheader("Lossy Transmission Line")
-        self.results["lossy"] = self._analyze_sparams(self.freqs, self.lossy_s11, self.lossy_s21, "Lossy")
+        self.results["lossy"] = self._analyze_sparams(
+            self.freqs, self.lossy_s11, self.lossy_s21, "Lossy"
+        )
 
     def validate_results(self, suite: ValidationSuite) -> None:
         """Validate S-parameters."""

@@ -135,7 +135,7 @@ async def websocket_stream(websocket: WebSocket):
         print_subheader("3. Frontend Integration")
         print_info("React component example for dashboard:")
 
-        react_example = '''
+        react_example = """
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis } from 'recharts';
 
@@ -180,7 +180,7 @@ function OscuraDashboard() {
     </div>
   );
 }
-'''
+"""
 
         print(react_example)
 

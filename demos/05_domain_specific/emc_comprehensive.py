@@ -127,7 +127,11 @@ class ComprehensiveEMCDemo(BaseDemo):
         threshold = np.percentile(mag_dbuv, 90)
         peaks = []
         for i in range(1, len(mag_dbuv) - 1):
-            if mag_dbuv[i] > threshold and mag_dbuv[i] > mag_dbuv[i-1] and mag_dbuv[i] > mag_dbuv[i+1]:
+            if (
+                mag_dbuv[i] > threshold
+                and mag_dbuv[i] > mag_dbuv[i - 1]
+                and mag_dbuv[i] > mag_dbuv[i + 1]
+            ):
                 peaks.append((freq[i], mag_dbuv[i]))
 
         peaks.sort(key=lambda x: x[1], reverse=True)
@@ -135,7 +139,7 @@ class ComprehensiveEMCDemo(BaseDemo):
 
         print_info("Top 3 peaks:")
         for i, (f, m) in enumerate(peaks[:3], 1):
-            print_info(f"  {i}. {f/1e6:.3f} MHz: {m:.1f} dBuV")
+            print_info(f"  {i}. {f / 1e6:.3f} MHz: {m:.1f} dBuV")
 
         self.results["ce_peaks"] = len(peaks)
         self.results["ce_max_level"] = peaks[0][1] if peaks else 0
@@ -165,7 +169,7 @@ class ComprehensiveEMCDemo(BaseDemo):
         peak_voltage = np.max(data)
         peak_idx = np.argmax(data)
 
-        print_result("Peak voltage", f"{peak_voltage/1000:.2f}", "kV")
+        print_result("Peak voltage", f"{peak_voltage / 1000:.2f}", "kV")
         print_result("ESD compliance", "Verified")
 
         self.results["esd_peak_kv"] = peak_voltage / 1000
@@ -175,8 +179,11 @@ class ComprehensiveEMCDemo(BaseDemo):
         freq, mag_db = fft(self.ce_trace, window="flattop")
 
         threshold = np.percentile(mag_db, 85)
-        peaks = sum(1 for i in range(1, len(mag_db)-1)
-                   if mag_db[i] > threshold and mag_db[i] > mag_db[i-1] and mag_db[i] > mag_db[i+1])
+        peaks = sum(
+            1
+            for i in range(1, len(mag_db) - 1)
+            if mag_db[i] > threshold and mag_db[i] > mag_db[i - 1] and mag_db[i] > mag_db[i + 1]
+        )
 
         print_result("EMI signature peaks", peaks)
 
@@ -204,7 +211,7 @@ class ComprehensiveEMCDemo(BaseDemo):
         print_info(f"  ESD Peak: {self.results.get('esd_peak_kv', 0):.2f} kV")
         print_info(f"  EMI Fingerprint: {self.results.get('emi_peaks', 0)} signatures")
 
-        overall_pass = self.results.get('pq_compliant', False)
+        overall_pass = self.results.get("pq_compliant", False)
         print_result("\nOverall Assessment", "PASS" if overall_pass else "NEEDS REVIEW")
 
     def validate_results(self, suite: ValidationSuite) -> None:

@@ -1,0 +1,11 @@
+{
+  "signal": [
+    {
+      "name": "CLK",
+      "wave": "1..01.01.."
+    }
+  ],
+  "config": {
+    "hscale": 2
+  }
+}

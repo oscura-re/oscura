@@ -86,7 +86,7 @@ class PowerAnalysisDemo(BaseDemo):
 
     def run_analysis(self) -> None:
         """Perform power analysis."""
-        from demos.common.formatting import print_info, print_subheader
+        from demos.common.formatting import print_subheader
 
         print_subheader("DC Power")
         self.results["dc"] = self._analyze_dc_power(self.v_dc, self.i_dc)

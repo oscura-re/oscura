@@ -1,0 +1,59 @@
+{
+  "name": "cmd_proto",
+  "version": "1.0",
+  "description": "Command and response protocol",
+  "endian": "big",
+  "settings": {
+    "transport": "tcp",
+    "port": 8000
+  },
+  "fields": [
+    {
+      "name": "sync",
+      "type": "bytes",
+      "size": 2,
+      "description": "Sync pattern",
+      "enum": null
+    },
+    {
+      "name": "cmd_code",
+      "type": "uint8",
+      "size": "None",
+      "description": "Command code",
+      "enum": {
+        "1": "READ_STATUS",
+        "2": "WRITE_CONFIG",
+        "3": "RESET",
+        "4": "GET_VERSION"
+      }
+    },
+    {
+      "name": "sequence",
+      "type": "uint16",
+      "size": "None",
+      "description": "Sequence number",
+      "enum": null
+    },
+    {
+      "name": "param_count",
+      "type": "uint8",
+      "size": "None",
+      "description": "Number of parameters",
+      "enum": null
+    },
+    {
+      "name": "params",
+      "type": "bytes",
+      "size": "param_count",
+      "description": "Parameters",
+      "enum": null
+    },
+    {
+      "name": "crc16",
+      "type": "uint16",
+      "size": "None",
+      "description": "CRC-16 checksum",
+      "enum": null
+    }
+  ]
+}

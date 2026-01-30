@@ -82,7 +82,7 @@ class JitterAnalysisDemo(BaseDemo):
 
     def run_analysis(self) -> None:
         """Perform jitter measurements on all clocks."""
-        from demos.common.formatting import print_info, print_subheader
+        from demos.common.formatting import print_subheader
 
         print_subheader("Clean Clock Analysis")
         self.results["clean"] = self._analyze_jitter(

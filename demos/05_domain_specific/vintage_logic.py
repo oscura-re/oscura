@@ -140,8 +140,13 @@ class VintageLogicDemo(BaseDemo):
         print_result("Logic families generated", len(self.logic_signals))
 
     def _generate_logic_signal(
-        self, family: str, frequency: float, rise_time: float, fall_time: float,
-        sample_rate: float, duration: float
+        self,
+        family: str,
+        frequency: float,
+        rise_time: float,
+        fall_time: float,
+        sample_rate: float,
+        duration: float,
     ) -> WaveformTrace:
         """Generate logic signal for family."""
         spec = self.LOGIC_FAMILIES[family]
@@ -200,7 +205,7 @@ class VintageLogicDemo(BaseDemo):
             print_info(f"{family}: {spec['description']}")
             print_info(f"  V_OL (max): {spec['v_ol_max']:.2f} V")
             print_info(f"  V_OH (min): {spec['v_oh_min']:.2f} V")
-            print_info(f"  Propagation delay: {spec['typical_tpd']*1e9:.1f} ns\n")
+            print_info(f"  Propagation delay: {spec['typical_tpd'] * 1e9:.1f} ns\n")
 
     def _detect_families(self) -> None:
         """Detect logic families from signals."""
@@ -221,7 +226,7 @@ class VintageLogicDemo(BaseDemo):
             print_info(f"  {match}\n")
 
             self.results[f"{family_name}_detected"] = detected_family
-            self.results[f"{family_name}_match"] = (detected_family == family_name)
+            self.results[f"{family_name}_match"] = detected_family == family_name
 
     def _detect_family_from_voltages(self, v_low: float, v_high: float) -> str:
         """Detect logic family from voltage levels."""
@@ -260,9 +265,7 @@ class VintageLogicDemo(BaseDemo):
         )
 
         # Check detection accuracy
-        matches = sum(
-            1 for k, v in self.results.items() if k.endswith("_match") and v
-        )
+        matches = sum(1 for k, v in self.results.items() if k.endswith("_match") and v)
         suite.check_greater("Families correctly detected", matches, 0, category="detection")
 
 

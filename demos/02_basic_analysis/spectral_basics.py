@@ -118,7 +118,7 @@ class SpectralBasicsDemo(BaseDemo):
         self.results["fft_num_bins"] = len(frequencies)
 
         print_result("FFT bins", len(frequencies))
-        print_result("Peak frequency", f"{peak_freq/1e3:.3f} kHz")
+        print_result("Peak frequency", f"{peak_freq / 1e3:.3f} kHz")
         print_result("Peak magnitude", f"{peak_mag:.4f} V")
 
         # ========== PART 2: POWER SPECTRAL DENSITY ==========
@@ -137,8 +137,8 @@ class SpectralBasicsDemo(BaseDemo):
         self.results["psd_peak_frequency"] = psd_peak_freq
         self.results["psd_peak_power"] = psd_peak_power
 
-        print_result("PSD peak frequency", f"{psd_peak_freq/1e3:.3f} kHz")
-        print_result("PSD peak power", f"{10*np.log10(psd_peak_power):.2f} dB")
+        print_result("PSD peak frequency", f"{psd_peak_freq / 1e3:.3f} kHz")
+        print_result("PSD peak power", f"{10 * np.log10(psd_peak_power):.2f} dB")
 
         # Calculate total power
         total_power = np.sum(psd_power) * (psd_freqs[1] - psd_freqs[0])
@@ -175,7 +175,7 @@ class SpectralBasicsDemo(BaseDemo):
 
         print_result("Harmonics detected", len(peak_frequencies))
         for i, (freq, mag) in enumerate(zip(peak_frequencies, peak_magnitudes, strict=False)):
-            print_result(f"  Harmonic {i+1}", f"{freq/1e3:.3f} kHz @ {mag:.4f} V")
+            print_result(f"  Harmonic {i + 1}", f"{freq / 1e3:.3f} kHz @ {mag:.4f} V")
 
         # ========== PART 5: TOTAL HARMONIC DISTORTION ==========
         print_subheader("Part 5: Total Harmonic Distortion (THD)")
@@ -203,25 +203,31 @@ class SpectralBasicsDemo(BaseDemo):
         self.results["max_frequency"] = sample_rate / 2  # Nyquist frequency
 
         print_result("Frequency resolution", f"{freq_resolution:.2f} Hz")
-        print_result("Maximum frequency (Nyquist)", f"{sample_rate/2/1e3:.1f} kHz")
+        print_result("Maximum frequency (Nyquist)", f"{sample_rate / 2 / 1e3:.1f} kHz")
         print_result("Number of samples", num_samples)
 
         # ========== MEASUREMENT INTERPRETATION ==========
         print_subheader("Measurement Interpretation")
 
         print_info("\n[FFT Analysis]")
-        print_info(f"  Peak at {peak_freq/1e3:.3f}kHz matches input (10kHz)")
-        print_info(f"  Frequency resolution: {freq_resolution:.2f}Hz → accuracy ±{freq_resolution/2:.1f}Hz")
+        print_info(f"  Peak at {peak_freq / 1e3:.3f}kHz matches input (10kHz)")
+        print_info(
+            f"  Frequency resolution: {freq_resolution:.2f}Hz → accuracy ±{freq_resolution / 2:.1f}Hz"
+        )
 
         print_info("\n[PSD Analysis]")
-        print_info(f"  PSD reveals signal power distribution across frequencies")
-        print_info(f"  Peak power: {10*np.log10(psd_peak_power):.2f}dB at {psd_peak_freq/1e3:.3f}kHz")
+        print_info("  PSD reveals signal power distribution across frequencies")
+        print_info(
+            f"  Peak power: {10 * np.log10(psd_peak_power):.2f}dB at {psd_peak_freq / 1e3:.3f}kHz"
+        )
         print_info(f"  Total power: {total_power:.6f}W")
 
         print_info("\n[Harmonic Analysis]")
         print_info(f"  Detected {len(peak_frequencies)} harmonics")
-        print_info(f"  Fundamental: {peak_frequencies[0]/1e3:.1f}kHz")
-        print_info(f"  THD: {thd:.2f}% (quality: {'Good' if thd < 5 else 'Fair' if thd < 20 else 'Poor'})")
+        print_info(f"  Fundamental: {peak_frequencies[0] / 1e3:.1f}kHz")
+        print_info(
+            f"  THD: {thd:.2f}% (quality: {'Good' if thd < 5 else 'Fair' if thd < 20 else 'Poor'})"
+        )
 
     def validate_results(self, suite: ValidationSuite) -> None:
         """Validate spectral analysis results."""

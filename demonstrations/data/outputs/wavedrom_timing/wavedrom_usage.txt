@@ -1,0 +1,20 @@
+
+WaveDrom Rendering Options:
+
+1. WaveDrom Editor (Web):
+   - Visit: https://wavedrom.com/editor.html
+   - Paste JSON content
+   - Export as SVG/PNG
+
+2. wavedrom-cli (Command Line):
+   - Install: npm install -g wavedrom-cli
+   - Render: wavedrom-cli -i diagram.json -s diagram.svg
+
+3. Python Integration (wavedrom package):
+   - Install: pip install wavedrom
+   - Use in Python scripts for automation
+
+4. Markdown Documentation:
+   - Many Markdown renderers support WaveDrom
+   - Embed in documentation with code blocks
+        

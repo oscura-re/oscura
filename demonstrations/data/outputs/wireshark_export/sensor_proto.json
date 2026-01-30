@@ -1,0 +1,66 @@
+{
+  "name": "sensor_proto",
+  "version": "1.0",
+  "description": "Simple sensor data protocol",
+  "endian": "big",
+  "settings": {
+    "transport": "udp",
+    "port": 12345
+  },
+  "fields": [
+    {
+      "name": "magic",
+      "type": "uint16",
+      "size": "None",
+      "description": "Protocol magic number",
+      "enum": null
+    },
+    {
+      "name": "version",
+      "type": "uint8",
+      "size": "None",
+      "description": "Protocol version",
+      "enum": null
+    },
+    {
+      "name": "sensor_type",
+      "type": "uint8",
+      "size": "None",
+      "description": "Sensor type",
+      "enum": {
+        "1": "Temperature",
+        "2": "Humidity",
+        "3": "Pressure",
+        "4": "Light"
+      }
+    },
+    {
+      "name": "sensor_id",
+      "type": "uint16",
+      "size": "None",
+      "description": "Sensor device ID",
+      "enum": null
+    },
+    {
+      "name": "timestamp",
+      "type": "uint32",
+      "size": "None",
+      "description": "Unix timestamp",
+      "enum": null
+    },
+    {
+      "name": "value",
+      "type": "float32",
+      "size": "None",
+      "description": "Sensor reading",
+      "enum": null
+    },
+    {
+      "name": "checksum",
+      "type": "uint8",
+      "size": "None",
+      "description": "XOR checksum",
+      "enum": null
+    }
+  ]
+}
