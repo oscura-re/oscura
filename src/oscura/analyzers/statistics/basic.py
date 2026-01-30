@@ -253,8 +253,87 @@ def summary_stats(
     return basic
 
 
+def measure(
+    trace: WaveformTrace | NDArray[np.floating[Any]],
+    *,
+    parameters: list[str] | None = None,
+    include_units: bool = True,
+) -> dict[str, Any]:
+    """Compute statistical measurements with consistent format.
+
+    Unified function matching the API pattern of waveform.measure() and spectral.measure().
+    Returns measurements with units for easy formatting and display.
+
+    Args:
+        trace: Input trace or numpy array.
+        parameters: List of measurement names to compute. If None, compute all.
+            Valid names: mean, variance, std, min, max, range, count, p1, p5, p25, p50, p75, p95, p99
+        include_units: If True, return {value, unit} dicts. If False, return flat values.
+
+    Returns:
+        Dictionary mapping measurement names to values (with units if requested).
+
+    Example:
+        >>> from oscura.analyzers.statistics import measure
+        >>> results = measure(trace)
+        >>> print(f"Mean: {results['mean']['value']} {results['mean']['unit']}")
+        >>> print(f"Std: {results['std']['value']} {results['std']['unit']}")
+
+        >>> # Get specific measurements only
+        >>> results = measure(trace, parameters=["mean", "std"])
+
+        >>> # Get flat values without units
+        >>> results = measure(trace, include_units=False)
+        >>> mean_value = results["mean"]  # Just the float
+    """
+    data = trace.data if isinstance(trace, WaveformTrace) else trace
+
+    # Define unit mappings for statistical measurements
+    # For generic signals we use voltage units, but this could be parameterized
+    unit_map = {
+        "mean": "V",
+        "variance": "V²",
+        "std": "V",
+        "min": "V",
+        "max": "V",
+        "range": "dimensionless",
+        "count": "samples",
+        "p1": "dimensionless",
+        "p5": "dimensionless",
+        "p25": "dimensionless",
+        "p50": "dimensionless",
+        "p75": "dimensionless",
+        "p95": "dimensionless",
+        "p99": "dimensionless",
+    }
+
+    # Get basic stats
+    basic = basic_stats(trace)
+
+    # Get percentiles
+    percentile_values = percentiles(data, [1, 5, 25, 50, 75, 95, 99])
+
+    # Combine into single dict
+    all_measurements = {**basic, **percentile_values}
+
+    # Select requested measurements or all
+    if parameters is not None:
+        all_measurements = {k: v for k, v in all_measurements.items() if k in parameters}
+
+    # Format results
+    if include_units:
+        results = {}
+        for name, value in all_measurements.items():
+            unit = unit_map.get(name, "")
+            results[name] = {"value": value, "unit": unit}
+        return results
+    else:
+        return all_measurements
+
+
 __all__ = [
     "basic_stats",
+    "measure",
     "percentiles",
     "quartiles",
     "running_stats",

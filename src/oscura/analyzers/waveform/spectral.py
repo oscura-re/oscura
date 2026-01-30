@@ -1936,6 +1936,95 @@ def _extract_fft_segment(
     return segment
 
 
+def measure(
+    trace: WaveformTrace,
+    *,
+    parameters: list[str] | None = None,
+    include_units: bool = True,
+) -> dict[str, Any]:
+    """Compute multiple spectral measurements with consistent format.
+
+    Unified function for computing spectral quality metrics following IEEE 1241-2010.
+    Matches the API pattern of oscura.analyzers.waveform.measurements.measure().
+
+    Args:
+        trace: Input waveform trace.
+        parameters: List of measurement names to compute. If None, compute all.
+            Valid names: thd, snr, sinad, enob, sfdr, dominant_freq
+        include_units: If True, return {value, unit} dicts. If False, return flat values.
+
+    Returns:
+        Dictionary mapping measurement names to values (with units if requested).
+
+    Raises:
+        InsufficientDataError: If trace is too short for analysis.
+        AnalysisError: If computation fails.
+
+    Example:
+        >>> from oscura.analyzers.waveform.spectral import measure
+        >>> results = measure(trace)
+        >>> print(f"THD: {results['thd']['value']}{results['thd']['unit']}")
+        >>> print(f"SNR: {results['snr']['value']} {results['snr']['unit']}")
+
+        >>> # Get specific measurements only
+        >>> results = measure(trace, parameters=["thd", "snr"])
+
+        >>> # Get flat values without units
+        >>> results = measure(trace, include_units=False)
+        >>> thd_value = results["thd"]  # Just the float
+
+    References:
+        IEEE 1241-2010: ADC Terminology and Test Methods
+    """
+    # Define all available spectral measurements with units
+    all_measurements = {
+        "thd": (thd, "%"),
+        "snr": (snr, "dB"),
+        "sinad": (sinad, "dB"),
+        "enob": (enob, "bits"),
+        "sfdr": (sfdr, "dB"),
+    }
+
+    # Select requested measurements or all
+    if parameters is None:
+        selected = all_measurements
+    else:
+        selected = {k: v for k, v in all_measurements.items() if k in parameters}
+
+    results: dict[str, Any] = {}
+
+    for name, (func, unit) in selected.items():
+        try:
+            value = func(trace)  # type: ignore[operator]
+        except Exception:
+            value = np.nan
+
+        if include_units:
+            results[name] = {"value": value, "unit": unit}
+        else:
+            results[name] = value
+
+    # Add dominant frequency if requested or if computing all
+    if parameters is None or "dominant_freq" in parameters:
+        try:
+            fft_result = fft(trace, return_phase=False)
+            freq, magnitude = fft_result[0], fft_result[1]
+            dominant_idx = int(np.argmax(np.abs(magnitude[1:]))) + 1  # Skip DC
+            dominant_freq_value = float(freq[dominant_idx])
+
+            if include_units:
+                results["dominant_freq"] = {"value": dominant_freq_value, "unit": "Hz"}
+            else:
+                results["dominant_freq"] = dominant_freq_value
+        except Exception:
+            if include_units:
+                results["dominant_freq"] = {"value": np.nan, "unit": "Hz"}
+            else:
+                results["dominant_freq"] = np.nan
+
+    return results
+
+
 __all__ = [
     "bartlett_psd",
     "clear_fft_cache",
@@ -1948,6 +2037,7 @@ __all__ = [
     "get_fft_cache_stats",
     "hilbert_transform",
     "idwt",
+    "measure",
     "mfcc",
     "periodogram",
     "psd",

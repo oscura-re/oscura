@@ -20,6 +20,7 @@ from oscura.analyzers.statistics.advanced import (
 )
 from oscura.analyzers.statistics.basic import (
     basic_stats,
+    measure,
     percentiles,
     quartiles,
     running_stats,
@@ -76,6 +77,7 @@ __all__ = [
     # Basic statistics
     "basic_stats",
     "bimodality_coefficient",
+    "measure",
     "change_point_detection",
     "coherence",
     "correlation_coefficient",

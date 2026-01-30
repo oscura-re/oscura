@@ -39,6 +39,114 @@ from pathlib import Path
 from typing import Any, Literal
 
 
+def print_detailed_measurements(results: dict[str, Any]) -> None:
+    """Print ALL measurement values with proper formatting.
+
+    Args:
+        results: Results dictionary from analyze_complete().
+    """
+    from oscura.analyzers.waveform import MEASUREMENT_METADATA
+
+    print("\n" + "=" * 80)
+    print("DETAILED MEASUREMENT RESULTS")
+    print("=" * 80)
+
+    # Signal information
+    trace = results["trace"]
+    print("\nSIGNAL INFORMATION:")
+    print("-" * 80)
+    print(f"  File                          : {results['filepath'].name}")
+    print(f"  Signal Type                   : {'Digital' if results['is_digital'] else 'Analog'}")
+    print(f"  Samples                       : {len(trace):,}")
+    print(
+        f"  Sample Rate                   : {_format_with_si_prefix(trace.metadata.sample_rate, 'Hz')}"
+    )
+    print(f"  Duration                      : {_format_with_si_prefix(trace.duration, 's')}")
+    if hasattr(trace.metadata, "channel_name") and trace.metadata.channel_name:
+        print(f"  Channel                       : {trace.metadata.channel_name}")
+    if hasattr(trace.metadata, "vertical_scale") and trace.metadata.vertical_scale:
+        print(
+            f"  Vertical Scale                : {_format_with_si_prefix(trace.metadata.vertical_scale, 'V/div')}"
+        )
+    if hasattr(trace.metadata, "horizontal_scale") and trace.metadata.horizontal_scale:
+        print(
+            f"  Horizontal Scale              : {_format_with_si_prefix(trace.metadata.horizontal_scale, 's/div')}"
+        )
+
+    # Print each analysis domain
+    for domain, measurements in results["results"].items():
+        print(f"\n{domain.replace('_', ' ').upper()}:")
+        print("-" * 80)
+
+        for param, value in measurements.items():
+            # Handle dict-style measurements (e.g., time_domain)
+            if isinstance(value, dict) and "value" in value:
+                numeric_value = value["value"]
+                unit = value.get("unit", "")
+            # Handle flat numeric measurements (e.g., frequency_domain)
+            elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                numeric_value = value
+                # Get unit from metadata
+                unit = ""
+                if param in MEASUREMENT_METADATA:
+                    unit = MEASUREMENT_METADATA[param].get("unit", "")
+            else:
+                # Skip non-numeric fields (arrays, bools, strings, etc.)
+                continue
+
+            # Format value with SI prefix
+            formatted_value = _format_with_si_prefix(numeric_value, unit)
+
+            # Print measurement
+            param_display = param.replace("_", " ").title()
+            print(f"  {param_display:30s}: {formatted_value}")
+
+
+def _format_with_si_prefix(value: float, unit: str) -> str:
+    """Format value with appropriate SI prefix.
+
+    Args:
+        value: Numeric value to format.
+        unit: Unit string (e.g., "Hz", "V", "s").
+
+    Returns:
+        Formatted string with SI prefix.
+    """
+    if unit in ["ratio", "dimensionless", ""]:
+        return f"{value:.6g}"
+
+    if unit == "%":
+        return f"{value:.2f}%"
+
+    if unit == "dB":
+        return f"{value:.2f} dB"
+
+    # SI prefixes for standard units
+    abs_value = abs(value)
+
+    if abs_value == 0:
+        return f"0 {unit}"
+
+    if abs_value >= 1e9:
+        return f"{value / 1e9:.3f} G{unit}"
+    elif abs_value >= 1e6:
+        return f"{value / 1e6:.3f} M{unit}"
+    elif abs_value >= 1e3:
+        return f"{value / 1e3:.3f} k{unit}"
+    elif abs_value >= 1:
+        return f"{value:.3f} {unit}"
+    elif abs_value >= 1e-3:
+        return f"{value * 1e3:.3f} m{unit}"
+    elif abs_value >= 1e-6:
+        return f"{value * 1e6:.3f} µ{unit}"
+    elif abs_value >= 1e-9:
+        return f"{value * 1e9:.3f} n{unit}"
+    elif abs_value >= 1e-12:
+        return f"{value * 1e12:.3f} p{unit}"
+    else:
+        return f"{value:.3e} {unit}"
+
+
 def print_summary(results: dict[str, Any]) -> None:
     """Print comprehensive analysis summary.
 
@@ -53,6 +161,14 @@ def print_summary(results: dict[str, Any]) -> None:
     print(f"\nFile: {results['filepath'].name}")
     print(f"Signal Type: {'Digital' if results['is_digital'] else 'Analog'}")
     print(f"Analyses Run: {len(results['results'])}")
+
+    # Count total measurements (handle both dict and flat formats)
+    total_measurements = 0
+    for domain in results["results"].values():
+        for v in domain.values():
+            if (isinstance(v, dict) and "value" in v) or (isinstance(v, (int, float)) and not isinstance(v, bool)):
+                total_measurements += 1
+    print(f"Total Measurements: {total_measurements}")
 
     # Protocol detection
     if results.get("protocols_detected"):
@@ -81,14 +197,27 @@ def print_summary(results: dict[str, Any]) -> None:
         if re_res.get("confidence"):
             print(f"  - Confidence: {re_res['confidence']:.1%}")
 
+    # Anomalies
+    if results.get("anomalies"):
+        print(f"\nAnomalies Detected: {len(results['anomalies'])}")
+        # Group by severity
+        severity_counts: dict[str, int] = {}
+        for anomaly in results["anomalies"]:
+            severity = anomaly.get("severity", "unknown")
+            severity_counts[severity] = severity_counts.get(severity, 0) + 1
+        for severity, count in sorted(severity_counts.items()):
+            print(f"  - {severity}: {count}")
+
     # Pattern recognition
     if results.get("patterns"):
         pattern_res = results["patterns"]
         print("\nPattern Recognition:")
-        if pattern_res.get("anomalies"):
-            print(f"  - Anomalies: {len(pattern_res['anomalies'])}")
-        if pattern_res.get("patterns"):
-            print(f"  - Patterns Discovered: {len(pattern_res['patterns'])}")
+        if pattern_res.get("signatures"):
+            print(f"  - Signature Patterns: {len(pattern_res['signatures'])}")
+            for sig in pattern_res["signatures"][:5]:  # Show first 5
+                print(
+                    f"    • {sig['pattern'][:16]}... ({sig['length']} bytes, {sig['count']} occurrences)"
+                )
         if pattern_res.get("state_machine"):
             sm = pattern_res["state_machine"]
             state_count = len(sm.states) if hasattr(sm, "states") else 0
@@ -96,6 +225,9 @@ def print_summary(results: dict[str, Any]) -> None:
 
     # Visualizations
     print(f"\nPlots Generated: {len(results['plots'])}")
+    if results["plots"]:
+        for plot_name in sorted(results["plots"].keys()):
+            print(f"  - {plot_name.replace('_', ' ').title()}")
 
     # Report
     if results["report_path"]:
@@ -258,8 +390,9 @@ Capabilities:
             verbose=not args.quiet,
         )
 
-        # Print comprehensive summary
+        # Print detailed measurements and summary
         if not args.quiet:
+            print_detailed_measurements(results)
             print_summary(results)
 
         return 0

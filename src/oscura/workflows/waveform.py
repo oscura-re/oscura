@@ -198,37 +198,27 @@ def analyze_complete(
             print("=" * 80)
 
         if isinstance(trace, WaveformTrace):
-            # Run spectral analysis using top-level APIs
-            fft_result = osc.fft(trace)
-            freqs_array = fft_result[0]
-            mags_array = fft_result[1]
+            # Run spectral analysis using unified measure() API
+            from oscura.analyzers.waveform import spectral
 
-            # Find dominant frequency
-            dominant_idx = int(np.argmax(np.abs(mags_array[1:]))) + 1  # Skip DC
-            dominant_freq = float(freqs_array[dominant_idx])
+            freq_results = spectral.measure(trace, include_units=True)
 
-            freq_results: dict[str, Any] = {
-                "dominant_freq": dominant_freq,
-                "fft_freqs": freqs_array,
-                "fft_data": mags_array,
-            }
-
-            # Add quality metrics
+            # Add FFT arrays for plotting (not measurements)
             try:
-                from oscura.analyzers.waveform.spectral import enob, sfdr, sinad, snr, thd
-
-                freq_results["thd"] = thd(trace)
-                freq_results["snr"] = snr(trace)
-                freq_results["sinad"] = sinad(trace)
-                freq_results["enob"] = enob(trace)
-                freq_results["sfdr"] = sfdr(trace)
-            except Exception as e:
-                if verbose:
-                    print(f"  ⚠ Some spectral metrics unavailable: {e}")
+                fft_result = osc.fft(trace)
+                freq_results["fft_freqs"] = fft_result[0]
+                freq_results["fft_data"] = fft_result[1]
+            except Exception:
+                pass
 
             results["frequency_domain"] = freq_results
             if verbose:
-                numeric_count = sum(1 for v in freq_results.values() if isinstance(v, (int, float)))
+                # Count actual measurements (not arrays)
+                numeric_count = sum(
+                    1
+                    for k, v in freq_results.items()
+                    if k not in ["fft_freqs", "fft_data"] and isinstance(v, (int, float, dict))
+                )
                 print(f"✓ Completed {numeric_count} measurements")
 
     if "digital" in requested_analyses:
@@ -272,23 +262,13 @@ def analyze_complete(
             print("=" * 80)
 
         if isinstance(trace, WaveformTrace):
-            # Run statistical analysis
-            from oscura.analyzers.statistical import basic_stats, percentiles
+            # Run statistical analysis using unified measure() API
+            from oscura.analyzers import statistics
 
-            stats_results = basic_stats(trace.data)
-            # Add percentiles
-            try:
-                p_dict = percentiles(trace.data, [1, 5, 25, 75, 95, 99])
-                if isinstance(p_dict, dict):
-                    stats_results.update(p_dict)
-            except Exception:
-                pass
-
+            stats_results = statistics.measure(trace.data, include_units=True)
             results["statistics"] = stats_results
             if verbose:
-                numeric_count = sum(
-                    1 for v in stats_results.values() if isinstance(v, (int, float))
-                )
+                numeric_count = len(stats_results)
                 print(f"✓ Completed {numeric_count} measurements")
 
     # Step 3: Protocol Detection & Decoding (FULL IMPLEMENTATION)
