@@ -399,7 +399,7 @@ def test_health_check(test_client: TestClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["version"] == "0.6.0"
+    assert data["version"] == "0.7.0"
     assert "sessions_active" in data
     assert "timestamp" in data
 
