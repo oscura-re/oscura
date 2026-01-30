@@ -5,6 +5,7 @@ This category contains the essential first steps for learning Oscura's hardware 
 ## Demonstrations
 
 ### 00_hello_world.py
+
 **Simplest possible Oscura workflow**
 
 - Generates a 1kHz sine wave
@@ -15,6 +16,7 @@ This category contains the essential first steps for learning Oscura's hardware 
 **Run**: `python 00_hello_world.py`
 
 **Capabilities Demonstrated**:
+
 - `oscura.amplitude()` - Peak-to-peak voltage measurement
 - `oscura.frequency()` - Frequency extraction
 - `oscura.rms()` - RMS voltage calculation
@@ -22,6 +24,7 @@ This category contains the essential first steps for learning Oscura's hardware 
 ---
 
 ### 01_core_types.py
+
 **Understanding Oscura's data structures**
 
 - `TraceMetadata` - Timing and calibration information
@@ -37,6 +40,7 @@ This category contains the essential first steps for learning Oscura's hardware 
 ---
 
 ### 02_supported_formats.py
+
 **Overview of file format support**
 
 - Lists all 21+ supported file formats
@@ -47,6 +51,7 @@ This category contains the essential first steps for learning Oscura's hardware 
 **Run**: `python 02_supported_formats.py`
 
 **Format Categories**:
+
 - Oscilloscopes: .wfm, .isf, .bin
 - Logic Analyzers: .sr, .vcd
 - Automotive: .blf, .asc, .mf4
@@ -59,6 +64,7 @@ This category contains the essential first steps for learning Oscura's hardware 
 ## Next Steps
 
 After completing these demos, explore:
+
 - **01_data_loading/** - Format-specific loading examples
 - **02_basic_analysis/** - Signal processing and measurements
 - **03_protocol_decoding/** - Decode UART, SPI, I2C, CAN protocols
@@ -67,6 +73,7 @@ After completing these demos, explore:
 ## Requirements
 
 All demos in this category:
+
 - Generate their own test data (no external files needed)
 - Include built-in validation
 - Run standalone with `python <demo_name>.py`

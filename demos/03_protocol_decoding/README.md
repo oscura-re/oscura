@@ -7,7 +7,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 ### Serial Protocols
 
 #### 01_uart_basic.py ✅
+
 **UART Protocol Decoding**
+
 - Multiple baudrates: 9600, 115200, 230400 bps
 - Data bit configurations: 7-bit, 8-bit
 - Parity modes: none, even, odd
@@ -17,7 +19,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 **Run**: `python demos/03_protocol_decoding/01_uart_basic.py`
 
 #### 02_spi_basic.py ✅
+
 **SPI Protocol Decoding**
+
 - All 4 SPI modes (CPOL/CPHA combinations)
 - Full-duplex communication (MOSI/MISO)
 - Multiple bitrates: 500 kHz - 4 MHz
@@ -27,7 +31,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 **Run**: `python demos/03_protocol_decoding/02_spi_basic.py`
 
 #### 03_i2c_basic.py ✅
+
 **I2C Protocol Decoding**
+
 - Standard mode (100 kHz) and Fast mode (400 kHz)
 - 7-bit addressing
 - Read and write transactions
@@ -40,7 +46,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 ### Automotive Protocols
 
 #### 04_can_basic.py ✅
+
 **CAN 2.0 Protocol Decoding**
+
 - Standard 11-bit and extended 29-bit identifiers
 - Data frames with variable DLC (0-8 bytes)
 - Bitrates: 500 kbps, 1 Mbps
@@ -52,7 +60,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 **ISO Standards**: ISO 11898-1:2015
 
 #### 05_can_fd.py 🔲
+
 **CAN-FD Protocol Decoding**
+
 - Dual bitrate (nominal and data phase)
 - Extended payload (up to 64 bytes)
 - BRS (Bit Rate Switch) support
@@ -61,7 +71,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 **Status**: Pending - Use demonstrations/03_protocol_decoding/02_automotive_protocols.py as reference
 
 #### 06_lin.py 🔲
+
 **LIN Bus Protocol Decoding**
+
 - Break field detection
 - Protected ID (PID) with parity
 - Checksum validation
@@ -70,7 +82,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 **Status**: Pending - Merge demonstrations/03_protocol_decoding/02_automotive_protocols.py and demonstrations/05_domain_specific/automotive_lin.py
 
 #### 07_flexray.py 🔲
+
 **FlexRay Protocol Decoding**
+
 - Differential signaling (BP/BM)
 - Slot-based scheduling
 - Static and dynamic segments
@@ -81,7 +95,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 ### Debug Protocols
 
 #### 08_jtag.py ✅
+
 **JTAG Protocol Decoding (IEEE 1149.1)**
+
 - TAP state machine tracking
 - Instruction Register (IR) operations
 - Data Register (DR) operations
@@ -93,7 +109,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 **IEEE Standards**: IEEE 1149.1-2013
 
 #### 09_swd.py 🔲
+
 **SWD Protocol Decoding**
+
 - ARM CoreSight debug
 - DP/AP register access
 - ACK/WAIT/FAULT responses
@@ -104,7 +122,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 ### Audio/Media Protocols
 
 #### 10_i2s.py 🔲
+
 **I2S Audio Protocol Decoding**
+
 - Standard/Left-justified/Right-justified modes
 - Multiple bit depths: 16, 24, 32-bit
 - Sample rates: 44.1 kHz, 48 kHz, 96 kHz
@@ -114,7 +134,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 **Status**: Pending - Use demonstrations/03_protocol_decoding/i2s.py as reference
 
 #### 11_usb.py 🔲
+
 **USB Protocol Decoding**
+
 - USB Low-Speed (1.5 Mbps) decoding
 - NRZI encoding/decoding
 - Bit unstuffing
@@ -127,7 +149,9 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 ### Multi-Protocol
 
 #### 12_comprehensive_protocols.py 🔲
+
 **Comprehensive Multi-Protocol Analysis**
+
 - Combined UART, SPI, I2C decoding
 - Auto protocol detection
 - Multi-channel synchronization
@@ -138,6 +162,7 @@ Comprehensive protocol decoding examples demonstrating Oscura's capabilities for
 ## Common Features
 
 All demonstrations include:
+
 - **Self-contained data generation**: Synthetic signals created programmatically
 - **BaseDemo pattern**: Consistent structure with generate_test_data(), run_demonstration(), validate()
 - **ValidationSuite**: Comprehensive validation with expect_true(), expect_equal()
@@ -148,16 +173,19 @@ All demonstrations include:
 ## Usage Patterns
 
 ### Basic Execution
+
 ```bash
 python demos/03_protocol_decoding/01_uart_basic.py
 ```
 
 ### With Verbose Output
+
 ```bash
 python demos/03_protocol_decoding/01_uart_basic.py --verbose
 ```
 
 ### Import in Scripts
+
 ```python
 from demos.03_protocol_decoding.01_uart_basic import UARTDemo
 
@@ -168,6 +196,7 @@ success = demo.execute()
 ## Validation
 
 All completed demos pass:
+
 - ✅ Syntax validation (py_compile)
 - ✅ Import validation (demos.common infrastructure)
 - ✅ Self-contained data generation
@@ -184,6 +213,7 @@ All completed demos pass:
 ## Migration Sources
 
 Demos consolidated from:
+
 - `demonstrations/03_protocol_decoding/` - Primary source with BaseDemo pattern
 - `demos/04_serial_protocols/` - ValidationSuite additions
 - `demos/05_protocol_decoding/` - Comprehensive examples

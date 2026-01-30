@@ -9,6 +9,7 @@ Comprehensive demonstrations of all Oscura capabilities organized by complexity 
 ## Overview
 
 All demonstrations follow the `BaseDemo` pattern with:
+
 - Self-contained synthetic data generation
 - Automatic validation checks
 - Formatted console output
@@ -447,6 +448,7 @@ python demos/validate_all_demos.py
 ## Search by Capability
 
 ### Protocol Decoding
+
 - **UART**: 05_protocol_decoding/comprehensive_protocol_demo.py
 - **SPI**: 05_protocol_decoding/comprehensive_protocol_demo.py
 - **I2C**: 05_protocol_decoding/comprehensive_protocol_demo.py
@@ -461,6 +463,7 @@ python demos/validate_all_demos.py
 - **USB**: 04_serial_protocols/usb_demo.py
 
 ### File Format Loading
+
 - **VCD**: 02_file_format_io/vcd_loader_demo.py
 - **CSV**: 01_waveform_analysis/all_output_formats.py
 - **HDF5**: 01_waveform_analysis/all_output_formats.py
@@ -469,6 +472,7 @@ python demos/validate_all_demos.py
 - **Custom**: 03_custom_daq/simple_loader.py
 
 ### Reverse Engineering
+
 - **CRC Recovery**: 07_protocol_inference/crc_reverse_demo.py
 - **State Machines**: 07_protocol_inference/state_machine_learning.py
 - **Wireshark Dissectors**: 07_protocol_inference/wireshark_dissector_demo.py
@@ -478,6 +482,7 @@ python demos/validate_all_demos.py
 - **Protocol DSL**: 18_advanced_inference/protocol_dsl_demo.py
 
 ### Signal Analysis
+
 - **Waveform**: 01_waveform_analysis/comprehensive_wfm_analysis.py
 - **Spectral**: 12_spectral_compliance/comprehensive_spectral_demo.py
 - **Jitter**: 13_jitter_analysis/ddj_dcd_demo.py, 13_jitter_analysis/bathtub_curve_demo.py
@@ -488,6 +493,7 @@ python demos/validate_all_demos.py
 - **Timing**: 10_timing_measurements/ieee_181_pulse_demo.py, 15_signal_integrity/setup_hold_timing_demo.py
 
 ### Automotive
+
 - **OBD-II**: 09_automotive/comprehensive_automotive_demo.py
 - **UDS**: 09_automotive/comprehensive_automotive_demo.py
 - **J1939**: 09_automotive/comprehensive_automotive_demo.py
@@ -497,6 +503,7 @@ python demos/validate_all_demos.py
 - **DBC Generation**: 19_complete_workflows/automotive_full_workflow.py
 
 ### Performance
+
 - **Memory-Efficient**: 03_custom_daq/chunked_loader.py
 - **Streaming**: 03_custom_daq/optimal_streaming_loader.py
 - **Large Files**: 03_custom_daq/chunked_loader.py
@@ -506,22 +513,27 @@ python demos/validate_all_demos.py
 ## Search by IEEE Standard
 
 ### IEEE 181-2011 (Pulse Measurement)
+
 - **10_timing_measurements/ieee_181_pulse_demo.py** - Rise/fall time, overshoot, slew rate
 - **15_signal_integrity/setup_hold_timing_demo.py** - Digital timing parameters
 - **15_signal_integrity/tdr_impedance_demo.py** - Time-domain reflectometry
 
 ### IEEE 1241-2010 (ADC Testing)
+
 - **12_spectral_compliance/comprehensive_spectral_demo.py** - SNR, SINAD, THD, SFDR, ENOB
 
 ### IEEE 1459-2010 (Power Measurement)
+
 - **14_power_analysis/ripple_analysis_demo.py** - Active/reactive power, harmonics, power factor
 - **14_power_analysis/dcdc_efficiency_demo.py** - Power supply characterization
 
 ### IEEE 2414-2020 (Jitter)
+
 - **13_jitter_analysis/ddj_dcd_demo.py** - Data-dependent jitter, duty cycle distortion
 - **13_jitter_analysis/bathtub_curve_demo.py** - TIE, period jitter, RJ/DJ decomposition
 
 ### CISPR/IEC (EMC)
+
 - **16_emc_compliance/comprehensive_emc_demo.py** - CISPR 16/32, IEC 61000-4-x
 
 ---
@@ -611,6 +623,7 @@ if __name__ == "__main__":
 ```
 
 **Benefits**:
+
 - Consistent structure across all demos
 - Automatic error handling and reporting
 - Built-in validation framework

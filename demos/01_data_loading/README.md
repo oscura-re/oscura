@@ -34,56 +34,70 @@ done
 ## File Format Support
 
 ### Oscilloscope Formats
+
 - **Tektronix**: `.wfm` files from DPO/MSO series
 - **Rigol**: `.wfm` files from DS1000/DS2000 series
 - **Generic**: `.csv`, `.dat` text-based formats
 
 ### Logic Analyzer Formats
+
 - **Sigrok**: `.sr` archive files (PulseView)
 - **VCD**: `.vcd` Value Change Dump (HDL simulators)
 - **Saleae**: Binary captures from Logic analyzers
 
 ### Automotive Formats
+
 - **CAN**: Controller Area Network frame captures
 - **LIN**: Local Interconnect Network captures
 
 ### Scientific Formats
+
 - **TDMS**: National Instruments LabVIEW data
 - **HDF5**: Hierarchical Data Format 5
 - **WAV**: Audio waveforms (acoustics, vibration)
 
 ### Network Formats
+
 - **PCAP**: Network packet captures (Wireshark)
 - **Touchstone**: S-parameter measurements (VNA)
 
 ### Custom Formats
+
 - **Binary**: Raw binary with custom headers
 - **Configurable**: User-defined binary structures
 
 ## Key Features Demonstrated
 
 ### 1. Metadata Extraction
+
 All demos show how to extract and validate:
+
 - Sample rates and timing information
 - Vertical scales and offsets
 - Channel configurations
 - Instrument identification
 
 ### 2. Memory Management
+
 Efficient handling of large datasets:
+
 - Chunk-based processing (06)
 - Memory-mapped file access (06)
 - Lazy loading patterns (09)
 - Streaming algorithms (06)
 
 ### 3. Multi-Channel Handling
+
 Managing multiple simultaneous channels:
+
 - Channel synchronization (07)
 - Cross-channel analysis (07)
 - Mixed analog/digital data (07)
 
 ### 4. Format Interoperability
+
 Converting between formats:
+
 - Binary ↔ CSV conversion (10)
 - Metadata preservation (10)
 - Roundtrip validation (10)
@@ -103,19 +117,23 @@ Converting between formats:
 ## Best Practices
 
 ### File Format Selection
+
 - **Binary formats**: Fast, efficient, exact precision
 - **Text formats (CSV)**: Human-readable, portable, larger size
 - **Compressed formats**: Balance size vs. speed
 - **Vendor formats**: Maximum fidelity, metadata-rich
 
 ### Performance Considerations
+
 - Files < 100 MB: Load entirely into memory
 - Files 100 MB - 1 GB: Use chunk-based processing
 - Files 1-10 GB: Memory-mapped file access
 - Files > 10 GB: Streaming algorithms + databases
 
 ### Metadata Management
+
 Always extract and validate:
+
 - Sample rate (critical for analysis)
 - Vertical scale/offset (voltage scaling)
 - Coupling mode (AC/DC)
@@ -124,6 +142,7 @@ Always extract and validate:
 ## Common Workflows
 
 ### 1. Load and Analyze Oscilloscope Capture
+
 ```python
 from oscura.loaders import load
 
@@ -139,6 +158,7 @@ print(f"RMS voltage: {rms:.4f} V")
 ```
 
 ### 2. Process Large File in Chunks
+
 ```python
 import numpy as np
 
@@ -153,6 +173,7 @@ with open("large_capture.bin", "rb") as f:
 ```
 
 ### 3. Convert Format with Metadata
+
 ```python
 from oscura.loaders import load
 import numpy as np
@@ -173,6 +194,7 @@ with open("capture.csv", "w") as f:
 ## Implementation Notes
 
 All demos:
+
 - Use `demonstrations.common.BaseDemo` pattern
 - Generate synthetic data (no external files required)
 - Include comprehensive validation with `ValidationSuite`
@@ -182,17 +204,22 @@ All demos:
 ## Troubleshooting
 
 ### Import Errors
+
 Demos use `sys.path.insert(0, ...)` to find `demonstrations.common`. Run from repo root:
+
 ```bash
 cd /path/to/oscura
 python3 demos/01_data_loading/01_oscilloscopes.py
 ```
 
 ### Memory Issues
+
 If demos fail with memory errors, reduce synthetic data sizes in `generate_test_data()` methods.
 
 ### Missing Dependencies
+
 Some loaders require optional dependencies:
+
 ```bash
 uv sync --all-extras  # Install all optional dependencies
 ```
@@ -200,6 +227,7 @@ uv sync --all-extras  # Install all optional dependencies
 ## Contributing
 
 When adding new data loading demos:
+
 1. Follow the `BaseDemo` pattern
 2. Generate synthetic test data (no external files)
 3. Include comprehensive validation

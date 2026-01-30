@@ -9,9 +9,11 @@ This category contains 8 comprehensive demonstrations covering essential wavefor
 ## Demonstrations
 
 ### 01_waveform_basics.py - Waveform Measurements Basics
+
 **Time:** ~5 minutes | **Level:** Beginner
 
 Core waveform parameter measurements including:
+
 - Amplitude (peak-to-peak, RMS, average)
 - Frequency and period measurement
 - Rise/fall time analysis
@@ -21,6 +23,7 @@ Core waveform parameter measurements including:
 **IEEE Standards:** IEEE 181-2011 (Pulse measurement terminology)
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/01_waveform_basics.py
 python demos/02_basic_analysis/01_waveform_basics.py --verbose
@@ -29,9 +32,11 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 ---
 
 ### 02_digital_basics.py - Digital Signal Analysis Basics
+
 **Time:** ~5 minutes | **Level:** Beginner
 
 Digital signal analysis fundamentals:
+
 - Edge detection (rising/falling)
 - Pulse width measurement
 - Setup and hold time analysis
@@ -41,6 +46,7 @@ Digital signal analysis fundamentals:
 **IEEE Standards:** IEEE 181-2011
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/02_digital_basics.py
 ```
@@ -48,9 +54,11 @@ python demos/02_basic_analysis/02_digital_basics.py
 ---
 
 ### 03_spectral_basics.py - Spectral Analysis Basics
+
 **Time:** ~7 minutes | **Level:** Beginner to Intermediate
 
 FFT and frequency domain analysis:
+
 - FFT computation and visualization
 - Power Spectral Density (PSD)
 - Total Harmonic Distortion (THD)
@@ -61,6 +69,7 @@ FFT and frequency domain analysis:
 **IEEE Standards:** IEEE 1241-2010, IEEE 1057
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/03_spectral_basics.py
 ```
@@ -68,9 +77,11 @@ python demos/02_basic_analysis/03_spectral_basics.py
 ---
 
 ### 04_measurements.py - Comprehensive Measurement Suite
+
 **Time:** ~8 minutes | **Level:** Intermediate
 
 Complete IEEE 181-2011 compliant measurement suite:
+
 - All pulse measurements (width, period, frequency)
 - Amplitude measurements (peak, RMS, average, min, max)
 - Timing measurements (rise/fall time, slew rate)
@@ -81,6 +92,7 @@ Complete IEEE 181-2011 compliant measurement suite:
 **IEEE Standards:** IEEE 181-2011 (comprehensive coverage)
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/04_measurements.py
 ```
@@ -88,9 +100,11 @@ python demos/02_basic_analysis/04_measurements.py
 ---
 
 ### 05_filtering.py - Signal Filtering Techniques
+
 **Time:** ~6 minutes | **Level:** Beginner to Intermediate
 
 Comprehensive filtering capabilities:
+
 - Low-pass filtering (remove high-frequency noise)
 - High-pass filtering (remove DC offset)
 - Band-pass filtering (isolate frequency band)
@@ -101,6 +115,7 @@ Comprehensive filtering capabilities:
 **IEEE Standards:** IEEE 181-2011
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/05_filtering.py
 ```
@@ -108,9 +123,11 @@ python demos/02_basic_analysis/05_filtering.py
 ---
 
 ### 06_triggers.py - Trigger Detection and Analysis
+
 **Time:** ~6 minutes | **Level:** Intermediate
 
 Oscilloscope-style trigger analysis:
+
 - Edge triggers (rising/falling/both)
 - Level triggers (threshold crossing)
 - Pulse width triggers (narrow/wide pulses)
@@ -119,6 +136,7 @@ Oscilloscope-style trigger analysis:
 - Pre/post-trigger capture concepts
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/06_triggers.py
 ```
@@ -126,9 +144,11 @@ python demos/02_basic_analysis/06_triggers.py
 ---
 
 ### 07_cursors.py - Cursor Measurements
+
 **Time:** ~5 minutes | **Level:** Beginner
 
 Oscilloscope-style cursor measurements:
+
 - Time cursors (delta-t measurements)
 - Voltage cursors (delta-v measurements)
 - Cursor-to-cursor calculations
@@ -137,6 +157,7 @@ Oscilloscope-style cursor measurements:
 - Frequency from period cursors
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/07_cursors.py
 ```
@@ -144,9 +165,11 @@ python demos/02_basic_analysis/07_cursors.py
 ---
 
 ### 08_statistics.py - Statistical Signal Analysis
+
 **Time:** ~7 minutes | **Level:** Intermediate
 
 Statistical characterization of signals:
+
 - Mean, median, standard deviation
 - Histogram analysis and binning
 - Distribution shape (skewness, kurtosis)
@@ -156,6 +179,7 @@ Statistical characterization of signals:
 - Percentile analysis
 
 **Usage:**
+
 ```bash
 python demos/02_basic_analysis/08_statistics.py
 ```
@@ -165,6 +189,7 @@ python demos/02_basic_analysis/08_statistics.py
 ## Quick Start
 
 Run all demos in sequence:
+
 ```bash
 for demo in demos/02_basic_analysis/0*.py; do
     python "$demo" || break
@@ -172,6 +197,7 @@ done
 ```
 
 Run specific demo with verbose output:
+
 ```bash
 python demos/02_basic_analysis/01_waveform_basics.py --verbose
 ```
@@ -179,6 +205,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 ## Key Capabilities Demonstrated
 
 ### Time Domain Analysis
+
 - `oscura.amplitude()` - Peak-to-peak voltage
 - `oscura.frequency()` - Frequency measurement
 - `oscura.period()` - Period measurement
@@ -190,6 +217,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 - `oscura.rms()` - RMS voltage
 
 ### Digital Analysis
+
 - `oscura.find_edges()` - Edge detection
 - `oscura.edge_trigger()` - Edge-based triggering
 - `oscura.level_trigger()` - Level-based triggering
@@ -197,6 +225,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 - `oscura.pattern_trigger()` - Pattern matching
 
 ### Frequency Domain Analysis
+
 - `oscura.fft()` - Fast Fourier Transform
 - `oscura.psd()` - Power Spectral Density
 - `oscura.thd()` - Total Harmonic Distortion
@@ -204,6 +233,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 - `oscura.find_peaks()` - Peak detection
 
 ### Filtering
+
 - `oscura.low_pass()` - Low-pass filter
 - `oscura.high_pass()` - High-pass filter
 - `oscura.band_pass()` - Band-pass filter
@@ -211,6 +241,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 - `oscura.moving_average()` - Moving average filter
 
 ### Statistical Analysis
+
 - `oscura.median()` - Median value
 - `oscura.std()` - Standard deviation
 - `oscura.histogram()` - Histogram generation
@@ -220,6 +251,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 - `oscura.percentile()` - Percentile values
 
 ### Cursor Measurements
+
 - `oscura.cursor_time_delta()` - Time difference
 - `oscura.cursor_voltage_delta()` - Voltage difference
 - Reference marker capabilities
@@ -227,6 +259,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 ## IEEE Standards Compliance
 
 These demonstrations follow industry standards:
+
 - **IEEE 181-2011:** Pulse measurement and analysis terminology
 - **IEEE 1241-2010:** ADC testing and characterization
 - **IEEE 1057:** Digitizing waveform recorders
@@ -273,6 +306,7 @@ if __name__ == "__main__":
 ## Validation
 
 All demos include comprehensive validation suites to ensure:
+
 - Measurements are within expected ranges
 - Signal processing is accurate
 - IEEE standards compliance
@@ -281,6 +315,7 @@ All demos include comprehensive validation suites to ensure:
 ## Troubleshooting
 
 **Import errors:**
+
 ```bash
 # Ensure you're in the project root
 cd /path/to/oscura
@@ -288,12 +323,14 @@ python demos/02_basic_analysis/01_waveform_basics.py
 ```
 
 **Missing dependencies:**
+
 ```bash
 uv sync --all-extras
 ```
 
 **Validation failures:**
 Use `--verbose` flag to see detailed execution:
+
 ```bash
 python demos/02_basic_analysis/01_waveform_basics.py --verbose
 ```
@@ -325,6 +362,7 @@ python demos/02_basic_analysis/01_waveform_basics.py --verbose
 ## Contributing
 
 When adding new basic analysis demos:
+
 1. Follow the `BaseDemo` pattern
 2. Include comprehensive validation
 3. Reference IEEE standards where applicable

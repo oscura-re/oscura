@@ -66,6 +66,7 @@ if __name__ == "__main__":
 **Source Reference**: `demonstrations/03_protocol_decoding/02_automotive_protocols.py` (lines 326-481)
 
 **Key Implementation Points**:
+
 - Dual bitrate: nominal_bitrate=500000, data_bitrate=2000000
 - Extended payload: up to 64 bytes
 - BRS and FDF flags in control field
@@ -73,6 +74,7 @@ if __name__ == "__main__":
 - CRC17 for CAN-FD (17 bits instead of 15)
 
 **Signal Generation**:
+
 ```python
 def _generate_can_fd_signal(
     self,
@@ -89,6 +91,7 @@ def _generate_can_fd_signal(
 ```
 
 **Test Configurations**:
+
 1. Short payload (8 bytes) with BRS
 2. Medium payload (16 bytes)
 3. Long payload (64 bytes)
@@ -97,10 +100,12 @@ def _generate_can_fd_signal(
 ## 06_lin.py
 
 **Source References**:
+
 - `demonstrations/03_protocol_decoding/02_automotive_protocols.py` (lines 483-623)
 - `demonstrations/05_domain_specific/automotive_lin.py` (enhanced automotive features)
 
 **Key Implementation Points**:
+
 - Break field: 13 dominant bits
 - Sync field: 0x55 pattern
 - Protected ID (PID): 6-bit ID + 2 parity bits
@@ -108,6 +113,7 @@ def _generate_can_fd_signal(
 - Typical baudrate: 19200 bps
 
 **Signal Generation**:
+
 ```python
 # Break field (13 bits low)
 signal.extend([0] * (13 * samples_per_bit))
@@ -124,6 +130,7 @@ pid_with_parity = pid | (p0 << 6) | (p1 << 7)
 ```
 
 **Test Configurations**:
+
 1. Standard frame (ID < 0x3C)
 2. Diagnostic frame (ID = 0x3C or 0x3D)
 3. Reserved frame (ID > 0x3D)
@@ -131,10 +138,12 @@ pid_with_parity = pid | (p0 << 6) | (p1 << 7)
 ## 07_flexray.py
 
 **Source References**:
+
 - `demonstrations/03_protocol_decoding/02_automotive_protocols.py` (lines 626-778)
 - `demonstrations/05_domain_specific/automotive_flexray.py`
 
 **Key Implementation Points**:
+
 - Differential signaling: BP (Bus Plus) and BM (Bus Minus)
 - Idle state: BP=0, BM=1
 - Bit encoding: Recessive (BP=0, BM=1), Dominant (BP=1, BM=0)
@@ -143,6 +152,7 @@ pid_with_parity = pid | (p0 << 6) | (p1 << 7)
 - Static and dynamic segments
 
 **Signal Generation**:
+
 ```python
 def _generate_flexray_signals(
     self,
@@ -158,6 +168,7 @@ def _generate_flexray_signals(
 ```
 
 **Test Configurations**:
+
 1. Static segment frame
 2. Dynamic segment frame
 3. Startup frame
@@ -168,6 +179,7 @@ def _generate_flexray_signals(
 **Source Reference**: `demonstrations/03_protocol_decoding/swd.py`
 
 **Key Implementation Points**:
+
 - 2-wire protocol: SWDCLK, SWDIO
 - Packet structure: Start + APnDP + RnW + Addr[2:3] + Parity + Stop + Park + ACK[0:2] + Data[0:31] + Parity
 - ACK responses: OK (0b001), WAIT (0b010), FAULT (0b100)
@@ -175,6 +187,7 @@ def _generate_flexray_signals(
 - Parity bit for data integrity
 
 **Signal Generation**:
+
 ```python
 def _generate_swd_transaction(
     self,
@@ -189,6 +202,7 @@ def _generate_swd_transaction(
 ```
 
 **Test Configurations**:
+
 1. DP register read (IDCODE)
 2. AP register read (CSW)
 3. AP register write
@@ -199,6 +213,7 @@ def _generate_swd_transaction(
 **Source Reference**: `demonstrations/03_protocol_decoding/i2s.py`
 
 **Key Implementation Points**:
+
 - 3-wire interface: SCK (bit clock), WS (word select), SD (serial data)
 - WS signal: 0=Left channel, 1=Right channel
 - Standard I2S: Data MSB 1 BCK cycle after WS change
@@ -208,6 +223,7 @@ def _generate_swd_transaction(
 - Bit depths: 16, 24, 32-bit
 
 **Signal Generation**:
+
 ```python
 def _generate_i2s_signals(
     self,
@@ -221,6 +237,7 @@ def _generate_i2s_signals(
 ```
 
 **Test Configurations**:
+
 1. Standard mode, 16-bit, 48 kHz
 2. Left-justified, 24-bit, 96 kHz
 3. Right-justified, 32-bit, 44.1 kHz
@@ -233,6 +250,7 @@ def _generate_i2s_signals(
 **Important Note**: File has `# SKIP_VALIDATION` comment due to PID validation issues in decoder.
 
 **Key Implementation Points**:
+
 - Low-Speed USB: 1.5 Mbps
 - Differential signaling: D+ and D-
 - NRZI encoding: 0 = transition, 1 = no transition
@@ -245,6 +263,7 @@ def _generate_i2s_signals(
 - CRC5 for token packets, CRC16 for data packets
 
 **Signal Generation**:
+
 ```python
 def _generate_usb_packet(
     self,
@@ -260,6 +279,7 @@ def _generate_usb_packet(
 ```
 
 **Test Configurations**:
+
 1. SETUP token
 2. DATA0 packet with payload
 3. ACK handshake
@@ -272,6 +292,7 @@ def _generate_usb_packet(
 **Source Reference**: `demonstrations/03_protocol_decoding/protocol_comprehensive.py`
 
 **Key Implementation Points**:
+
 - Combines UART, SPI, I2C decodings in single demo
 - Uses SignalBuilder for synthetic data generation
 - Demonstrates auto protocol detection
@@ -279,6 +300,7 @@ def _generate_usb_packet(
 - Complete workflow from generation to validation
 
 **Structure**:
+
 ```python
 def generate_test_data(self) -> dict:
     """Generate all protocol signals."""
@@ -297,6 +319,7 @@ def run_demonstration(self, data: dict) -> dict:
 ```
 
 **Test Configurations**:
+
 1. Concurrent UART + SPI + I2C
 2. Sequential protocol switching
 3. Auto-detection mode
@@ -344,6 +367,7 @@ python demos/03_protocol_decoding/05_can_fd.py --verbose
 ## Update Checklist
 
 When implementing a demo:
+
 - [ ] Copy template structure
 - [ ] Implement signal generation with correct protocol timing
 - [ ] Add decoder invocation with proper parameters
