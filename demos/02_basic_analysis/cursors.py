@@ -113,10 +113,10 @@ class CursorsDemo(BaseDemo):
             self.results["delta_t"] = delta_t
             self.results["freq_from_cursors"] = freq_from_cursors
 
-            print_result("Cursor A (time)", f"{cursor_a/sample_rate*1e6:.3f} µs")
-            print_result("Cursor B (time)", f"{cursor_b/sample_rate*1e6:.3f} µs")
-            print_result("Delta-T (A→B)", f"{delta_t*1e6:.3f} µs")
-            print_result("Frequency (1/ΔT)", f"{freq_from_cursors/1e3:.3f} kHz")
+            print_result("Cursor A (time)", f"{cursor_a / sample_rate * 1e6:.3f} µs")
+            print_result("Cursor B (time)", f"{cursor_b / sample_rate * 1e6:.3f} µs")
+            print_result("Delta-T (A→B)", f"{delta_t * 1e6:.3f} µs")
+            print_result("Frequency (1/ΔT)", f"{freq_from_cursors / 1e3:.3f} kHz")
 
         # ========== PART 2: VOLTAGE CURSORS ==========
         print_subheader("Part 2: Voltage Cursors (Delta-V)")
@@ -154,7 +154,7 @@ class CursorsDemo(BaseDemo):
                 pulse_width = (pulse_end - pulse_start) / sample_rate
                 self.results["cursor_pair1_pulse_width"] = pulse_width
 
-                print_result("Pair 1 - Pulse width", f"{pulse_width*1e6:.3f} µs")
+                print_result("Pair 1 - Pulse width", f"{pulse_width * 1e6:.3f} µs")
 
         # Pair 2: Measure period (two consecutive rising edges)
         if len(rising_edges) >= 3:
@@ -164,7 +164,7 @@ class CursorsDemo(BaseDemo):
             period = (period_end - period_start) / sample_rate
             self.results["cursor_pair2_period"] = period
 
-            print_result("Pair 2 - Period", f"{period*1e6:.3f} µs")
+            print_result("Pair 2 - Period", f"{period * 1e6:.3f} µs")
 
         # Pair 3: Measure duty cycle high time
         if len(rising_edges) >= 2:
@@ -177,8 +177,8 @@ class CursorsDemo(BaseDemo):
             self.results["cursor_pair3_high_time"] = high_time
             self.results["cursor_pair3_duty"] = duty
 
-            print_result("Pair 3 - High time", f"{high_time*1e6:.3f} µs")
-            print_result("Pair 3 - Duty cycle", f"{duty*100:.1f}%")
+            print_result("Pair 3 - High time", f"{high_time * 1e6:.3f} µs")
+            print_result("Pair 3 - Duty cycle", f"{duty * 100:.1f}%")
 
         # ========== PART 4: REFERENCE MARKERS ==========
         print_subheader("Part 4: Reference Markers")
@@ -194,7 +194,7 @@ class CursorsDemo(BaseDemo):
         self.results["reference_voltage"] = ref_voltage
 
         print_result("Reference marker", f"Sample {ref_marker}")
-        print_result("Reference time", f"{ref_time*1e6:.3f} µs")
+        print_result("Reference time", f"{ref_time * 1e6:.3f} µs")
         print_result("Reference voltage", f"{ref_voltage:.4f} V")
 
         # Measure relative to reference
@@ -206,7 +206,7 @@ class CursorsDemo(BaseDemo):
             self.results["relative_time"] = relative_time
             self.results["relative_voltage"] = relative_voltage
 
-            print_result("Relative time (from ref)", f"{relative_time*1e6:.3f} µs")
+            print_result("Relative time (from ref)", f"{relative_time * 1e6:.3f} µs")
             print_result("Relative voltage (from ref)", f"{relative_voltage:.4f} V")
 
         # ========== PART 5: CURSOR MEASUREMENT TABLE ==========
@@ -214,14 +214,24 @@ class CursorsDemo(BaseDemo):
 
         headers = ["Cursor Pair", "Measurement", "Value", "Unit"]
         rows = [
-            ["Time Cursors", "Delta-T", f"{self.results['delta_t']*1e6:.3f}", "µs"],
-            ["Time Cursors", "Frequency", f"{self.results['freq_from_cursors']/1e3:.3f}", "kHz"],
+            ["Time Cursors", "Delta-T", f"{self.results['delta_t'] * 1e6:.3f}", "µs"],
+            ["Time Cursors", "Frequency", f"{self.results['freq_from_cursors'] / 1e3:.3f}", "kHz"],
             ["Voltage Cursors", "Delta-V", f"{self.results['delta_v']:.4f}", "V"],
             ["Voltage Cursors", "Amplitude", f"{self.results['delta_v']:.4f}", "V"],
-            ["Pair 1", "Pulse Width", f"{self.results.get('cursor_pair1_pulse_width', 0)*1e6:.3f}", "µs"],
-            ["Pair 2", "Period", f"{self.results.get('cursor_pair2_period', 0)*1e6:.3f}", "µs"],
-            ["Pair 3", "Duty Cycle", f"{self.results.get('cursor_pair3_duty', 0)*100:.1f}", "%"],
-            ["Reference", "Relative Time", f"{self.results.get('relative_time', 0)*1e6:.3f}", "µs"],
+            [
+                "Pair 1",
+                "Pulse Width",
+                f"{self.results.get('cursor_pair1_pulse_width', 0) * 1e6:.3f}",
+                "µs",
+            ],
+            ["Pair 2", "Period", f"{self.results.get('cursor_pair2_period', 0) * 1e6:.3f}", "µs"],
+            ["Pair 3", "Duty Cycle", f"{self.results.get('cursor_pair3_duty', 0) * 100:.1f}", "%"],
+            [
+                "Reference",
+                "Relative Time",
+                f"{self.results.get('relative_time', 0) * 1e6:.3f}",
+                "µs",
+            ],
         ]
 
         print_table(headers, rows)
@@ -240,8 +250,8 @@ class CursorsDemo(BaseDemo):
         self.results["cursor_freq_error"] = freq_error
         self.results["cursor_amplitude_error"] = amplitude_error
 
-        print_result("Auto frequency", f"{auto_freq/1e3:.3f} kHz")
-        print_result("Cursor frequency", f"{self.results['freq_from_cursors']/1e3:.3f} kHz")
+        print_result("Auto frequency", f"{auto_freq / 1e3:.3f} kHz")
+        print_result("Cursor frequency", f"{self.results['freq_from_cursors'] / 1e3:.3f} kHz")
         print_result("Frequency error", f"{freq_error:.2f}%")
 
         print_result("Auto amplitude", f"{auto_amplitude:.4f} V")
@@ -252,14 +262,14 @@ class CursorsDemo(BaseDemo):
         print_subheader("Cursor Measurement Interpretation")
 
         print_info("\n[Time Cursors]")
-        print_info(f"  Delta-T: {self.results['delta_t']*1e6:.3f}µs between rising edges")
-        print_info(f"  Frequency: {self.results['freq_from_cursors']/1e3:.3f}kHz (from 1/ΔT)")
-        print_info(f"  Accuracy: {100-freq_error:.2f}% vs automatic measurement")
+        print_info(f"  Delta-T: {self.results['delta_t'] * 1e6:.3f}µs between rising edges")
+        print_info(f"  Frequency: {self.results['freq_from_cursors'] / 1e3:.3f}kHz (from 1/ΔT)")
+        print_info(f"  Accuracy: {100 - freq_error:.2f}% vs automatic measurement")
 
         print_info("\n[Voltage Cursors]")
         print_info(f"  Delta-V: {self.results['delta_v']:.4f}V peak-to-peak")
         print_info(f"  Peak: {voltage_a:.4f}V, Trough: {voltage_b:.4f}V")
-        print_info(f"  Accuracy: {100-amplitude_error:.2f}% vs automatic measurement")
+        print_info(f"  Accuracy: {100 - amplitude_error:.2f}% vs automatic measurement")
 
         print_info("\n[Use Cases]")
         print_info("  - Precise timing measurements between specific events")

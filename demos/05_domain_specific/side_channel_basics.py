@@ -1,4 +1,4 @@
-#\!/usr/bin/env python3
+# \!/usr/bin/env python3
 """Side-Channel Analysis Basics Demo.
 
 This demo introduces side-channel analysis fundamentals:
@@ -65,9 +65,9 @@ class SideChannelBasicsDemo(BaseDemo):
             trace = np.random.normal(1.0, 0.05, samples_per_trace)
 
             # Add data-dependent power consumption (Hamming weight model)
-            hw = bin(plaintext).count('1')
+            hw = bin(plaintext).count("1")
             poi = samples_per_trace // 2
-            trace[poi-10:poi+10] += hw * 0.3
+            trace[poi - 10 : poi + 10] += hw * 0.3
 
             # Add clock activity
             t = np.arange(samples_per_trace) / sample_rate
@@ -126,7 +126,7 @@ class SideChannelBasicsDemo(BaseDemo):
         var1 = np.var(group1, axis=0, ddof=1)
         var2 = np.var(group2, axis=0, ddof=1)
 
-        t_stat = (mean1 - mean2) / np.sqrt(var1/len(group1) + var2/len(group2))
+        t_stat = (mean1 - mean2) / np.sqrt(var1 / len(group1) + var2 / len(group2))
         max_t = np.max(np.abs(t_stat))
 
         leakage_detected = max_t > 4.5
@@ -148,8 +148,12 @@ class SideChannelBasicsDemo(BaseDemo):
         print_info("  - Noise injection")
 
     def validate_results(self, suite: ValidationSuite) -> None:
-        suite.check_greater("Traces analyzed", self.results.get("traces_analyzed", 0), 0, category="power")
-        suite.check_exists("Leakage detection ran", self.results.get("leakage_detected"), category="leakage")
+        suite.check_greater(
+            "Traces analyzed", self.results.get("traces_analyzed", 0), 0, category="power"
+        )
+        suite.check_exists(
+            "Leakage detection ran", self.results.get("leakage_detected"), category="leakage"
+        )
 
 
 if __name__ == "__main__":

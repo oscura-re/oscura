@@ -130,7 +130,7 @@ class DigitalBasicsDemo(BaseDemo):
             edge_spacing = np.diff(rising_edges) / self.clock_signal.metadata.sample_rate
             avg_spacing = np.mean(edge_spacing)
             self.results["clock_period_from_edges"] = avg_spacing
-            print_result("Average edge spacing", f"{avg_spacing*1e9:.2f} ns")
+            print_result("Average edge spacing", f"{avg_spacing * 1e9:.2f} ns")
 
         # ========== PART 2: PULSE WIDTH MEASUREMENT ==========
         print_subheader("Part 2: Pulse Width Measurement")
@@ -139,17 +139,17 @@ class DigitalBasicsDemo(BaseDemo):
         # Clock signal pulse width
         clock_pw = osc.pulse_width(self.clock_signal)
         self.results["clock_pulse_width"] = clock_pw
-        print_result("Clock pulse width", f"{clock_pw*1e9:.2f} ns")
+        print_result("Clock pulse width", f"{clock_pw * 1e9:.2f} ns")
 
         # Data signal pulse width
         data_pw = osc.pulse_width(self.data_signal)
         self.results["data_pulse_width"] = data_pw
-        print_result("Data pulse width", f"{data_pw*1e9:.2f} ns")
+        print_result("Data pulse width", f"{data_pw * 1e9:.2f} ns")
 
         # Narrow pulse width
         narrow_pw = osc.pulse_width(self.narrow_pulse)
         self.results["narrow_pulse_width"] = narrow_pw
-        print_result("Narrow pulse width", f"{narrow_pw*1e9:.2f} ns")
+        print_result("Narrow pulse width", f"{narrow_pw * 1e9:.2f} ns")
 
         # ========== PART 3: TIMING MEASUREMENTS ==========
         print_subheader("Part 3: Timing Measurements")
@@ -158,25 +158,25 @@ class DigitalBasicsDemo(BaseDemo):
         # Rise time (10%-90%)
         clock_rise = osc.rise_time(self.clock_signal)
         self.results["clock_rise_time"] = clock_rise
-        print_result("Clock rise time", f"{clock_rise*1e9:.2f} ns")
+        print_result("Clock rise time", f"{clock_rise * 1e9:.2f} ns")
 
         # Fall time (90%-10%)
         clock_fall = osc.fall_time(self.clock_signal)
         self.results["clock_fall_time"] = clock_fall
-        print_result("Clock fall time", f"{clock_fall*1e9:.2f} ns")
+        print_result("Clock fall time", f"{clock_fall * 1e9:.2f} ns")
 
         # Duty cycle
         clock_duty = osc.duty_cycle(self.clock_signal)
         self.results["clock_duty_cycle"] = clock_duty
-        print_result("Clock duty cycle", f"{clock_duty*100:.1f}%")
+        print_result("Clock duty cycle", f"{clock_duty * 100:.1f}%")
 
         data_duty = osc.duty_cycle(self.data_signal)
         self.results["data_duty_cycle"] = data_duty
-        print_result("Data duty cycle", f"{data_duty*100:.1f}%")
+        print_result("Data duty cycle", f"{data_duty * 100:.1f}%")
 
         narrow_duty = osc.duty_cycle(self.narrow_pulse)
         self.results["narrow_duty_cycle"] = narrow_duty
-        print_result("Narrow pulse duty cycle", f"{narrow_duty*100:.1f}%")
+        print_result("Narrow pulse duty cycle", f"{narrow_duty * 100:.1f}%")
 
         # ========== PART 4: FREQUENCY ANALYSIS ==========
         print_subheader("Part 4: Frequency Analysis")
@@ -184,11 +184,11 @@ class DigitalBasicsDemo(BaseDemo):
 
         clock_freq = osc.frequency(self.clock_signal)
         self.results["clock_frequency"] = clock_freq
-        print_result("Clock frequency", f"{clock_freq/1e6:.3f} MHz")
+        print_result("Clock frequency", f"{clock_freq / 1e6:.3f} MHz")
 
         data_freq = osc.frequency(self.data_signal)
         self.results["data_frequency"] = data_freq
-        print_result("Data frequency", f"{data_freq/1e3:.3f} kHz")
+        print_result("Data frequency", f"{data_freq / 1e3:.3f} kHz")
 
         # ========== PART 5: LOGIC LEVEL ANALYSIS ==========
         print_subheader("Part 5: Logic Level Analysis")
@@ -212,18 +212,22 @@ class DigitalBasicsDemo(BaseDemo):
         print_subheader("Measurement Interpretation")
 
         print_info("\n[Edge Detection Results]")
-        print_info(f"  Total edges in 10µs: {len(rising_edges)} rising + {len(falling_edges)} falling")
-        print_info(f"  Edge spacing: {avg_spacing*1e9:.2f}ns → {1/avg_spacing/1e6:.3f}MHz clock")
+        print_info(
+            f"  Total edges in 10µs: {len(rising_edges)} rising + {len(falling_edges)} falling"
+        )
+        print_info(
+            f"  Edge spacing: {avg_spacing * 1e9:.2f}ns → {1 / avg_spacing / 1e6:.3f}MHz clock"
+        )
 
         print_info("\n[Pulse Width Analysis]")
-        print_info(f"  Clock: {clock_pw*1e9:.2f}ns ({clock_duty*100:.1f}% duty cycle)")
-        print_info(f"  Data: {data_pw*1e9:.2f}ns ({data_duty*100:.1f}% duty cycle)")
-        print_info(f"  Narrow: {narrow_pw*1e9:.2f}ns ({narrow_duty*100:.1f}% duty cycle)")
+        print_info(f"  Clock: {clock_pw * 1e9:.2f}ns ({clock_duty * 100:.1f}% duty cycle)")
+        print_info(f"  Data: {data_pw * 1e9:.2f}ns ({data_duty * 100:.1f}% duty cycle)")
+        print_info(f"  Narrow: {narrow_pw * 1e9:.2f}ns ({narrow_duty * 100:.1f}% duty cycle)")
 
         print_info("\n[Timing Characteristics]")
-        print_info(f"  Rise time: {clock_rise*1e9:.2f}ns")
-        print_info(f"  Fall time: {clock_fall*1e9:.2f}ns")
-        print_info(f"  Max transition rate: {logic_high/(clock_rise+1e-12):.2f} V/ns")
+        print_info(f"  Rise time: {clock_rise * 1e9:.2f}ns")
+        print_info(f"  Fall time: {clock_fall * 1e9:.2f}ns")
+        print_info(f"  Max transition rate: {logic_high / (clock_rise + 1e-12):.2f} V/ns")
 
     def validate_results(self, suite: ValidationSuite) -> None:
         """Validate digital signal analysis results."""
@@ -232,7 +236,9 @@ class DigitalBasicsDemo(BaseDemo):
         suite.check_range("Clock falling edges", self.results["clock_falling_edges"], 8, 12)
 
         # Period from edge spacing should match 1 µs (1 MHz clock)
-        suite.check_range("Clock period from edges", self.results["clock_period_from_edges"], 950e-9, 1050e-9)
+        suite.check_range(
+            "Clock period from edges", self.results["clock_period_from_edges"], 950e-9, 1050e-9
+        )
 
         # Pulse width validation
         suite.check_range("Clock pulse width", self.results["clock_pulse_width"], 450e-9, 550e-9)

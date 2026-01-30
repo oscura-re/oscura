@@ -23,9 +23,9 @@ Demonstrations:
 """
 
 __all__ = [
-    "UnknownProtocolDemo",
     "CRCRecoveryDemo",
-    "StateMachineLearningDemo",
     "FieldInferenceDemo",
     "PatternDiscoveryDemo",
+    "StateMachineLearningDemo",
+    "UnknownProtocolDemo",
 ]

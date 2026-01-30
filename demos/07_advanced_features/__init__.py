@@ -16,12 +16,12 @@ Demonstrations:
 """
 
 __all__ = [
+    "BatchProcessingDemo",
+    "CancellationDemo",
+    "ConfigurationDemo",
     "LazyLoadingDemo",
     "MemoryManagementDemo",
     "PerformanceOptimizationDemo",
-    "BatchProcessingDemo",
     "ProgressTrackingDemo",
-    "CancellationDemo",
-    "ConfigurationDemo",
     "ProvenanceDemo",
 ]

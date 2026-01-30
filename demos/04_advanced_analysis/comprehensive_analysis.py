@@ -88,7 +88,7 @@ class ComprehensiveAnalysisDemo(BaseDemo):
 
     def run_analysis(self) -> None:
         """Perform comprehensive analysis."""
-        from demos.common.formatting import print_header, print_info, print_subheader
+        from demos.common.formatting import print_header, print_subheader
 
         print_header("COMPREHENSIVE SIGNAL ANALYSIS")
 
@@ -144,7 +144,9 @@ class ComprehensiveAnalysisDemo(BaseDemo):
             state = ((state << 1) | newbit) & 0x7F
         return np.array(bits)
 
-    def _add_jitter(self, signal: np.ndarray, jitter_rms: float, samples_per_bit: int) -> np.ndarray:
+    def _add_jitter(
+        self, signal: np.ndarray, jitter_rms: float, samples_per_bit: int
+    ) -> np.ndarray:
         """Add jitter to signal transitions."""
         # Simplified jitter addition
         return signal

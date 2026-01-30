@@ -16,7 +16,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 
@@ -67,6 +67,7 @@ class CancellationDemo(BaseDemo):
 
         # Start task in background
         result_holder = {}
+
         def task_wrapper():
             result_holder["result"] = self._long_running_task(data["signal"], cancel_event)
 

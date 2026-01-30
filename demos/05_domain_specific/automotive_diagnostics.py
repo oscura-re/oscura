@@ -23,7 +23,6 @@ Date: 2026-01-29
 
 from __future__ import annotations
 
-import struct
 import sys
 from pathlib import Path
 
@@ -303,7 +302,7 @@ class AutomotiveDiagnosticsDemo(BaseDemo):
             }.get(dtc_code[0], "Unknown")
 
             print_info(f"  Type: {dtc_type}")
-            print_info(f"  Severity: Warning\n")
+            print_info("  Severity: Warning\n")
 
         self.results["dtc_count"] = len(self.dtc_codes)
 
@@ -331,13 +330,9 @@ class AutomotiveDiagnosticsDemo(BaseDemo):
             "UDS services decoded", self.results.get("uds_services", 0), 0, category="uds"
         )
 
-        suite.check_greater(
-            "DTCs found", self.results.get("dtc_count", 0), 0, category="dtc"
-        )
+        suite.check_greater("DTCs found", self.results.get("dtc_count", 0), 0, category="dtc")
 
-        suite.check_true(
-            "CAN messages generated", len(self.can_traces) >= 6, category="can"
-        )
+        suite.check_true("CAN messages generated", len(self.can_traces) >= 6, category="can")
 
 
 if __name__ == "__main__":

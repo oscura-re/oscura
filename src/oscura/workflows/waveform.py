@@ -1,4 +1,4 @@
-"""Complete waveform analysis workflow with reverse engineering capabilities.
+"""Complete waveform analysis workflow with full reverse engineering.
 
 This module provides high-level APIs for comprehensive waveform analysis,
 automating the entire pipeline from loading to protocol reverse engineering.
@@ -54,7 +54,7 @@ def analyze_complete(
     3. Run basic analyses (time/frequency/digital/statistical domains)
     4. Protocol detection and decoding (for digital signals)
     5. Reverse engineering pipeline (clock recovery, framing, CRC analysis)
-    6. Pattern recognition and state machine inference
+    6. Pattern recognition and anomaly detection
     7. Generate comprehensive visualizations
     8. Create professional report with all findings
 
@@ -70,7 +70,7 @@ def analyze_complete(
         report_format: Report format ("html" or "pdf").
         enable_protocol_decode: Enable automatic protocol detection and decoding.
         enable_reverse_engineering: Enable reverse engineering pipeline.
-        enable_pattern_recognition: Enable pattern mining and state machine inference.
+        enable_pattern_recognition: Enable pattern mining and anomaly detection.
         protocol_hints: Optional protocol hints for decoder (e.g., ["uart", "spi"]).
         reverse_engineering_depth: RE analysis depth ("quick", "standard", "deep").
         verbose: Print progress messages.
@@ -85,6 +85,7 @@ def analyze_complete(
             - "decoded_frames": List of decoded protocol frames (if enabled)
             - "reverse_engineering": RE analysis results (if enabled)
             - "patterns": Pattern recognition results (if enabled)
+            - "anomalies": Detected anomalies (if enabled)
             - "plots": Dict of plot data (if generate_plots=True)
             - "report_path": Path to generated report (if generate_report=True)
             - "output_dir": Output directory path
@@ -114,7 +115,7 @@ def analyze_complete(
         ...     for proto in results["protocols_detected"]:
         ...         print(f"Found {proto['protocol']} at {proto['baud_rate']} baud")
         >>> if results["reverse_engineering"]:
-        ...     print(f"CRC: {results['reverse_engineering']['crc_parameters']}")
+        ...     print(f"Baud: {results['reverse_engineering']['baud_rate']}")
     """
     filepath = Path(filepath)
     if not filepath.exists():
@@ -290,7 +291,7 @@ def analyze_complete(
                 )
                 print(f"✓ Completed {numeric_count} measurements")
 
-    # Step 3: Protocol Detection & Decoding (Phase 3A)
+    # Step 3: Protocol Detection & Decoding (FULL IMPLEMENTATION)
     protocols_detected: list[dict[str, Any]] = []
     decoded_frames: list[Any] = []
 
@@ -315,14 +316,16 @@ def analyze_complete(
                     result = auto_decoder.decode_protocol(
                         trace,
                         protocol_hint=proto_name.upper(),  # type: ignore[arg-type]
-                        confidence_threshold=0.7,
+                        confidence_threshold=0.6,  # Lower threshold to catch more
                     )
 
-                    if result.overall_confidence >= 0.7:
+                    if result.overall_confidence >= 0.6:
                         proto_info = {
                             "protocol": result.protocol,
                             "confidence": result.overall_confidence,
                             "params": result.detected_params,
+                            "frame_count": result.frame_count,
+                            "error_count": result.error_count,
                         }
                         protocols_detected.append(proto_info)
                         decoded_frames.extend(result.data)
@@ -332,7 +335,9 @@ def analyze_complete(
                                 f"✓ Detected {result.protocol.upper()}: "
                                 f"{result.overall_confidence:.1%} confidence"
                             )
-                            print(f"  Decoded {len(result.data)} bytes")
+                            print(
+                                f"  Decoded {len(result.data)} bytes, {result.frame_count} frames"
+                            )
                 except Exception:
                     # Protocol didn't match, continue trying others
                     pass
@@ -344,42 +349,169 @@ def analyze_complete(
             if verbose:
                 print(f"  ⚠ Protocol detection unavailable: {e}")
 
-    # Step 4: Reverse Engineering Pipeline (Phase 3B)
+    # Step 4: Reverse Engineering Pipeline (FULL IMPLEMENTATION)
     reverse_engineering_results: dict[str, Any] | None = None
 
-    if enable_reverse_engineering and is_digital:
+    if (
+        enable_reverse_engineering
+        and is_digital
+        and isinstance(trace, (WaveformTrace, DigitalTrace))
+        and len(trace.data) > 1000
+    ):
         if verbose:
             print("\n" + "=" * 80)
             print("REVERSE ENGINEERING ANALYSIS")
             print("=" * 80)
-            depth_str = {"quick": "Quick", "standard": "Standard", "deep": "Deep"}
-            print(f"  Mode: {depth_str[reverse_engineering_depth]}")
-            print("  (Note: RE pipeline integration in progress)")
+            depth_map = {
+                "quick": "Quick (basic)",
+                "standard": "Standard (comprehensive)",
+                "deep": "Deep (exhaustive)",
+            }
+            print(f"  Mode: {depth_map.get(reverse_engineering_depth, 'Standard')}")
 
-        # RE pipeline integration - placeholder for now
-        # Will integrate oscura.workflows.reverse_engineering when available
-        reverse_engineering_results = {
-            "status": "experimental",
-            "note": "Full RE pipeline integration in progress",
-        }
+        try:
+            from oscura.workflows import reverse_engineering as re_workflow
 
-    # Step 5: Pattern Recognition & State Machine Inference (Phase 3C)
+            # Convert DigitalTrace to WaveformTrace for RE
+            re_trace = trace
+            if isinstance(trace, DigitalTrace):
+                waveform_data = trace.data.astype(float)
+                re_trace = WaveformTrace(data=waveform_data, metadata=trace.metadata)
+
+            if isinstance(re_trace, WaveformTrace):
+                # Set parameters based on depth
+                if reverse_engineering_depth == "quick":
+                    baud_rates = [9600, 115200]
+                    min_frames = 2
+                elif reverse_engineering_depth == "deep":
+                    baud_rates = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600]
+                    min_frames = 5
+                else:  # standard
+                    baud_rates = [9600, 19200, 38400, 57600, 115200, 230400]
+                    min_frames = 3
+
+                re_result = re_workflow.reverse_engineer_signal(
+                    re_trace,
+                    expected_baud_rates=baud_rates,
+                    min_frames=min_frames,
+                    max_frame_length=256,
+                )
+
+                # Extract key findings
+                reverse_engineering_results = {
+                    "baud_rate": re_result.baud_rate,
+                    "confidence": re_result.confidence,
+                    "frame_count": len(re_result.frames),
+                    "frame_format": re_result.protocol_spec.frame_format,
+                    "sync_pattern": re_result.protocol_spec.sync_pattern,
+                    "frame_length": re_result.protocol_spec.frame_length,
+                    "field_count": len(re_result.protocol_spec.fields),
+                    "checksum_type": re_result.protocol_spec.checksum_type,
+                    "checksum_position": re_result.protocol_spec.checksum_position,
+                    "warnings": re_result.warnings,
+                }
+
+                if verbose:
+                    print(
+                        f"✓ Baud rate: {re_result.baud_rate:.0f} Hz (confidence: {re_result.confidence:.1%})"
+                    )
+                    print(f"✓ Frames: {len(re_result.frames)} detected")
+                    if re_result.protocol_spec.sync_pattern:
+                        print(f"✓ Sync pattern: {re_result.protocol_spec.sync_pattern}")
+                    if re_result.protocol_spec.frame_length:
+                        print(f"✓ Frame length: {re_result.protocol_spec.frame_length} bytes")
+                    if re_result.protocol_spec.checksum_type:
+                        print(f"✓ Checksum: {re_result.protocol_spec.checksum_type}")
+                    if re_result.warnings:
+                        print(f"  ⚠ Warnings: {len(re_result.warnings)}")
+
+        except ValueError as e:
+            if verbose:
+                print(f"  ⚠ RE analysis: {e!s}")
+            reverse_engineering_results = {"status": "insufficient_data", "message": str(e)}
+        except Exception as e:
+            if verbose:
+                print(f"  ⚠ RE analysis unavailable: {e}")
+            reverse_engineering_results = {"status": "error", "message": str(e)}
+
+    # Step 5: Pattern Recognition & Anomaly Detection (FULL IMPLEMENTATION)
     pattern_results: dict[str, Any] | None = None
+    anomalies_detected: list[dict[str, Any]] = []
 
     if enable_pattern_recognition:
         if verbose:
             print("\n" + "=" * 80)
-            print("PATTERN RECOGNITION & INFERENCE")
+            print("PATTERN RECOGNITION & ANOMALY DETECTION")
             print("=" * 80)
-            print("  (Note: Pattern recognition integration in progress)")
 
-        # Pattern recognition integration - placeholder for now
-        pattern_results = {
-            "status": "experimental",
-            "note": "Pattern recognition APIs integration in progress",
-        }
+        pattern_results = {}
 
-    # Step 6: Generate plots
+        # Anomaly detection
+        try:
+            from oscura.discovery import anomaly_detector
+
+            # Convert DigitalTrace to WaveformTrace for anomaly detection
+            anomaly_trace = trace
+            if isinstance(trace, DigitalTrace):
+                waveform_data = trace.data.astype(float)
+                anomaly_trace = WaveformTrace(data=waveform_data, metadata=trace.metadata)
+
+            if isinstance(anomaly_trace, WaveformTrace):
+                anomalies = anomaly_detector.find_anomalies(
+                    anomaly_trace,
+                    min_confidence=0.6,
+                )
+
+                # Convert to list of dicts
+                anomalies_detected = [
+                    {
+                        "type": a.type,
+                        "start": float(a.timestamp_us) / 1e6,  # Convert to seconds
+                        "end": float(a.timestamp_us + a.duration_ns / 1000) / 1e6,
+                        "severity": a.severity,
+                        "description": a.description,
+                    }
+                    for a in anomalies
+                ]
+                pattern_results["anomalies"] = anomalies_detected
+
+                if verbose and anomalies_detected:
+                    print(f"✓ Detected {len(anomalies_detected)} anomalies")
+                    severity_counts: dict[str, int] = {}
+                    for a in anomalies_detected:
+                        severity_counts[a["severity"]] = severity_counts.get(a["severity"], 0) + 1
+                    for sev, count in sorted(severity_counts.items()):
+                        print(f"  - {sev}: {count}")
+        except Exception as e:
+            if verbose:
+                print(f"  ⚠ Anomaly detection unavailable: {e}")
+
+        # Pattern discovery (for byte streams)
+        if decoded_frames and len(decoded_frames) > 10:
+            try:
+                from oscura.analyzers.patterns import discovery
+
+                # Convert decoded bytes to numpy array
+                byte_data = np.array([b.value for b in decoded_frames[:1000]], dtype=np.uint8)
+
+                signatures = discovery.discover_signatures(byte_data, min_occurrences=3)
+                pattern_results["signatures"] = [
+                    {
+                        "pattern": sig.pattern.hex(),
+                        "count": sig.occurrences,
+                        "confidence": float(sig.score),
+                        "length": sig.length,
+                    }
+                    for sig in signatures[:10]  # Top 10
+                ]
+
+                if verbose and signatures:
+                    print(f"✓ Discovered {len(signatures)} signature patterns")
+            except Exception as e:
+                if verbose:
+                    print(f"  ⚠ Pattern discovery unavailable: {e}")
+
+    # Step 6: Generate plots (ALL plots from original + RE plots)
     plots: dict[str, str] = {}
     if generate_plots:
         if verbose:
@@ -389,7 +521,7 @@ def analyze_complete(
 
         from oscura.visualization import batch
 
-        # Basic plots
+        # Generate ALL standard plots
         if isinstance(trace, (WaveformTrace, DigitalTrace)):
             plots = batch.generate_all_plots(trace, verbose=verbose)
 
@@ -423,6 +555,7 @@ def analyze_complete(
                 "type": "Digital" if is_digital else "Analog",
                 "protocols_detected": len(protocols_detected),
                 "frames_decoded": len(decoded_frames),
+                "anomalies_found": len(anomalies_detected),
             },
         )
 
@@ -452,17 +585,24 @@ def analyze_complete(
             )
 
         # Add reverse engineering section
-        if reverse_engineering_results:
+        if reverse_engineering_results and reverse_engineering_results.get("baud_rate"):
             report.add_section(
                 title="Reverse Engineering Analysis",
                 content=_format_reverse_engineering(reverse_engineering_results),
             )
 
-        # Add pattern recognition section
-        if pattern_results:
+        # Add anomaly detection section
+        if anomalies_detected:
             report.add_section(
-                title="Pattern Recognition & Inference",
-                content=_format_pattern_recognition(pattern_results),
+                title="Anomaly Detection Results",
+                content=_format_anomalies(anomalies_detected),
+            )
+
+        # Add pattern recognition section
+        if pattern_results and pattern_results.get("signatures"):
+            report.add_section(
+                title="Pattern Recognition Results",
+                content=_format_patterns(pattern_results),
             )
 
         # Generate HTML
@@ -492,6 +632,8 @@ def analyze_complete(
             print(f"✓ Protocols detected: {len(protocols_detected)}")
         if decoded_frames:
             print(f"✓ Frames decoded: {len(decoded_frames)}")
+        if anomalies_detected:
+            print(f"✓ Anomalies found: {len(anomalies_detected)}")
 
     # Return comprehensive results
     return {
@@ -503,6 +645,7 @@ def analyze_complete(
         "decoded_frames": decoded_frames,
         "reverse_engineering": reverse_engineering_results,
         "patterns": pattern_results,
+        "anomalies": anomalies_detected,
         "plots": plots if generate_plots else {},
         "report_path": report_path,
         "output_dir": output_dir,
@@ -525,11 +668,13 @@ def _format_protocol_detection(protocols: list[dict[str, Any]], frames: list[Any
         html += f"<li><strong>{proto['protocol'].upper()}</strong>: {conf:.1%} confidence"
         if "params" in proto and "baud_rate" in proto["params"]:
             html += f" at {proto['params']['baud_rate']:.0f} baud"
+        if proto.get("frame_count"):
+            html += f" ({proto['frame_count']} frames)"
         html += "</li>\n"
     html += "</ul>\n"
 
     if frames:
-        html += f"<p><strong>Total frames decoded:</strong> {len(frames)}</p>\n"
+        html += f"<p><strong>Total bytes decoded:</strong> {len(frames)}</p>\n"
 
     return html
 
@@ -543,35 +688,77 @@ def _format_reverse_engineering(re_results: dict[str, Any]) -> str:
     Returns:
         HTML formatted string.
     """
-    html = "<h3>Reverse Engineering Status</h3>\n"
+    html = "<h3>Reverse Engineering Findings</h3>\n<ul>\n"
 
-    if re_results.get("status") == "experimental":
-        html += f"<p><em>{re_results.get('note', 'Integration in progress')}</em></p>\n"
-    else:
-        html += "<ul>\n"
+    if re_results.get("baud_rate"):
+        html += f"<li><strong>Baud Rate:</strong> {re_results['baud_rate']:.0f} Hz</li>\n"
 
-        if re_results.get("baud_rate"):
-            html += f"<li><strong>Baud Rate:</strong> {re_results['baud_rate']:.0f} Hz</li>\n"
+    if re_results.get("confidence"):
+        conf = re_results["confidence"]
+        html += f"<li><strong>Overall Confidence:</strong> {conf:.1%}</li>\n"
 
-        if re_results.get("frame_format"):
-            html += f"<li><strong>Frame Format:</strong> {re_results['frame_format']}</li>\n"
+    if re_results.get("frame_count"):
+        html += f"<li><strong>Frames Detected:</strong> {re_results['frame_count']}</li>\n"
 
-        if re_results.get("sync_patterns"):
-            html += f"<li><strong>Sync Pattern:</strong> {re_results['sync_patterns']}</li>\n"
+    if re_results.get("frame_format"):
+        html += f"<li><strong>Frame Format:</strong> {re_results['frame_format']}</li>\n"
 
-        if re_results.get("crc_parameters"):
-            html += "<li><strong>CRC:</strong> Detected</li>\n"
+    if re_results.get("sync_pattern"):
+        html += f"<li><strong>Sync Pattern:</strong> {re_results['sync_pattern']}</li>\n"
 
-        if re_results.get("confidence"):
-            conf = re_results["confidence"]
-            html += f"<li><strong>Confidence:</strong> {conf:.1%}</li>\n"
+    if re_results.get("frame_length"):
+        html += f"<li><strong>Frame Length:</strong> {re_results['frame_length']} bytes</li>\n"
 
+    if re_results.get("field_count"):
+        html += f"<li><strong>Fields Identified:</strong> {re_results['field_count']}</li>\n"
+
+    if re_results.get("checksum_type"):
+        html += f"<li><strong>Checksum:</strong> {re_results['checksum_type']}"
+        if re_results.get("checksum_position") is not None:
+            html += f" at position {re_results['checksum_position']}"
+        html += "</li>\n"
+
+    html += "</ul>\n"
+
+    if re_results.get("warnings"):
+        html += "<h4>Warnings</h4>\n<ul>\n"
+        for warning in re_results["warnings"][:5]:  # Max 5 warnings
+            html += f"<li>{warning}</li>\n"
         html += "</ul>\n"
 
     return html
 
 
-def _format_pattern_recognition(pattern_results: dict[str, Any]) -> str:
+def _format_anomalies(anomalies: list[dict[str, Any]]) -> str:
+    """Format anomaly detection results for report.
+
+    Args:
+        anomalies: List of detected anomalies.
+
+    Returns:
+        HTML formatted string.
+    """
+    html = "<h3>Detected Anomalies</h3>\n"
+    html += f"<p><strong>Total anomalies:</strong> {len(anomalies)}</p>\n"
+
+    # Group by severity
+    by_severity: dict[str, list[dict[str, Any]]] = {}
+    for anomaly in anomalies:
+        severity = anomaly.get("severity", "unknown")
+        by_severity.setdefault(severity, []).append(anomaly)
+
+    for severity in ["critical", "warning", "info"]:
+        if severity in by_severity:
+            html += f"<h4>{severity.title()} ({len(by_severity[severity])})</h4>\n<ul>\n"
+            for anomaly in by_severity[severity][:10]:  # Max 10 per severity
+                html += f"<li><strong>{anomaly['type']}:</strong> {anomaly['description']}"
+                html += f" (at {anomaly['start']:.6f}s)</li>\n"
+            html += "</ul>\n"
+
+    return html
+
+
+def _format_patterns(pattern_results: dict[str, Any]) -> str:
     """Format pattern recognition results for report.
 
     Args:
@@ -580,27 +767,19 @@ def _format_pattern_recognition(pattern_results: dict[str, Any]) -> str:
     Returns:
         HTML formatted string.
     """
-    html = "<h3>Pattern Recognition Status</h3>\n"
+    html = "<h3>Pattern Recognition Results</h3>\n"
 
-    if pattern_results.get("status") == "experimental":
-        html += f"<p><em>{pattern_results.get('note', 'Integration in progress')}</em></p>\n"
-    else:
-        html += "<ul>\n"
-
-        if pattern_results.get("anomalies"):
-            anomalies = pattern_results["anomalies"]
-            html += f"<li><strong>Anomalies Detected:</strong> {len(anomalies)}</li>\n"
-
-        if pattern_results.get("patterns"):
-            patterns = pattern_results["patterns"]
-            html += f"<li><strong>Patterns Discovered:</strong> {len(patterns)}</li>\n"
-
-        if pattern_results.get("state_machine"):
-            sm = pattern_results["state_machine"]
-            state_count = len(sm.states) if hasattr(sm, "states") else 0
-            html += f"<li><strong>State Machine:</strong> {state_count} states inferred</li>\n"
-
-        html += "</ul>\n"
+    if pattern_results.get("signatures"):
+        sigs = pattern_results["signatures"]
+        html += f"<p><strong>Signature patterns discovered:</strong> {len(sigs)}</p>\n"
+        html += "<table border='1' cellpadding='5'>\n"
+        html += "<tr><th>Pattern</th><th>Length</th><th>Count</th><th>Score</th></tr>\n"
+        for sig in sigs[:10]:  # Top 10
+            html += f"<tr><td><code>{sig['pattern']}</code></td>"
+            html += f"<td>{sig['length']} bytes</td>"
+            html += f"<td>{sig['count']}</td>"
+            html += f"<td>{sig['confidence']:.2f}</td></tr>\n"
+        html += "</table>\n"
 
     return html
 

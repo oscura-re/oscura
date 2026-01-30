@@ -60,7 +60,7 @@ class CANDemo(BaseDemo):
         ext_frame = self._generate_can_frame(
             frame_id=0x18FF1234,
             is_extended=True,
-            data=b"\xAA\x55\xDE\xAD\xBE\xEF",
+            data=b"\xaa\x55\xde\xad\xbe\xef",
             bitrate=500000,
             sample_rate=10e6,
         )
@@ -69,7 +69,7 @@ class CANDemo(BaseDemo):
         short_frame = self._generate_can_frame(
             frame_id=0x456,
             is_extended=False,
-            data=b"\xFF\x00",
+            data=b"\xff\x00",
             bitrate=500000,
             sample_rate=10e6,
         )
@@ -248,7 +248,9 @@ class CANDemo(BaseDemo):
                 self.subsection("Decoded Frames")
                 for i, frame in enumerate(frames):
                     if hasattr(frame, "arbitration_id"):
-                        self.info(f"Frame {i}: ID=0x{frame.arbitration_id:X}, DLC={len(frame.data)}")
+                        self.info(
+                            f"Frame {i}: ID=0x{frame.arbitration_id:X}, DLC={len(frame.data)}"
+                        )
                     else:
                         self.info(f"Frame {i}: Decoded")
             else:

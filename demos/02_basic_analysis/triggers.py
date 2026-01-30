@@ -99,17 +99,19 @@ class TriggersDemo(BaseDemo):
             pattern_data.extend([bit * 3.3] * bit_duration)
 
         # Add some repeats and padding
-        full_pattern = np.concatenate([
-            np.zeros(500),
-            pattern_data,
-            np.zeros(200),
-            pattern_data,
-            np.zeros(500),
-        ])
+        full_pattern = np.concatenate(
+            [
+                np.zeros(500),
+                pattern_data,
+                np.zeros(200),
+                pattern_data,
+                np.zeros(500),
+            ]
+        )
 
         self.pattern_signal = osc.WaveformTrace(
             data=np.array(full_pattern),
-            metadata=osc.TraceMetadata(sample_rate=sample_rate, channel_name="pattern")
+            metadata=osc.TraceMetadata(sample_rate=sample_rate, channel_name="pattern"),
         )
 
         print_result("Square wave generated", "1 kHz, 3.3V, 50% duty")
@@ -148,8 +150,8 @@ class TriggersDemo(BaseDemo):
         trigger_time_rising = rising_trigger["index"] / sample_rate
         trigger_time_falling = falling_trigger["index"] / sample_rate
 
-        print_result("Rising edge time", f"{trigger_time_rising*1e6:.2f} µs")
-        print_result("Falling edge time", f"{trigger_time_falling*1e6:.2f} µs")
+        print_result("Rising edge time", f"{trigger_time_rising * 1e6:.2f} µs")
+        print_result("Falling edge time", f"{trigger_time_falling * 1e6:.2f} µs")
 
         # ========== PART 2: LEVEL TRIGGERS ==========
         print_subheader("Part 2: Level Triggers")
@@ -158,11 +160,7 @@ class TriggersDemo(BaseDemo):
         # Set trigger level at 50% of amplitude
         trigger_level = osc.amplitude(self.test_signal) / 2
 
-        level_trig = osc.level_trigger(
-            self.test_signal,
-            level=trigger_level,
-            slope="rising"
-        )
+        level_trig = osc.level_trigger(self.test_signal, level=trigger_level, slope="rising")
 
         self.results["level_trigger_index"] = level_trig["index"]
         self.results["level_trigger_value"] = self.test_signal.data[level_trig["index"]]
@@ -193,7 +191,7 @@ class TriggersDemo(BaseDemo):
             self.results["pulse_count"] = len(pulse_widths)
 
             print_result("Pulses detected", len(pulse_widths))
-            print_result("Average pulse width", f"{avg_pulse_width*1e6:.2f} µs")
+            print_result("Average pulse width", f"{avg_pulse_width * 1e6:.2f} µs")
 
             # Trigger on narrow pulse (< 150 µs)
             narrow_trigger = osc.pulse_trigger(
@@ -233,7 +231,7 @@ class TriggersDemo(BaseDemo):
         print_result("Pattern matches found", len(matches))
         if matches:
             for idx, match_idx in enumerate(matches):
-                print_result(f"  Match {idx+1} at sample", match_idx)
+                print_result(f"  Match {idx + 1} at sample", match_idx)
 
         # ========== PART 5: TRIGGER HOLDOFF ==========
         print_subheader("Part 5: Trigger Holdoff")
@@ -256,15 +254,19 @@ class TriggersDemo(BaseDemo):
 
         print_result("Triggers without holdoff", len(all_rising))
         print_result("Triggers with 1ms holdoff", len(triggers_with_holdoff))
-        print_result("Holdoff reduction", f"{(1 - len(triggers_with_holdoff)/len(all_rising))*100:.1f}%")
+        print_result(
+            "Holdoff reduction", f"{(1 - len(triggers_with_holdoff) / len(all_rising)) * 100:.1f}%"
+        )
 
         # ========== MEASUREMENT INTERPRETATION ==========
         print_subheader("Trigger Analysis Summary")
 
         print_info("\n[Edge Triggers]")
-        print_info(f"  Rising edges: {len(rising)} at ~{1000/len(rising) if len(rising) > 0 else 0:.2f}ms spacing")
+        print_info(
+            f"  Rising edges: {len(rising)} at ~{1000 / len(rising) if len(rising) > 0 else 0:.2f}ms spacing"
+        )
         print_info(f"  Falling edges: {len(falling)}")
-        print_info(f"  First trigger: {trigger_time_rising*1e6:.2f}µs")
+        print_info(f"  First trigger: {trigger_time_rising * 1e6:.2f}µs")
 
         print_info("\n[Level Triggers]")
         print_info(f"  Threshold: {trigger_level:.3f}V (50% of amplitude)")
@@ -272,11 +274,11 @@ class TriggersDemo(BaseDemo):
 
         print_info("\n[Pulse Width Triggers]")
         if pulse_widths:
-            print_info(f"  Average pulse width: {avg_pulse_width*1e6:.2f}µs")
+            print_info(f"  Average pulse width: {avg_pulse_width * 1e6:.2f}µs")
             print_info(f"  Pulses in range (50-150µs): {len(pulse_widths)}")
 
         print_info("\n[Pattern Triggers]")
-        print_info(f"  Pattern: 10110100 (8 bits)")
+        print_info("  Pattern: 10110100 (8 bits)")
         print_info(f"  Matches found: {len(matches)}")
 
     def validate_results(self, suite: ValidationSuite) -> None:

@@ -25,7 +25,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import numpy as np
-from scipy import stats
 
 from demos.common.base_demo import BaseDemo, run_demo_main
 from demos.common.validation import ValidationSuite

@@ -149,11 +149,13 @@ class ProvenanceDemo(BaseDemo):
         audit_trail = []
         current = provenance
         while current:
-            audit_trail.append({
-                "operation": current.operation,
-                "timestamp": current.timestamp.isoformat(),
-                "parameters": current.parameters,
-            })
+            audit_trail.append(
+                {
+                    "operation": current.operation,
+                    "timestamp": current.timestamp.isoformat(),
+                    "parameters": current.parameters,
+                }
+            )
             current = current.parent
 
         self.info("Audit trail (reverse chronological):")

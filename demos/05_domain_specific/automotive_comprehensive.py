@@ -31,8 +31,6 @@ import struct
 import sys
 from pathlib import Path
 
-import numpy as np
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from demos.common import BaseDemo, ValidationSuite, print_info, print_result
@@ -72,11 +70,9 @@ class ComprehensiveAutomotiveDemo(BaseDemo):
             data[1] = 0xBB
             data[2:4] = struct.pack(">H", raw_rpm)  # Big-endian RPM
             data[4] = i % 256  # Counter
-            data[5:8] = b"\xCC\xDD\xEE"
+            data[5:8] = b"\xcc\xdd\xee"
 
-            self.can_messages.append(
-                {"id": 0x280, "timestamp": timestamp, "data": bytes(data)}
-            )
+            self.can_messages.append({"id": 0x280, "timestamp": timestamp, "data": bytes(data)})
 
         # Message 0x300: Vehicle Speed (50 Hz)
         for i in range(25):
@@ -88,9 +84,7 @@ class ComprehensiveAutomotiveDemo(BaseDemo):
             data[1] = int(speed_kmh * 100) & 0xFF
             data[2:8] = b"\x00\x00\x00\x00\x00\x00"
 
-            self.can_messages.append(
-                {"id": 0x300, "timestamp": timestamp, "data": bytes(data)}
-            )
+            self.can_messages.append({"id": 0x300, "timestamp": timestamp, "data": bytes(data)})
 
         # Message 0x400: Transmission (20 Hz)
         for i in range(10):
@@ -103,9 +97,7 @@ class ComprehensiveAutomotiveDemo(BaseDemo):
             data[2] = 75  # Oil temp
             data[3:8] = b"\x00\x00\x00\x00\x00"
 
-            self.can_messages.append(
-                {"id": 0x400, "timestamp": timestamp, "data": bytes(data)}
-            )
+            self.can_messages.append({"id": 0x400, "timestamp": timestamp, "data": bytes(data)})
 
         # J1939 Message: Engine Temperature (PGN 0xFEEE)
         priority = 6
@@ -164,9 +156,7 @@ class ComprehensiveAutomotiveDemo(BaseDemo):
         for msg_id in sorted(unique_ids):
             if msg_id < 0x800:  # Standard ID
                 count = id_counts[msg_id]
-                duration = (
-                    self.can_messages[-1]["timestamp"] - self.can_messages[0]["timestamp"]
-                )
+                duration = self.can_messages[-1]["timestamp"] - self.can_messages[0]["timestamp"]
                 frequency = count / duration if duration > 0 else 0
                 print_info(f"  ID 0x{msg_id:03X}: {count} messages ({frequency:.1f} Hz)")
 
@@ -239,7 +229,7 @@ class ComprehensiveAutomotiveDemo(BaseDemo):
                 pgn = (can_id >> 8) & 0x3FFFF
                 source_addr = can_id & 0xFF
 
-                print_info(f"\nJ1939 Message:")
+                print_info("\nJ1939 Message:")
                 print_info(f"  Priority: {priority}")
                 print_info(f"  PGN: 0x{pgn:04X}")
                 print_info(f"  Source Address: 0x{source_addr:02X}")
@@ -295,9 +285,7 @@ class ComprehensiveAutomotiveDemo(BaseDemo):
             category="can",
         )
 
-        suite.check_greater(
-            "Unique CAN IDs", self.results.get("unique_ids", 0), 0, category="can"
-        )
+        suite.check_greater("Unique CAN IDs", self.results.get("unique_ids", 0), 0, category="can")
 
         suite.check_greater(
             "Signals discovered",

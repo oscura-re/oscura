@@ -28,7 +28,8 @@ from demonstrations.common import (
     format_table,
     generate_sine_wave,
 )
-from oscura.core.types import TraceMetadata, WaveformTrace
+
+from oscura.core.types import WaveformTrace
 
 
 class FormatConversionDemo(BaseDemo):
@@ -93,7 +94,7 @@ class FormatConversionDemo(BaseDemo):
 
         # Write CSV
         with open(filepath, "w") as f:
-            f.write("# Sample Rate (Hz): {}\n".format(sample_rate))
+            f.write(f"# Sample Rate (Hz): {sample_rate}\n")
             f.write("Time (s),Amplitude (V)\n")
             for t, v in zip(time_values, trace.data):
                 f.write(f"{t:.9e},{v:.6e}\n")
