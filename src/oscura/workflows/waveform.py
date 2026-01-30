@@ -168,25 +168,12 @@ def analyze_complete(
             print("TIME-DOMAIN ANALYSIS")
             print("=" * 80)
 
-        # Run time-domain measurements
+        # Run time-domain measurements - GET ALL AVAILABLE
         if isinstance(trace, WaveformTrace):
             from oscura.analyzers import waveform as waveform_analyzer
 
-            time_results = waveform_analyzer.measure(
-                trace,
-                parameters=[
-                    "amplitude",
-                    "mean",
-                    "rms",
-                    "frequency",
-                    "period",
-                    "duty_cycle",
-                    "rise_time",
-                    "fall_time",
-                    "overshoot",
-                    "undershoot",
-                ],
-            )
+            # Pass parameters=None to get ALL available measurements
+            time_results = waveform_analyzer.measure(trace, parameters=None, include_units=True)
             results["time_domain"] = time_results
             if verbose:
                 print(f"✓ Completed {len(time_results)} measurements")
@@ -227,9 +214,9 @@ def analyze_complete(
             print("DIGITAL SIGNAL ANALYSIS")
             print("=" * 80)
 
-        # Run digital analysis (works for both analog and digital traces)
+        # Run comprehensive digital analysis (works for both analog and digital traces)
         try:
-            from oscura.analyzers.digital import signal_quality_summary
+            from oscura.analyzers.digital import signal_quality_summary, timing
 
             # Convert DigitalTrace to WaveformTrace for analysis
             analysis_trace = trace
@@ -239,12 +226,31 @@ def analyze_complete(
                 analysis_trace = WaveformTrace(data=waveform_data, metadata=trace.metadata)
 
             if isinstance(analysis_trace, WaveformTrace):
+                # Get signal quality summary
                 digital_results_obj = signal_quality_summary(analysis_trace)
                 digital_results: dict[str, Any]
                 if hasattr(digital_results_obj, "__dict__"):
                     digital_results = digital_results_obj.__dict__
                 else:
                     digital_results = dict(digital_results_obj)
+
+                # Add timing measurements
+                try:
+                    # Slew rate for rising and falling edges
+                    slew_rising = timing.slew_rate(
+                        analysis_trace, edge_type="rising", return_all=False
+                    )
+                    if not np.isnan(slew_rising):
+                        digital_results["slew_rate_rising"] = slew_rising
+
+                    slew_falling = timing.slew_rate(
+                        analysis_trace, edge_type="falling", return_all=False
+                    )
+                    if not np.isnan(slew_falling):
+                        digital_results["slew_rate_falling"] = slew_falling
+                except Exception:
+                    pass  # Skip if slew rate not applicable
+
                 results["digital"] = digital_results
                 if verbose:
                     numeric_count = sum(
