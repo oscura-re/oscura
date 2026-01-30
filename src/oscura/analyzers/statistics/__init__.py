@@ -77,7 +77,6 @@ __all__ = [
     # Basic statistics
     "basic_stats",
     "bimodality_coefficient",
-    "measure",
     "change_point_detection",
     "coherence",
     "correlation_coefficient",
@@ -101,6 +100,7 @@ __all__ = [
     "kernel_density",
     # Advanced (STAT-012)
     "local_outlier_factor",
+    "measure",
     "modified_zscore_outliers",
     "moment",
     "moving_average",
