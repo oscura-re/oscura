@@ -630,7 +630,7 @@ class TestMockingAndIntegration:
         self, jittery_clock_trace: WaveformTrace
     ) -> None:
         """Test extraction with mocked edge detection."""
-        with patch("oscura.analyzers.jitter.measurements._find_edges") as mock_find_edges:
+        with patch("oscura.analyzers.jitter.timing._find_edges") as mock_find_edges:
             # Mock edge detection
             rising_edges = np.arange(100) * 1e-9 + np.random.randn(100) * 1e-12
             falling_edges = np.arange(100) * 1e-9 + 0.5e-9 + np.random.randn(100) * 1e-12

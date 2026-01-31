@@ -16,6 +16,9 @@ import base64
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
+import matplotlib
+
+matplotlib.use("Agg")  # Set non-interactive backend before importing pyplot
 import matplotlib.pyplot as plt
 import numpy as np
 
