@@ -38,7 +38,7 @@ print(oscura.__version__)  # Should show 0.6.0
 **Migration:**
 
 - The plugin system was non-functional in v0.5.1 (directory didn't exist)
-- Full plugin support is planned for v0.7.0
+- Full plugin support is planned for v0.8.0
 - For now, use extension points directly via the API
 
 **Before (v0.5.1 - didn't work):**
