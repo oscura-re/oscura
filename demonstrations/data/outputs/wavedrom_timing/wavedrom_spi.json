@@ -1,0 +1,30 @@
+{
+  "signal": [
+    {
+      "name": "CLK",
+      "wave": "p.......",
+      "period": 2
+    },
+    {
+      "name": "MOSI",
+      "wave": "x345x",
+      "data": ["A", "B", "C"]
+    },
+    {
+      "name": "MISO",
+      "wave": "x456x",
+      "data": ["Q", "R", "S"]
+    },
+    {
+      "name": "CS",
+      "wave": "10...1"
+    }
+  ],
+  "config": {
+    "hscale": 2
+  },
+  "head": {
+    "text": "SPI Transaction",
+    "tick": 0
+  }
+}

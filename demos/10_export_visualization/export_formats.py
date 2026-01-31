@@ -88,7 +88,7 @@ class ExportFormatsDemo(BaseDemo):
         csv_path = self.data_dir / "waveform_data.csv"
         csv_path.write_text(csv_content)
         print_info(f"✓ CSV saved: {csv_path}")
-        print_info(f"  Rows: 100 samples")
+        print_info("  Rows: 100 samples")
 
         self.results["csv_path"] = str(csv_path)
 
@@ -122,7 +122,7 @@ class ExportFormatsDemo(BaseDemo):
             channel=self.trace.metadata.channel_name,
         )
         print_info(f"✓ NPZ saved: {npz_path}")
-        print_info(f"  Arrays: data, sample_rate, channel")
+        print_info("  Arrays: data, sample_rate, channel")
 
         self.results["npz_path"] = str(npz_path)
 

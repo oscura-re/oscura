@@ -1,0 +1,25 @@
+PRODUCTION TEST REPORT
+================================================================================
+Unit ID: DUT-001
+Test Date: 2024-01-22 15:30:00
+Operator: AUTO
+Station: TEST-01
+
+TEST RESULTS
+------------
+amplitude      :    5.401 V    [   4.5 -    5.5] [PASS]
+frequency      : 1000.290 kHz  [ 999.0 - 1001.0] [PASS]
+rise_time      :   50.842 ns   [   5.0 -  100.0] [PASS]
+fall_time      :   55.926 ns   [   5.0 -  100.0] [PASS]
+duty_cycle     :   51.155 %    [  48.0 -   52.0] [PASS]
+overshoot      :    0.000 %    [   0.0 -   10.0] [PASS]
+
+OVERALL RESULT
+--------------
+Status: PASS
+
+Unit meets all production test requirements.
+Unit is approved for shipment.
+
+================================================================================
+Signature: __________________    Date: __________

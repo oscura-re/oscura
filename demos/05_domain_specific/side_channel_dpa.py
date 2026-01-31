@@ -45,10 +45,38 @@ class SideChannelDPADemo(BaseDemo):
 
     # AES S-box (first 32 entries for demo)
     AES_SBOX = [
-        0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5,
-        0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
-        0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0,
-        0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
+        0x63,
+        0x7C,
+        0x77,
+        0x7B,
+        0xF2,
+        0x6B,
+        0x6F,
+        0xC5,
+        0x30,
+        0x01,
+        0x67,
+        0x2B,
+        0xFE,
+        0xD7,
+        0xAB,
+        0x76,
+        0xCA,
+        0x82,
+        0xC9,
+        0x7D,
+        0xFA,
+        0x59,
+        0x47,
+        0xF0,
+        0xAD,
+        0xD4,
+        0xA2,
+        0xAF,
+        0x9C,
+        0xA4,
+        0x72,
+        0xC0,
     ]
 
     def __init__(self, **kwargs):
@@ -74,14 +102,14 @@ class SideChannelDPADemo(BaseDemo):
             # Simulate AES operation
             intermediate = plaintext ^ self.known_key
             sbox_out = self.AES_SBOX[intermediate % len(self.AES_SBOX)]
-            hw = bin(sbox_out).count('1')
+            hw = bin(sbox_out).count("1")
 
             # Generate power trace
             trace = np.random.normal(0.0, 0.01, samples_per_trace)
             poi = samples_per_trace // 2
 
             # Add strong leakage for educational demo
-            trace[poi-5:poi+5] += hw * 0.25
+            trace[poi - 5 : poi + 5] += hw * 0.25
 
             # Add realistic power profile
             trace += 0.5 + 0.05 * np.sin(2 * np.pi * np.arange(samples_per_trace) / 100)
@@ -173,9 +201,7 @@ class SideChannelDPADemo(BaseDemo):
 
     def validate_results(self, suite: ValidationSuite) -> None:
         """Validate DPA results."""
-        suite.check_greater(
-            "Traces collected", len(self.traces), 0, category="dpa"
-        )
+        suite.check_greater("Traces collected", len(self.traces), 0, category="dpa")
 
         suite.check_exists(
             "Key recovery attempted", self.results.get("recovered_key"), category="dpa"

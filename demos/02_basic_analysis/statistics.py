@@ -247,9 +247,24 @@ class StatisticsDemo(BaseDemo):
 
         headers = ["Statistic", "Clean Sine", "Noisy Sine", "Square Wave"]
         rows = [
-            ["Mean", f"{clean_mean:.6f}", f"{noisy_mean:.6f}", f"{osc.mean(self.square_signal):.6f}"],
-            ["Median", f"{clean_median:.6f}", f"{noisy_median:.6f}", f"{osc.median(self.square_signal):.6f}"],
-            ["Std Dev", f"{clean_std:.4f}", f"{noisy_std:.4f}", f"{osc.std(self.square_signal):.4f}"],
+            [
+                "Mean",
+                f"{clean_mean:.6f}",
+                f"{noisy_mean:.6f}",
+                f"{osc.mean(self.square_signal):.6f}",
+            ],
+            [
+                "Median",
+                f"{clean_median:.6f}",
+                f"{noisy_median:.6f}",
+                f"{osc.median(self.square_signal):.6f}",
+            ],
+            [
+                "Std Dev",
+                f"{clean_std:.4f}",
+                f"{noisy_std:.4f}",
+                f"{osc.std(self.square_signal):.4f}",
+            ],
             ["CV", f"{cv_clean:.4f}", f"{cv_noisy:.4f}", "-"],
             ["Skewness", f"{skew_clean:.4f}", "-", f"{skew_square:.4f}"],
             ["Kurtosis", f"{kurt_clean:.4f}", "-", f"{kurt_square:.4f}"],
@@ -291,12 +306,12 @@ class StatisticsDemo(BaseDemo):
         print_info("\n[Basic Statistics]")
         print_info(f"  Clean signal has near-zero mean ({clean_mean:.6f}V) - AC signal")
         print_info(f"  Noise increases std dev: {clean_std:.4f}V → {noisy_std:.4f}V")
-        print_info(f"  Coefficient of variation increases with noise")
+        print_info("  Coefficient of variation increases with noise")
 
         print_info("\n[Distribution Shape]")
         print_info(f"  Sine wave: symmetric (skewness ≈ {skew_clean:.4f})")
-        print_info(f"  Square wave: bimodal distribution (two peaks at ±3V)")
-        print_info(f"  Kurtosis indicates tail behavior relative to normal distribution")
+        print_info("  Square wave: bimodal distribution (two peaks at ±3V)")
+        print_info("  Kurtosis indicates tail behavior relative to normal distribution")
 
         print_info("\n[Signal Quality]")
         print_info(f"  SNR: {snr_measured:.2f}dB (target: 20dB)")
@@ -305,7 +320,7 @@ class StatisticsDemo(BaseDemo):
 
         print_info("\n[Percentiles]")
         print_info(f"  IQR: {iqr:.4f}V captures central 50% of data")
-        print_info(f"  5%-95% range: {p95-p5:.4f}V captures 90% of values")
+        print_info(f"  5%-95% range: {p95 - p5:.4f}V captures 90% of values")
 
     def validate_results(self, suite: ValidationSuite) -> None:
         """Validate statistical analysis results."""
@@ -328,7 +343,9 @@ class StatisticsDemo(BaseDemo):
 
         # Correlation validation
         suite.check_range("Clean-noisy correlation", self.results["corr_clean_noisy"], 0.8, 1.0)
-        suite.check_range("Sine-square correlation", abs(self.results["corr_sine_square"]), 0.0, 0.5)
+        suite.check_range(
+            "Sine-square correlation", abs(self.results["corr_sine_square"]), 0.0, 0.5
+        )
 
         # Percentile validation
         suite.check_range("IQR", self.results["iqr"], 1.0, 3.0)

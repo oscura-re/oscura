@@ -14,7 +14,7 @@ Demonstrations:
 __all__ = [
     "CustomAnalyzerDemo",
     "CustomPluginDemo",
-    "TemplatesDemo",
-    "RegistrationDemo",
     "PluginDistributionDemo",
+    "RegistrationDemo",
+    "TemplatesDemo",
 ]

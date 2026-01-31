@@ -1,0 +1,41 @@
+{
+  "oscilloscope": {
+    "device_id": "OSC-001",
+    "interface": "USB",
+    "sample_rate": 100000.0,
+    "channels": [
+      {
+        "id": "CH1",
+        "enabled": true,
+        "vertical_scale": 1.0,
+        "coupling": "DC"
+      },
+      {
+        "id": "CH2",
+        "enabled": false,
+        "vertical_scale": 2.0,
+        "coupling": "AC"
+      }
+    ],
+    "trigger": {
+      "source": "CH1",
+      "level": 0.5,
+      "edge": "rising"
+    }
+  },
+  "logic_analyzer": {
+    "device_id": "LA-001",
+    "interface": "USB",
+    "sample_rate": 10000000.0,
+    "channels": {
+      "D0-D7": {
+        "enabled": true,
+        "voltage_threshold": 1.65
+      },
+      "D8-D15": {
+        "enabled": false,
+        "voltage_threshold": 1.65
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+PRODUCTION TEST REPORT
+================================================================================
+Unit ID: DUT-002
+Test Date: 2024-01-22 15:30:00
+Operator: AUTO
+Station: TEST-01
+
+TEST RESULTS
+------------
+amplitude      :    6.097 V    [   4.5 -    5.5] [FAIL]
+frequency      : 1001.992 kHz  [ 999.0 - 1001.0] [FAIL]
+rise_time      :   56.942 ns   [   5.0 -  100.0] [PASS]
+fall_time      :   62.636 ns   [   5.0 -  100.0] [PASS]
+duty_cycle     :   49.322 %    [  48.0 -   52.0] [PASS]
+overshoot      :    0.000 %    [   0.0 -   10.0] [PASS]
+
+OVERALL RESULT
+--------------
+Status: FAIL
+
+Unit FAILED one or more test requirements.
+Unit must be reworked or scrapped.
+
+Failed tests:
+  - amplitude: 6.097 V
+  - frequency: 1001.992 kHz
+
+================================================================================
+Signature: __________________    Date: __________

@@ -451,7 +451,7 @@ def test_cli_version(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["--version"])
 
     assert result.exit_code == 0
-    assert "0.7.0" in result.output
+    assert "0.8.0" in result.output
     assert "oscura" in result.output.lower()
 
 

@@ -311,3 +311,6 @@ validation_results/
 !.github/config/README.md
 .claude/agent-outputs/
 examples/outputs/
+diff-coverage.html
+diff-coverage.md
+waveform_analysis_output/

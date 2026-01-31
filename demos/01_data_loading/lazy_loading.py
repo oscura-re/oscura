@@ -135,9 +135,7 @@ class LazyLoadingDemo(BaseDemo):
                 return self._loaded
 
         # Create lazy proxies for all files
-        proxies = [
-            LazyFileProxy(f["filepath"], data["sample_rate"]) for f in files
-        ]
+        proxies = [LazyFileProxy(f["filepath"], data["sample_rate"]) for f in files]
 
         self.result("Files Created", len(proxies))
         self.result("Files Loaded", sum(p.is_loaded for p in proxies))
@@ -261,9 +259,7 @@ Lazy Loading Best Practices:
         # Validate lazy proxy
         if "lazy_proxy" in results:
             suite.check_equal(results["lazy_proxy"]["total_files"], 5, "Total files")
-            suite.check_equal(
-                results["lazy_proxy"]["loaded_files"], 1, "Only accessed file loaded"
-            )
+            suite.check_equal(results["lazy_proxy"]["loaded_files"], 1, "Only accessed file loaded")
 
         # Validate deferred computation
         if "deferred" in results:

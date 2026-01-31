@@ -27,12 +27,15 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-import numpy as np
 
 import oscura as osc
 from demos.common import BaseDemo, ValidationSuite, print_info, print_result
 from demos.common.base_demo import run_demo_main
-from demos.common.data_generation import generate_pulse_train, generate_sine_wave, generate_square_wave
+from demos.common.data_generation import (
+    generate_pulse_train,
+    generate_sine_wave,
+    generate_square_wave,
+)
 from demos.common.formatting import print_subheader
 
 
@@ -121,7 +124,7 @@ class WaveformBasicsDemo(BaseDemo):
         # Period and frequency
         t_period = osc.period(self.pulse_train)
         self.results["pulse_period"] = t_period
-        print_result("Period", f"{t_period*1e3:.6f} ms")
+        print_result("Period", f"{t_period * 1e3:.6f} ms")
 
         freq = osc.frequency(self.pulse_train)
         self.results["pulse_frequency"] = freq
@@ -130,17 +133,17 @@ class WaveformBasicsDemo(BaseDemo):
         # Rise time (10-90% voltage)
         t_rise = osc.rise_time(self.pulse_train)
         self.results["pulse_rise_time"] = t_rise
-        print_result("Rise time (10%-90%)", f"{t_rise*1e9:.2f} ns")
+        print_result("Rise time (10%-90%)", f"{t_rise * 1e9:.2f} ns")
 
         # Fall time (90-10% voltage)
         t_fall = osc.fall_time(self.pulse_train)
         self.results["pulse_fall_time"] = t_fall
-        print_result("Fall time (90%-10%)", f"{t_fall*1e9:.2f} ns")
+        print_result("Fall time (90%-10%)", f"{t_fall * 1e9:.2f} ns")
 
         # Duty cycle
         duty = osc.duty_cycle(self.pulse_train)
         self.results["pulse_duty_cycle"] = duty
-        print_result("Duty cycle", f"{duty*100:.1f}%")
+        print_result("Duty cycle", f"{duty * 100:.1f}%")
 
         # Mean (DC offset)
         mean_val = osc.mean(self.pulse_train)
@@ -199,14 +202,16 @@ class WaveformBasicsDemo(BaseDemo):
         # Duty cycle
         square_duty = osc.duty_cycle(self.square_wave)
         self.results["square_duty_cycle"] = square_duty
-        print_result("Duty cycle", f"{square_duty*100:.1f}%")
+        print_result("Duty cycle", f"{square_duty * 100:.1f}%")
 
         # ========== MEASUREMENT INTERPRETATION ==========
         print_subheader("Measurement Interpretation")
 
         print_info("\n[Pulse Train Analysis]")
-        print_info(f"  Period = 1/Frequency → {1/freq*1e3:.6f}ms matches {t_period*1e3:.6f}ms")
-        print_info(f"  Duty Cycle = Pulse Width / Period → {duty*100:.1f}% (target: 50%)")
+        print_info(
+            f"  Period = 1/Frequency → {1 / freq * 1e3:.6f}ms matches {t_period * 1e3:.6f}ms"
+        )
+        print_info(f"  Duty Cycle = Pulse Width / Period → {duty * 100:.1f}% (target: 50%)")
         print_info(f"  Mean Voltage = Duty Cycle × Amplitude → {mean_val:.4f}V (target: 2.5V)")
 
         print_info("\n[Sine Wave Analysis]")

@@ -182,9 +182,7 @@ class MultiChannelDemo(BaseDemo):
 
         return results
 
-    def _analyze_oscilloscope_channels(
-        self, channels: dict[str, WaveformTrace]
-    ) -> dict[str, Any]:
+    def _analyze_oscilloscope_channels(self, channels: dict[str, WaveformTrace]) -> dict[str, Any]:
         """Analyze oscilloscope multi-channel capture."""
         self.result("Total Channels", len(channels))
 
@@ -232,9 +230,7 @@ class MultiChannelDemo(BaseDemo):
             "digital_channels": digital_channels,
         }
 
-    def _demonstrate_cross_channel_analysis(
-        self, channels: dict[str, WaveformTrace]
-    ) -> None:
+    def _demonstrate_cross_channel_analysis(self, channels: dict[str, WaveformTrace]) -> None:
         """Demonstrate cross-channel analysis techniques."""
         self.info("Cross-Channel Analysis Examples:")
 
@@ -288,9 +284,7 @@ Multi-Channel Data Best Practices:
         # Validate oscilloscope channels
         if "oscilloscope" in results:
             suite.check_equal(results["oscilloscope"]["num_channels"], 4, "Oscilloscope channels")
-            suite.check_true(
-                results["oscilloscope"]["all_synchronized"], "Channels synchronized"
-            )
+            suite.check_true(results["oscilloscope"]["all_synchronized"], "Channels synchronized")
 
         # Validate mixed-signal
         if "mixed_signal" in results:

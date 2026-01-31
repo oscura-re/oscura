@@ -26,7 +26,6 @@ from demonstrations.common import (
     BaseDemo,
     ValidationSuite,
     format_size,
-    format_table,
     generate_sine_wave,
     generate_square_wave,
 )
@@ -208,7 +207,9 @@ class CustomBinaryDemo(BaseDemo):
     def _load_simple_binary(self, file_info: dict[str, Any]) -> dict[str, Any]:
         """Load and analyze simple raw binary file."""
         filepath = file_info["filepath"]
-        trace = load_binary(filepath, dtype=file_info["dtype"], sample_rate=file_info["sample_rate"])
+        trace = load_binary(
+            filepath, dtype=file_info["dtype"], sample_rate=file_info["sample_rate"]
+        )
 
         self.result("File Size", format_size(filepath.stat().st_size))
         self.result("Samples Loaded", len(trace.data))

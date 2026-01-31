@@ -25,7 +25,7 @@ Example:
 # The module itself can be imported without matplotlib.
 
 # Import plot module as namespace for DSL compatibility
-from oscura.visualization import plot
+from oscura.visualization import batch, plot
 from oscura.visualization.accessibility import (
     FAIL_SYMBOL,
     LINE_STYLES,
@@ -227,6 +227,7 @@ __all__ = [
     "apply_rendering_config",
     # Styles
     "apply_style_preset",
+    "batch",
     "calculate_axis_limits",
     "calculate_bin_edges",
     "calculate_grid_spacing",

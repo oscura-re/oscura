@@ -100,7 +100,7 @@ class FilteringDemo(BaseDemo):
         multi_data = sig_1k.data + sig_5k.data + sig_20k.data
         self.multi_freq = osc.WaveformTrace(
             data=multi_data,
-            metadata=osc.TraceMetadata(sample_rate=100e3, channel_name="multi_freq")
+            metadata=osc.TraceMetadata(sample_rate=100e3, channel_name="multi_freq"),
         )
 
         # 4. Signal with 60 Hz powerline interference (for notch filtering)
@@ -109,8 +109,7 @@ class FilteringDemo(BaseDemo):
 
         noise_data = signal.data + noise.data
         self.powerline_noise = osc.WaveformTrace(
-            data=noise_data,
-            metadata=osc.TraceMetadata(sample_rate=100e3, channel_name="powerline")
+            data=noise_data, metadata=osc.TraceMetadata(sample_rate=100e3, channel_name="powerline")
         )
 
         print_result("Noisy signal", "1 kHz + noise (SNR: 10 dB)")
@@ -186,7 +185,9 @@ class FilteringDemo(BaseDemo):
         self.results["bp_5k_original"] = mags[peak_5k_idx]
         self.results["bp_5k_filtered"] = mags_filt[peak_5k_idx]
         self.results["bp_1k_suppression"] = (1 - mags_filt[peak_1k_idx] / mags[peak_1k_idx]) * 100
-        self.results["bp_20k_suppression"] = (1 - mags_filt[peak_20k_idx] / mags[peak_20k_idx]) * 100
+        self.results["bp_20k_suppression"] = (
+            1 - mags_filt[peak_20k_idx] / mags[peak_20k_idx]
+        ) * 100
 
         print_result("After band-pass (5 kHz)", f"{mags_filt[peak_5k_idx]:.4f} V")
         print_result("1 kHz suppression", f"{self.results['bp_1k_suppression']:.1f}%")
@@ -214,7 +215,9 @@ class FilteringDemo(BaseDemo):
         fft_notched = osc.fft(filtered_notch)
         mags_notched = fft_notched["magnitudes"]
 
-        self.results["notch_60hz_suppression"] = (1 - mags_notched[idx_60hz] / mags_noise[idx_60hz]) * 100
+        self.results["notch_60hz_suppression"] = (
+            1 - mags_notched[idx_60hz] / mags_noise[idx_60hz]
+        ) * 100
         self.results["notch_5khz_preserved"] = (mags_notched[idx_5khz] / mags_noise[idx_5khz]) * 100
 
         print_result("60 Hz after notch", f"{mags_notched[idx_60hz]:.4f} V")
@@ -240,21 +243,23 @@ class FilteringDemo(BaseDemo):
 
         print_info("\n[Low-Pass Filter]")
         print_info(f"  Noise reduction: {self.results['lp_noise_reduction']:.1f}%")
-        print_info(f"  Use case: Remove high-frequency noise above signal bandwidth")
+        print_info("  Use case: Remove high-frequency noise above signal bandwidth")
 
         print_info("\n[High-Pass Filter]")
         print_info(f"  DC removal: {100 - self.results['hp_dc_removal']:.1f}%")
-        print_info(f"  Use case: Remove DC offset and low-frequency drift")
+        print_info("  Use case: Remove DC offset and low-frequency drift")
 
         print_info("\n[Band-Pass Filter]")
         print_info(f"  Target preserved: {self.results['bp_5k_filtered']:.4f}V")
-        print_info(f"  Out-of-band suppression: {min(self.results['bp_1k_suppression'], self.results['bp_20k_suppression']):.1f}%")
-        print_info(f"  Use case: Isolate specific frequency band")
+        print_info(
+            f"  Out-of-band suppression: {min(self.results['bp_1k_suppression'], self.results['bp_20k_suppression']):.1f}%"
+        )
+        print_info("  Use case: Isolate specific frequency band")
 
         print_info("\n[Notch Filter]")
         print_info(f"  Interference suppression: {self.results['notch_60hz_suppression']:.1f}%")
         print_info(f"  Signal preservation: {self.results['notch_5khz_preserved']:.1f}%")
-        print_info(f"  Use case: Remove powerline interference")
+        print_info("  Use case: Remove powerline interference")
 
     def validate_results(self, suite: ValidationSuite) -> None:
         """Validate filtering results."""
@@ -270,7 +275,9 @@ class FilteringDemo(BaseDemo):
 
         # Notch filter should suppress 60 Hz while preserving signal
         suite.check_range("Notch 60Hz suppression", self.results["notch_60hz_suppression"], 80, 100)
-        suite.check_range("Notch signal preservation", self.results["notch_5khz_preserved"], 85, 105)
+        suite.check_range(
+            "Notch signal preservation", self.results["notch_5khz_preserved"], 85, 105
+        )
 
         # Moving average should reduce noise
         suite.check_range("Moving average smoothing", self.results["ma_smoothing"], 5, 50)

@@ -56,7 +56,7 @@ class LINDemo(BaseDemo):
         # Standard data frame
         self.lin_data_frame = self._generate_lin_signal(
             frame_id=0x23,
-            data=b"\xA5\x5A\xFF\x00",
+            data=b"\xa5\x5a\xff\x00",
             baudrate=19200,
             checksum_type="classic",
             sample_rate=1e6,
@@ -82,7 +82,7 @@ class LINDemo(BaseDemo):
 
     def run_analysis(self) -> None:
         """Decode LIN signals and extract frame information."""
-        from demos.common.formatting import print_info, print_subheader
+        from demos.common.formatting import print_subheader
 
         # Decode standard data frame
         print_subheader("Standard LIN Data Frame (19.2 kbaud)")
@@ -90,7 +90,7 @@ class LINDemo(BaseDemo):
             self.lin_data_frame,
             baudrate=19200,
             expected_id=0x23,
-            expected_data=b"\xA5\x5A\xFF\x00",
+            expected_data=b"\xa5\x5a\xff\x00",
         )
 
         # Decode diagnostic frame
@@ -121,7 +121,7 @@ class LINDemo(BaseDemo):
             )
 
             # Validate frame structure
-            if "frames" in result and result["frames"]:
+            if result.get("frames"):
                 suite.check_greater_than(
                     f"{config_name}_frames",
                     len(result["frames"]),
@@ -224,7 +224,10 @@ class LINDemo(BaseDemo):
         # LIN 2.x parity calculation
         id_masked = frame_id & 0x3F
         p0 = (
-            ((id_masked >> 0) & 1) ^ ((id_masked >> 1) & 1) ^ ((id_masked >> 2) & 1) ^ ((id_masked >> 4) & 1)
+            ((id_masked >> 0) & 1)
+            ^ ((id_masked >> 1) & 1)
+            ^ ((id_masked >> 2) & 1)
+            ^ ((id_masked >> 4) & 1)
         )
         p1 = (
             ~(

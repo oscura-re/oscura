@@ -125,10 +125,18 @@ class EfficiencyDemo(BaseDemo):
         iin = iin_avg + 0.1 * np.sin(2 * np.pi * 100e3 * t)
 
         return (
-            WaveformTrace(data=vin, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="vin")),
-            WaveformTrace(data=iin, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="iin")),
-            WaveformTrace(data=vout, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="vout")),
-            WaveformTrace(data=iout, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="iout")),
+            WaveformTrace(
+                data=vin, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="vin")
+            ),
+            WaveformTrace(
+                data=iin, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="iin")
+            ),
+            WaveformTrace(
+                data=vout, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="vout")
+            ),
+            WaveformTrace(
+                data=iout, metadata=TraceMetadata(sample_rate=self.sample_rate, channel_name="iout")
+            ),
         )
 
     def _analyze_efficiency(

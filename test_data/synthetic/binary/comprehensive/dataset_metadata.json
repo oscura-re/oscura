@@ -7,7 +7,9 @@
       "count": 2000,
       "ground_truth": {
         "sequence_numbers": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        "checksum_offsets": [1022, 2046, 3070, 4094, 5118, 6142, 7166, 8190, 9214, 10238]
+        "checksum_offsets": [
+          1022, 2046, 3070, 4094, 5118, 6142, 7166, 8190, 9214, 10238
+        ]
       }
     },
     {
@@ -196,7 +198,14 @@
       "count": 1000,
       "ground_truth": {
         "field_boundaries": [0, 2, 4, 6, 10, 62, 64],
-        "field_types": ["constant", "length", "sequence", "timestamp", "data", "checksum"],
+        "field_types": [
+          "constant",
+          "length",
+          "sequence",
+          "timestamp",
+          "data",
+          "checksum"
+        ],
         "message_size": 64
       }
     }

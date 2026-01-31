@@ -86,7 +86,7 @@ class UnknownSignalWorkflowDemo(BaseDemo):
         low_level = np.percentile(self.signal, 5)
         print_info(f"  High level: {high_level:.2f} V")
         print_info(f"  Low level: {low_level:.2f} V")
-        print_info(f"  Logic family: Likely 3.3V CMOS")
+        print_info("  Logic family: Likely 3.3V CMOS")
 
         print_subheader("Step 2: Baud Rate Detection")
         print_info("Detect baud rate from edge transitions:")
@@ -103,7 +103,9 @@ class UnknownSignalWorkflowDemo(BaseDemo):
             estimated_baud = self.sample_rate / min_pulse
             print_info(f"  Estimated baud rate: {estimated_baud:.0f} bps")
             print_info(f"  True baud rate: {self.true_baud} bps")
-            print_info(f"  ✓ Accuracy: {abs(estimated_baud - self.true_baud)/self.true_baud*100:.1f}%")
+            print_info(
+                f"  ✓ Accuracy: {abs(estimated_baud - self.true_baud) / self.true_baud * 100:.1f}%"
+            )
 
         print_subheader("Step 3: Bit Stream Extraction")
         print_info("Extract digital bit stream:")
@@ -135,7 +137,9 @@ class UnknownSignalWorkflowDemo(BaseDemo):
         for i in range(len(bytes_list) - 1):
             if bytes_list[i] == 0xAA and bytes_list[i + 1] == 0x55:
                 sync_count += 1
-                print_info(f"  Sync found at byte {i}: 0x{bytes_list[i]:02X} 0x{bytes_list[i+1]:02X}")
+                print_info(
+                    f"  Sync found at byte {i}: 0x{bytes_list[i]:02X} 0x{bytes_list[i + 1]:02X}"
+                )
 
         print_info(f"  ✓ Found {sync_count} sync patterns")
 

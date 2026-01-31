@@ -112,6 +112,60 @@ class Report:
         self.sections.append(section)
         return section
 
+    def add_measurements(
+        self,
+        title: str,
+        measurements: dict[str, float | int],
+        unit_map: dict[str, str] | None = None,
+        level: int = 2,
+        html: bool = True,
+        **kwargs: Any,
+    ) -> Section:
+        """Add a measurement section with automatic formatting.
+
+        This convenience method automatically formats measurement dictionaries
+        using the framework's measurement formatting system, including SI prefix
+        auto-scaling and proper unit handling.
+
+        Args:
+            title: Section title.
+            measurements: Dictionary of measurement names to values.
+            unit_map: Optional dictionary mapping measurement names to units.
+                     If not provided, uses framework metadata for common measurements.
+            level: Heading level.
+            html: Whether to format as HTML (True) or plain text (False).
+            **kwargs: Additional section options.
+
+        Returns:
+            The created Section.
+
+        Example:
+            >>> from oscura.reporting import Report
+            >>> report = Report()
+            >>> measurements = {"amplitude": 1.5, "frequency": 440.0, "duty_cycle": 0.5}
+            >>> unit_map = {"amplitude": "V", "frequency": "Hz", "duty_cycle": "ratio"}
+            >>> report.add_measurements("Time Domain", measurements, unit_map)
+        """
+        from oscura.reporting.formatting import (
+            convert_to_measurement_dict,
+            format_measurement_dict,
+        )
+
+        # If no unit map provided, try to use framework metadata
+        if unit_map is None:
+            from oscura.analyzers.waveform import MEASUREMENT_METADATA
+
+            unit_map = {
+                key: MEASUREMENT_METADATA.get(key, {}).get("unit", "") for key in measurements
+            }
+
+        # Convert to measurement dict and format
+        meas_dict = convert_to_measurement_dict(measurements, unit_map)
+        formatted_content = format_measurement_dict(meas_dict, html=html)
+
+        # Add as section
+        return self.add_section(title, formatted_content, level, **kwargs)
+
     def add_table(
         self,
         data: list[list[Any]] | NDArray[Any],

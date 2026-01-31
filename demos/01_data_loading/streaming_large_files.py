@@ -266,9 +266,7 @@ Large File Processing Best Practices:
         # Validate streaming stats
         if "streaming" in results:
             suite.check_true(abs(results["streaming"]["mean"]) < 0.1, "Mean near zero")
-            suite.check_true(
-                0.5 < results["streaming"]["rms"] < 1.0, "RMS in expected range"
-            )
+            suite.check_true(0.5 < results["streaming"]["rms"] < 1.0, "RMS in expected range")
 
         if suite.all_passed():
             self.success("All streaming validations passed!")

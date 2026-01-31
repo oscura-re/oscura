@@ -548,6 +548,9 @@ def _render_section_header(section: Any, collapsible: bool) -> str:
 def _render_section_content(section: Any) -> str:
     """Render section content (text, tables, figures)."""
     if isinstance(section.content, str):
+        # Check if content is already HTML (starts with HTML tag)
+        if section.content.strip().startswith("<"):
+            return section.content  # Return HTML as-is
         return f"<p>{section.content}</p>"
 
     if isinstance(section.content, list):
@@ -641,6 +644,60 @@ def _figure_to_html(figure: dict[str, Any]) -> str:
 
     html_parts.append("</figure>")
     return "".join(html_parts)
+
+
+def embed_plots(
+    html_content: str,
+    plots: dict[str, str],
+    *,
+    section_title: str = "Visualizations",
+    insert_location: str = "before_closing_div",
+) -> str:
+    """Embed base64-encoded plots into HTML content.
+
+    Args:
+        html_content: Original HTML content.
+        plots: Dictionary mapping plot names to base64 image strings.
+               Values should be either base64 strings or data URIs.
+        section_title: Title for the plots section.
+        insert_location: Where to insert plots: "before_closing_div",
+                        "before_closing_body", or "append".
+
+    Returns:
+        Enhanced HTML with embedded plots.
+
+    Example:
+        >>> plots = {"waveform": "data:image/png;base64,iVBOR...", "fft": "..."}
+        >>> enhanced_html = embed_plots(html_content, plots)
+    """
+    # Build plots HTML section
+    plot_html = "\n\n<!-- EMBEDDED PLOTS -->\n"
+    plot_html += f"<section id='plots'>\n<h2>{section_title}</h2>\n"
+
+    for plot_name, plot_data in plots.items():
+        # Ensure data URI format
+        if not plot_data.startswith("data:"):
+            plot_data = f"data:image/png;base64,{plot_data}"
+
+        plot_html += f"\n<h3>{plot_name.replace('_', ' ').title()}</h3>\n"
+        plot_html += (
+            f'<img src="{plot_data}" alt="{plot_name}" '
+            'style="max-width:100%; height:auto; border:1px solid #ddd; '
+            'border-radius:4px; margin:10px 0;">\n'
+        )
+
+    plot_html += "</section>\n\n"
+
+    # Insert at specified location
+    if insert_location == "before_closing_div" and "</div>" in html_content:
+        html_content = html_content.replace("</div>", f"{plot_html}</div>", 1)
+    elif insert_location == "before_closing_body" and "</body>" in html_content:
+        html_content = html_content.replace("</body>", f"{plot_html}</body>")
+    else:
+        # Append to end
+        html_content += plot_html
+
+    return html_content
 
 
 def save_html_report(

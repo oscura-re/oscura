@@ -338,24 +338,48 @@ def cross_correlation(
 def correlation_coefficient(
     trace1: WaveformTrace | NDArray[np.floating[Any]],
     trace2: WaveformTrace | NDArray[np.floating[Any]],
+    *,
+    method: Literal["pearson", "spearman", "kendall"] = "pearson",
 ) -> float:
-    """Compute Pearson correlation coefficient between two signals.
+    """Compute correlation coefficient between two signals.
 
-    Simple measure of linear relationship between signals at zero lag.
+    Supports Pearson (linear), Spearman (monotonic), and Kendall (rank) correlations.
 
     Args:
         trace1: First input trace or numpy array.
         trace2: Second input trace or numpy array.
+        method: Correlation method to use:
+            - "pearson": Linear correlation (default, parametric)
+            - "spearman": Monotonic correlation (non-parametric, robust to outliers)
+            - "kendall": Rank correlation (non-parametric, tau-b coefficient)
 
     Returns:
         Correlation coefficient in range [-1, 1].
 
-    Example:
-        >>> r = correlation_coefficient(trace1, trace2)
-        >>> print(f"Correlation: {r:.3f}")
-    """
-    data1 = trace1.data if isinstance(trace1, WaveformTrace) else trace1
+    Raises:
+        ValueError: If method is not one of the supported types.
 
+    Example:
+        >>> # Linear correlation (default)
+        >>> r = correlation_coefficient(trace1, trace2)
+        >>> print(f"Pearson correlation: {r:.3f}")
+
+        >>> # Monotonic correlation (robust to outliers)
+        >>> rho = correlation_coefficient(trace1, trace2, method="spearman")
+        >>> print(f"Spearman correlation: {rho:.3f}")
+
+        >>> # Rank correlation (best for ordinal data)
+        >>> tau = correlation_coefficient(trace1, trace2, method="kendall")
+        >>> print(f"Kendall correlation: {tau:.3f}")
+
+    References:
+        Pearson, K. (1895). Correlation coefficient
+        Spearman, C. (1904). Rank correlation
+        Kendall, M. G. (1938). Tau rank correlation
+    """
+    from scipy import stats as sp_stats
+
+    data1 = trace1.data if isinstance(trace1, WaveformTrace) else trace1
     data2 = trace2.data if isinstance(trace2, WaveformTrace) else trace2
 
     # Ensure same length
@@ -363,8 +387,25 @@ def correlation_coefficient(
     data1 = data1[:n]
     data2 = data2[:n]
 
-    # Compute correlation
-    return float(np.corrcoef(data1, data2)[0, 1])
+    # Compute correlation based on method
+    if method == "pearson":
+        # Pearson linear correlation (parametric)
+        return float(np.corrcoef(data1, data2)[0, 1])
+
+    elif method == "spearman":
+        # Spearman rank correlation (non-parametric, monotonic)
+        corr, _p_value = sp_stats.spearmanr(data1, data2)
+        return float(corr)
+
+    elif method == "kendall":
+        # Kendall tau-b rank correlation (non-parametric)
+        corr, _p_value = sp_stats.kendalltau(data1, data2)
+        return float(corr)
+
+    else:
+        raise ValueError(
+            f"Unknown correlation method: {method}. Available: 'pearson', 'spearman', 'kendall'"
+        )
 
 
 def _extract_periodicity_data(

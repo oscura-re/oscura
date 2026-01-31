@@ -225,7 +225,6 @@ def load_config(
         config = copy.deepcopy(DEFAULT_CONFIG)
 
     # Search for config files if no explicit path provided
-    # use_defaults flag only controls whether to merge with DEFAULT_CONFIG
     if config_path is None:
         # Search standard locations
         search_paths = [

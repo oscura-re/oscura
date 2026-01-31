@@ -75,7 +75,7 @@ class ComprehensiveProtocolDemo(BaseDemo):
 
         self.spi_sck, self.spi_mosi, self.spi_miso, self.spi_cs = self._generate_spi_transfer(
             tx_data=b"\x12\x34\x56\x78",
-            rx_data=b"\xFF\xFF\xFF\xFF",
+            rx_data=b"\xff\xff\xff\xff",
             clock_freq=1000000,
             sample_rate=sample_rate,
             start_sample=spi_start,
@@ -325,7 +325,9 @@ class ComprehensiveProtocolDemo(BaseDemo):
         for event in events:
             print_info(f"  {event['time_us']:6.1f} µs: {event['protocol']:4s} - {event['event']}")
 
-        print_info("\nObservation: I2C read triggers SPI transmission after 100 µs processing delay")
+        print_info(
+            "\nObservation: I2C read triggers SPI transmission after 100 µs processing delay"
+        )
 
         self.results["correlation"] = {"events": events}
 

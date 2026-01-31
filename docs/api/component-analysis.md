@@ -1,6 +1,6 @@
 # Component Analysis API Reference
 
-> **Version**: 0.7.0 | **Last Updated**: 2026-01-25
+> **Version**: 0.8.0 | **Last Updated**: 2026-01-25
 
 ## Overview
 

@@ -20,11 +20,13 @@ from oscura.analyzers.statistics.advanced import (
 )
 from oscura.analyzers.statistics.basic import (
     basic_stats,
+    measure,
     percentiles,
     quartiles,
     running_stats,
     summary_stats,
     weighted_mean,
+    weighted_std,
 )
 from oscura.analyzers.statistics.correlation import (
     CrossCorrelationResult,
@@ -99,6 +101,7 @@ __all__ = [
     "kernel_density",
     # Advanced (STAT-012)
     "local_outlier_factor",
+    "measure",
     "modified_zscore_outliers",
     "moment",
     "moving_average",
@@ -114,6 +117,7 @@ __all__ = [
     "seasonal_decompose",
     "summary_stats",
     "weighted_mean",
+    "weighted_std",
     # Outlier detection
     "zscore_outliers",
 ]

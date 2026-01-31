@@ -140,8 +140,8 @@ jobs:
         duration = time.perf_counter() - start
         avg_time = duration / iterations
 
-        print_info(f"Average analysis time: {avg_time*1000:.3f} ms")
-        print_info(f"Throughput: {1/avg_time:.1f} analyses/sec")
+        print_info(f"Average analysis time: {avg_time * 1000:.3f} ms")
+        print_info(f"Throughput: {1 / avg_time:.1f} analyses/sec")
 
         self.results["avg_analysis_time_ms"] = avg_time * 1000
         self.results["throughput"] = 1 / avg_time

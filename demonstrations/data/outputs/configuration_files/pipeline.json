@@ -1,0 +1,47 @@
+{
+  "name": "comprehensive_analysis",
+  "description": "Complete signal analysis pipeline",
+  "stages": [
+    {
+      "name": "load",
+      "type": "loader",
+      "params": {
+        "format": "auto",
+        "channel": "CH1"
+      }
+    },
+    {
+      "name": "preprocess",
+      "type": "filter",
+      "params": {
+        "low_pass": {
+          "cutoff": 50000,
+          "order": 4
+        }
+      }
+    },
+    {
+      "name": "measure",
+      "type": "analyzer",
+      "params": {
+        "measurements": ["frequency", "amplitude", "rise_time", "fall_time"]
+      }
+    },
+    {
+      "name": "spectral",
+      "type": "analyzer",
+      "params": {
+        "analysis": ["fft", "psd", "thd"],
+        "window": "hamming"
+      }
+    },
+    {
+      "name": "export",
+      "type": "exporter",
+      "params": {
+        "formats": ["json", "csv"],
+        "output_dir": "./results"
+      }
+    }
+  ]
+}

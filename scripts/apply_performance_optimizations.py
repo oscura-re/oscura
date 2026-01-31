@@ -363,7 +363,7 @@ def apply_additional_optimizations():
         if old_centroid in content:
             content = content.replace(old_centroid, new_centroid)
             clustering_path.write_text(content)
-            print(f"✓ Applied optimization to clustering_optimized.py")
+            print("✓ Applied optimization to clustering_optimized.py")
 
     # Optimization 12: Cache length in loops across multiple files
     files_to_optimize = [

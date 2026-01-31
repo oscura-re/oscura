@@ -101,8 +101,12 @@ class TestLoadConfig:
         assert "loaders" in config
         assert config["defaults"]["sample_rate"] == 1e6
 
-    def test_load_no_defaults(self) -> None:
+    def test_load_no_defaults(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test loading with defaults disabled."""
+        # Mock paths to prevent finding any real config files
+        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
         config = load_config(config_path=None, use_defaults=False)
         assert config == {}
 

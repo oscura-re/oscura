@@ -1,0 +1,35 @@
+Protocol Packet Export
+============================================================
+
+Packet 1:
+  Timestamp: 0.001000 s
+  Protocol: UART
+  Length: 5 bytes
+  Data (hex): 48656c6c6f
+  Data (ascii): Hello
+  Annotations:
+    baud_rate: 115200
+    bits: 8
+    parity: none
+
+Packet 2:
+  Timestamp: 0.002000 s
+  Protocol: UART
+  Length: 5 bytes
+  Data (hex): 576f726c64
+  Data (ascii): World
+  Annotations:
+    baud_rate: 115200
+    bits: 8
+    parity: none
+
+Packet 3:
+  Timestamp: 0.003000 s
+  Protocol: UART
+  Length: 3 bytes
+  Data (hex): 010203
+  Data (ascii): 
+  Annotations:
+    baud_rate: 115200
+    bits: 8
+    parity: none

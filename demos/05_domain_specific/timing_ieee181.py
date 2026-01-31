@@ -99,7 +99,7 @@ class IEEE181TimingDemo(BaseDemo):
         )
 
         print_result("Samples generated", n_samples)
-        print_result("Duration", f"{duration*1e6:.1f}", "us")
+        print_result("Duration", f"{duration * 1e6:.1f}", "us")
 
     def run_analysis(self) -> None:
         """Execute IEEE 181 measurements."""
@@ -134,9 +134,9 @@ class IEEE181TimingDemo(BaseDemo):
         # Find rising edges
         i = 0
         while i < len(data) - 1:
-            if data[i] < v_low and data[i+1] >= v_low:
+            if data[i] < v_low and data[i + 1] >= v_low:
                 low_idx = i
-                for j in range(i, min(i+200, len(data))):
+                for j in range(i, min(i + 200, len(data))):
                     if data[j] >= v_high:
                         high_idx = j
                         rise_time = (high_idx - low_idx) * dt
@@ -151,8 +151,8 @@ class IEEE181TimingDemo(BaseDemo):
 
         if rise_times:
             avg_rise = np.mean(rise_times)
-            print_result("Mean rise time", f"{avg_rise*1e9:.2f}", "ns")
-            print_result("Target", f"{self.rise_time_target*1e9:.2f}", "ns")
+            print_result("Mean rise time", f"{avg_rise * 1e9:.2f}", "ns")
+            print_result("Target", f"{self.rise_time_target * 1e9:.2f}", "ns")
             print_result("Measurements", len(rise_times))
 
             self.results["rise_time_ns"] = avg_rise * 1e9
@@ -173,9 +173,9 @@ class IEEE181TimingDemo(BaseDemo):
 
         i = 0
         while i < len(data) - 1:
-            if data[i] > v_high and data[i+1] <= v_high:
+            if data[i] > v_high and data[i + 1] <= v_high:
                 high_idx = i
-                for j in range(i, min(i+200, len(data))):
+                for j in range(i, min(i + 200, len(data))):
                     if data[j] <= v_low:
                         low_idx = j
                         fall_time = (low_idx - high_idx) * dt
@@ -190,8 +190,8 @@ class IEEE181TimingDemo(BaseDemo):
 
         if fall_times:
             avg_fall = np.mean(fall_times)
-            print_result("Mean fall time", f"{avg_fall*1e9:.2f}", "ns")
-            print_result("Target", f"{self.fall_time_target*1e9:.2f}", "ns")
+            print_result("Mean fall time", f"{avg_fall * 1e9:.2f}", "ns")
+            print_result("Target", f"{self.fall_time_target * 1e9:.2f}", "ns")
             print_result("Measurements", len(fall_times))
 
             self.results["fall_time_ns"] = avg_fall * 1e9
@@ -211,10 +211,10 @@ class IEEE181TimingDemo(BaseDemo):
         pulse_widths = []
         i = 0
         while i < len(crossings) - 1:
-            if not above[crossings[i]] and above[crossings[i]+1]:
+            if not above[crossings[i]] and above[crossings[i] + 1]:
                 rising_idx = crossings[i]
-                if i+1 < len(crossings):
-                    falling_idx = crossings[i+1]
+                if i + 1 < len(crossings):
+                    falling_idx = crossings[i + 1]
                     pulse_width = (falling_idx - rising_idx) * dt
                     if pulse_width > 0:
                         pulse_widths.append(pulse_width)
@@ -229,7 +229,7 @@ class IEEE181TimingDemo(BaseDemo):
             period = 1 / self.pulse_freq
             duty_cycle = avg_width / period * 100
 
-            print_result("Mean pulse width", f"{avg_width*1e9:.2f}", "ns")
+            print_result("Mean pulse width", f"{avg_width * 1e9:.2f}", "ns")
             print_result("Duty cycle", f"{duty_cycle:.1f}", "%")
             print_result("Measurements", len(pulse_widths))
 
@@ -242,11 +242,11 @@ class IEEE181TimingDemo(BaseDemo):
         sr_fall = slew_rate(self.pulse_trace, ref_levels=(0.8, 0.2), edge_type="falling")
 
         if not np.isnan(sr_rise):
-            print_result("Rising slew rate", f"{sr_rise/1e9:.2f}", "V/ns")
+            print_result("Rising slew rate", f"{sr_rise / 1e9:.2f}", "V/ns")
             self.results["slew_rate_rise"] = sr_rise / 1e9
 
         if not np.isnan(sr_fall):
-            print_result("Falling slew rate", f"{abs(sr_fall)/1e9:.2f}", "V/ns")
+            print_result("Falling slew rate", f"{abs(sr_fall) / 1e9:.2f}", "V/ns")
             self.results["slew_rate_fall"] = abs(sr_fall) / 1e9
 
     def _print_summary(self) -> None:

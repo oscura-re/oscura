@@ -27,7 +27,6 @@ from scipy import stats
 
 from demos.common.base_demo import BaseDemo, run_demo_main
 from demos.common.validation import ValidationSuite
-from oscura.core.types import TraceMetadata, WaveformTrace
 
 
 class AdvancedStatisticsDemo(BaseDemo):

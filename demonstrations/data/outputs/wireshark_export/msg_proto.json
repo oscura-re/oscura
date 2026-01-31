@@ -1,0 +1,52 @@
+{
+  "name": "msg_proto",
+  "version": "1.0",
+  "description": "Variable-length message protocol",
+  "endian": "little",
+  "settings": {
+    "transport": "udp",
+    "port": 9999
+  },
+  "fields": [
+    {
+      "name": "header",
+      "type": "uint8",
+      "size": "None",
+      "description": "Frame header",
+      "enum": null
+    },
+    {
+      "name": "msg_type",
+      "type": "uint8",
+      "size": "None",
+      "description": "Message type",
+      "enum": {
+        "0": "Heartbeat",
+        "1": "Request",
+        "2": "Response",
+        "255": "Error"
+      }
+    },
+    {
+      "name": "payload_length",
+      "type": "uint16",
+      "size": "None",
+      "description": "Payload length",
+      "enum": null
+    },
+    {
+      "name": "payload",
+      "type": "bytes",
+      "size": "payload_length",
+      "description": "Message payload",
+      "enum": null
+    },
+    {
+      "name": "crc8",
+      "type": "uint8",
+      "size": "None",
+      "description": "CRC-8 checksum",
+      "enum": null
+    }
+  ]
+}
