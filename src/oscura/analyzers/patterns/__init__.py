@@ -249,10 +249,10 @@ def pattern_similarity(pattern1: Any, pattern2: Any) -> float:
 __all__ = [
     # RE-PAT-002: Multi-Pattern Search
     "AhoCorasickMatcher",
-    # RE-PAT-001: Binary Regex Pattern Matching
-    "BinaryRegex",
     # RE-PAT-005: Reverse Engineering Toolkit
     "BinaryAnalysisResult",
+    # RE-PAT-001: Binary Regex Pattern Matching
+    "BinaryRegex",
     "CandidateSignature",
     "ClusterResult",
     "ClusteringResult",

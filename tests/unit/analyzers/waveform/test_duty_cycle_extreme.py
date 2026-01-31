@@ -210,8 +210,8 @@ class TestDutyCycleRealTestData:
 
     def test_pulse_train_10_percent(self) -> None:
         """Test 10% duty cycle pulse train from test data."""
-        from oscura.loaders import load
         from oscura.core.types import WaveformTrace
+        from oscura.loaders import load
 
         trace_loaded = load("test_data/synthetic/advanced/pulse_train_10pct.wfm")
         assert isinstance(trace_loaded, WaveformTrace), "Expected WaveformTrace"
@@ -229,8 +229,8 @@ class TestDutyCycleRealTestData:
 
     def test_pulse_train_90_percent(self) -> None:
         """Test 90% duty cycle pulse train from test data."""
-        from oscura.loaders import load
         from oscura.core.types import WaveformTrace
+        from oscura.loaders import load
 
         trace_loaded = load("test_data/synthetic/advanced/pulse_train_90pct.wfm")
         assert isinstance(trace_loaded, WaveformTrace), "Expected WaveformTrace"

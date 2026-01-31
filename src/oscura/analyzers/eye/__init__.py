@@ -38,6 +38,8 @@ __all__ = [
     # Metrics
     "EyeMetrics",
     "crossing_percentage",
+    # Backward compatibility
+    "diagram",
     "eye_contour",
     "eye_height",
     "eye_width",

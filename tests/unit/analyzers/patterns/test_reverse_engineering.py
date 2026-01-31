@@ -394,7 +394,7 @@ class TestConvenienceFunctions:
         assert all(isinstance(w, tuple) and len(w) == 2 for w in windows)
 
         # First windows should have low entropy
-        offsets, entropies = zip(*windows)
+        offsets, entropies = zip(*windows, strict=False)
         assert min(entropies) < 2.0  # Low entropy region
 
     def test_entropy_profile(self) -> None:

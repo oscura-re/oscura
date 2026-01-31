@@ -4,7 +4,6 @@ import pytest
 
 from oscura.reporting.interpretation import (
     ComplianceStatus,
-    MeasurementInterpretation,
     QualityLevel,
     compliance_check,
     generate_finding,
