@@ -63,8 +63,8 @@ function msg_proto_proto.dissector(buffer, pinfo, tree)
 
     -- Decode fields
 
-    
-    
+
+
     -- Fixed-length field: header (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated header")
@@ -72,11 +72,11 @@ function msg_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_header, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: msg_type (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated msg_type")
@@ -84,11 +84,11 @@ function msg_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_msg_type, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: payload_length (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated payload_length")
@@ -96,13 +96,13 @@ function msg_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_payload_length, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Variable-length field: payload
-    
+
     local payload_len = buffer(2, 2):uint16()
     if offset + payload_len > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated payload")
@@ -110,12 +110,12 @@ function msg_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_payload, buffer(offset, payload_len))
     offset = offset + payload_len
-    
-    
 
 
-    
-    
+
+
+
+
     -- Fixed-length field: crc8 (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated crc8")
@@ -123,7 +123,7 @@ function msg_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_crc8, buffer(offset, 1))
     offset = offset + 1
-    
+
 
 
     return offset

@@ -63,8 +63,8 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
 
     -- Decode fields
 
-    
-    
+
+
     -- Fixed-length field: header (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated header")
@@ -72,11 +72,11 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_header, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: cmd_code (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated cmd_code")
@@ -84,11 +84,11 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_cmd_code, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: param_count (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated param_count")
@@ -96,13 +96,13 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_param_count, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Variable-length field: params
-    
+
     local params_len = buffer(2, 1):uint()
     if offset + params_len > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated params")
@@ -110,12 +110,12 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_params, buffer(offset, params_len))
     offset = offset + params_len
-    
-    
 
 
-    
-    
+
+
+
+
     -- Fixed-length field: checksum (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated checksum")
@@ -123,7 +123,7 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_checksum, buffer(offset, 1))
     offset = offset + 1
-    
+
 
 
     return offset

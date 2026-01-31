@@ -75,8 +75,8 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
 
     -- Decode fields
 
-    
-    
+
+
     -- Fixed-length field: magic (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated magic")
@@ -84,11 +84,11 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_magic, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: version (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated version")
@@ -96,11 +96,11 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_version, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: sensor_type (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated sensor_type")
@@ -108,11 +108,11 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_sensor_type, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: sensor_id (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated sensor_id")
@@ -120,11 +120,11 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_sensor_id, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: timestamp (4 bytes)
     if offset + 4 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated timestamp")
@@ -132,11 +132,11 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_timestamp, buffer(offset, 4))
     offset = offset + 4
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: value (4 bytes)
     if offset + 4 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated value")
@@ -144,11 +144,11 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_value, buffer(offset, 4))
     offset = offset + 4
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: checksum (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated checksum")
@@ -156,7 +156,7 @@ function sensor_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_checksum, buffer(offset, 1))
     offset = offset + 1
-    
+
 
 
     return offset

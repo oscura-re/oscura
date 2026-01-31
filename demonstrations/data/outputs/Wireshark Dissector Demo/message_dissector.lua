@@ -69,8 +69,8 @@ function message_proto_proto.dissector(buffer, pinfo, tree)
 
     -- Decode fields
 
-    
-    
+
+
     -- Fixed-length field: sync (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated sync")
@@ -78,11 +78,11 @@ function message_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_sync, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: msg_type (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated msg_type")
@@ -90,11 +90,11 @@ function message_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_msg_type, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: sequence (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated sequence")
@@ -102,11 +102,11 @@ function message_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_sequence, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: payload_length (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated payload_length")
@@ -114,13 +114,13 @@ function message_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_payload_length, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Variable-length field: payload
-    
+
     local payload_len = buffer(5, 2):le_uint16()
     if offset + payload_len > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated payload")
@@ -128,12 +128,12 @@ function message_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_payload, buffer(offset, payload_len))
     offset = offset + payload_len
-    
-    
 
 
-    
-    
+
+
+
+
     -- Fixed-length field: crc16 (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated crc16")
@@ -141,7 +141,7 @@ function message_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_crc16, buffer(offset, 2))
     offset = offset + 2
-    
+
 
 
     return offset

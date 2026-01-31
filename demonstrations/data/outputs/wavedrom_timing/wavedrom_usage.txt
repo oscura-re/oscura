@@ -17,4 +17,4 @@ WaveDrom Rendering Options:
 4. Markdown Documentation:
    - Many Markdown renderers support WaveDrom
    - Embed in documentation with code blocks
-        
+

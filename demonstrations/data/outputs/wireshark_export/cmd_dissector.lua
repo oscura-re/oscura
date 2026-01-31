@@ -69,8 +69,8 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
 
     -- Decode fields
 
-    
-    
+
+
     -- Fixed-length field: sync (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated sync")
@@ -78,11 +78,11 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_sync, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: cmd_code (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated cmd_code")
@@ -90,11 +90,11 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_cmd_code, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: sequence (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated sequence")
@@ -102,11 +102,11 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_sequence, buffer(offset, 2))
     offset = offset + 2
-    
 
 
-    
-    
+
+
+
     -- Fixed-length field: param_count (1 bytes)
     if offset + 1 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated param_count")
@@ -114,13 +114,13 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_param_count, buffer(offset, 1))
     offset = offset + 1
-    
 
 
-    
-    
+
+
+
     -- Variable-length field: params
-    
+
     local params_len = buffer(5, 1):uint()
     if offset + params_len > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated params")
@@ -128,12 +128,12 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_params, buffer(offset, params_len))
     offset = offset + params_len
-    
-    
 
 
-    
-    
+
+
+
+
     -- Fixed-length field: crc16 (2 bytes)
     if offset + 2 > pktlen then
         subtree:add_expert_info(PI_MALFORMED, PI_ERROR, "Truncated crc16")
@@ -141,7 +141,7 @@ function cmd_proto_proto.dissector(buffer, pinfo, tree)
     end
     subtree:add(f_crc16, buffer(offset, 2))
     offset = offset + 2
-    
+
 
 
     return offset
