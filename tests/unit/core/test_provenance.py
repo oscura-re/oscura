@@ -182,7 +182,7 @@ class TestProvenanceMethods:
         result = str(prov)
         assert "Algorithm: test" in result
         assert "Timestamp: 2025-12-21T10:30:00Z" in result
-        assert "Version: 0.7.0" in result
+        assert "Version: 0.8.0" in result
 
     def test_str_with_parameters(self) -> None:
         """Test __str__() with parameters."""
