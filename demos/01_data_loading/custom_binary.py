@@ -29,7 +29,6 @@ from demonstrations.common import (
     generate_sine_wave,
     generate_square_wave,
 )
-
 from oscura.loaders.binary import load_binary
 
 

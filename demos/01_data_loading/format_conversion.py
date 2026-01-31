@@ -28,7 +28,6 @@ from demonstrations.common import (
     format_table,
     generate_sine_wave,
 )
-
 from oscura.core.types import WaveformTrace
 
 

@@ -24,7 +24,6 @@ from demonstrations.common import (
     ValidationSuite,
     format_table,
 )
-
 from oscura.core.types import DigitalTrace, TraceMetadata
 
 

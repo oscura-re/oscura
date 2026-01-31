@@ -16,13 +16,10 @@ Coverage targets:
 
 from __future__ import annotations
 
-import warnings
-
 import numpy as np
 import pytest
 
 from oscura.analyzers.eye.generation import (
-    EyeDiagram,
     _apply_symmetric_centering,
     _calculate_trigger_threshold,
     _extract_eye_traces,
