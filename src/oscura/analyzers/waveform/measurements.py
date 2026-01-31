@@ -28,6 +28,47 @@ if TYPE_CHECKING:
     from oscura.core.types import WaveformTrace
 
 
+# Measurement metadata: unit information for all waveform measurements
+MEASUREMENT_METADATA: dict[str, dict[str, str]] = {
+    # Time-domain measurements
+    "rise_time": {"unit": "s", "description": "Rise time (10%-90%)"},
+    "fall_time": {"unit": "s", "description": "Fall time (90%-10%)"},
+    "period": {"unit": "s", "description": "Signal period"},
+    "pulse_width": {"unit": "s", "description": "Pulse width"},
+    "jitter": {"unit": "s", "description": "Period jitter"},
+    # Frequency measurements
+    "frequency": {"unit": "Hz", "description": "Signal frequency"},
+    "clock_frequency": {"unit": "Hz", "description": "Clock frequency"},
+    "dominant_freq": {"unit": "Hz", "description": "Dominant frequency"},
+    # Voltage measurements
+    "amplitude": {"unit": "V", "description": "Peak-to-peak amplitude"},
+    "mean": {"unit": "V", "description": "Mean voltage"},
+    "rms": {"unit": "V", "description": "RMS voltage"},
+    "threshold": {"unit": "V", "description": "Logic threshold"},
+    "min": {"unit": "V", "description": "Minimum voltage"},
+    "max": {"unit": "V", "description": "Maximum voltage"},
+    "std": {"unit": "V", "description": "Standard deviation"},
+    "median": {"unit": "V", "description": "Median voltage"},
+    # Ratio measurements (0-1, displayed as percentage)
+    "duty_cycle": {"unit": "ratio", "description": "Duty cycle"},
+    # Percentage measurements (already 0-100)
+    "overshoot": {"unit": "%", "description": "Overshoot percentage"},
+    "undershoot": {"unit": "%", "description": "Undershoot percentage"},
+    "thd": {"unit": "%", "description": "Total harmonic distortion"},
+    # Decibel measurements
+    "snr": {"unit": "dB", "description": "Signal-to-noise ratio"},
+    "sinad": {"unit": "dB", "description": "SINAD"},
+    "sfdr": {"unit": "dB", "description": "Spurious-free dynamic range"},
+    # Dimensionless measurements
+    "enob": {"unit": "", "description": "Effective number of bits"},
+    "rising_edges": {"unit": "", "description": "Rising edge count"},
+    "falling_edges": {"unit": "", "description": "Falling edge count"},
+    "outliers": {"unit": "", "description": "Outlier count"},
+    # Statistical measurements (squared units)
+    "variance": {"unit": "V²", "description": "Variance"},
+}
+
+
 def rise_time(
     trace: WaveformTrace,
     *,

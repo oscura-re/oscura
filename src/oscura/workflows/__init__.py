@@ -16,6 +16,7 @@ Example:
     >>> stats = osc.workflows.load_all(["trace1.wfm", "trace2.wfm"])
 """
 
+from oscura.workflows import waveform
 from oscura.workflows.complete_re import CompleteREResult, full_protocol_re
 from oscura.workflows.compliance import emc_compliance_test
 from oscura.workflows.digital import characterize_buffer
@@ -58,4 +59,5 @@ __all__ = [
     "power_analysis",
     "reverse_engineer_signal",
     "signal_integrity_audit",
+    "waveform",
 ]

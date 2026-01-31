@@ -109,8 +109,12 @@ from oscura.reporting.export import (
     export_report,
 )
 from oscura.reporting.formatting import (
+    MeasurementFormatter,
     NumberFormatter,
+    convert_to_measurement_dict,
     format_margin,
+    format_measurement,
+    format_measurement_dict,
     format_pass_fail,
     format_value,
     format_with_context,
@@ -118,6 +122,7 @@ from oscura.reporting.formatting import (
     format_with_units,
 )
 from oscura.reporting.html import (
+    embed_plots,
     generate_html_report,
     save_html_report,
 )
@@ -218,11 +223,12 @@ __all__ = [
     "IEEEPlotGenerator",
     "IndexGenerator",
     "InputType",
+    # Formatting (REPORT-026)
+    "MeasurementFormatter",
     # Measurement Interpretation (NEW)
     "MeasurementInterpretation",
     # Multi-format (REPORT-010)
     "MultiFormatRenderer",
-    # Formatting (REPORT-026)
     "NumberFormatter",
     "OutputManager",
     # PPTX Export (REPORT-023)
@@ -261,6 +267,7 @@ __all__ = [
     "compliance_check",
     # Comparison
     "compare_waveforms",
+    "convert_to_measurement_dict",
     # Tables
     "create_comparison_table",
     # Sections
@@ -276,6 +283,8 @@ __all__ = [
     "create_violations_section",
     # Multi-format (REPORT-010)
     "detect_format_from_extension",
+    # HTML Generation
+    "embed_plots",
     "export_multiple_reports",
     "export_pptx",
     "export_report",
@@ -284,6 +293,8 @@ __all__ = [
     "format_batch_summary_table",
     "format_executive_summary_html",
     "format_margin",
+    "format_measurement",
+    "format_measurement_dict",
     "format_pass_fail",
     "format_value",
     "format_with_context",
