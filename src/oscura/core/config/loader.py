@@ -226,11 +226,6 @@ def load_config(
 
     # Search for config files if no explicit path provided
     if config_path is None:
-        # When use_defaults=False and no path specified, return empty dict
-        # (user explicitly wants no defaults and no config file)
-        if not use_defaults:
-            return config
-
         # Search standard locations
         search_paths = [
             Path.cwd() / "oscura.yaml",
