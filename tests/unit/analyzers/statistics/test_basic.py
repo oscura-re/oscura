@@ -17,6 +17,7 @@ import pytest
 
 from oscura.analyzers.statistics.basic import (
     basic_stats,
+    measure,
     percentiles,
     quartiles,
     running_stats,
@@ -571,3 +572,174 @@ def test_weighted_std_comparison_with_numpy() -> None:
     numpy_std = np.std(data, ddof=0)
 
     assert wstd_ddof0 == pytest.approx(numpy_std)
+
+
+# Test measure function
+
+
+def test_measure_default_with_units(simple_array: np.ndarray) -> None:
+    """Test measure with default parameters returns all measurements with units."""
+    result = measure(simple_array)
+
+    # Check basic stats are present
+    assert "mean" in result
+    assert "variance" in result
+    assert "std" in result
+    assert "min" in result
+    assert "max" in result
+    assert "range" in result
+    assert "count" in result
+
+    # Check percentiles are present
+    assert "p1" in result
+    assert "p5" in result
+    assert "p25" in result
+    assert "p50" in result
+    assert "p75" in result
+    assert "p95" in result
+    assert "p99" in result
+
+    # Check units structure
+    assert "value" in result["mean"]
+    assert "unit" in result["mean"]
+    assert result["mean"]["unit"] == "V"
+    assert result["std"]["unit"] == "V"
+    assert result["variance"]["unit"] == "V²"
+    assert result["count"]["unit"] == "samples"
+
+
+def test_measure_with_trace(simple_trace: WaveformTrace) -> None:
+    """Test measure with WaveformTrace input."""
+    result = measure(simple_trace)
+
+    # Should work with WaveformTrace and extract data
+    assert "mean" in result
+    assert result["mean"]["value"] == pytest.approx(3.0)
+    assert result["mean"]["unit"] == "V"
+
+
+def test_measure_without_units(simple_array: np.ndarray) -> None:
+    """Test measure with include_units=False returns flat values."""
+    result = measure(simple_array, include_units=False)
+
+    # Check basic stats are present as flat values
+    assert "mean" in result
+    assert "std" in result
+    assert "p50" in result
+
+    # Check values are floats, not dicts
+    assert isinstance(result["mean"], float)
+    assert isinstance(result["std"], float)
+    assert isinstance(result["p50"], float)
+
+    # Verify actual values
+    assert result["mean"] == pytest.approx(3.0)
+
+
+def test_measure_with_specific_parameters(simple_array: np.ndarray) -> None:
+    """Test measure with specific parameters list."""
+    result = measure(simple_array, parameters=["mean", "std", "p50"])
+
+    # Should only include requested parameters
+    assert "mean" in result
+    assert "std" in result
+    assert "p50" in result
+
+    # Should not include other measurements
+    assert "variance" not in result
+    assert "min" not in result
+    assert "p1" not in result
+    assert "p99" not in result
+
+    # Check structure
+    assert "value" in result["mean"]
+    assert "unit" in result["mean"]
+
+
+def test_measure_with_parameters_no_units(simple_array: np.ndarray) -> None:
+    """Test measure with parameters and include_units=False."""
+    result = measure(simple_array, parameters=["mean", "std"], include_units=False)
+
+    # Should only include requested parameters as flat values
+    assert len(result) == 2
+    assert "mean" in result
+    assert "std" in result
+    assert isinstance(result["mean"], float)
+    assert isinstance(result["std"], float)
+
+
+def test_measure_empty_parameters_list() -> None:
+    """Test measure with empty parameters list."""
+    data = np.array([1.0, 2.0, 3.0])
+    result = measure(data, parameters=[])
+
+    # Should return empty dict
+    assert len(result) == 0
+
+
+def test_measure_invalid_parameters() -> None:
+    """Test measure with invalid parameter names."""
+    data = np.array([1.0, 2.0, 3.0])
+    result = measure(data, parameters=["mean", "invalid_param", "std"])
+
+    # Should only include valid parameters
+    assert "mean" in result
+    assert "std" in result
+    assert "invalid_param" not in result
+
+
+def test_measure_percentile_values(simple_array: np.ndarray) -> None:
+    """Test measure includes correct percentile values."""
+    result = measure(simple_array, include_units=False)
+
+    # Verify percentile values are computed correctly
+    assert result["p1"] == pytest.approx(np.percentile(simple_array, 1))
+    assert result["p5"] == pytest.approx(np.percentile(simple_array, 5))
+    assert result["p25"] == pytest.approx(np.percentile(simple_array, 25))
+    assert result["p50"] == pytest.approx(np.percentile(simple_array, 50))
+    assert result["p75"] == pytest.approx(np.percentile(simple_array, 75))
+    assert result["p95"] == pytest.approx(np.percentile(simple_array, 95))
+    assert result["p99"] == pytest.approx(np.percentile(simple_array, 99))
+
+
+def test_measure_unit_mappings() -> None:
+    """Test measure uses correct unit mappings."""
+    data = np.array([1.0, 2.0, 3.0])
+    result = measure(data)
+
+    # Check specific unit mappings
+    assert result["mean"]["unit"] == "V"
+    assert result["variance"]["unit"] == "V²"
+    assert result["std"]["unit"] == "V"
+    assert result["min"]["unit"] == "V"
+    assert result["max"]["unit"] == "V"
+    assert result["range"]["unit"] == "dimensionless"
+    assert result["count"]["unit"] == "samples"
+    assert result["p1"]["unit"] == "dimensionless"
+    assert result["p50"]["unit"] == "dimensionless"
+
+
+def test_measure_with_gaussian_array(gaussian_array: np.ndarray) -> None:
+    """Test measure with gaussian distributed data."""
+    result = measure(gaussian_array, include_units=False)
+
+    # Check basic statistical properties of gaussian data
+    assert result["mean"] == pytest.approx(0.0, abs=0.1)
+    assert result["std"] == pytest.approx(1.0, abs=0.1)
+
+    # Percentiles should be symmetric around median
+    assert abs(result["p50"]) < 0.1  # Median near 0
+    assert result["p5"] < 0  # Lower percentile negative
+    assert result["p95"] > 0  # Upper percentile positive
+
+
+def test_measure_single_value() -> None:
+    """Test measure with single value array."""
+    data = np.array([42.0])
+    result = measure(data, include_units=False)
+
+    assert result["mean"] == 42.0
+    assert result["std"] == 0.0
+    assert result["min"] == 42.0
+    assert result["max"] == 42.0
+    assert result["p50"] == 42.0
