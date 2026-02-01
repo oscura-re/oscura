@@ -22,11 +22,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 from scipy import stats
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class AdvancedStatisticsDemo(BaseDemo):
@@ -35,15 +39,15 @@ class AdvancedStatisticsDemo(BaseDemo):
     name = "Advanced Statistical Analysis"
     description = "Distribution fitting, trend detection, and SPC"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Distribution fitting",
         "Trend detection",
         "Outlier identification",
         "Statistical process control",
         "Stability analysis",
     ]
-    ieee_standards = ["IEEE 181-2011"]
-    related_demos = ["02_basic_analysis/01_waveform_measurements.py"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
+    related_demos: ClassVar[list[str]] = ["02_basic_analysis/01_waveform_measurements.py"]
 
     def generate_data(self) -> None:
         """Generate measurement datasets."""

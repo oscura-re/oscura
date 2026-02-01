@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -46,7 +47,7 @@ class WaveformBasicsDemo(BaseDemo):
     description = "Core waveform measurements: amplitude, frequency, timing, duty cycle"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.amplitude",
         "oscura.frequency",
         "oscura.period",
@@ -59,9 +60,9 @@ class WaveformBasicsDemo(BaseDemo):
         "oscura.undershoot",
     ]
 
-    ieee_standards = ["IEEE 181-2011"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "../00_getting_started/01_hello_world.py",
         "02_digital_basics.py",
         "04_measurements.py",
@@ -212,10 +213,10 @@ class WaveformBasicsDemo(BaseDemo):
             f"  Period = 1/Frequency → {1 / freq * 1e3:.6f}ms matches {t_period * 1e3:.6f}ms"
         )
         print_info(f"  Duty Cycle = Pulse Width / Period → {duty * 100:.1f}% (target: 50%)")
-        print_info(f"  Mean Voltage = Duty Cycle × Amplitude → {mean_val:.4f}V (target: 2.5V)")
+        print_info(f"  Mean Voltage = Duty Cycle x Amplitude → {mean_val:.4f}V (target: 2.5V)")
 
         print_info("\n[Sine Wave Analysis]")
-        print_info(f"  Amplitude (Vpp) = 2 × Peak → {sine_vpp:.4f}V (target: 6V)")
+        print_info(f"  Amplitude (Vpp) = 2 x Peak → {sine_vpp:.4f}V (target: 6V)")
         print_info(f"  RMS = Peak / √2 → {vrms:.4f}V (target: 2.121V)")
         print_info(f"  Mean ≈ 0 for AC signal → {sine_mean:.6e}V")
 

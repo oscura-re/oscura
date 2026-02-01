@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 
@@ -44,7 +45,7 @@ class VintageLogicDemo(BaseDemo):
     category = "domain_specific"
 
     # Logic family specifications
-    LOGIC_FAMILIES = {
+    LOGIC_FAMILIES: ClassVar[dict[str, dict[str, float | str]]] = {
         "TTL": {
             "description": "Transistor-Transistor Logic (74xx)",
             "v_il_max": 0.8,
@@ -84,7 +85,7 @@ class VintageLogicDemo(BaseDemo):
     }
 
     # IC replacement database
-    REPLACEMENTS = {
+    REPLACEMENTS: ClassVar[dict[str, dict[str, str]]] = {
         "7400": {"modern": "74HCT00", "notes": "TTL-compatible CMOS, lower power"},
         "74LS00": {"modern": "74HCT00", "notes": "Direct replacement, CMOS"},
         "7404": {"modern": "74HCT04", "notes": "TTL-compatible hex inverter"},

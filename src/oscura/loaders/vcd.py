@@ -130,7 +130,7 @@ def load_vcd(
         data, edges = _changes_to_samples(changes, header.timescale, sample_rate)
         metadata = _build_trace_metadata(path, target_var, header, sample_rate)
 
-        return DigitalTrace(data=data.astype(np.bool_), metadata=metadata, edges=edges)
+        return DigitalTrace(data=data.astype(np.bool_), metadata=metadata)
 
     except UnicodeDecodeError as e:
         raise FormatError(
@@ -241,13 +241,7 @@ def _build_trace_metadata(
     """Build trace metadata from VCD information."""
     return TraceMetadata(
         sample_rate=sample_rate,
-        source_file=str(path),
-        channel_name=target_var.name,
-        trigger_info={
-            "timescale": header.timescale,
-            "var_type": target_var.var_type,
-            "bit_width": target_var.size,
-        },
+        channel=target_var.name,
     )
 
 

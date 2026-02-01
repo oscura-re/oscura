@@ -91,7 +91,7 @@ class PatternTrigger(Trigger):
             level = self._get_level(trace)
             digital = trace.data >= level
 
-        sample_period = trace.metadata.time_base
+        sample_period = 1.0 / trace.metadata.sample_rate
         events: list[TriggerEvent] = []
 
         if self.match_type == "sequence":
@@ -240,7 +240,7 @@ class MultiChannelPatternTrigger(Trigger):
                 digitals.append(trace.data >= level)
 
         # Find samples where all channels match pattern
-        sample_period = traces[0].metadata.time_base
+        sample_period = 1.0 / traces[0].metadata.sample_rate
         n_samples = min(len(d) for d in digitals)
         events: list[TriggerEvent] = []
 

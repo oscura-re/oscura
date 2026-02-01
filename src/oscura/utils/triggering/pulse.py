@@ -142,7 +142,7 @@ class PulseWidthTrigger(Trigger):
             data = trace.data
             level = self.level
 
-        sample_period = trace.metadata.time_base
+        sample_period = 1.0 / trace.metadata.sample_rate
         pulses: list[PulseInfo] = []
 
         # Find all threshold crossings
@@ -419,7 +419,7 @@ class RuntTrigger(Trigger):
             return []
 
         data = trace.data
-        sample_period = trace.metadata.time_base
+        sample_period = 1.0 / trace.metadata.sample_rate
         events: list[TriggerEvent] = []
 
         zones = np.array([self._get_zone(v) for v in data])

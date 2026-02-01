@@ -43,7 +43,7 @@ def create_test_waveform_file(
         filepath,
         data=signal_data,
         sample_rate=np.array(sample_rate),
-        channel_name="CH1",
+        channel="CH1",
     )
 
 

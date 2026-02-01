@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add demos to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -31,11 +32,11 @@ class SupportedFormatsDemo(BaseDemo):
     name = "Supported Formats"
     description = "Complete guide to all 21+ file formats Oscura supports"
     category = "getting_started"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.get_supported_formats()",
         "oscura.load() with auto-detection",
     ]
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "00_getting_started/00_hello_world.py",
         "01_data_loading/",
     ]

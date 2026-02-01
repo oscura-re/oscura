@@ -235,9 +235,7 @@ def _build_tdms_metadata(
         sample_rate=sample_rate,
         vertical_scale=float(vertical_scale) if vertical_scale is not None else None,
         vertical_offset=float(vertical_offset) if vertical_offset is not None else None,
-        source_file=str(path),
-        channel_name=target_channel.name,
-        trigger_info=_extract_tdms_properties(target_channel),
+        channel=target_channel.name,
     )
 
 

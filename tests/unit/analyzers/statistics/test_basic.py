@@ -55,7 +55,7 @@ def simple_trace(simple_array: np.ndarray) -> WaveformTrace:
     """
     metadata = TraceMetadata(
         sample_rate=1e6,
-        channel_name="test_trace",
+        channel="test_trace",
     )
     return WaveformTrace(metadata=metadata, data=simple_array)
 

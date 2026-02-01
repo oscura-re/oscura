@@ -20,7 +20,6 @@ Example:
 
 from __future__ import annotations
 
-import contextlib
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Union
@@ -80,7 +79,7 @@ def load_tektronix_wfm(
     Example:
         >>> trace = load_tektronix_wfm("TEK00001.wfm")
         >>> print(f"Sample rate: {trace.metadata.sample_rate} Hz")
-        >>> print(f"Channel: {trace.metadata.channel_name}")
+        >>> print(f"Channel: {trace.metadata.channel}")
 
         >>> # Check trace type
         >>> if isinstance(trace, DigitalTrace):
@@ -250,7 +249,7 @@ def _load_analog_waveforms_container(
     sample_rate = 1.0 / waveform.x_increment if waveform.x_increment > 0 else 1e6
     vertical_scale = getattr(waveform, "y_scale", None)
     vertical_offset = getattr(waveform, "y_offset", None)
-    channel_name = getattr(waveform, "name", f"CH{channel + 1}")
+    channel_name: str = str(getattr(waveform, "name", None) or f"CH{channel + 1}")
 
     # Use original wfm for trigger info (need to get it from parent)
     return _build_waveform_trace(
@@ -258,7 +257,7 @@ def _load_analog_waveforms_container(
         sample_rate=sample_rate,
         vertical_scale=vertical_scale,
         vertical_offset=vertical_offset,
-        channel_name=channel_name,
+        channel=channel_name,
         path=path,
         wfm=waveform,
     )
@@ -288,7 +287,7 @@ def _load_analog_waveform_direct(
     x_spacing = float(wfm.x_axis_spacing) if wfm.x_axis_spacing else 1e-6
     sample_rate = 1.0 / x_spacing if x_spacing > 0 else 1e6
     vertical_offset = y_offset
-    channel_name = (
+    channel_name: str = (
         wfm.source_name if hasattr(wfm, "source_name") and wfm.source_name else f"CH{channel + 1}"
     )
 
@@ -297,7 +296,7 @@ def _load_analog_waveform_direct(
         sample_rate=sample_rate,
         vertical_scale=None,
         vertical_offset=vertical_offset,
-        channel_name=channel_name,
+        channel=channel_name,
         path=path,
         wfm=wfm,
     )
@@ -321,14 +320,14 @@ def _load_legacy_y_data(
     sample_rate = 1.0 / x_increment if x_increment > 0 else 1e6
     vertical_scale = getattr(wfm, "y_scale", None)
     vertical_offset = getattr(wfm, "y_offset", None)
-    channel_name = getattr(wfm, "name", "CH1")
+    channel = getattr(wfm, "name", "CH1")
 
     return _build_waveform_trace(
         data=data,
         sample_rate=sample_rate,
         vertical_scale=vertical_scale,
         vertical_offset=vertical_offset,
-        channel_name=channel_name,
+        channel=channel,
         path=path,
         wfm=wfm,
     )
@@ -339,7 +338,7 @@ def _build_waveform_trace(
     sample_rate: float,
     vertical_scale: float | None,
     vertical_offset: float | None,
-    channel_name: str,
+    channel: str,
     path: Path,
     wfm: Any,
 ) -> WaveformTrace:
@@ -350,27 +349,18 @@ def _build_waveform_trace(
         sample_rate: Sample rate in Hz.
         vertical_scale: Vertical scale in volts/div.
         vertical_offset: Vertical offset in volts.
-        channel_name: Channel name.
+        channel: Channel name.
         path: Source file path.
         wfm: Original waveform object for trigger info extraction.
 
     Returns:
         Constructed WaveformTrace.
     """
-    # Extract acquisition time if available
-    acquisition_time = None
-    if hasattr(wfm, "date_time"):
-        with contextlib.suppress(ValueError, AttributeError):
-            acquisition_time = wfm.date_time
-
     metadata = TraceMetadata(
         sample_rate=sample_rate,
         vertical_scale=vertical_scale,
         vertical_offset=vertical_offset,
-        acquisition_time=acquisition_time,
-        source_file=str(path),
-        channel_name=channel_name,
-        trigger_info=_extract_trigger_info(wfm),
+        channel=channel,
     )
 
     return WaveformTrace(data=data, metadata=metadata)
@@ -407,19 +397,15 @@ def _load_digital_waveform(
     sample_rate = _extract_sample_rate(wfm)
 
     # Extract channel name
-    channel_name = _extract_channel_name(wfm, channel)
+    channel_name: str = _extract_channel(wfm, channel)
 
     # Build metadata
     metadata = TraceMetadata(
         sample_rate=sample_rate,
-        source_file=str(path),
-        channel_name=channel_name,
+        channel=channel_name,
     )
 
-    # Extract edge information if available
-    edges = _extract_edges(wfm)
-
-    return DigitalTrace(data=data, metadata=metadata, edges=edges)
+    return DigitalTrace(data=data, metadata=metadata)
 
 
 def _extract_digital_samples(wfm: Any, path: Path) -> NDArray[np.bool_]:
@@ -465,7 +451,7 @@ def _extract_sample_rate(wfm: Any) -> float:
     return 1.0 / x_spacing if x_spacing > 0 else 1e6
 
 
-def _extract_channel_name(wfm: Any, channel: int) -> str:
+def _extract_channel(wfm: Any, channel: int) -> str:
     """Extract channel name from waveform object."""
     # Try source_name first
     if hasattr(wfm, "source_name") and wfm.source_name:
@@ -534,18 +520,19 @@ def _load_iq_waveform(
     sample_rate = 1.0 / x_spacing if x_spacing > 0 else 1e6
 
     # Extract channel name
-    channel_name = "IQ1"
+    channel = "IQ1"
     if hasattr(wfm, "source_name") and wfm.source_name:
-        channel_name = wfm.source_name
+        channel = wfm.source_name
 
     # Build metadata
     metadata = TraceMetadata(
         sample_rate=sample_rate,
-        source_file=str(path),
-        channel_name=channel_name,
+        channel=channel,
     )
 
-    return IQTrace(i_data=i_data, q_data=q_data, metadata=metadata)
+    # Create complex I/Q data
+    iq_data = i_data + 1j * q_data
+    return IQTrace(data=iq_data, metadata=metadata)
 
 
 def _load_basic(
@@ -641,14 +628,13 @@ def _parse_wfm003(
     # Extract metadata from header
     sample_rate = _extract_sample_interval(file_data, header_size)
     vertical_scale, vertical_offset = _extract_vertical_params(file_data, header_size)
-    channel_name = f"CH{channel + 1}"
+    channel_name: str = f"CH{channel + 1}"
 
     metadata = TraceMetadata(
         sample_rate=sample_rate,
         vertical_scale=vertical_scale,
         vertical_offset=vertical_offset,
-        source_file=str(path),
-        channel_name=channel_name,
+        channel=channel_name,
     )
 
     return WaveformTrace(data=data, metadata=metadata)
@@ -797,8 +783,7 @@ def _parse_wfm_legacy(
         sample_rate=sample_rate,
         vertical_scale=vertical_scale,
         vertical_offset=vertical_offset,
-        source_file=str(path),
-        channel_name=f"CH{channel + 1}",
+        channel=f"CH{channel + 1}",
     )
 
     return WaveformTrace(data=data, metadata=metadata)

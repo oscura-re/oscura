@@ -171,7 +171,7 @@ class TestToDigital:
         result = _to_digital(waveform_trace)
 
         assert result.metadata.sample_rate == waveform_trace.metadata.sample_rate
-        assert result.metadata.source_file == waveform_trace.metadata.source_file
+        assert result.metadata.channel == waveform_trace.metadata.channel
 
 
 @pytest.mark.unit

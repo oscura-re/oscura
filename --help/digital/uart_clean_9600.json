@@ -1,0 +1,15 @@
+{
+  "file": "uart_clean_9600.vcd",
+  "category": "digital",
+  "input_type": "digital",
+  "description": "Clean UART at 9600 baud",
+  "expected_domains": ["digital", "protocols", "timing"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "uart",
+    "baud_rate": 9600,
+    "message": "Hello, World!\r\n",
+    "error_rate": 0.0
+  }
+}

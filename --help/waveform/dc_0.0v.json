@@ -1,0 +1,14 @@
+{
+  "file": "dc_0.0v.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "DC level at 0.0V",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["dc", "no_frequency", "no_edges"],
+  "expected_issues": ["frequency_nan", "period_nan"],
+  "ground_truth": {
+    "type": "dc",
+    "dc_level": 0.0,
+    "expected_issues": ["no_frequency", "no_edges", "zero_std"]
+  }
+}

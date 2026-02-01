@@ -1,0 +1,15 @@
+{
+  "file": "uart_clean_115200.vcd",
+  "category": "digital",
+  "input_type": "digital",
+  "description": "Clean UART at 115200 baud",
+  "expected_domains": ["digital", "protocols", "timing"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "uart",
+    "baud_rate": 115200,
+    "message": "Hello, World!\r\n",
+    "error_rate": 0.0
+  }
+}

@@ -73,7 +73,7 @@ def add(
     trace1: WaveformTrace,
     trace2: TraceOrScalar,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Add two traces or add a scalar to a trace.
 
@@ -83,7 +83,7 @@ def add(
     Args:
         trace1: First trace (base trace).
         trace2: Second trace or scalar value to add.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         New WaveformTrace containing the sum.
@@ -121,10 +121,7 @@ def add(
         sample_rate=metadata.sample_rate,
         vertical_scale=metadata.vertical_scale,
         vertical_offset=metadata.vertical_offset,
-        acquisition_time=metadata.acquisition_time,
-        trigger_info=metadata.trigger_info,
-        source_file=metadata.source_file,
-        channel_name=channel_name or f"{metadata.channel_name or 'trace'}_sum",
+        channel=channel or f"{metadata.channel or 'trace'}_sum",
     )
 
     return WaveformTrace(data=result_data, metadata=new_metadata)
@@ -134,7 +131,7 @@ def subtract(
     trace1: WaveformTrace,
     trace2: TraceOrScalar,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Subtract second trace from first trace or subtract a scalar.
 
@@ -144,7 +141,7 @@ def subtract(
     Args:
         trace1: Trace to subtract from.
         trace2: Trace or scalar to subtract.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         New WaveformTrace containing the difference.
@@ -178,10 +175,7 @@ def subtract(
         sample_rate=metadata.sample_rate,
         vertical_scale=metadata.vertical_scale,
         vertical_offset=metadata.vertical_offset,
-        acquisition_time=metadata.acquisition_time,
-        trigger_info=metadata.trigger_info,
-        source_file=metadata.source_file,
-        channel_name=channel_name or f"{metadata.channel_name or 'trace'}_diff",
+        channel=channel or f"{metadata.channel or 'trace'}_diff",
     )
 
     return WaveformTrace(data=result_data, metadata=new_metadata)
@@ -191,7 +185,7 @@ def multiply(
     trace1: WaveformTrace,
     trace2: TraceOrScalar,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Multiply two traces or multiply trace by a scalar.
 
@@ -201,7 +195,7 @@ def multiply(
     Args:
         trace1: First trace.
         trace2: Second trace or scalar multiplier.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         New WaveformTrace containing the product.
@@ -235,10 +229,7 @@ def multiply(
         sample_rate=metadata.sample_rate,
         vertical_scale=metadata.vertical_scale,
         vertical_offset=metadata.vertical_offset,
-        acquisition_time=metadata.acquisition_time,
-        trigger_info=metadata.trigger_info,
-        source_file=metadata.source_file,
-        channel_name=channel_name or f"{metadata.channel_name or 'trace'}_mult",
+        channel=channel or f"{metadata.channel or 'trace'}_mult",
     )
 
     return WaveformTrace(data=result_data, metadata=new_metadata)
@@ -248,7 +239,7 @@ def divide(
     trace1: WaveformTrace,
     trace2: TraceOrScalar,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
     fill_value: float = np.nan,
 ) -> WaveformTrace:
     """Divide first trace by second trace or by a scalar.
@@ -259,7 +250,7 @@ def divide(
     Args:
         trace1: Numerator trace.
         trace2: Denominator trace or scalar.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
         fill_value: Value to use for division by zero (default NaN).
 
     Returns:
@@ -301,10 +292,7 @@ def divide(
         sample_rate=metadata.sample_rate,
         vertical_scale=metadata.vertical_scale,
         vertical_offset=metadata.vertical_offset,
-        acquisition_time=metadata.acquisition_time,
-        trigger_info=metadata.trigger_info,
-        source_file=metadata.source_file,
-        channel_name=channel_name or f"{metadata.channel_name or 'trace'}_div",
+        channel=channel or f"{metadata.channel or 'trace'}_div",
     )
 
     return WaveformTrace(data=result_data, metadata=new_metadata)
@@ -314,7 +302,7 @@ def scale(
     trace: WaveformTrace,
     factor: float,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Scale trace by a constant factor.
 
@@ -324,7 +312,7 @@ def scale(
     Args:
         trace: Input trace.
         factor: Scale factor to apply.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Scaled WaveformTrace.
@@ -336,7 +324,7 @@ def scale(
     return multiply(
         trace,
         factor,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_scaled",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_scaled",
     )
 
 
@@ -344,7 +332,7 @@ def offset(
     trace: WaveformTrace,
     value: float,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Add a constant offset to trace.
 
@@ -353,7 +341,7 @@ def offset(
     Args:
         trace: Input trace.
         value: Offset value to add.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Offset WaveformTrace.
@@ -364,14 +352,14 @@ def offset(
     return add(
         trace,
         value,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_offset",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_offset",
     )
 
 
 def invert(
     trace: WaveformTrace,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Invert trace polarity (multiply by -1).
 
@@ -379,7 +367,7 @@ def invert(
 
     Args:
         trace: Input trace.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Inverted WaveformTrace.
@@ -390,14 +378,14 @@ def invert(
     return scale(
         trace,
         -1.0,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_inverted",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_inverted",
     )
 
 
 def absolute(
     trace: WaveformTrace,
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Compute absolute value of trace.
 
@@ -405,7 +393,7 @@ def absolute(
 
     Args:
         trace: Input trace.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         WaveformTrace with absolute values.
@@ -419,10 +407,7 @@ def absolute(
         sample_rate=trace.metadata.sample_rate,
         vertical_scale=trace.metadata.vertical_scale,
         vertical_offset=trace.metadata.vertical_offset,
-        acquisition_time=trace.metadata.acquisition_time,
-        trigger_info=trace.metadata.trigger_info,
-        source_file=trace.metadata.source_file,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_abs",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_abs",
     )
 
     return WaveformTrace(data=result_data, metadata=new_metadata)
@@ -433,7 +418,7 @@ def differentiate(
     *,
     order: int = 1,
     method: str = "central",
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Compute numerical derivative of trace.
 
@@ -447,7 +432,7 @@ def differentiate(
             - "central": Central difference (default, most accurate)
             - "forward": Forward difference
             - "backward": Backward difference
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Differentiated WaveformTrace in V/s.
@@ -467,7 +452,7 @@ def differentiate(
         raise ValueError(f"Order must be positive, got {order}")
 
     data = trace.data.astype(np.float64)
-    dt = trace.metadata.time_base
+    dt = 1.0 / trace.metadata.sample_rate
 
     if len(data) < order + 1:
         raise InsufficientDataError(
@@ -500,10 +485,7 @@ def differentiate(
         sample_rate=trace.metadata.sample_rate,
         vertical_scale=None,  # Units changed
         vertical_offset=None,
-        acquisition_time=trace.metadata.acquisition_time,
-        trigger_info=trace.metadata.trigger_info,
-        source_file=trace.metadata.source_file,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_d{order}",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_d{order}",
     )
 
     return WaveformTrace(data=result, metadata=new_metadata)
@@ -514,7 +496,7 @@ def integrate(
     *,
     method: str = "trapezoid",
     initial: float = 0.0,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Compute numerical integral of trace.
 
@@ -528,7 +510,7 @@ def integrate(
             - "simpson": Simpson's rule (requires odd number of points)
             - "cumsum": Simple cumulative sum
         initial: Initial value for cumulative integral (default 0).
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Integrated WaveformTrace in V*s.
@@ -545,7 +527,7 @@ def integrate(
         ARITH-006
     """
     data = trace.data.astype(np.float64)
-    dt = trace.metadata.time_base
+    dt = 1.0 / trace.metadata.sample_rate
 
     if len(data) < 2:
         raise InsufficientDataError(
@@ -572,10 +554,7 @@ def integrate(
         sample_rate=trace.metadata.sample_rate,
         vertical_scale=None,  # Units changed
         vertical_offset=None,
-        acquisition_time=trace.metadata.acquisition_time,
-        trigger_info=trace.metadata.trigger_info,
-        source_file=trace.metadata.source_file,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_integral",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_integral",
     )
 
     return WaveformTrace(data=result, metadata=new_metadata)
@@ -818,14 +797,14 @@ def _ensure_array_result(result: Any, expected_len: int) -> NDArray[np.float64]:
 
 
 def _build_expression_metadata(
-    ref_trace: WaveformTrace, expression: str, channel_name: str | None
+    ref_trace: WaveformTrace, expression: str, channel: str | None
 ) -> TraceMetadata:
     """Build metadata for expression result trace.
 
     Args:
         ref_trace: Reference trace for metadata.
         expression: Expression string (for default naming).
-        channel_name: Optional channel name override.
+        channel: Optional channel name override.
 
     Returns:
         Metadata for result trace.
@@ -834,10 +813,7 @@ def _build_expression_metadata(
         sample_rate=ref_trace.metadata.sample_rate,
         vertical_scale=None,
         vertical_offset=None,
-        acquisition_time=ref_trace.metadata.acquisition_time,
-        trigger_info=ref_trace.metadata.trigger_info,
-        source_file=ref_trace.metadata.source_file,
-        channel_name=channel_name or f"expr({expression[:20]})",
+        channel=channel or f"expr({expression[:20]})",
     )
 
 
@@ -845,7 +821,7 @@ def math_expression(
     expression: str,
     traces: dict[str, WaveformTrace],
     *,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Evaluate a mathematical expression on traces.
 
@@ -855,7 +831,7 @@ def math_expression(
     Args:
         expression: Math expression (e.g., "CH1 + CH2", "abs(CH1 - CH2)").
         traces: Dictionary mapping variable names to traces.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Result WaveformTrace.
@@ -884,5 +860,5 @@ def math_expression(
     result = _evaluate_expression(expression, safe_namespace)
     result = _ensure_array_result(result, len(ref_trace.data))
 
-    metadata = _build_expression_metadata(ref_trace, expression, channel_name)
+    metadata = _build_expression_metadata(ref_trace, expression, channel)
     return WaveformTrace(data=result.astype(np.float64), metadata=metadata)

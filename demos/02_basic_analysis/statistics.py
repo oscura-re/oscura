@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -44,7 +45,7 @@ class StatisticsDemo(BaseDemo):
     description = "Mean, histogram, distribution, correlation, and statistical characterization"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.mean",
         "oscura.median",
         "oscura.std",
@@ -55,7 +56,7 @@ class StatisticsDemo(BaseDemo):
         "oscura.kurtosis",
     ]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "01_waveform_basics.py",
         "03_spectral_basics.py",
         "../04_advanced_analysis/08_statistics_advanced.py",
@@ -245,8 +246,8 @@ class StatisticsDemo(BaseDemo):
         # ========== PART 6: STATISTICAL COMPARISON TABLE ==========
         print_subheader("Part 6: Statistical Comparison")
 
-        headers = ["Statistic", "Clean Sine", "Noisy Sine", "Square Wave"]
-        rows = [
+        headers: ClassVar[list[str]] = ["Statistic", "Clean Sine", "Noisy Sine", "Square Wave"]
+        rows: ClassVar[list[str]] = [
             [
                 "Mean",
                 f"{clean_mean:.6f}",

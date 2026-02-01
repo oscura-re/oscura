@@ -73,7 +73,7 @@ class TestLoadRigolWFM:
         trace = load_rigol_wfm(wfm_path, channel=2)
         assert trace is not None
         # Channel parameter affects metadata
-        assert trace.metadata.channel_name == "CH3"  # channel=2 -> CH3
+        assert trace.metadata.channel == "CH3"  # channel=2 -> CH3
 
     @pytest.mark.skipif(not RIGOL_WFM_AVAILABLE, reason="rigol-wfm library not available")
     def test_load_with_rigolwfm_library(self, tmp_path: Path) -> None:
@@ -129,7 +129,7 @@ class TestLoadBasic:
         assert isinstance(trace, WaveformTrace)
         assert len(trace.data) == 5
         assert trace.metadata.sample_rate == 1e6  # Default
-        assert trace.metadata.channel_name == "CH1"
+        assert trace.metadata.channel == "CH1"
         assert trace.metadata.source_file == str(wfm_path)
 
     def test_load_with_channel_parameter(self, tmp_path: Path) -> None:
@@ -140,7 +140,7 @@ class TestLoadBasic:
         wfm_path.write_bytes(header + data.tobytes())
 
         trace = _load_basic(wfm_path, channel=3)
-        assert trace.metadata.channel_name == "CH4"  # channel=3 -> CH4
+        assert trace.metadata.channel == "CH4"  # channel=3 -> CH4
 
     def test_load_int16_data_normalization(self, tmp_path: Path) -> None:
         """Test that int16 data is normalized to [-1, 1] range."""
@@ -209,7 +209,7 @@ class TestLoadBasic:
         assert trace.metadata.vertical_scale is None
         assert trace.metadata.vertical_offset is None
         assert trace.metadata.source_file == str(wfm_path)
-        assert trace.metadata.channel_name == "CH2"
+        assert trace.metadata.channel == "CH2"
 
     def test_large_data_file(self, tmp_path: Path) -> None:
         """Test loading file with large waveform data."""
@@ -316,7 +316,7 @@ class TestLoadWithRigolWFM:
             assert trace.metadata.sample_rate == 2e6
             assert trace.metadata.vertical_scale == 2.5
             assert trace.metadata.vertical_offset == 0.5
-            assert trace.metadata.channel_name == "CH1"
+            assert trace.metadata.channel == "CH1"
 
     def test_load_multi_channel_format_channel_0(self, tmp_path: Path) -> None:
         """Test loading multi-channel WFM format, channel 0."""
@@ -334,7 +334,7 @@ class TestLoadWithRigolWFM:
             trace = _load_with_rigolwfm(wfm_path, channel=0)
 
             assert np.allclose(trace.data, [1.0, 2.0])
-            assert trace.metadata.channel_name == "CH1"
+            assert trace.metadata.channel == "CH1"
 
     def test_load_multi_channel_format_channel_1(self, tmp_path: Path) -> None:
         """Test loading multi-channel WFM format, channel 1."""
@@ -352,7 +352,7 @@ class TestLoadWithRigolWFM:
             trace = _load_with_rigolwfm(wfm_path, channel=1)
 
             assert np.allclose(trace.data, [3.0, 4.0])
-            assert trace.metadata.channel_name == "CH2"
+            assert trace.metadata.channel == "CH2"
 
     def test_load_no_waveform_data_raises_error(self, tmp_path: Path) -> None:
         """Test that WFM with no data raises FormatError."""
@@ -631,7 +631,7 @@ class TestRigolEdgeCases:
         wfm_path.write_bytes(header + data.tobytes())
 
         trace = _load_basic(wfm_path, channel=99)
-        assert trace.metadata.channel_name == "CH100"
+        assert trace.metadata.channel == "CH100"
 
     def test_zero_values(self, tmp_path: Path) -> None:
         """Test file with all zero values."""

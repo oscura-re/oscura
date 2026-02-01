@@ -1,0 +1,13 @@
+{
+  "file": "overshoot.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Square wave with 20% overshoot",
+  "expected_domains": ["waveform"],
+  "edge_cases": ["overshoot"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "overshoot",
+    "overshoot_pct": 20.0
+  }
+}

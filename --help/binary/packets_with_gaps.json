@@ -1,0 +1,16 @@
+{
+  "file": "packets_with_gaps.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Packets with 10% sequence gaps",
+  "expected_domains": ["entropy", "packet"],
+  "edge_cases": ["sequence_gaps"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "structured_packets",
+    "packet_size": 256,
+    "num_packets": 90,
+    "corruption_rate": 0.0,
+    "sequence_gaps": [23, 31, 36, 40, 50, 66, 78, 86, 96, 98]
+  }
+}

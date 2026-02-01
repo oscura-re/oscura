@@ -1,0 +1,13 @@
+{
+  "file": "all_inf.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "All infinite values",
+  "expected_domains": [],
+  "edge_cases": ["all_inf"],
+  "expected_issues": ["infinite_values"],
+  "ground_truth": {
+    "type": "all_inf",
+    "expected_issues": ["infinite_values"]
+  }
+}

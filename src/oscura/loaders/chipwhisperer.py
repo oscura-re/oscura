@@ -399,8 +399,7 @@ def to_waveform_trace(
 
     metadata = TraceMetadata(
         sample_rate=traceset.sample_rate,
-        source_file=str(traceset.metadata.get("source_file", "")) if traceset.metadata else "",
-        channel_name=f"trace_{trace_index}",
+        channel=f"trace_{trace_index}",
     )
 
     return WaveformTrace(

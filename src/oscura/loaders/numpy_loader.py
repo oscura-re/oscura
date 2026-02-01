@@ -173,8 +173,7 @@ def _build_npz_metadata(
         sample_rate=float(final_sample_rate),
         vertical_scale=float(detected_vertical_scale) if detected_vertical_scale else None,
         vertical_offset=float(detected_vertical_offset) if detected_vertical_offset else None,
-        source_file=str(path),
-        channel_name=_get_channel_name(npz, channel),
+        channel=_get_channel_name(npz, channel),
     )
 
 
@@ -556,8 +555,7 @@ def load_raw_binary(
 
         metadata = TraceMetadata(
             sample_rate=sample_rate,
-            source_file=str(path),
-            channel_name="RAW",
+            channel="RAW",
         )
 
         return WaveformTrace(data=data, metadata=metadata)

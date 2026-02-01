@@ -104,7 +104,7 @@ class CancellationDemo(BaseDemo):
         """Simulate long-running task with cancellation support."""
         iterations = 0
 
-        for i in range(max_iterations):
+        for _i in range(max_iterations):
             # Check if cancelled
             if cancel_event.is_set():
                 return {

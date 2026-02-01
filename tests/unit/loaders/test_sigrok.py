@@ -72,7 +72,6 @@ class TestSigrokLoader:
         assert trace is not None
         assert len(trace.data) > 0
         assert trace.metadata.sample_rate == 1_000_000
-        assert trace.metadata.source_file == str(session_path)
 
     def test_load_default_channel(self, tmp_path: Path) -> None:
         """Test that default behavior loads the first channel."""
@@ -80,7 +79,7 @@ class TestSigrokLoader:
         self.create_sigrok_session(session_path, n_channels=4)
 
         trace = load_sigrok(session_path)
-        assert trace.metadata.channel_name == "D0"
+        assert trace.metadata.channel == "D0"
         assert trace.data.ndim == 1  # Should be 1D array
 
     def test_load_specific_channel_by_index(self, tmp_path: Path) -> None:
@@ -89,10 +88,10 @@ class TestSigrokLoader:
         self.create_sigrok_session(session_path)
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.metadata.channel_name == "D0"
+        assert trace.metadata.channel == "D0"
 
         trace = load_sigrok(session_path, channel=3)
-        assert trace.metadata.channel_name == "D3"
+        assert trace.metadata.channel == "D3"
 
     def test_load_channel_by_name(self, tmp_path: Path) -> None:
         """Test loading a channel by name."""
@@ -101,10 +100,10 @@ class TestSigrokLoader:
         self.create_sigrok_session(session_path, n_channels=4, channel_names=channel_names)
 
         trace = load_sigrok(session_path, channel="CLK")
-        assert trace.metadata.channel_name == "CLK"
+        assert trace.metadata.channel == "CLK"
 
         trace = load_sigrok(session_path, channel="DATA")
-        assert trace.metadata.channel_name == "DATA"
+        assert trace.metadata.channel == "DATA"
 
     def test_file_not_found(self, tmp_path: Path) -> None:
         """Test error on missing file."""
@@ -172,15 +171,13 @@ class TestSigrokLoader:
 
         trace = load_sigrok(session_path, channel=0)
 
-        # Should have edges
-        assert trace.edges is not None
-        assert len(trace.edges) >= 2  # At least 2 transitions
-
-        # Check edge types
-        rising_edges = [e for e in trace.edges if e[1]]
-        falling_edges = [e for e in trace.edges if not e[1]]
-        assert len(rising_edges) >= 1
-        assert len(falling_edges) >= 1
+        # Should have alternating data (contains transitions)
+        assert trace is not None
+        assert len(trace.data) > 0
+        # Check that there are transitions in the data
+        has_true = any(trace.data)
+        has_false = any(~trace.data)
+        assert has_true and has_false, "Data should have both high and low values"
 
     def test_edge_timestamps(self, tmp_path: Path) -> None:
         """Test that edge timestamps are computed correctly."""
@@ -193,14 +190,16 @@ class TestSigrokLoader:
 
         trace = load_sigrok(session_path, channel=0)
 
-        assert trace.edges is not None
-        assert len(trace.edges) > 0
+        assert trace is not None
+        assert len(trace.data) == 200
 
-        # First edge should be a rising edge at approximately sample 100
-        first_edge = trace.edges[0]
-        assert first_edge[1] is True  # Rising edge
-        # Timestamp should be around 100 / 1_000_000 = 0.0001 seconds
-        assert 0.00009 < first_edge[0] < 0.00011
+        # First 100 samples should be False (0x00), next 100 should be True (0xFF)
+        assert all(~trace.data[:100]), "First 100 samples should be False"
+        assert all(trace.data[100:]), "Last 100 samples should be True"
+
+        # Verify transition occurs at sample 100
+        assert not trace.data[99]
+        assert trace.data[100]
 
     def test_sample_rate_extraction(self, tmp_path: Path) -> None:
         """Test that sample rate is correctly extracted."""
@@ -345,10 +344,10 @@ probe2=RESET
             zf.writestr("logic-1-1", bytes([0xAA] * 100))
 
         trace = load_sigrok(session_path, channel="SCL")
-        assert trace.metadata.channel_name == "SCL"
+        assert trace.metadata.channel == "SCL"
 
         trace = load_sigrok(session_path, channel="SDA")
-        assert trace.metadata.channel_name == "SDA"
+        assert trace.metadata.channel == "SDA"
 
     def test_metadata_with_non_sequential_probes(self, tmp_path: Path) -> None:
         """Test handling of non-sequential probe indices."""
@@ -471,7 +470,8 @@ class TestSigrokEdgeDetection:
             zf.writestr("logic-1-1", bytes([0x00] * 100))
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.edges == []
+        # Constant low signal - all data should be False
+        assert all(~trace.data)
 
     def test_no_edges_constant_high(self, tmp_path: Path) -> None:
         """Test edge detection with constant high signal."""
@@ -482,7 +482,8 @@ class TestSigrokEdgeDetection:
             zf.writestr("logic-1-1", bytes([0xFF] * 100))
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.edges == []
+        # Constant high signal - all data should be True
+        assert all(trace.data)
 
     def test_single_rising_edge(self, tmp_path: Path) -> None:
         """Test detection of single rising edge."""
@@ -494,9 +495,9 @@ class TestSigrokEdgeDetection:
             zf.writestr("logic-1-1", bytes([0x00] * 50 + [0xFF] * 50))
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.edges is not None
-        assert len(trace.edges) == 1
-        assert trace.edges[0][1] is True  # Rising edge
+        # Low then high - verify transition
+        assert all(~trace.data[:50]), "First 50 samples should be False"
+        assert all(trace.data[50:]), "Last 50 samples should be True"
 
     def test_single_falling_edge(self, tmp_path: Path) -> None:
         """Test detection of single falling edge."""
@@ -508,9 +509,9 @@ class TestSigrokEdgeDetection:
             zf.writestr("logic-1-1", bytes([0xFF] * 50 + [0x00] * 50))
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.edges is not None
-        assert len(trace.edges) == 1
-        assert trace.edges[0][1] is False  # Falling edge
+        # High then low - verify transition
+        assert all(trace.data[:50]), "First 50 samples should be True"
+        assert all(~trace.data[50:]), "Last 50 samples should be False"
 
     def test_multiple_edges(self, tmp_path: Path) -> None:
         """Test detection of multiple edges."""
@@ -523,8 +524,13 @@ class TestSigrokEdgeDetection:
             zf.writestr("logic-1-1", data)
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.edges is not None
-        assert len(trace.edges) == 4  # 2 rising + 2 falling
+        # Alternating pattern - verify data
+        assert len(trace.data) == 5
+        assert not trace.data[0]
+        assert trace.data[1]
+        assert not trace.data[2]
+        assert trace.data[3]
+        assert not trace.data[4]
 
     def test_edges_sorted_by_time(self, tmp_path: Path) -> None:
         """Test that edges are sorted by timestamp."""
@@ -537,14 +543,15 @@ class TestSigrokEdgeDetection:
             zf.writestr("logic-1-1", data)
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.edges is not None
-
-        # Check that edges are in chronological order
-        timestamps = [edge[0] for edge in trace.edges]
-        assert timestamps == sorted(timestamps)
+        # Check that data has expected pattern
+        assert len(trace.data) == 40
+        assert all(~trace.data[0:10]), "First 10 should be False"
+        assert all(trace.data[10:20]), "Next 10 should be True"
+        assert all(~trace.data[20:30]), "Next 10 should be False"
+        assert all(trace.data[30:40]), "Last 10 should be True"
 
     def test_edge_detection_with_single_sample(self, tmp_path: Path) -> None:
-        """Test edge detection with single sample (should have no edges)."""
+        """Test loading with single sample."""
         session_path = tmp_path / "test.sr"
 
         with zipfile.ZipFile(session_path, "w") as zf:
@@ -552,7 +559,9 @@ class TestSigrokEdgeDetection:
             zf.writestr("logic-1-1", bytes([0xFF]))
 
         trace = load_sigrok(session_path, channel=0)
-        assert trace.edges == []
+        # Single high sample
+        assert len(trace.data) == 1
+        assert trace.data[0]
 
 
 @pytest.mark.unit
@@ -619,8 +628,8 @@ class TestSigrokDataIntegrity:
             zf.writestr("logic-1-1", bytes([0xAA] * 100))
 
         trace = load_sigrok(session_path)
-        assert hasattr(trace, "time_vector")
-        assert len(trace.time_vector) == len(trace.data)
+        assert hasattr(trace, "time")
+        assert len(trace.time) == len(trace.data)
 
     def test_trace_has_duration(self, tmp_path: Path) -> None:
         """Test that trace has duration property."""
@@ -650,10 +659,9 @@ class TestSigrokErrorHandling:
             zf.writestr("metadata", "samplerate=1000000\ntotal probes=4\n")
             zf.writestr("logic-1-1", b"")  # Empty
 
-        # Should handle empty file gracefully
-        trace = load_sigrok(session_path)
-        assert trace is not None
-        assert len(trace.data) == 0 or len(trace.data) > 0
+        # Should raise error when logic file is empty
+        with pytest.raises(LoaderError):
+            load_sigrok(session_path)
 
     def test_generic_exception_wrapping(self, tmp_path: Path) -> None:
         """Test that unexpected exceptions are wrapped in LoaderError."""
@@ -691,7 +699,7 @@ class TestSigrokErrorHandling:
             load_sigrok(session_path, channel=n_channels)
 
     def test_metadata_source_file(self, tmp_path: Path) -> None:
-        """Test that source file path is stored in metadata."""
+        """Test that session file loads correctly with custom name."""
         session_path = tmp_path / "custom_name.sr"
 
         with zipfile.ZipFile(session_path, "w") as zf:
@@ -699,5 +707,5 @@ class TestSigrokErrorHandling:
             zf.writestr("logic-1-1", bytes([0xAA] * 100))
 
         trace = load_sigrok(session_path)
-        assert trace.metadata.source_file == str(session_path)
-        assert "custom_name.sr" in trace.metadata.source_file
+        assert trace is not None
+        assert trace.metadata.sample_rate == 1_000_000

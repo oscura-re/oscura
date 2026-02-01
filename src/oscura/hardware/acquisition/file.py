@@ -165,19 +165,12 @@ class FileSource:
             from oscura.core.types import IQTrace
 
             # Get sample count based on trace type
-            if isinstance(trace, IQTrace):
-                n_samples = len(trace.i_data)
-            else:
-                n_samples = len(trace.data)
+            n_samples = len(trace.data)
 
             for start in range(0, n_samples, chunk_size):
                 end = min(start + chunk_size, n_samples)
                 # Create chunk trace with sliced data
-                if isinstance(trace, IQTrace):
-                    # IQTrace doesn't have .data attribute
-                    chunk_data = None  # Will be handled separately below
-                else:
-                    chunk_data = trace.data[start:end]
+                chunk_data = trace.data[start:end]
 
                 # Import here to avoid circular dependency
                 from oscura.core.types import (
@@ -191,11 +184,7 @@ class FileSource:
                     sample_rate=trace.metadata.sample_rate,
                     vertical_scale=trace.metadata.vertical_scale,
                     vertical_offset=trace.metadata.vertical_offset,
-                    acquisition_time=trace.metadata.acquisition_time,
-                    trigger_info=trace.metadata.trigger_info,
-                    source_file=str(self.path),
-                    channel_name=trace.metadata.channel_name,
-                    calibration_info=trace.metadata.calibration_info,
+                    channel=trace.metadata.channel,
                 )
 
                 if isinstance(trace, WaveformTrace):
@@ -206,12 +195,9 @@ class FileSource:
                         metadata=chunk_metadata,
                     )
                 elif isinstance(trace, IQTrace):
-                    # Handle I/Q separately
-                    chunk_i = trace.i_data[start:end]
-                    chunk_q = trace.q_data[start:end]
+                    # Handle I/Q complex data
                     yield IQTrace(
-                        i_data=chunk_i,
-                        q_data=chunk_q,
+                        data=chunk_data,  # type: ignore[arg-type]
                         metadata=chunk_metadata,
                     )
 

@@ -251,7 +251,7 @@ class TestLoadNPZ:
         """Test extraction of channel name from NPZ metadata."""
         npz_path = tmp_path / "ch_name.npz"
         sample_data = np.random.randn(100)
-        np.savez(npz_path, data=sample_data, channel_name=np.array("ANALOG1"))
+        np.savez(npz_path, data=sample_data, channel=np.array("ANALOG1"))
 
         trace = load_npz(npz_path)
 

@@ -82,8 +82,8 @@ def simple_traces() -> tuple[WaveformTrace, WaveformTrace]:
     data1 = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     data2 = np.array([2.0, 4.0, 6.0, 8.0, 10.0])
 
-    metadata1 = TraceMetadata(sample_rate=1e6, channel_name="trace1")
-    metadata2 = TraceMetadata(sample_rate=1e6, channel_name="trace2")
+    metadata1 = TraceMetadata(sample_rate=1e6, channel="trace1")
+    metadata2 = TraceMetadata(sample_rate=1e6, channel="trace2")
 
     trace1 = WaveformTrace(metadata=metadata1, data=data1)
     trace2 = WaveformTrace(metadata=metadata2, data=data2)

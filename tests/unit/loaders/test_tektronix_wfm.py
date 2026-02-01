@@ -453,7 +453,7 @@ class TestBuildWaveformTrace:
             sample_rate=sample_rate,
             vertical_scale=None,
             vertical_offset=None,
-            channel_name="CH1",
+            channel="CH1",
             path=path,
             wfm=mock.Mock(),
         )
@@ -474,7 +474,7 @@ class TestBuildWaveformTrace:
             sample_rate=1e6,
             vertical_scale=0.1,
             vertical_offset=0.5,
-            channel_name="CH2",
+            channel="CH2",
             path=path,
             wfm=mock.Mock(),
         )
@@ -496,7 +496,7 @@ class TestBuildWaveformTrace:
             sample_rate=1e6,
             vertical_scale=None,
             vertical_offset=None,
-            channel_name="CH1",
+            channel="CH1",
             path=path,
             wfm=mock_wfm,
         )
@@ -516,7 +516,7 @@ class TestBuildWaveformTrace:
             sample_rate=1e6,
             vertical_scale=None,
             vertical_offset=None,
-            channel_name="CH1",
+            channel="CH1",
             path=path,
             wfm=mock_wfm,
         )
@@ -538,7 +538,7 @@ class TestBuildWaveformTrace:
             sample_rate=1e6,
             vertical_scale=None,
             vertical_offset=None,
-            channel_name="CH1",
+            channel="CH1",
             path=path,
             wfm=mock_wfm,
         )

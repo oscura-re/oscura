@@ -24,11 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import DigitalTrace, TraceMetadata
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class I2SDemo(BaseDemo):
@@ -37,15 +41,15 @@ class I2SDemo(BaseDemo):
     name = "I2S Audio Protocol Decoding"
     description = "Decode I2S digital audio streams with stereo channels"
     category = "protocol_decoding"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "I2S audio decoding",
         "Stereo channel separation (left/right)",
         "Multiple I2S formats (Philips, MSB, PCM)",
         "Sample word extraction",
         "Bit clock synchronization",
     ]
-    ieee_standards = ["Philips I2S Bus Specification"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["Philips I2S Bus Specification"]
+    related_demos: ClassVar[list[str]] = [
         "03_protocol_decoding/02_spi_basic.py",
         "02_basic_analysis/01_waveform_measurements.py",
     ]
@@ -139,12 +143,12 @@ class I2SDemo(BaseDemo):
         """
         samples_per_clock = max(1, int(signal_sample_rate / clock_rate))
 
-        sck_signal = []
-        ws_signal = []
-        sd_signal = []
+        sck_signal: ClassVar[list[str]] = []
+        ws_signal: ClassVar[list[str]] = []
+        sd_signal: ClassVar[list[str]] = []
 
         # Process stereo frames
-        for left_val, right_val in zip(left_samples, right_samples):
+        for left_val, right_val in zip(left_samples, right_samples, strict=False):
             # Left channel (WS low)
             for bit_idx in range(word_size):
                 # Word select low for left channel
@@ -212,7 +216,7 @@ class I2SDemo(BaseDemo):
         print_info(f"Expected left samples: {len(expected_left)}")
         print_info(f"Expected right samples: {len(expected_right)}")
 
-        frames = []
+        frames: ClassVar[list[str]] = []
         try:
             from oscura import decode_i2s
 

@@ -131,6 +131,27 @@ def characterize_buffer(
     return result
 
 
+def _extract_measurement_value(result: Any) -> float:
+    """Extract numeric value from measurement result.
+
+    Handles both MeasurementResult dicts and simple numeric values (for tests).
+
+    Args:
+        result: MeasurementResult dict or numeric value.
+
+    Returns:
+        Extracted float value, or 0.0 if not applicable.
+    """
+    if isinstance(result, dict):
+        # Handle MeasurementResult dict
+        if not result.get("applicable", True):
+            return 0.0
+        value = result.get("value", 0.0)
+        return float(value) if value is not None else 0.0
+    # Handle simple numeric value (from mocks)
+    return float(result) if isinstance(result, (int, float)) else 0.0
+
+
 def _determine_logic_family(
     trace: WaveformTrace, logic_family: str | None
 ) -> tuple[str, float, float, float]:
@@ -176,8 +197,9 @@ def _measure_timing_params(trace: WaveformTrace) -> tuple[float, float]:
     try:
         t_rise_raw = rise_time(trace)
         t_fall_raw = fall_time(trace)
-        t_rise: float = float(t_rise_raw)
-        t_fall: float = float(t_fall_raw)
+        # Handle both MeasurementResult dict and simple float (for mocks)
+        t_rise = _extract_measurement_value(t_rise_raw)
+        t_fall = _extract_measurement_value(t_fall_raw)
     except Exception as e:
         raise AnalysisError(f"Failed to measure rise/fall time: {e}") from e
 
@@ -201,8 +223,9 @@ def _measure_overshoots(
 
     v_overshoot_raw = overshoot(trace)
     v_undershoot_raw = undershoot(trace)
-    v_overshoot: float = float(v_overshoot_raw)
-    v_undershoot: float = float(v_undershoot_raw)
+    # Handle both MeasurementResult dict and simple float (for mocks)
+    v_overshoot = _extract_measurement_value(v_overshoot_raw)
+    v_undershoot = _extract_measurement_value(v_undershoot_raw)
 
     swing = voh - vol
     if swing > 0:

@@ -235,7 +235,7 @@ def create_golden(
         description=description,
         metadata={
             "source_file": trace.metadata.source_file,
-            "channel_name": trace.metadata.channel_name,
+            "channel": trace.metadata.channel,
         },
     )
 

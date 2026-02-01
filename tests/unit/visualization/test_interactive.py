@@ -947,7 +947,7 @@ class TestPlotPhase:
     def test_two_trace_phase_plot(self, sample_waveform):
         """Test phase plot with two traces."""
         # Create second trace
-        data2 = np.cos(2 * np.pi * 1000 * sample_waveform.time_vector)
+        data2 = np.cos(2 * np.pi * 1000 * sample_waveform.time)
         trace2 = WaveformTrace(
             data=data2,
             metadata=TraceMetadata(sample_rate=sample_waveform.metadata.sample_rate),

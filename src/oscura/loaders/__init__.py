@@ -400,8 +400,8 @@ def load_all_channels(
     else:
         # For other formats, try loading as single channel
         trace = load(path, format=format)
-        channel_name = getattr(trace.metadata, "channel_name", None) or "ch1"
-        return {channel_name: trace}
+        channel = getattr(trace.metadata, "channel", None) or "ch1"
+        return {channel: trace}
 
 
 def _load_all_channels_tektronix(
@@ -464,9 +464,9 @@ def _read_tektronix_file(path: Path) -> Any:
     except ImportError:
         # Fall back to single channel loading
         trace = load(path, format="tektronix")
-        channel_name = getattr(trace.metadata, "channel_name", None) or "ch1"
+        channel = getattr(trace.metadata, "channel", None) or "ch1"
         # Return a dict-like object to maintain compatibility
-        return {"__fallback__": {channel_name: trace}}
+        return {"__fallback__": {channel: trace}}
 
     try:
         return tm_data_types.read_file(str(path))
@@ -502,14 +502,14 @@ def _extract_analog_waveforms(
             sample_rate = 1.0 / x_increment if x_increment > 0 else 1e6
             vertical_scale = getattr(awfm, "y_scale", None)
             vertical_offset = getattr(awfm, "y_offset", None)
-            channel_name = getattr(awfm, "name", f"CH{i + 1}")
+            channel = getattr(awfm, "name", f"CH{i + 1}")
 
             trace = _build_waveform_trace(
                 data=data,
                 sample_rate=sample_rate,
                 vertical_scale=vertical_scale,
                 vertical_offset=vertical_offset,
-                channel_name=channel_name,
+                channel=channel,
                 path=path,
                 wfm=awfm,
             )
@@ -557,23 +557,23 @@ def _extract_direct_waveform(
         from oscura.loaders.tektronix import _load_digital_waveform
 
         trace = _load_digital_waveform(wfm, path, 0)
-        channel_name = trace.metadata.channel_name or "d1"
-        channels[channel_name.lower()] = trace
+        channel = trace.metadata.channel or "d1"
+        channels[channel.lower()] = trace
 
     elif wfm_type == "IQWaveform" or (
         hasattr(wfm, "i_axis_values") and hasattr(wfm, "q_axis_values")
     ):
         # IQWaveform format (RF/SDR data)
         loaded_trace = load(path, format="tektronix")
-        channel_name = loaded_trace.metadata.channel_name or "iq1"
-        channels[channel_name.lower()] = loaded_trace
+        channel = loaded_trace.metadata.channel or "iq1"
+        channels[channel.lower()] = loaded_trace
 
     elif hasattr(wfm, "y_axis_values") or hasattr(wfm, "y_data"):
         # Direct analog waveform
         loaded_trace = load(path, format="tektronix")
         # Add both analog and digital traces to channels
-        channel_name = loaded_trace.metadata.channel_name or "ch1"
-        channels[channel_name.lower()] = loaded_trace
+        channel = loaded_trace.metadata.channel or "ch1"
+        channels[channel.lower()] = loaded_trace
 
 
 def get_supported_formats() -> list[str]:

@@ -1,0 +1,15 @@
+{
+  "file": "clean_sine_1000hz.npz",
+  "category": "waveform",
+  "input_type": "waveform",
+  "description": "Clean 1000Hz sine wave",
+  "expected_domains": ["waveform", "spectral", "statistics"],
+  "edge_cases": [],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "clean_sine",
+    "frequency_hz": 1000.0,
+    "amplitude": 1.0,
+    "snr_db": Infinity
+  }
+}

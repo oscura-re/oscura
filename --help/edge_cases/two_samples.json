@@ -1,0 +1,13 @@
+{
+  "file": "two_samples.npz",
+  "category": "edge_case",
+  "input_type": "waveform",
+  "description": "Two samples",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["two_samples", "one_edge"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "two_samples",
+    "expected_issues": ["one_edge_only"]
+  }
+}

@@ -13,7 +13,7 @@ A .tss session file typically contains:
 Example:
     >>> import oscura as osc
     >>> trace = osc.load("oscilloscope_session.tss")
-    >>> print(f"Channel: {trace.metadata.channel_name}")
+    >>> print(f"Channel: {trace.metadata.channel}")
     >>> print(f"Sample rate: {trace.metadata.sample_rate} Hz")
 
     >>> # Load specific channel
@@ -93,7 +93,7 @@ def load_tss(
         )
 
     # Select channel
-    trace, channel_name = _select_channel(waveforms, channel, path)
+    trace, channel = _select_channel(waveforms, channel, path)
 
     # Enrich metadata with session information
     try:
@@ -317,18 +317,18 @@ def _load_all_waveforms(path: Path) -> dict[str, WaveformTrace | DigitalTrace | 
 
         for wfm_name in sorted(wfm_files):  # Sort for consistent ordering
             # Derive channel name from filename
-            channel_name = _derive_channel_name(wfm_name)
+            channel = _derive_channel(wfm_name)
 
             # Load waveform
             trace = _load_wfm_from_archive(zf, wfm_name, path)
 
             # Store with normalized channel name
-            waveforms[channel_name] = trace
+            waveforms[channel] = trace
 
     return waveforms
 
 
-def _derive_channel_name(wfm_filename: str) -> str:
+def _derive_channel(wfm_filename: str) -> str:
     """Derive channel name from .wfm filename.
 
     Args:
@@ -338,13 +338,13 @@ def _derive_channel_name(wfm_filename: str) -> str:
         Normalized channel name (lowercase, e.g., "ch1", "ch2", "d0").
 
     Examples:
-        >>> _derive_channel_name("CH1.wfm")
+        >>> _derive_channel("CH1.wfm")
         'ch1'
-        >>> _derive_channel_name("subdir/CH2_Voltage.wfm")
+        >>> _derive_channel("subdir/CH2_Voltage.wfm")
         'ch2'
-        >>> _derive_channel_name("D0.wfm")
+        >>> _derive_channel("D0.wfm")
         'd0'
-        >>> _derive_channel_name("MATH1.wfm")
+        >>> _derive_channel("MATH1.wfm")
         'math1'
     """
     # Get base filename without path
@@ -373,27 +373,27 @@ def _select_channel(
         path: Path to session file (for error messages).
 
     Returns:
-        Tuple of (selected_trace, channel_name).
+        Tuple of (selected_trace, channel).
 
     Raises:
         LoaderError: If channel not found or index out of range.
     """
     if channel is None:
         # Default: first channel (alphabetically sorted)
-        channel_name = sorted(waveforms.keys())[0]
-        return waveforms[channel_name], channel_name
+        channel = sorted(waveforms.keys())[0]
+        return waveforms[channel], channel
 
     if isinstance(channel, int):
         # Select by index
-        channel_names = sorted(waveforms.keys())
-        if channel < 0 or channel >= len(channel_names):
+        channels = sorted(waveforms.keys())
+        if channel < 0 or channel >= len(channels):
             raise LoaderError(
                 f"Channel index {channel} out of range",
                 file_path=str(path),
-                fix_hint=f"Available channels: {', '.join(channel_names)} (indices 0-{len(channel_names) - 1})",
+                fix_hint=f"Available channels: {', '.join(channels)} (indices 0-{len(channels) - 1})",
             )
-        channel_name = channel_names[channel]
-        return waveforms[channel_name], channel_name
+        channel = channels[channel]
+        return waveforms[channel], channel
 
     # Select by name (case-insensitive)
     channel_lower = channel.lower()
@@ -426,26 +426,19 @@ def _enrich_metadata_from_session(
         Trace with enriched metadata.
     """
     # Create new metadata with session information
-    from dataclasses import replace
 
     metadata = trace.metadata
 
-    # Update source file to point to .tss instead of temp .wfm
-    metadata = replace(metadata, source_file=source_file)
-
-    # Add trigger info from session if available
-    if "trigger" in session_metadata and metadata.trigger_info is None:
-        metadata = replace(metadata, trigger_info=session_metadata["trigger"])
+    # Note: source_file and trigger_info attributes removed from TraceMetadata
 
     # Return trace with updated metadata
     if isinstance(trace, WaveformTrace):
         return WaveformTrace(data=trace.data, metadata=metadata)
     if isinstance(trace, DigitalTrace):
-        return DigitalTrace(data=trace.data, metadata=metadata, edges=trace.edges)
+        return DigitalTrace(data=trace.data, metadata=metadata)
     # IQTrace
     return IQTrace(
-        i_data=trace.i_data,
-        q_data=trace.q_data,
+        data=trace.data,
         metadata=metadata,
     )
 

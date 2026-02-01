@@ -22,10 +22,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class SignalIntegrityDemo(BaseDemo):
@@ -34,14 +38,14 @@ class SignalIntegrityDemo(BaseDemo):
     name = "Signal Integrity (S-Parameters)"
     description = "S-parameter extraction and transmission line analysis"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "S-parameter extraction",
         "Insertion loss (S21)",
         "Return loss (S11)",
         "Impedance profiling",
     ]
-    ieee_standards = ["IEEE 287-2007"]
-    related_demos = ["04_advanced_analysis/09_tdr.py"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 287-2007"]
+    related_demos: ClassVar[list[str]] = ["04_advanced_analysis/09_tdr.py"]
 
     def generate_data(self) -> None:
         """Generate frequency sweep data."""

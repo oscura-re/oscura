@@ -83,7 +83,7 @@ def _import_scapy_modules() -> tuple[type, type]:
         ImportError: If scapy is not installed.
     """
     try:
-        from scapy.all import rdpcap
+        from scapy.all import rdpcap  # type: ignore[attr-defined]
         from scapy.layers.can import CAN
 
         return rdpcap, CAN  # type: ignore[return-value]

@@ -114,9 +114,7 @@ def _load_with_rigolwfm(
             sample_rate=sample_rate,
             vertical_scale=vertical_scale,
             vertical_offset=vertical_offset,
-            source_file=str(path),
-            channel_name=channel_name,
-            trigger_info=_extract_trigger_info(wfm),
+            channel=channel_name,
         )
 
         return WaveformTrace(data=data, metadata=metadata)
@@ -200,7 +198,7 @@ def _extract_rigol_channel_data(
         file_path: File path for error messages.
 
     Returns:
-        Tuple of (data, sample_rate, vertical_scale, vertical_offset, channel_name).
+        Tuple of (data, sample_rate, vertical_scale, vertical_offset, channel).
 
     Raises:
         FormatError: If no waveform data found.
@@ -212,7 +210,7 @@ def _extract_rigol_channel_data(
         sample_rate = wfm.sample_rate if hasattr(wfm, "sample_rate") else 1e6
         vertical_scale = ch.volts_per_div if hasattr(ch, "volts_per_div") else None
         vertical_offset = ch.volt_offset if hasattr(ch, "volt_offset") else None
-        channel_name = f"CH{channel + 1}"
+        channel_name: str = f"CH{channel + 1}"
         return data, sample_rate, vertical_scale, vertical_offset, channel_name
 
     # Single channel format
@@ -302,7 +300,7 @@ def _load_basic(
             vertical_scale=vertical_scale,
             vertical_offset=vertical_offset,
             source_file=str(path),
-            channel_name=f"CH{channel + 1}",
+            channel=f"CH{channel + 1}",
         )
 
         return WaveformTrace(data=data, metadata=metadata)

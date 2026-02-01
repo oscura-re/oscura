@@ -272,12 +272,10 @@ class TestNoiseMargin:
     def test_noise_margin_empty_trace(self) -> None:
         """Test noise margin with empty trace."""
         empty_data = np.array([])
-        trace = make_waveform_trace(empty_data, 1e6)
 
-        result = noise_margin(trace, family="TTL", use_measured_levels=True)
-
-        # Should still work but use spec values
-        assert result.logic_family == "TTL"
+        # Empty trace raises ValueError at creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            trace = make_waveform_trace(empty_data, 1e6)
 
     def test_noise_margin_invalid_family(self) -> None:
         """Test noise margin with invalid logic family."""
@@ -617,11 +615,10 @@ class TestDetectGlitches:
     def test_detect_glitches_empty_signal(self) -> None:
         """Test glitch detection on empty signal."""
         empty_data = np.array([])
-        trace = make_waveform_trace(empty_data, 1e6)
 
-        glitches = detect_glitches(trace, min_width=10e-9)
-
-        assert len(glitches) == 0
+        # Empty trace raises ValueError at creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            trace = make_waveform_trace(empty_data, 1e6)
 
     def test_detect_glitches_short_signal(self) -> None:
         """Test glitch detection on very short signal."""
@@ -1085,15 +1082,10 @@ class TestDigitalQualityEdgeCases:
     def test_empty_trace(self) -> None:
         """Test functions with empty trace."""
         empty = np.array([])
-        trace = make_waveform_trace(empty, 1e6)
 
-        # Noise margin should handle empty
-        result = noise_margin(trace, family="TTL", use_measured_levels=True)
-        assert isinstance(result, NoiseMarginResult)
-
-        # Glitch detection should return empty list
-        glitches = detect_glitches(trace, min_width=10e-9)
-        assert len(glitches) == 0
+        # Empty trace raises ValueError at creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            trace = make_waveform_trace(empty, 1e6)
 
     def test_single_value_trace(self) -> None:
         """Test functions with single value."""

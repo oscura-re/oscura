@@ -22,11 +22,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class PowerAnalysisDemo(BaseDemo):
@@ -35,15 +39,15 @@ class PowerAnalysisDemo(BaseDemo):
     name = "Power Analysis (DC/AC/Harmonics)"
     description = "IEEE 1459-2010 compliant power measurements"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "DC power calculation",
         "AC RMS power",
         "Power factor",
         "Harmonic analysis",
         "THD measurement",
     ]
-    ieee_standards = ["IEEE 1459-2010"]
-    related_demos = ["04_advanced_analysis/07_efficiency.py"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 1459-2010"]
+    related_demos: ClassVar[list[str]] = ["04_advanced_analysis/07_efficiency.py"]
 
     def generate_data(self) -> None:
         """Generate voltage/current waveforms."""

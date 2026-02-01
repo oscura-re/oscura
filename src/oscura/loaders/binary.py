@@ -81,8 +81,7 @@ def load_binary(
     # Create metadata
     metadata = TraceMetadata(
         sample_rate=sample_rate,
-        source_file=str(path),
-        channel_name=f"Channel {channel}",
+        channel=f"Channel {channel}",
     )
 
     return WaveformTrace(data=data.astype(np.float64), metadata=metadata)

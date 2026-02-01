@@ -352,9 +352,10 @@ class TestValidationWorkflows:
         signal, _ = generate_digital_signal(pattern="uart", **config.__dict__)
 
         # Add idle regions
-        idle_prefix = np.zeros(5000, dtype=signal.dtype)
-        idle_suffix = np.zeros(5000, dtype=signal.dtype)
-        signal_with_idle = np.concatenate([idle_prefix, signal, idle_suffix])
+        idle_prefix = np.zeros(5000, dtype=bool)
+        idle_suffix = np.zeros(5000, dtype=bool)
+        signal_bool = signal.astype(bool) if signal.dtype != bool else signal
+        signal_with_idle = np.concatenate([idle_prefix, signal_bool, idle_suffix])
 
         # Convert to DigitalTrace for preprocessing functions
         from oscura.core.types import DigitalTrace, TraceMetadata

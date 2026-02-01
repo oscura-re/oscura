@@ -48,7 +48,7 @@ def sine_trace() -> WaveformTrace:
         sample_rate=fs,
         vertical_scale=1.0,
         vertical_offset=0.0,
-        calibration_info=CalibrationInfo(instrument="Test Oscilloscope", vertical_resolution=8),
+        calibration=CalibrationInfo(instrument="Test Oscilloscope", vertical_resolution=8),
     )
     return WaveformTrace(data=data, metadata=metadata)
 
@@ -102,7 +102,7 @@ class TestRiseTime:
             sample_rate=10e9,
             vertical_scale=0.2,
             vertical_offset=0.0,
-            calibration_info=calibration,
+            calibration=calibration,
         )
         trace = WaveformTrace(data=data, metadata=metadata)
 
@@ -247,7 +247,7 @@ class TestFrequency:
         )  # Very accurate (1 ppm)
         metadata = TraceMetadata(
             sample_rate=fs,
-            calibration_info=calibration,
+            calibration=calibration,
         )
         trace = WaveformTrace(data=data, metadata=metadata)
 
@@ -311,7 +311,7 @@ class TestAmplitude:
         )
         metadata = TraceMetadata(
             sample_rate=100e6,
-            calibration_info=calibration,
+            calibration=calibration,
         )
         trace = WaveformTrace(data=data, metadata=metadata)
 
@@ -440,15 +440,10 @@ class TestEdgeCases:
         """Test measurements on empty trace."""
         data = np.array([])
         metadata = TraceMetadata(sample_rate=100e6)
-        trace = WaveformTrace(data=data, metadata=metadata)
 
-        # Should handle gracefully or raise appropriate error
-        try:
-            result = meas_u.amplitude(trace)
-            # If it returns, should be NaN or inf
-            assert np.isnan(result.value) or np.isinf(result.value)
-        except (ValueError, IndexError):
-            pass  # Acceptable to raise error
+        # Empty array should raise ValueError when creating WaveformTrace
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            trace = WaveformTrace(data=data, metadata=metadata)
 
     def test_very_short_trace(self) -> None:
         """Test measurements on very short trace."""

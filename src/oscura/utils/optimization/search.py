@@ -88,8 +88,9 @@ def _default_thd_scorer(trace: WaveformTrace, params: dict[str, Any]) -> float:
         Negative THD percentage (negative because lower THD is better, but we maximize scores).
     """
     # Compute THD and return negative value (lower THD = better = higher score)
-    thd_value = compute_thd(trace)
-    return float(-thd_value)
+    thd_result = compute_thd(trace)
+    thd_value = thd_result.get("value") if thd_result.get("applicable") else 0.0
+    return float(-thd_value) if thd_value else 0.0
 
 
 class GridSearchCV:

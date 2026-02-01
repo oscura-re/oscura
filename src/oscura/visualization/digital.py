@@ -108,7 +108,9 @@ def _select_time_unit_and_multiplier(
     """
     if time_unit == "auto" and len(digital_traces) > 0:
         ref_trace = digital_traces[0]
-        duration = len(ref_trace.data) * ref_trace.metadata.time_base
+        # Compute time_base from sample_rate (time_base property removed from TraceMetadata)
+        time_base = 1.0 / ref_trace.metadata.sample_rate
+        duration = len(ref_trace.data) * time_base
         if duration < 1e-6:
             time_unit = "ns"
         elif duration < 1e-3:
@@ -169,13 +171,13 @@ def _plot_timing_channel(
         annotations: Optional protocol annotations.
         time_unit: Time unit string.
     """
-    time = trace.time_vector * multiplier
+    time = trace.time * multiplier
 
     # Filter to time range
     if time_range is not None:
         start_time, end_time = time_range
-        start_idx = int(np.searchsorted(trace.time_vector, start_time))
-        end_idx = int(np.searchsorted(trace.time_vector, end_time))
+        start_idx = int(np.searchsorted(trace.time, start_time))
+        end_idx = int(np.searchsorted(trace.time, end_time))
         time = time[start_idx:end_idx]
         data_slice = trace.data[start_idx:end_idx]
     else:

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -44,7 +45,7 @@ class FilteringDemo(BaseDemo):
     description = "Low-pass, high-pass, band-pass, and notch filtering"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.low_pass",
         "oscura.high_pass",
         "oscura.band_pass",
@@ -53,9 +54,9 @@ class FilteringDemo(BaseDemo):
         "oscura.savgol_filter",
     ]
 
-    ieee_standards = ["IEEE 181-2011"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "01_waveform_basics.py",
         "03_spectral_basics.py",
         "../04_advanced_analysis/04_filtering_advanced.py",

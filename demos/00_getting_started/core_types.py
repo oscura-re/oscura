@@ -18,6 +18,7 @@ from __future__ import annotations
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 
@@ -41,15 +42,15 @@ class CoreTypesDemo(BaseDemo):
     name = "Core Types"
     description = "Learn Oscura's fundamental data structures: traces, metadata, packets"
     category = "getting_started"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.TraceMetadata",
         "oscura.WaveformTrace",
         "oscura.DigitalTrace",
         "oscura.ProtocolPacket",
         "oscura.CalibrationInfo",
     ]
-    ieee_standards = ["IEEE 1241-2010"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["IEEE 1241-2010"]
+    related_demos: ClassVar[list[str]] = [
         "00_getting_started/00_hello_world.py",
         "02_basic_analysis/01_waveform_basics.py",
     ]

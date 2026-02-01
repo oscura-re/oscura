@@ -58,7 +58,7 @@ class SideChannelBasicsDemo(BaseDemo):
         sample_rate = 1e9
 
         # Simulate power consumption during crypto operation
-        for i in range(num_traces):
+        for _i in range(num_traces):
             plaintext = np.random.randint(0, 256)
 
             # Base power trace with noise

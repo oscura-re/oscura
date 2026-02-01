@@ -29,7 +29,7 @@ pytestmark = pytest.mark.unit
 def reference_trace() -> WaveformTrace:
     """Create a reference sine wave trace."""
     data = np.sin(2 * np.pi * 1e6 * np.linspace(0, 1e-3, 1000))
-    metadata = TraceMetadata(sample_rate=1e6, channel_name="CH1")
+    metadata = TraceMetadata(sample_rate=1e6, channel="CH1")
     return WaveformTrace(data=data, metadata=metadata)
 
 

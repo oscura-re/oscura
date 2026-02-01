@@ -145,17 +145,42 @@ def quick_spectral(
     noise_bins = mag_db[10 : len(mag_db) // 2]
     noise_floor = float(np.median(noise_bins))
 
-    # Compute metrics (these functions don't accept 'fundamental' parameter)
-    thd_db_val = thd(trace, n_harmonics=n_harmonics, window=window)
-    thd_pct = 100 * 10 ** (thd_db_val / 20) if not np.isnan(thd_db_val) else np.nan
-    snr_db_val = snr(trace, n_harmonics=n_harmonics, window=window)
-    sinad_db_val = sinad(trace, window=window)
-    enob_val = enob(trace, window=window)
-    sfdr_db_val = sfdr(trace, window=window)
+    # Compute metrics (these functions now return MeasurementResult dicts)
+    # Note: thd() now returns percentage, not dB
+    thd_result = thd(trace, n_harmonics=n_harmonics, window=window)
+    if thd_result["applicable"] and thd_result["value"] is not None:
+        thd_pct = float(thd_result["value"])  # Already in percentage
+        # Convert percentage to dB: dB = 20 * log10(ratio) where ratio = thd_pct / 100
+        thd_db_val = 20 * np.log10(thd_pct / 100) if thd_pct > 0 else -np.inf
+    else:
+        thd_pct = np.nan
+        thd_db_val = np.nan
+
+    snr_result = snr(trace, n_harmonics=n_harmonics, window=window)
+    snr_val = snr_result["value"]
+    snr_db_val = float(snr_val) if snr_result["applicable"] and snr_val is not None else np.nan
+
+    sinad_result = sinad(trace, window=window)
+    sinad_val = sinad_result["value"]
+    sinad_db_val = (
+        float(sinad_val) if sinad_result["applicable"] and sinad_val is not None else np.nan
+    )
+
+    enob_result = enob(trace, window=window)
+    enob_result_val = enob_result["value"]
+    enob_val = (
+        float(enob_result_val)
+        if enob_result["applicable"] and enob_result_val is not None
+        else np.nan
+    )
+
+    sfdr_result = sfdr(trace, window=window)
+    sfdr_val = sfdr_result["value"]
+    sfdr_db_val = float(sfdr_val) if sfdr_result["applicable"] and sfdr_val is not None else np.nan
 
     return SpectralMetrics(
-        thd_db=thd_db_val,
-        thd_percent=thd_pct,
+        thd_db=float(thd_db_val),
+        thd_percent=float(thd_pct),
         snr_db=snr_db_val,
         sinad_db=sinad_db_val,
         enob=enob_val,

@@ -65,7 +65,7 @@ def _prepare_switching_data(
     v_data = voltage.data[:min_len]
     i_data = current.data[:min_len]
     p_data = power.data[:min_len]
-    sample_period = power.metadata.time_base
+    sample_period = 1.0 / power.metadata.sample_rate
     return v_data, i_data, p_data, sample_period
 
 
@@ -386,7 +386,7 @@ def switching_energy(
         >>> print(f"Switching energy: {e*1e9:.2f} nJ")
     """
     power = instantaneous_power(voltage, current)
-    sample_period = power.metadata.time_base
+    sample_period = 1.0 / power.metadata.sample_rate
     time_vector = np.arange(len(power.data)) * sample_period
 
     # Select time window
@@ -540,7 +540,7 @@ def switching_times(
     min_len = min(len(voltage.data), len(current.data))
     v_data = voltage.data[:min_len]
     i_data = current.data[:min_len]
-    sample_period = voltage.metadata.time_base
+    sample_period = 1.0 / voltage.metadata.sample_rate
 
     v_min, v_max = float(np.min(v_data)), float(np.max(v_data))
     i_min, i_max = float(np.min(i_data)), float(np.max(i_data))

@@ -1351,7 +1351,7 @@ def extract_channels(
         # Create metadata with configurable sample rate
         metadata = TraceMetadata(
             sample_rate=effective_sample_rate,
-            channel_name=ch_name,
+            channel=ch_name,
         )
 
         traces[ch_name] = DigitalTrace(data=data, metadata=metadata)

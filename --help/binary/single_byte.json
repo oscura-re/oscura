@@ -1,0 +1,13 @@
+{
+  "file": "single_byte.bin",
+  "category": "binary",
+  "input_type": "binary",
+  "description": "Single byte",
+  "expected_domains": ["statistics"],
+  "edge_cases": ["single_byte"],
+  "expected_issues": [],
+  "ground_truth": {
+    "type": "single_byte",
+    "expected_issues": ["insufficient_data"]
+  }
+}

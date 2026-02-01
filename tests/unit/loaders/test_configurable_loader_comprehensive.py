@@ -510,7 +510,7 @@ class TestPreprocessing:
 
         return DigitalTrace(
             data=np.array(data, dtype=np.bool_),
-            metadata=TraceMetadata(sample_rate=1e6, channel_name="test"),
+            metadata=TraceMetadata(sample_rate=1e6, channel="test"),
         )
 
     def test_idle_detection(self) -> None:

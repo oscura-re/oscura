@@ -413,8 +413,8 @@ def _build_metadata(
         sample_rate=float(detected_sample_rate),
         vertical_scale=float(vertical_scale) if vertical_scale else None,
         vertical_offset=float(vertical_offset) if vertical_offset else None,
+        channel=str(channel_name),
         source_file=str(file_path),
-        channel_name=str(channel_name),
     )
 
 

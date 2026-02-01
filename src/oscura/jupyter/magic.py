@@ -232,8 +232,8 @@ class OscuraMagics(Magics):
             meta = trace.metadata
             if hasattr(meta, "sample_rate"):
                 info["sample_rate"] = meta.sample_rate
-            if hasattr(meta, "channel_name"):
-                info["channel"] = meta.channel_name
+            if hasattr(meta, "channel"):
+                info["channel"] = meta.channel
 
         for key, value in info.items():
             print(f"{key}: {value}")
