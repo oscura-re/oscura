@@ -274,26 +274,6 @@ class WaveformTrace:
 
     @property
     def is_analog(self) -> bool:
-        """Check if trace is analog (always True for WaveformTrace)."""
-        return True
-
-    @property
-    def is_digital(self) -> bool:
-        """Check if trace is digital (always False for WaveformTrace)."""
-        return False
-
-    @property
-    def is_iq(self) -> bool:
-        """Check if trace is I/Q data (always False for WaveformTrace)."""
-        return False
-
-    @property
-    def signal_type(self) -> str:
-        """Get signal type string (always 'analog' for WaveformTrace)."""
-        return "analog"
-
-    @property
-    def is_analog(self) -> bool:
         """Check if this is an analog signal trace.
 
         Returns:
@@ -392,26 +372,6 @@ class DigitalTrace:
 
     @property
     def is_analog(self) -> bool:
-        """Check if trace is analog (always False for DigitalTrace)."""
-        return False
-
-    @property
-    def is_digital(self) -> bool:
-        """Check if trace is digital (always True for DigitalTrace)."""
-        return True
-
-    @property
-    def is_iq(self) -> bool:
-        """Check if trace is I/Q data (always False for DigitalTrace)."""
-        return False
-
-    @property
-    def signal_type(self) -> str:
-        """Get signal type string (always 'digital' for DigitalTrace)."""
-        return "digital"
-
-    @property
-    def is_analog(self) -> bool:
         """Check if this is an analog signal trace.
 
         Returns:
@@ -507,26 +467,6 @@ class IQTrace:
     def time(self) -> NDArray[np.floating[Any]]:
         """Time axis array for the trace."""
         return np.arange(len(self.data)) / self.metadata.sample_rate + self.metadata.start_time
-
-    @property
-    def is_analog(self) -> bool:
-        """Check if trace is analog (always False for IQTrace)."""
-        return False
-
-    @property
-    def is_digital(self) -> bool:
-        """Check if trace is digital (always False for IQTrace)."""
-        return False
-
-    @property
-    def is_iq(self) -> bool:
-        """Check if trace is I/Q data (always True for IQTrace)."""
-        return True
-
-    @property
-    def signal_type(self) -> str:
-        """Get signal type string (always 'iq' for IQTrace)."""
-        return "iq"
 
     @property
     def is_analog(self) -> bool:
