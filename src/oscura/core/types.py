@@ -292,6 +292,42 @@ class WaveformTrace:
         """Get signal type string (always 'analog' for WaveformTrace)."""
         return "analog"
 
+    @property
+    def is_analog(self) -> bool:
+        """Check if this is an analog signal trace.
+
+        Returns:
+            True for WaveformTrace (always analog).
+        """
+        return True
+
+    @property
+    def is_digital(self) -> bool:
+        """Check if this is a digital signal trace.
+
+        Returns:
+            False for WaveformTrace (always analog).
+        """
+        return False
+
+    @property
+    def is_iq(self) -> bool:
+        """Check if this is an I/Q signal trace.
+
+        Returns:
+            False for WaveformTrace.
+        """
+        return False
+
+    @property
+    def signal_type(self) -> str:
+        """Get the signal type identifier.
+
+        Returns:
+            "analog" for WaveformTrace.
+        """
+        return "analog"
+
     def __len__(self) -> int:
         """Return number of samples in the trace."""
         return len(self.data)
@@ -374,6 +410,42 @@ class DigitalTrace:
         """Get signal type string (always 'digital' for DigitalTrace)."""
         return "digital"
 
+    @property
+    def is_analog(self) -> bool:
+        """Check if this is an analog signal trace.
+
+        Returns:
+            False for DigitalTrace (always digital).
+        """
+        return False
+
+    @property
+    def is_digital(self) -> bool:
+        """Check if this is a digital signal trace.
+
+        Returns:
+            True for DigitalTrace (always digital).
+        """
+        return True
+
+    @property
+    def is_iq(self) -> bool:
+        """Check if this is an I/Q signal trace.
+
+        Returns:
+            False for DigitalTrace.
+        """
+        return False
+
+    @property
+    def signal_type(self) -> str:
+        """Get the signal type identifier.
+
+        Returns:
+            "digital" for DigitalTrace.
+        """
+        return "digital"
+
     def __len__(self) -> int:
         """Return number of samples in the trace."""
         return len(self.data)
@@ -454,6 +526,42 @@ class IQTrace:
     @property
     def signal_type(self) -> str:
         """Get signal type string (always 'iq' for IQTrace)."""
+        return "iq"
+
+    @property
+    def is_analog(self) -> bool:
+        """Check if this is an analog signal trace.
+
+        Returns:
+            False for IQTrace (complex I/Q data).
+        """
+        return False
+
+    @property
+    def is_digital(self) -> bool:
+        """Check if this is a digital signal trace.
+
+        Returns:
+            False for IQTrace (complex I/Q data).
+        """
+        return False
+
+    @property
+    def is_iq(self) -> bool:
+        """Check if this is an I/Q signal trace.
+
+        Returns:
+            True for IQTrace (always I/Q).
+        """
+        return True
+
+    @property
+    def signal_type(self) -> str:
+        """Get the signal type identifier.
+
+        Returns:
+            "iq" for IQTrace.
+        """
         return "iq"
 
     def __len__(self) -> int:
