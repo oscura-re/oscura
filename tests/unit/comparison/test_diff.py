@@ -753,13 +753,10 @@ class TestComparisonDiffEdgeCases:
 
     def test_empty_traces(self, sample_rate: float) -> None:
         """Test comparing empty traces."""
+        # Empty arrays should raise ValueError at trace creation time
         empty_metadata = TraceMetadata(sample_rate=sample_rate)
-        trace1 = WaveformTrace(data=np.array([]), metadata=empty_metadata)
-        trace2 = WaveformTrace(data=np.array([]), metadata=empty_metadata)
-
-        # Empty traces will cause issues in alignment - expect ValueError
-        with pytest.raises(ValueError):
-            compare_traces(trace1, trace2)
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            WaveformTrace(data=np.array([]), metadata=empty_metadata)
 
     def test_single_sample_traces(self, sample_rate: float) -> None:
         """Test comparing single-sample traces."""

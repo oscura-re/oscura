@@ -78,7 +78,7 @@ class EdgeTrigger(Trigger):
         else:
             data = trace.data
 
-        sample_period = trace.metadata.time_base
+        sample_period = 1.0 / trace.metadata.sample_rate
         events: list[TriggerEvent] = []
 
         if self.hysteresis > 0:

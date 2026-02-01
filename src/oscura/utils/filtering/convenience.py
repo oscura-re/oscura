@@ -496,7 +496,7 @@ def differentiate(
     if order < 1:
         raise AnalysisError(f"Derivative order must be positive, got {order}")
 
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
     result = trace.data.copy()
 
     for _ in range(order):
@@ -530,7 +530,7 @@ def integrate(
     Example:
         >>> position = integrate(velocity_trace)
     """
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
 
     if method == "cumtrapz":
         from scipy.integrate import cumulative_trapezoid

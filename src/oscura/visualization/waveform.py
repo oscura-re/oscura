@@ -111,7 +111,7 @@ def plot_waveform(
         xlabel,
         ylabel,
         title,
-        trace.metadata.channel_name,
+        trace.metadata.channel,
         show_grid,
         label,
     )
@@ -144,7 +144,7 @@ def _prepare_time_axis(
     trace: WaveformTrace, time_unit: str
 ) -> tuple[str, tuple[NDArray[np.float64], float]]:
     """Prepare time axis with appropriate unit and scaling."""
-    time = trace.time_vector
+    time = trace.time
 
     # Auto-select time unit
     if time_unit == "auto":
@@ -285,7 +285,7 @@ def _determine_time_unit_and_multiplier(
     """Determine time unit and multiplier for plotting."""
     if time_unit == "auto" and len(traces) > 0:
         ref_trace = traces[0]
-        duration = len(ref_trace.data) * ref_trace.metadata.time_base
+        duration = len(ref_trace.data) * (1.0 / ref_trace.metadata.sample_rate)
         time_unit = _select_time_unit_from_duration(duration)
 
     time_multipliers = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}
@@ -317,7 +317,7 @@ def _plot_channels(
 ) -> None:
     """Plot each channel on its subplot."""
     for i, (trace, name, ax) in enumerate(zip(traces, names, axes, strict=False)):
-        time = trace.time_vector * multiplier
+        time = trace.time * multiplier
         color = colors[i] if colors and i < len(colors) else f"C{i}"
 
         _plot_single_channel(ax, trace, time, color, name, show_grid)

@@ -505,7 +505,7 @@ def _get_clock_edges(
     if len(data) < 2:
         return np.array([], dtype=np.float64)
 
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
 
     # Find threshold
     low, high = _find_logic_levels(data)

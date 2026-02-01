@@ -940,7 +940,7 @@ class SignalBuilder:
         # Build TraceMetadata
         trace_metadata = TraceMetadata(
             sample_rate=self._sample_rate,
-            channel_name=channel,
+            channel=channel,
         )
 
         return WaveformTrace(data=data, metadata=trace_metadata)
@@ -977,12 +977,12 @@ class SignalBuilder:
 
         # Build WaveformTrace for each channel
         traces: dict[str, WaveformTrace] = {}
-        for channel_name, data in self._channels.items():
+        for channel, data in self._channels.items():
             trace_metadata = TraceMetadata(
                 sample_rate=self._sample_rate,
-                channel_name=channel_name,
+                channel=channel,
             )
-            traces[channel_name] = WaveformTrace(data=data, metadata=trace_metadata)
+            traces[channel] = WaveformTrace(data=data, metadata=trace_metadata)
 
         return traces
 
@@ -1010,7 +1010,7 @@ class SignalBuilder:
             path,
             data=trace.data,
             sample_rate=trace.metadata.sample_rate,
-            channel_name=trace.metadata.channel_name or "ch1",
+            channel=trace.metadata.channel or "ch1",
         )
 
         return trace

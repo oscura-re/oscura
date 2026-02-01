@@ -24,11 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class ComprehensiveAnalysisDemo(BaseDemo):
@@ -37,7 +41,7 @@ class ComprehensiveAnalysisDemo(BaseDemo):
     name = "Comprehensive Multi-Analyzer"
     description = "Complete signal characterization across multiple domains"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Multi-domain analysis",
         "Waveform measurements",
         "Spectral analysis",
@@ -45,8 +49,8 @@ class ComprehensiveAnalysisDemo(BaseDemo):
         "Power analysis",
         "Integrated quality report",
     ]
-    ieee_standards = ["IEEE 181-2011", "IEEE 2414-2020", "IEEE 1459-2010"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011", "IEEE 2414-2020", "IEEE 1459-2010"]
+    related_demos: ClassVar[list[str]] = [
         "04_advanced_analysis/01_jitter_analysis.py",
         "04_advanced_analysis/04_eye_diagrams.py",
         "04_advanced_analysis/06_power_analysis.py",
@@ -136,7 +140,7 @@ class ComprehensiveAnalysisDemo(BaseDemo):
     def _prbs7(self, length: int) -> np.ndarray:
         """Generate PRBS-7 sequence."""
         state = 0x7F
-        bits = []
+        bits: ClassVar[list[str]] = []
         for _ in range(length):
             bit = (state >> 6) & 1
             bits.append(bit)

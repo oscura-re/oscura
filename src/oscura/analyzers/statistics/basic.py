@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from oscura.core.measurement_result import make_measurement
 from oscura.core.types import WaveformTrace
 
 if TYPE_CHECKING:
@@ -331,27 +332,28 @@ def measure(
     """Compute statistical measurements with consistent format.
 
     Unified function matching the API pattern of waveform.measure() and spectral.measure().
-    Returns measurements with units for easy formatting and display.
+    Returns MeasurementResult format with applicability tracking and formatting.
 
     Args:
         trace: Input trace or numpy array.
         parameters: List of measurement names to compute. If None, compute all.
             Valid names: mean, variance, std, min, max, range, count, p1, p5, p25, p50, p75, p95, p99
-        include_units: If True, return {value, unit} dicts. If False, return flat values.
+        include_units: If True, return MeasurementResult format. If False, return flat values.
 
     Returns:
-        Dictionary mapping measurement names to values (with units if requested).
+        Dictionary mapping measurement names to MeasurementResults (if include_units=True)
+        or raw values (if include_units=False).
 
     Example:
         >>> from oscura.analyzers.statistics import measure
         >>> results = measure(trace)
-        >>> print(f"Mean: {results['mean']['value']} {results['mean']['unit']}")
-        >>> print(f"Std: {results['std']['value']} {results['std']['unit']}")
+        >>> if results['mean']['applicable']:
+        ...     print(f"Mean: {results['mean']['display']}")
 
         >>> # Get specific measurements only
         >>> results = measure(trace, parameters=["mean", "std"])
 
-        >>> # Get flat values without units
+        >>> # Get flat values (legacy compatibility)
         >>> results = measure(trace, include_units=False)
         >>> mean_value = results["mean"]  # Just the float
     """
@@ -394,7 +396,8 @@ def measure(
         results = {}
         for name, value in all_measurements.items():
             unit = unit_map.get(name, "")
-            results[name] = {"value": value, "unit": unit}
+            # All statistical measurements are always applicable (never NaN from valid data)
+            results[name] = make_measurement(value, unit)
         return results
     else:
         return all_measurements

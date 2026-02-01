@@ -219,9 +219,14 @@ class LazyWaveformTrace:
         """
         from oscura.core.types import TraceMetadata, WaveformTrace
 
+        # Handle API migration: channel_name -> channel
+        metadata_dict = self._metadata.copy()
+        if "channel_name" in metadata_dict:
+            metadata_dict["channel"] = metadata_dict.pop("channel_name")
+
         metadata = TraceMetadata(
             sample_rate=self._sample_rate,
-            **self._metadata,
+            **metadata_dict,
         )
         return WaveformTrace(data=self.data, metadata=metadata)
 

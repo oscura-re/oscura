@@ -24,7 +24,7 @@ class TestQuickSpectral:
         data = np.sin(2 * np.pi * fundamental * t)
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace, fundamental=fundamental)
@@ -46,7 +46,7 @@ class TestQuickSpectral:
         data += 0.01 * np.sin(2 * np.pi * 2 * fundamental * t)  # 2nd harmonic
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace, fundamental=fundamental)
@@ -64,7 +64,7 @@ class TestQuickSpectral:
         data = np.sin(2 * np.pi * fundamental * t)
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace)  # No fundamental specified
@@ -80,7 +80,7 @@ class TestQuickSpectral:
         data = np.sin(2 * np.pi * 1000 * t)
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace)

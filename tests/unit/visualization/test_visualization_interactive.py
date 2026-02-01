@@ -245,7 +245,7 @@ class TestZoomPan:
         from oscura.visualization.interactive import ZoomState, enable_zoom_pan
 
         fig, ax = plt.subplots()
-        ax.plot(sample_trace.time_vector, sample_trace.data)
+        ax.plot(sample_trace.time, sample_trace.data)
 
         state = enable_zoom_pan(ax)
 
@@ -260,7 +260,7 @@ class TestZoomPan:
         from oscura.visualization.interactive import enable_zoom_pan
 
         fig, ax = plt.subplots()
-        ax.plot(sample_trace.time_vector, sample_trace.data)
+        ax.plot(sample_trace.time, sample_trace.data)
 
         state = enable_zoom_pan(ax)
 
@@ -300,7 +300,7 @@ class TestCursors:
         from oscura.visualization.interactive import add_measurement_cursors
 
         fig, ax = plt.subplots()
-        ax.plot(sample_trace.time_vector, sample_trace.data)
+        ax.plot(sample_trace.time, sample_trace.data)
 
         cursors = add_measurement_cursors(ax)
 

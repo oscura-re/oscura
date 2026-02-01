@@ -1049,15 +1049,11 @@ class TestSignalIntegrityEdgeCases:
 
     def test_empty_signal_ffe(self) -> None:
         """Test FFE with empty signal raises ValueError."""
-        from oscura.analyzers.signal_integrity.equalization import ffe_equalize
-
         signal = np.array([], dtype=np.float64)
-        trace = make_waveform_trace(signal, sample_rate=1e9)
-        taps = [1.0]
 
-        # numpy convolve raises ValueError for empty arrays
-        with pytest.raises(ValueError):
-            ffe_equalize(trace, taps)
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            make_waveform_trace(signal, sample_rate=1e9)
 
     def test_single_sample_ffe(self) -> None:
         """Test FFE with single sample."""

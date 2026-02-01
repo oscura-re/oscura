@@ -167,7 +167,7 @@ def _determine_timing_parameters(
         bit_period = 1.0 / bit_rate
 
     if samples_per_bit is None:
-        samples_per_bit = int(bit_period / trace.metadata.time_base)
+        samples_per_bit = int(bit_period * trace.metadata.sample_rate)
 
     if samples_per_bit < 10:
         raise InsufficientDataError(

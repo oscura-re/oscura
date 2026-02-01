@@ -35,7 +35,7 @@ class TestProvenanceCreation:
         prov = Provenance(algorithm="test_algorithm")
         assert prov.algorithm == "test_algorithm"
         assert prov.parameters == {}
-        assert prov.library_version == "0.8.0"
+        assert prov.library_version == "0.9.0"
         assert prov.input_hash is None
         assert prov.metadata == {}
         # timestamp should be auto-generated
@@ -72,14 +72,14 @@ class TestProvenanceCreation:
             algorithm="peak_to_peak",
             parameters={"window": (0, 1e-3)},
             timestamp="2025-12-21T10:30:00Z",
-            library_version="0.8.0",
+            library_version="0.9.0",
             input_hash="abc123",
             metadata={"channel": 1},
         )
         assert prov.algorithm == "peak_to_peak"
         assert prov.parameters == {"window": (0, 1e-3)}
         assert prov.timestamp == "2025-12-21T10:30:00Z"
-        assert prov.library_version == "0.8.0"
+        assert prov.library_version == "0.9.0"
         assert prov.input_hash == "abc123"
         assert prov.metadata == {"channel": 1}
 
@@ -95,7 +95,7 @@ class TestProvenanceMethods:
             "algorithm": "test",
             "parameters": {},
             "timestamp": "2025-12-21T10:30:00Z",
-            "library_version": "0.8.0",
+            "library_version": "0.9.0",
             "input_hash": None,
             "metadata": {},
         }
@@ -106,7 +106,7 @@ class TestProvenanceMethods:
             algorithm="fft",
             parameters={"window": "hann", "n": 1024},
             timestamp="2025-12-21T10:30:00Z",
-            library_version="0.8.0",
+            library_version="0.9.0",
             input_hash="abc123",
             metadata={"source": "test"},
         )
@@ -135,7 +135,7 @@ class TestProvenanceMethods:
         assert prov.algorithm == "test"
         assert prov.parameters == {}
         assert prov.timestamp == ""
-        assert prov.library_version == "0.8.0"
+        assert prov.library_version == "0.9.0"
         assert prov.input_hash is None
         assert prov.metadata == {}
 
@@ -145,7 +145,7 @@ class TestProvenanceMethods:
             "algorithm": "rise_time",
             "parameters": {"ref_levels": (10, 90)},
             "timestamp": "2025-12-21T10:30:00Z",
-            "library_version": "0.8.0",
+            "library_version": "0.9.0",
             "input_hash": "abc123",
             "metadata": {"channel": 1},
         }
@@ -153,7 +153,7 @@ class TestProvenanceMethods:
         assert prov.algorithm == "rise_time"
         assert prov.parameters == {"ref_levels": (10, 90)}
         assert prov.timestamp == "2025-12-21T10:30:00Z"
-        assert prov.library_version == "0.8.0"
+        assert prov.library_version == "0.9.0"
         assert prov.input_hash == "abc123"
         assert prov.metadata == {"channel": 1}
 
@@ -177,12 +177,12 @@ class TestProvenanceMethods:
         prov = Provenance(
             algorithm="test",
             timestamp="2025-12-21T10:30:00Z",
-            library_version="0.8.0",
+            library_version="0.9.0",
         )
         result = str(prov)
         assert "Algorithm: test" in result
         assert "Timestamp: 2025-12-21T10:30:00Z" in result
-        assert "Version: 0.8.0" in result
+        assert "Version: 0.9.0" in result
 
     def test_str_with_parameters(self) -> None:
         """Test __str__() with parameters."""
@@ -409,7 +409,7 @@ class TestMeasurementResultMethods:
                 "algorithm": "vpp",
                 "parameters": {"window": (0, 1e-3)},
                 "timestamp": "2025-12-21T10:30:00Z",
-                "library_version": "0.8.0",
+                "library_version": "0.9.0",
                 "input_hash": None,
                 "metadata": {},
             },
@@ -600,7 +600,7 @@ class TestCreateProvenance:
         assert prov.parameters == {}
         assert prov.input_hash is None
         assert prov.metadata == {}
-        assert prov.library_version == "0.8.0"
+        assert prov.library_version == "0.9.0"
         # Timestamp should be auto-generated
         assert prov.timestamp is not None
 

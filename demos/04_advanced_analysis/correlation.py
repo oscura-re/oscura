@@ -22,11 +22,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class CorrelationDemo(BaseDemo):
@@ -35,14 +39,14 @@ class CorrelationDemo(BaseDemo):
     name = "Cross-Correlation Analysis"
     description = "Signal correlation and propagation delay measurement"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Cross-correlation calculation",
         "Time delay estimation",
         "Phase relationship",
         "Signal similarity",
     ]
-    ieee_standards = ["IEEE 181-2011"]
-    related_demos = ["02_basic_analysis/01_waveform_measurements.py"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
+    related_demos: ClassVar[list[str]] = ["02_basic_analysis/01_waveform_measurements.py"]
 
     def generate_data(self) -> None:
         """Generate signal pairs for correlation."""

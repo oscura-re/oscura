@@ -22,10 +22,12 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 import numpy as np
 from numpy import floating as np_floating
 
+from oscura.core.measurement_result import make_inapplicable, make_measurement
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    from oscura.core.types import WaveformTrace
+    from oscura.core.types import MeasurementResult, WaveformTrace
 
 
 # Measurement metadata: unit information for all waveform measurements
@@ -73,7 +75,7 @@ def rise_time(
     trace: WaveformTrace,
     *,
     ref_levels: tuple[float, float] = (0.1, 0.9),
-) -> float | np_floating[Any]:
+) -> MeasurementResult:
     """Measure rise time between reference levels.
 
     Computes the time for a signal to transition from the lower
@@ -85,31 +87,32 @@ def rise_time(
             Default (0.1, 0.9) for 10%-90% rise time.
 
     Returns:
-        Rise time in seconds, or np.nan if no valid rising edge found.
+        MeasurementResult with rise time in seconds, or inapplicable if no rising edge.
 
     Example:
-        >>> t_rise = rise_time(trace)
-        >>> print(f"Rise time: {t_rise * 1e9:.2f} ns")
+        >>> result = rise_time(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Rise time: {result['display']}")
 
     References:
         IEEE 181-2011 Section 5.2
     """
     if len(trace.data) < 3:
-        return np.nan
+        return make_inapplicable("s", "Insufficient data (need ≥3 samples)")
 
     data = trace.data
     low, high = _find_levels(data)
     amplitude = high - low
 
-    if amplitude <= 0:
-        return np.nan
+    if amplitude <= 0 or np.isnan(amplitude):
+        return make_inapplicable("s", "Constant signal (no transitions)")
 
     # Calculate reference voltages
     low_ref = low + ref_levels[0] * amplitude
     high_ref = low + ref_levels[1] * amplitude
 
     # Find rising edge: where signal crosses from below low_ref to above high_ref
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
 
     # Find first crossing of low reference (going up)
     below_low = data < low_ref
@@ -119,7 +122,7 @@ def rise_time(
     transitions = np.where(below_low[:-1] & above_low[1:])[0]
 
     if len(transitions) == 0:
-        return np.nan
+        return make_inapplicable("s", "No rising edges detected")
 
     best_rise_time: float | np_floating[Any] = np.nan
 
@@ -148,14 +151,17 @@ def rise_time(
             if rt > 0 and (np.isnan(best_rise_time) or rt < best_rise_time):
                 best_rise_time = rt
 
-    return best_rise_time
+    if np.isnan(best_rise_time):
+        return make_inapplicable("s", "No valid rising edge found")
+
+    return make_measurement(float(best_rise_time), "s")
 
 
 def fall_time(
     trace: WaveformTrace,
     *,
     ref_levels: tuple[float, float] = (0.9, 0.1),
-) -> float | np_floating[Any]:
+) -> MeasurementResult:
     """Measure fall time between reference levels.
 
     Computes the time for a signal to transition from the upper
@@ -167,30 +173,31 @@ def fall_time(
             Default (0.9, 0.1) for 90%-10% fall time.
 
     Returns:
-        Fall time in seconds, or np.nan if no valid falling edge found.
+        MeasurementResult with fall time in seconds, or inapplicable if no falling edge.
 
     Example:
-        >>> t_fall = fall_time(trace)
-        >>> print(f"Fall time: {t_fall * 1e9:.2f} ns")
+        >>> result = fall_time(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Fall time: {result['display']}")
 
     References:
         IEEE 181-2011 Section 5.2
     """
     if len(trace.data) < 3:
-        return np.nan
+        return make_inapplicable("s", "Insufficient data (need ≥3 samples)")
 
     data = trace.data
     low, high = _find_levels(data)
     amplitude = high - low
 
-    if amplitude <= 0:
-        return np.nan
+    if amplitude <= 0 or np.isnan(amplitude):
+        return make_inapplicable("s", "Constant signal (no transitions)")
 
     # Calculate reference voltages (note: ref_levels[0] is the higher one for fall)
     high_ref = low + ref_levels[0] * amplitude
     low_ref = low + ref_levels[1] * amplitude
 
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
 
     # Find where signal is above high reference
     above_high = data >= high_ref
@@ -200,7 +207,7 @@ def fall_time(
     transitions = np.where(above_high[:-1] & below_high[1:])[0]
 
     if len(transitions) == 0:
-        return np.nan
+        return make_inapplicable("s", "No falling edges detected")
 
     best_fall_time: float | np_floating[Any] = np.nan
 
@@ -228,7 +235,10 @@ def fall_time(
             if ft > 0 and (np.isnan(best_fall_time) or ft < best_fall_time):
                 best_fall_time = ft
 
-    return best_fall_time
+    if np.isnan(best_fall_time):
+        return make_inapplicable("s", "No valid falling edge found")
+
+    return make_measurement(float(best_fall_time), "s")
 
 
 @overload
@@ -237,7 +247,7 @@ def period(
     *,
     edge_type: Literal["rising", "falling"] = "rising",
     return_all: Literal[False] = False,
-) -> float | np_floating[Any]: ...
+) -> MeasurementResult: ...
 
 
 @overload
@@ -254,7 +264,7 @@ def period(
     *,
     edge_type: Literal["rising", "falling"] = "rising",
     return_all: bool = False,
-) -> float | np_floating[Any] | NDArray[np.float64]:
+) -> MeasurementResult | NDArray[np.float64]:
     """Measure signal period between consecutive edges.
 
     Computes the time between consecutive rising or falling edges.
@@ -262,14 +272,15 @@ def period(
     Args:
         trace: Input waveform trace.
         edge_type: Type of edges to use ("rising" or "falling").
-        return_all: If True, return array of all periods. If False, return mean.
+        return_all: If True, return array of all periods. If False, return MeasurementResult.
 
     Returns:
-        Period in seconds (mean if return_all=False), or array of periods.
+        MeasurementResult with period in seconds (mean), or array of periods if return_all=True.
 
     Example:
-        >>> T = period(trace)
-        >>> print(f"Period: {T * 1e6:.2f} us")
+        >>> result = period(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Period: {result['display']}")
 
     References:
         IEEE 181-2011 Section 5.3
@@ -279,20 +290,20 @@ def period(
     if len(edges) < 2:
         if return_all:
             return np.array([], dtype=np.float64)
-        return np.nan
+        return make_inapplicable("s", f"Insufficient {edge_type} edges (need ≥2)")
 
     periods = np.diff(edges)
 
     if return_all:
         return periods
-    return float(np.mean(periods))
+    return make_measurement(float(np.mean(periods)), "s")
 
 
 def frequency(
     trace: WaveformTrace,
     *,
     method: Literal["edge", "fft"] = "edge",
-) -> float | np_floating[Any]:
+) -> MeasurementResult:
     """Measure signal frequency.
 
     Computes frequency either from edge-to-edge period or using FFT.
@@ -306,17 +317,18 @@ def frequency(
             - "fft": Peak of FFT magnitude spectrum (always use FFT)
 
     Returns:
-        Frequency in Hz, or np.nan if measurement not possible.
+        MeasurementResult with frequency in Hz, or inapplicable if measurement not possible.
 
     Raises:
         ValueError: If method is not one of the supported types.
 
     Example:
-        >>> f = frequency(trace)
-        >>> print(f"Frequency: {f / 1e6:.3f} MHz")
+        >>> result = frequency(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Frequency: {result['display']}")
 
         >>> # Force FFT method for smooth waveforms
-        >>> f = frequency(trace, method="fft")
+        >>> result = frequency(trace, method="fft")
 
     References:
         IEEE 181-2011 Section 5.3
@@ -326,11 +338,11 @@ def frequency(
         T = period(trace, edge_type="rising", return_all=False)
 
         # Fall back to FFT if edge detection fails
-        if np.isnan(T) or T <= 0:
+        if not T["applicable"] or not T["value"] or T["value"] <= 0:
             # Try FFT fallback for smooth waveforms (sine, triangle)
             return _frequency_fft(trace)
 
-        return 1.0 / T
+        return make_measurement(1.0 / T["value"], "Hz")
 
     elif method == "fft":
         return _frequency_fft(trace)
@@ -339,7 +351,7 @@ def frequency(
         raise ValueError(f"Unknown method: {method}")
 
 
-def _frequency_fft(trace: WaveformTrace) -> float | np_floating[Any]:
+def _frequency_fft(trace: WaveformTrace) -> MeasurementResult:
     """Compute frequency using FFT peak detection.
 
     Internal helper function for FFT-based frequency measurement.
@@ -348,17 +360,17 @@ def _frequency_fft(trace: WaveformTrace) -> float | np_floating[Any]:
         trace: Input waveform trace.
 
     Returns:
-        Frequency in Hz, or np.nan if measurement not possible.
+        MeasurementResult with frequency in Hz, or inapplicable if measurement not possible.
     """
     if len(trace.data) < 16:
-        return np.nan
+        return make_inapplicable("Hz", "Insufficient data for FFT (need ≥16 samples)")
 
     # Remove DC offset before FFT
     data = trace.data - np.mean(trace.data)
 
     # Check if signal is essentially constant (DC only)
     if np.std(data) < 1e-10:
-        return np.nan
+        return make_inapplicable("Hz", "Constant signal (DC only)")
 
     n = len(data)
     fft_mag = np.abs(np.fft.rfft(data))
@@ -369,18 +381,18 @@ def _frequency_fft(trace: WaveformTrace) -> float | np_floating[Any]:
     # Verify peak is significant (SNR check)
     # If the peak is not at least 3x the mean, it's likely noise
     if fft_mag[peak_idx] < 3.0 * np.mean(fft_mag[1:]):
-        return np.nan
+        return make_inapplicable("Hz", "No dominant frequency (noisy signal)")
 
     # Calculate frequency from peak index
     freq_resolution = trace.metadata.sample_rate / n
-    return float(peak_idx * freq_resolution)
+    return make_measurement(float(peak_idx * freq_resolution), "Hz")
 
 
 def duty_cycle(
     trace: WaveformTrace,
     *,
     percentage: bool = False,
-) -> float | np_floating[Any]:
+) -> MeasurementResult:
     """Measure duty cycle.
 
     Computes duty cycle as the ratio of positive pulse width to period.
@@ -391,14 +403,15 @@ def duty_cycle(
 
     Args:
         trace: Input waveform trace.
-        percentage: If True, return as percentage (0-100). If False, return ratio (0-1).
+        percentage: Ignored (always returns ratio, display format shows %).
 
     Returns:
-        Duty cycle as ratio or percentage, or np.nan if measurement not possible.
+        MeasurementResult with duty cycle as ratio (0-1), or inapplicable if not possible.
 
     Example:
-        >>> dc = duty_cycle(trace, percentage=True)
-        >>> print(f"Duty cycle: {dc:.1f}%")
+        >>> result = duty_cycle(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Duty cycle: {result['display']}")  # Shows as percentage
 
     References:
         IEEE 181-2011 Section 5.4
@@ -411,17 +424,19 @@ def duty_cycle(
     T = period(trace, edge_type="rising", return_all=False)
 
     # Method 1: Standard period-based calculation
-    if not np.isnan(pw_pos) and not np.isnan(T) and T > 0:
-        dc = pw_pos / T
-        if percentage:
-            return dc * 100
-        return dc
+    if isinstance(pw_pos, dict) and pw_pos.get("applicable") and pw_pos.get("value"):
+        T_value = T.get("value") if isinstance(T, dict) else None
+        if isinstance(T, dict) and T.get("applicable") and T_value and T_value > 0:
+            pw_value = pw_pos["value"]
+            if pw_value:
+                dc = pw_value / T_value
+                return make_measurement(dc, "ratio")
 
     # Method 2: Fallback for incomplete waveforms - time-domain calculation
     # Calculate fraction of time signal spends above midpoint threshold
     data = trace.data
     if len(data) < 3:
-        return np.nan
+        return make_inapplicable("ratio", "Insufficient data (need ≥3 samples)")
 
     # Convert boolean data to float if needed
     if data.dtype == bool:
@@ -432,7 +447,7 @@ def duty_cycle(
 
     # Check for invalid levels
     if amplitude <= 0 or np.isnan(amplitude):
-        return np.nan
+        return make_inapplicable("ratio", "Constant signal (no transitions)")
 
     # Calculate threshold at 50% of amplitude
     mid = low + 0.5 * amplitude
@@ -443,13 +458,10 @@ def duty_cycle(
     total_samples = len(data)
 
     if total_samples == 0:
-        return np.nan
+        return make_inapplicable("ratio", "No data available")
 
     dc = float(samples_high) / total_samples
-
-    if percentage:
-        return dc * 100
-    return dc
+    return make_measurement(dc, "ratio")
 
 
 @overload
@@ -459,7 +471,7 @@ def pulse_width(
     polarity: Literal["positive", "negative"] = "positive",
     ref_level: float = 0.5,
     return_all: Literal[False] = False,
-) -> float | np_floating[Any]: ...
+) -> MeasurementResult: ...
 
 
 @overload
@@ -478,7 +490,7 @@ def pulse_width(
     polarity: Literal["positive", "negative"] = "positive",
     ref_level: float = 0.5,
     return_all: bool = False,
-) -> float | np_floating[Any] | NDArray[np.float64]:
+) -> MeasurementResult | NDArray[np.float64]:
     """Measure pulse width.
 
     Computes positive or negative pulse width at the specified reference level.
@@ -487,14 +499,15 @@ def pulse_width(
         trace: Input waveform trace.
         polarity: "positive" for high pulses, "negative" for low pulses.
         ref_level: Reference level as fraction (0.0 to 1.0). Default 0.5 (50%).
-        return_all: If True, return array of all widths. If False, return mean.
+        return_all: If True, return array of all widths. If False, return MeasurementResult.
 
     Returns:
-        Pulse width in seconds.
+        MeasurementResult with pulse width in seconds (mean), or array if return_all=True.
 
     Example:
-        >>> pw = pulse_width(trace, polarity="positive")
-        >>> print(f"Pulse width: {pw * 1e6:.2f} us")
+        >>> result = pulse_width(trace, polarity="positive")
+        >>> if result["applicable"]:
+        ...     print(f"Pulse width: {result['display']}")
 
     References:
         IEEE 181-2011 Section 5.4
@@ -505,7 +518,12 @@ def pulse_width(
     if len(rising_edges) == 0 or len(falling_edges) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return np.nan
+        edge_type = (
+            "rising and falling"
+            if len(rising_edges) == 0 and len(falling_edges) == 0
+            else ("rising" if len(rising_edges) == 0 else "falling")
+        )
+        return make_inapplicable("s", f"No {edge_type} edges found")
 
     widths: list[float] = []
 
@@ -527,16 +545,16 @@ def pulse_width(
     if len(widths) == 0:
         if return_all:
             return np.array([], dtype=np.float64)
-        return np.nan
+        return make_inapplicable("s", f"No {polarity} pulses found")
 
     widths_arr = np.array(widths, dtype=np.float64)
 
     if return_all:
         return widths_arr
-    return float(np.mean(widths_arr))
+    return make_measurement(float(np.mean(widths_arr)), "s")
 
 
-def overshoot(trace: WaveformTrace) -> float | np_floating[Any]:
+def overshoot(trace: WaveformTrace) -> MeasurementResult:
     """Measure overshoot percentage.
 
     Computes overshoot as (max - high) / amplitude * 100%.
@@ -545,34 +563,35 @@ def overshoot(trace: WaveformTrace) -> float | np_floating[Any]:
         trace: Input waveform trace.
 
     Returns:
-        Overshoot as percentage, or np.nan if not applicable.
+        MeasurementResult with overshoot as percentage, or inapplicable if not applicable.
 
     Example:
-        >>> os = overshoot(trace)
-        >>> print(f"Overshoot: {os:.1f}%")
+        >>> result = overshoot(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Overshoot: {result['display']}")
 
     References:
         IEEE 181-2011 Section 5.5
     """
     if len(trace.data) < 3:
-        return np.nan
+        return make_inapplicable("%", "Insufficient data (need ≥3 samples)")
 
     data = trace.data
     low, high = _find_levels(data)
     amplitude = high - low
 
-    if amplitude <= 0:
-        return np.nan
+    if amplitude <= 0 or np.isnan(amplitude):
+        return make_inapplicable("%", "Constant signal (no amplitude)")
 
     max_val = np.max(data)
 
     if max_val <= high:
-        return 0.0
+        return make_measurement(0.0, "%")
 
-    return float((max_val - high) / amplitude * 100)
+    return make_measurement(float((max_val - high) / amplitude * 100), "%")
 
 
-def undershoot(trace: WaveformTrace) -> float | np_floating[Any]:
+def undershoot(trace: WaveformTrace) -> MeasurementResult:
     """Measure undershoot percentage.
 
     Computes undershoot as (low - min) / amplitude * 100%.
@@ -581,38 +600,39 @@ def undershoot(trace: WaveformTrace) -> float | np_floating[Any]:
         trace: Input waveform trace.
 
     Returns:
-        Undershoot as percentage, or np.nan if not applicable.
+        MeasurementResult with undershoot as percentage, or inapplicable if not applicable.
 
     Example:
-        >>> us = undershoot(trace)
-        >>> print(f"Undershoot: {us:.1f}%")
+        >>> result = undershoot(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Undershoot: {result['display']}")
 
     References:
         IEEE 181-2011 Section 5.5
     """
     if len(trace.data) < 3:
-        return np.nan
+        return make_inapplicable("%", "Insufficient data (need ≥3 samples)")
 
     data = trace.data
     low, high = _find_levels(data)
     amplitude = high - low
 
-    if amplitude <= 0:
-        return np.nan
+    if amplitude <= 0 or np.isnan(amplitude):
+        return make_inapplicable("%", "Constant signal (no amplitude)")
 
     min_val = np.min(data)
 
     if min_val >= low:
-        return 0.0
+        return make_measurement(0.0, "%")
 
-    return float((low - min_val) / amplitude * 100)
+    return make_measurement(float((low - min_val) / amplitude * 100), "%")
 
 
 def preshoot(
     trace: WaveformTrace,
     *,
     edge_type: Literal["rising", "falling"] = "rising",
-) -> float | np_floating[Any]:
+) -> MeasurementResult:
     """Measure preshoot percentage.
 
     Computes preshoot before transitions as percentage of amplitude.
@@ -622,25 +642,26 @@ def preshoot(
         edge_type: Type of edge to analyze ("rising" or "falling").
 
     Returns:
-        Preshoot as percentage, or np.nan if not applicable.
+        MeasurementResult with preshoot as percentage, or inapplicable if not applicable.
 
     Example:
-        >>> ps = preshoot(trace)
-        >>> print(f"Preshoot: {ps:.1f}%")
+        >>> result = preshoot(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Preshoot: {result['display']}")
 
     References:
         IEEE 181-2011 Section 5.5
     """
     if len(trace.data) < 10:
-        return np.nan
+        return make_inapplicable("%", "Insufficient data (need ≥10 samples)")
 
     # Convert memoryview to ndarray if needed
     data = np.asarray(trace.data)
     low, high = _find_levels(data)
     amplitude = high - low
 
-    if amplitude <= 0:
-        return np.nan
+    if amplitude <= 0 or np.isnan(amplitude):
+        return make_inapplicable("%", "Constant signal (no amplitude)")
 
     # Find edge crossings at 50%
     mid = (low + high) / 2
@@ -649,7 +670,7 @@ def preshoot(
         # Look for minimum before rising edge that goes below low level
         crossings = np.where((data[:-1] < mid) & (data[1:] >= mid))[0]
         if len(crossings) == 0:
-            return np.nan
+            return make_inapplicable("%", "No rising edges found")
 
         max_preshoot = 0.0
         for idx in crossings:
@@ -662,12 +683,12 @@ def preshoot(
                     preshoot_val = (low - min_pre) / amplitude * 100
                     max_preshoot = max(max_preshoot, preshoot_val)
 
-        return max_preshoot
+        return make_measurement(max_preshoot, "%")
 
     else:  # falling
         crossings = np.where((data[:-1] >= mid) & (data[1:] < mid))[0]
         if len(crossings) == 0:
-            return np.nan
+            return make_inapplicable("%", "No falling edges found")
 
         max_preshoot = 0.0
         for idx in crossings:
@@ -679,10 +700,10 @@ def preshoot(
                     preshoot_val = (max_pre - high) / amplitude * 100
                     max_preshoot = max(max_preshoot, preshoot_val)
 
-        return max_preshoot
+        return make_measurement(max_preshoot, "%")
 
 
-def amplitude(trace: WaveformTrace) -> float | np_floating[Any]:
+def amplitude(trace: WaveformTrace) -> MeasurementResult:
     """Measure peak-to-peak amplitude.
 
     Computes Vpp as the difference between histogram-based high and low levels.
@@ -691,20 +712,26 @@ def amplitude(trace: WaveformTrace) -> float | np_floating[Any]:
         trace: Input waveform trace.
 
     Returns:
-        Amplitude in volts (or input units).
+        MeasurementResult with amplitude in volts (or input units).
 
     Example:
-        >>> vpp = amplitude(trace)
-        >>> print(f"Amplitude: {vpp:.3f} V")
+        >>> result = amplitude(trace)
+        >>> if result["applicable"]:
+        ...     print(f"Amplitude: {result['display']}")
 
     References:
         IEEE 1057-2017 Section 4.2
     """
     if len(trace.data) < 2:
-        return np.nan
+        return make_inapplicable("V", "Insufficient data (need ≥2 samples)")
 
     low, high = _find_levels(trace.data)
-    return high - low
+    amp = high - low
+
+    if np.isnan(amp):
+        return make_inapplicable("V", "Cannot determine amplitude")
+
+    return make_measurement(amp, "V")
 
 
 def rms(
@@ -712,7 +739,7 @@ def rms(
     *,
     ac_coupled: bool = False,
     nan_policy: Literal["propagate", "omit", "raise"] = "propagate",
-) -> float | np_floating[Any]:
+) -> MeasurementResult:
     """Compute RMS voltage.
 
     Calculates root-mean-square voltage of the waveform.
@@ -721,29 +748,29 @@ def rms(
         trace: Input waveform trace.
         ac_coupled: If True, remove DC offset before computing RMS.
         nan_policy: How to handle NaN values:
-            - "propagate": Return NaN if any NaN present (default, NumPy behavior)
+            - "propagate": Return inapplicable if any NaN present (default)
             - "omit": Ignore NaN values in calculation
             - "raise": Raise ValueError if any NaN present
 
     Returns:
-        RMS voltage in volts (or input units).
+        MeasurementResult with RMS voltage in volts (or input units).
 
     Raises:
         ValueError: If nan_policy="raise" and data contains NaN.
 
     Example:
-        >>> v_rms = rms(trace)
-        >>> print(f"RMS: {v_rms:.3f} V")
+        >>> result = rms(trace)
+        >>> if result["applicable"]:
+        ...     print(f"RMS: {result['display']}")
 
         >>> # Handle traces with NaN values
-        >>> v_rms = rms(trace, nan_policy="omit")
-
+        >>> result = rms(trace, nan_policy="omit")
 
     References:
         IEEE 1057-2017 Section 4.3
     """
     if len(trace.data) == 0:
-        return np.nan
+        return make_inapplicable("V", "Empty trace")
 
     # Convert memoryview to ndarray if needed
     data = np.asarray(trace.data)
@@ -756,20 +783,22 @@ def rms(
         # Use nanmean and nansum for NaN-safe calculation
         if ac_coupled:
             data = data - np.nanmean(data)
-        return float(np.sqrt(np.nanmean(data**2)))
-    # else propagate - default NumPy behavior
+        return make_measurement(float(np.sqrt(np.nanmean(data**2))), "V")
+    else:  # propagate
+        if np.any(np.isnan(data)):
+            return make_inapplicable("V", "Data contains NaN values")
 
     if ac_coupled:
         data = data - np.mean(data)
 
-    return float(np.sqrt(np.mean(data**2)))
+    return make_measurement(float(np.sqrt(np.mean(data**2))), "V")
 
 
 def mean(
     trace: WaveformTrace,
     *,
     nan_policy: Literal["propagate", "omit", "raise"] = "propagate",
-) -> float | np_floating[Any]:
+) -> MeasurementResult:
     """Compute mean (DC) voltage.
 
     Calculates arithmetic mean of the waveform.
@@ -777,29 +806,29 @@ def mean(
     Args:
         trace: Input waveform trace.
         nan_policy: How to handle NaN values:
-            - "propagate": Return NaN if any NaN present (default, NumPy behavior)
+            - "propagate": Return inapplicable if any NaN present (default)
             - "omit": Ignore NaN values in calculation
             - "raise": Raise ValueError if any NaN present
 
     Returns:
-        Mean voltage in volts (or input units).
+        MeasurementResult with mean voltage in volts (or input units).
 
     Raises:
         ValueError: If nan_policy="raise" and data contains NaN.
 
     Example:
-        >>> v_dc = mean(trace)
-        >>> print(f"DC: {v_dc:.3f} V")
+        >>> result = mean(trace)
+        >>> if result["applicable"]:
+        ...     print(f"DC: {result['display']}")
 
         >>> # Handle traces with NaN values
-        >>> v_dc = mean(trace, nan_policy="omit")
-
+        >>> result = mean(trace, nan_policy="omit")
 
     References:
         IEEE 1057-2017 Section 4.3
     """
     if len(trace.data) == 0:
-        return np.nan
+        return make_inapplicable("V", "Empty trace")
 
     # Convert memoryview to ndarray if needed
     data = np.asarray(trace.data)
@@ -808,11 +837,13 @@ def mean(
     if nan_policy == "raise":
         if np.any(np.isnan(data)):
             raise ValueError("Input data contains NaN values")
-        return float(np.mean(data))
+        return make_measurement(float(np.mean(data)), "V")
     elif nan_policy == "omit":
-        return float(np.nanmean(data))
+        return make_measurement(float(np.nanmean(data)), "V")
     else:  # propagate
-        return float(np.mean(data))
+        if np.any(np.isnan(data)):
+            return make_inapplicable("V", "Data contains NaN values")
+        return make_measurement(float(np.mean(data)), "V")
 
 
 def measure(
@@ -824,46 +855,49 @@ def measure(
     """Compute multiple waveform measurements.
 
     Unified function for computing all or selected waveform measurements.
+    Returns MeasurementResult format with applicability tracking.
 
     Args:
         trace: Input waveform trace.
         parameters: List of measurement names to compute. If None, compute all.
             Valid names: rise_time, fall_time, period, frequency, duty_cycle,
             amplitude, rms, mean, overshoot, undershoot, preshoot
-        include_units: If True, include units in output.
+        include_units: If True, include units in output (returns MeasurementResult).
+            If False, return raw values (with NaN for inapplicable).
 
     Returns:
-        Dictionary mapping measurement names to values (and units if requested).
+        Dictionary mapping measurement names to MeasurementResults (if include_units=True)
+        or raw values (if include_units=False).
 
     Example:
         >>> results = measure(trace)
-        >>> print(f"Rise time: {results['rise_time']['value']} {results['rise_time']['unit']}")
+        >>> if results['rise_time']['applicable']:
+        ...     print(f"Rise time: {results['rise_time']['display']}")
 
+        >>> # Get specific measurements
         >>> results = measure(trace, parameters=["frequency", "amplitude"])
+
+        >>> # Get raw values (legacy compatibility)
+        >>> results = measure(trace, include_units=False)
+        >>> freq = results["frequency"]  # float or np.nan
 
     References:
         IEEE 181-2011, IEEE 1057-2017
     """
     all_measurements = {
-        "rise_time": (rise_time, "s"),
-        "fall_time": (fall_time, "s"),
-        "period": (lambda t: period(t, return_all=False), "s"),
-        "frequency": (frequency, "Hz"),
-        "duty_cycle": (lambda t: duty_cycle(t, percentage=True), "%"),
-        "pulse_width_pos": (
-            lambda t: pulse_width(t, polarity="positive", return_all=False),
-            "s",
-        ),
-        "pulse_width_neg": (
-            lambda t: pulse_width(t, polarity="negative", return_all=False),
-            "s",
-        ),
-        "amplitude": (amplitude, "V"),
-        "rms": (rms, "V"),
-        "mean": (mean, "V"),
-        "overshoot": (overshoot, "%"),
-        "undershoot": (undershoot, "%"),
-        "preshoot": (preshoot, "%"),
+        "rise_time": rise_time,
+        "fall_time": fall_time,
+        "period": lambda t: period(t, return_all=False),
+        "frequency": frequency,
+        "duty_cycle": duty_cycle,
+        "pulse_width_pos": lambda t: pulse_width(t, polarity="positive", return_all=False),
+        "pulse_width_neg": lambda t: pulse_width(t, polarity="negative", return_all=False),
+        "amplitude": amplitude,
+        "rms": rms,
+        "mean": mean,
+        "overshoot": overshoot,
+        "undershoot": undershoot,
+        "preshoot": preshoot,
     }
 
     if parameters is None:
@@ -873,16 +907,26 @@ def measure(
 
     results: dict[str, Any] = {}
 
-    for name, (func, unit) in selected.items():
+    for name, func in selected.items():
         try:
-            value = func(trace)  # type: ignore[operator]
-        except Exception:
-            value = np.nan
+            measurement_result = func(trace)  # type: ignore[operator]
 
-        if include_units:
-            results[name] = {"value": value, "unit": unit}
-        else:
-            results[name] = value
+            if include_units:
+                # Return full MeasurementResult
+                results[name] = measurement_result
+            else:
+                # Legacy mode: extract raw value (NaN if inapplicable)
+                if measurement_result["applicable"]:
+                    results[name] = measurement_result["value"]
+                else:
+                    results[name] = np.nan
+
+        except Exception:
+            # On error, create inapplicable result
+            if include_units:
+                results[name] = make_inapplicable("", "Measurement failed")
+            else:
+                results[name] = np.nan
 
     return results
 
@@ -958,7 +1002,7 @@ def _find_edges(
         Array of edge timestamps in seconds.
     """
     data = trace.data
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
 
     if len(data) < 3:
         return np.array([], dtype=np.float64)

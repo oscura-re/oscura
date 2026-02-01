@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -43,14 +44,14 @@ class CursorsDemo(BaseDemo):
     description = "Time and voltage cursor measurements for precise analysis"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.cursor_time_delta",
         "oscura.cursor_voltage_delta",
         "oscura.cursor_measurements",
         "oscura.reference_markers",
     ]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "01_waveform_basics.py",
         "02_digital_basics.py",
         "../04_advanced_analysis/07_cursor_advanced.py",
@@ -212,8 +213,8 @@ class CursorsDemo(BaseDemo):
         # ========== PART 5: CURSOR MEASUREMENT TABLE ==========
         print_subheader("Part 5: Cursor Measurement Summary")
 
-        headers = ["Cursor Pair", "Measurement", "Value", "Unit"]
-        rows = [
+        headers: ClassVar[list[str]] = ["Cursor Pair", "Measurement", "Value", "Unit"]
+        rows: ClassVar[list[str]] = [
             ["Time Cursors", "Delta-T", f"{self.results['delta_t'] * 1e6:.3f}", "µs"],
             ["Time Cursors", "Frequency", f"{self.results['freq_from_cursors'] / 1e3:.3f}", "kHz"],
             ["Voltage Cursors", "Delta-V", f"{self.results['delta_v']:.4f}", "V"],

@@ -35,7 +35,7 @@ def interpolate(
     *,
     method: Literal["linear", "cubic", "nearest", "zero"] = "linear",
     fill_value: float | tuple[float, float] = np.nan,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Interpolate trace to new time points.
 
@@ -47,7 +47,7 @@ def interpolate(
         new_time: New time points in seconds.
         method: Interpolation method ("linear", "cubic", "nearest", "zero").
         fill_value: Value for points outside original range.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Interpolated WaveformTrace at new time points.
@@ -70,13 +70,13 @@ def interpolate(
 
     # Create interpolator and interpolate
     interp_func = _create_interpolator(
-        trace.time_vector, trace.data.astype(np.float64), method, fill_value
+        trace.time, trace.data.astype(np.float64), method, fill_value
     )
     result_data = interp_func(new_time)
 
     # Build result trace
     new_sample_rate = _calculate_new_sample_rate(new_time, trace.metadata.sample_rate)
-    new_metadata = _create_interpolated_metadata(trace, new_sample_rate, channel_name)
+    new_metadata = _create_interpolated_metadata(trace, new_sample_rate, channel)
 
     return WaveformTrace(data=result_data.astype(np.float64), metadata=new_metadata)
 
@@ -107,7 +107,7 @@ def _calculate_new_sample_rate(new_time: NDArray[np.float64], original_sample_ra
 
 
 def _create_interpolated_metadata(
-    trace: WaveformTrace, new_sample_rate: float, channel_name: str | None
+    trace: WaveformTrace, new_sample_rate: float, channel: str | None
 ) -> TraceMetadata:
     """Create metadata for interpolated trace."""
     return TraceMetadata(
@@ -117,7 +117,7 @@ def _create_interpolated_metadata(
         acquisition_time=trace.metadata.acquisition_time,
         trigger_info=trace.metadata.trigger_info,
         source_file=trace.metadata.source_file,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_interp",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_interp",
     )
 
 
@@ -214,7 +214,7 @@ def resample(
     num_samples: int | None = None,
     method: Literal["fft", "polyphase", "interp"] = "fft",
     anti_alias: bool = True,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Resample trace to new sample rate or number of samples.
 
@@ -232,7 +232,7 @@ def resample(
             - "polyphase": Polyphase filter resampling (efficient)
             - "interp": Linear interpolation (fastest)
         anti_alias: Apply anti-aliasing filter before downsampling.
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Resampled WaveformTrace.
@@ -293,7 +293,7 @@ def resample(
         acquisition_time=trace.metadata.acquisition_time,
         trigger_info=trace.metadata.trigger_info,
         source_file=trace.metadata.source_file,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_resampled",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_resampled",
     )
 
     return WaveformTrace(data=result_data.astype(np.float64), metadata=new_metadata)
@@ -305,7 +305,7 @@ def align_traces(
     *,
     method: Literal["interpolate", "resample"] = "interpolate",
     reference: Literal["first", "second", "higher"] = "higher",
-    channel_names: tuple[str | None, str | None] | None = None,
+    channels: tuple[str | None, str | None] | None = None,
 ) -> tuple[WaveformTrace, WaveformTrace]:
     """Align two traces to have the same sample rate and length.
 
@@ -322,7 +322,7 @@ def align_traces(
             - "first": Use trace1's sample rate
             - "second": Use trace2's sample rate
             - "higher": Use the higher sample rate (default)
-        channel_names: Optional names for the aligned traces.
+        channels: Optional names for the aligned traces.
 
     Returns:
         Tuple of (aligned_trace1, aligned_trace2) with matching parameters.
@@ -353,17 +353,17 @@ def align_traces(
     # Create common time vector
     common_time = np.arange(num_samples) / target_rate
 
-    name1 = channel_names[0] if channel_names else None
-    name2 = channel_names[1] if channel_names else None
+    name1 = channels[0] if channels else None
+    name2 = channels[1] if channels else None
 
     if method == "interpolate":
         # Interpolate both traces to common time points
-        aligned1 = interpolate(trace1, common_time, channel_name=name1)
-        aligned2 = interpolate(trace2, common_time, channel_name=name2)
+        aligned1 = interpolate(trace1, common_time, channel=name1)
+        aligned2 = interpolate(trace2, common_time, channel=name2)
     else:  # "resample"
         # Resample both to common rate
-        aligned1 = resample(trace1, num_samples=num_samples, channel_name=name1)
-        aligned2 = resample(trace2, num_samples=num_samples, channel_name=name2)
+        aligned1 = resample(trace1, num_samples=num_samples, channel=name1)
+        aligned2 = resample(trace2, num_samples=num_samples, channel=name2)
 
     return aligned1, aligned2
 
@@ -374,7 +374,7 @@ def downsample(
     *,
     anti_alias: bool = True,
     method: Literal["decimate", "average", "max", "min"] = "decimate",
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Downsample trace by an integer factor.
 
@@ -390,7 +390,7 @@ def downsample(
             - "average": Average every N samples
             - "max": Maximum of every N samples
             - "min": Minimum of every N samples
-        channel_name: Name for the result trace (optional).
+        channel: Name for the result trace (optional).
 
     Returns:
         Downsampled WaveformTrace.
@@ -440,7 +440,7 @@ def downsample(
         acquisition_time=trace.metadata.acquisition_time,
         trigger_info=trace.metadata.trigger_info,
         source_file=trace.metadata.source_file,
-        channel_name=channel_name or f"{trace.metadata.channel_name or 'trace'}_ds{factor}",
+        channel=channel or f"{trace.metadata.channel or 'trace'}_ds{factor}",
     )
 
     return WaveformTrace(data=result_data, metadata=new_metadata)

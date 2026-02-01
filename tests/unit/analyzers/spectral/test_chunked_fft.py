@@ -468,8 +468,8 @@ class TestFFTChunkedEdgeCases:
 
         # 100% overlap means hop=0, which would process same segment repeatedly
         # Function should validate and reject this pathological edge case
-        with pytest.raises(ValueError, match="overlap|hop|must be less than"):
-            fft_chunked(binary_file, sample_rate=sample_rate, chunk_size=4096, overlap_pct=1.0)
+        with pytest.raises(ValueError, match="overlap|100"):
+            fft_chunked(binary_file, sample_rate=sample_rate, segment_size=4096, overlap_pct=100.0)
 
 
 # =============================================================================

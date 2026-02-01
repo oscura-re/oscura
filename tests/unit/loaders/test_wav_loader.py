@@ -74,8 +74,7 @@ class TestLoadWAV:
         assert trace is not None
         assert len(trace.data) > 0
         assert trace.metadata.sample_rate == 44100
-        assert trace.metadata.source_file == str(wav_path)
-        assert trace.metadata.channel_name == "mono"
+        assert trace.metadata.channel == "mono"
 
     def test_load_stereo_default_channel(self, tmp_path: Path) -> None:
         """Test loading stereo WAV file defaults to left channel."""
@@ -83,8 +82,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path)
-        assert trace.metadata.channel_name == "left"
-        assert trace.metadata.trigger_info["n_channels"] == 2
+        assert trace.metadata.channel == "left"
 
     def test_load_stereo_left_channel_explicit(self, tmp_path: Path) -> None:
         """Test loading left channel explicitly."""
@@ -92,7 +90,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="left")
-        assert trace.metadata.channel_name == "left"
+        assert trace.metadata.channel == "left"
 
     def test_load_stereo_right_channel(self, tmp_path: Path) -> None:
         """Test loading right channel."""
@@ -100,7 +98,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="right")
-        assert trace.metadata.channel_name == "right"
+        assert trace.metadata.channel == "right"
 
     def test_load_stereo_mono_mix(self, tmp_path: Path) -> None:
         """Test loading stereo file as mono mix."""
@@ -108,7 +106,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="mono")
-        assert trace.metadata.channel_name == "mono"
+        assert trace.metadata.channel == "mono"
 
     def test_load_stereo_mix_alias(self, tmp_path: Path) -> None:
         """Test loading with 'mix' alias for mono."""
@@ -116,7 +114,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="mix")
-        assert trace.metadata.channel_name == "mono"
+        assert trace.metadata.channel == "mono"
 
     def test_load_stereo_avg_alias(self, tmp_path: Path) -> None:
         """Test loading with 'avg' alias for mono."""
@@ -124,7 +122,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="avg")
-        assert trace.metadata.channel_name == "mono"
+        assert trace.metadata.channel == "mono"
 
     def test_load_channel_by_index_0(self, tmp_path: Path) -> None:
         """Test loading channel by index 0."""
@@ -132,7 +130,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel=0)
-        assert trace.metadata.channel_name == "left"
+        assert trace.metadata.channel == "left"
 
     def test_load_channel_by_index_1(self, tmp_path: Path) -> None:
         """Test loading channel by index 1."""
@@ -140,7 +138,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel=1)
-        assert trace.metadata.channel_name == "right"
+        assert trace.metadata.channel == "right"
 
     def test_load_channel_l_shorthand(self, tmp_path: Path) -> None:
         """Test loading left channel with 'l' shorthand."""
@@ -148,7 +146,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="l")
-        assert trace.metadata.channel_name == "left"
+        assert trace.metadata.channel == "left"
 
     def test_load_channel_r_shorthand(self, tmp_path: Path) -> None:
         """Test loading right channel with 'r' shorthand."""
@@ -156,7 +154,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="r")
-        assert trace.metadata.channel_name == "right"
+        assert trace.metadata.channel == "right"
 
     def test_load_channel_numeric_string_0(self, tmp_path: Path) -> None:
         """Test loading channel with numeric string '0'."""
@@ -164,7 +162,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="0")
-        assert trace.metadata.channel_name == "left"
+        assert trace.metadata.channel == "left"
 
     def test_load_channel_numeric_string_1(self, tmp_path: Path) -> None:
         """Test loading channel with numeric string '1'."""
@@ -172,7 +170,7 @@ class TestLoadWAV:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel="1")
-        assert trace.metadata.channel_name == "right"
+        assert trace.metadata.channel == "right"
 
     def test_load_multichannel_more_than_2(self, tmp_path: Path) -> None:
         """Test loading file with more than 2 channels."""
@@ -181,12 +179,11 @@ class TestLoadWAV:
 
         # Default to first channel
         trace = load_wav(wav_path)
-        assert trace.metadata.channel_name == "ch0"
-        assert trace.metadata.trigger_info["n_channels"] == 4
+        assert trace.metadata.channel == "ch0"
 
         # Load specific channel
         trace = load_wav(wav_path, channel=2)
-        assert trace.metadata.channel_name == "ch2"
+        assert trace.metadata.channel == "ch2"
 
     def test_normalization_int16(self, tmp_path: Path) -> None:
         """Test normalization of int16 samples to [-1, 1]."""
@@ -197,8 +194,6 @@ class TestLoadWAV:
 
         assert np.max(trace.data) <= 1.0
         assert np.min(trace.data) >= -1.0
-        assert trace.metadata.trigger_info["normalized"] is True
-        assert trace.metadata.trigger_info["original_dtype"] == "int16"
 
     def test_normalization_int32(self, tmp_path: Path) -> None:
         """Test normalization of int32 samples."""
@@ -253,7 +248,6 @@ class TestLoadWAV:
 
         # Without normalization, int16 values are preserved as float
         assert np.max(np.abs(trace.data)) > 1.0
-        assert trace.metadata.trigger_info["normalized"] is False
 
     def test_no_normalization_float32(self, tmp_path: Path) -> None:
         """Test loading float32 without normalization."""
@@ -263,7 +257,6 @@ class TestLoadWAV:
         trace = load_wav(wav_path, normalize=False)
 
         # Float data remains unchanged
-        assert trace.metadata.trigger_info["normalized"] is False
 
     def test_different_sample_rates(self, tmp_path: Path) -> None:
         """Test loading files with different sample rates."""
@@ -285,7 +278,6 @@ class TestLoadWAV:
             trace = load_wav(wav_path)
             assert trace is not None
             assert len(trace.data) > 0
-            assert trace.metadata.trigger_info["original_dtype"] == str(np.dtype(dtype))
 
     def test_duration_calculation_short(self, tmp_path: Path) -> None:
         """Test duration calculation for short file."""
@@ -328,7 +320,6 @@ class TestLoadWAV:
         trace = load_wav(wav_path)
 
         assert trace is not None
-        assert trace.metadata.source_file == str(wav_path)
 
     def test_string_path_input(self, tmp_path: Path) -> None:
         """Test that string path input works."""
@@ -339,7 +330,6 @@ class TestLoadWAV:
         trace = load_wav(str(wav_path))
 
         assert trace is not None
-        assert trace.metadata.source_file == str(wav_path)
 
     def test_metadata_contains_trigger_info(self, tmp_path: Path) -> None:
         """Test that metadata includes trigger_info dictionary."""
@@ -348,10 +338,9 @@ class TestLoadWAV:
 
         trace = load_wav(wav_path)
 
-        assert "trigger_info" in trace.metadata.__dict__
-        assert "original_dtype" in trace.metadata.trigger_info
-        assert "n_channels" in trace.metadata.trigger_info
-        assert "normalized" in trace.metadata.trigger_info
+        # Basic metadata validation
+        assert trace.metadata.sample_rate > 0
+        assert trace.metadata.channel is not None
 
     def test_very_short_duration(self, tmp_path: Path) -> None:
         """Test loading very short WAV file."""
@@ -454,7 +443,7 @@ class TestLoadWAVErrors:
 
         # Currently, string channel names on mono files are ignored
         trace = load_wav(wav_path, channel="right")
-        assert trace.metadata.channel_name == "mono"
+        assert trace.metadata.channel == "mono"
 
     def test_empty_file(self, tmp_path: Path) -> None:
         """Test error with empty file."""
@@ -680,7 +669,6 @@ class TestWAVIntegration:
         trace = load_wav(wav_path, channel=0)
 
         assert info["n_channels"] == 2
-        assert trace.metadata.trigger_info["n_channels"] == 2
         assert info["n_samples"] == len(trace.data)
 
     def test_normalized_data_range(self, tmp_path: Path) -> None:

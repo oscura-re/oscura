@@ -24,11 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class JitterDecompositionDemo(BaseDemo):
@@ -37,15 +41,15 @@ class JitterDecompositionDemo(BaseDemo):
     name = "Jitter Decomposition (RJ/DJ)"
     description = "Separate random and deterministic jitter using Dual-Dirac model"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Random jitter (RJ) extraction",
         "Deterministic jitter (DJ) extraction",
         "Periodic jitter (PJ) detection",
         "Dual-Dirac model fitting",
         "Total jitter extrapolation",
     ]
-    ieee_standards = ["IEEE 2414-2020"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["IEEE 2414-2020"]
+    related_demos: ClassVar[list[str]] = [
         "04_advanced_analysis/01_jitter_analysis.py",
         "04_advanced_analysis/03_bathtub_curves.py",
     ]
@@ -163,7 +167,7 @@ class JitterDecompositionDemo(BaseDemo):
         tie_sorted = np.sort(tie)
         n = len(tie_sorted)
 
-        # Use outer 27% for RJ estimation (±3σ region)
+        # Use outer 27% for RJ estimation (±3 sigma region)
         lower_idx = int(0.135 * n)
         upper_idx = int(0.865 * n)
 
@@ -177,7 +181,7 @@ class JitterDecompositionDemo(BaseDemo):
         # DJ is the bounded component
         dj_pk = np.max(tie) - np.min(tie) - 6 * rj_rms
 
-        # Total jitter at BER 1e-12 (7.04σ)
+        # Total jitter at BER 1e-12 (7.04 sigma)
         tj_1e12 = 7.04 * rj_rms + abs(dj_pk)
 
         rj_rms_ps = rj_rms * 1e12

@@ -224,8 +224,8 @@ class AnalysisWizard:
                 else:
                     print(f"  Sample rate: {rate / 1e3:.3f} kSa/s")
 
-            if hasattr(meta, "channel_name") and meta.channel_name:
-                print(f"  Channel: {meta.channel_name}")
+            if hasattr(meta, "channel") and meta.channel:
+                print(f"  Channel: {meta.channel}")
 
         if hasattr(trace, "data"):
             import numpy as np
@@ -375,13 +375,17 @@ class AnalysisWizard:
                 print(f"  SNR: {snr_val:.1f} dB")
 
                 # Recommendations based on quality
-                if thd_val > -40:
+                # Extract values from MeasurementResult dicts
+                thd_value = thd_val["value"] if isinstance(thd_val, dict) else thd_val
+                snr_value = snr_val["value"] if isinstance(snr_val, dict) else snr_val
+
+                if thd_value is not None and thd_value > -40:
                     self.result.recommendations.append(
-                        f"THD is {thd_val:.1f} dB - consider filtering to reduce distortion"
+                        f"THD is {thd_value:.1f} dB - consider filtering to reduce distortion"
                     )
-                if snr_val < 40:
+                if snr_value is not None and snr_value < 40:
                     self.result.recommendations.append(
-                        f"SNR is {snr_val:.1f} dB - signal is noisy, try averaging or filtering"
+                        f"SNR is {snr_value:.1f} dB - signal is noisy, try averaging or filtering"
                     )
 
             if choice in (2, 3):  # Anomalies

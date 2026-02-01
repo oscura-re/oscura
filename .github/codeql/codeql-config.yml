@@ -1,0 +1,9 @@
+# CodeQL Configuration
+# Excludes demo files from security scanning to avoid false positives
+
+name: "CodeQL Config"
+
+paths-ignore:
+  - demos/**
+  - examples/**
+  - tests/**

@@ -24,11 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class EyeMetricsDemo(BaseDemo):
@@ -37,15 +41,15 @@ class EyeMetricsDemo(BaseDemo):
     name = "Eye Diagram Measurements"
     description = "Extract quantitative metrics from eye diagrams"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Eye height/width measurement",
         "Q-factor calculation",
         "Jitter at crossing",
         "Rise/fall time analysis",
         "Eye mask testing",
     ]
-    ieee_standards = ["IEEE 2414-2020"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["IEEE 2414-2020"]
+    related_demos: ClassVar[list[str]] = [
         "04_advanced_analysis/04_eye_diagrams.py",
         "04_advanced_analysis/01_jitter_analysis.py",
     ]

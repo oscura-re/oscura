@@ -107,7 +107,9 @@ def make_digital_trace(data: NDArray[np.float64], sample_rate: float = 1e6):
         from oscura.core.types import DigitalTrace, TraceMetadata
 
         metadata = TraceMetadata(sample_rate=sample_rate)
-        return DigitalTrace(data=data.astype(np.float64), metadata=metadata)
+        # Convert to boolean: values > 0.5 are True
+        bool_data = (data > 0.5).astype(bool)
+        return DigitalTrace(data=bool_data, metadata=metadata)
     except ImportError:
         # Return a mock object if DigitalTrace not available
         class MockTrace:

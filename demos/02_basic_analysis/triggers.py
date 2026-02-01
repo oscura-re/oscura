@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -43,7 +44,7 @@ class TriggersDemo(BaseDemo):
     description = "Edge, level, pulse width, and pattern triggers"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.find_edges",
         "oscura.edge_trigger",
         "oscura.level_trigger",
@@ -51,7 +52,7 @@ class TriggersDemo(BaseDemo):
         "oscura.pattern_trigger",
     ]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "02_digital_basics.py",
         "../03_protocol_decoding/01_uart_analysis.py",
         "../04_advanced_analysis/06_triggering_advanced.py",
@@ -92,9 +93,9 @@ class TriggersDemo(BaseDemo):
         # Create a specific bit pattern: 10110100
         sample_rate = 1e6
         bit_duration = 100  # samples per bit
-        pattern = [1, 0, 1, 1, 0, 1, 0, 0]
+        pattern: ClassVar[list[str]] = [1, 0, 1, 1, 0, 1, 0, 0]
 
-        pattern_data = []
+        pattern_data: ClassVar[list[str]] = []
         for bit in pattern:
             pattern_data.extend([bit * 3.3] * bit_duration)
 
@@ -174,7 +175,7 @@ class TriggersDemo(BaseDemo):
         print_info("Triggering on pulse width conditions")
 
         # Measure all pulse widths
-        pulse_widths = []
+        pulse_widths: ClassVar[list[str]] = []
         pulse_start = None
 
         threshold = osc.amplitude(self.pulse_signal) / 2
@@ -212,16 +213,18 @@ class TriggersDemo(BaseDemo):
         binary_data = (self.pattern_signal.data > threshold_pattern).astype(int)
 
         # Look for pattern: 10110100
-        target_pattern = [1, 0, 1, 1, 0, 1, 0, 0]
+        target_pattern: ClassVar[list[str]] = [1, 0, 1, 1, 0, 1, 0, 0]
         pattern_length = len(target_pattern)
 
         # Find pattern matches (with decimation to account for samples per bit)
-        matches = []
+        matches: ClassVar[list[str]] = []
         bit_samples = 100  # samples per bit
 
         for i in range(0, len(binary_data) - pattern_length * bit_samples, bit_samples):
             # Extract one sample per bit period
-            extracted = [binary_data[i + j * bit_samples] for j in range(pattern_length)]
+            extracted: ClassVar[list[str]] = [
+                binary_data[i + j * bit_samples] for j in range(pattern_length)
+            ]
             if extracted == target_pattern:
                 matches.append(i)
 
@@ -241,7 +244,7 @@ class TriggersDemo(BaseDemo):
         all_rising = edges["rising"]
         holdoff_samples = int(0.001 * sample_rate)  # 1 ms holdoff
 
-        triggers_with_holdoff = []
+        triggers_with_holdoff: ClassVar[list[str]] = []
         last_trigger = -holdoff_samples
 
         for edge_idx in all_rising:

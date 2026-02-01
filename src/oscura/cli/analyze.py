@@ -222,14 +222,20 @@ def _characterize_signal(trace: Any) -> dict[str, Any]:
 
     rt = rise_time(trace)
     ft = fall_time(trace)
+    rt_val = rt["value"] if rt["applicable"] else None
+    ft_val = ft["value"] if ft["applicable"] else None
 
     return {
         "sample_rate": f"{sample_rate / 1e6:.1f} MHz",
         "samples": len(data),
         "duration": f"{len(data) / sample_rate * 1e3:.3f} ms",
         "amplitude": f"{float(data.max() - data.min()):.3f} V",
-        "rise_time": f"{rt * 1e9:.2f} ns" if not np.isnan(rt) else "N/A",
-        "fall_time": f"{ft * 1e9:.2f} ns" if not np.isnan(ft) else "N/A",
+        "rise_time": f"{rt_val * 1e9:.2f} ns"
+        if rt_val is not None and not np.isnan(rt_val)
+        else "N/A",
+        "fall_time": f"{ft_val * 1e9:.2f} ns"
+        if ft_val is not None and not np.isnan(ft_val)
+        else "N/A",
     }
 
 

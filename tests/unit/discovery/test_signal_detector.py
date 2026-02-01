@@ -65,10 +65,9 @@ class TestSignalCharacterization:
 
     def test_characterize_empty_trace(self):
         """Test that empty trace raises error."""
-        trace = WaveformTrace(data=np.array([]), metadata=TraceMetadata(sample_rate=1e6))
-
-        with pytest.raises(ValueError, match="Cannot characterize empty trace"):
-            characterize_signal(trace)
+        # Empty array should raise ValueError at trace creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            WaveformTrace(data=np.array([]), metadata=TraceMetadata(sample_rate=1e6))
 
     def test_characterize_with_alternatives(self):
         """Test characterization with alternative suggestions."""

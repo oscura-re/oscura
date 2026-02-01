@@ -15,7 +15,7 @@ from __future__ import annotations
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -28,7 +28,9 @@ from demonstrations.common import (
     format_table,
     generate_sine_wave,
 )
-from oscura.core.types import WaveformTrace
+
+if TYPE_CHECKING:
+    from oscura.core.types import WaveformTrace
 
 
 class FormatConversionDemo(BaseDemo):
@@ -95,7 +97,7 @@ class FormatConversionDemo(BaseDemo):
         with open(filepath, "w") as f:
             f.write(f"# Sample Rate (Hz): {sample_rate}\n")
             f.write("Time (s),Amplitude (V)\n")
-            for t, v in zip(time_values, trace.data):
+            for t, v in zip(time_values, trace.data, strict=False):
                 f.write(f"{t:.9e},{v:.6e}\n")
 
         return filepath
@@ -152,7 +154,7 @@ class FormatConversionDemo(BaseDemo):
         with open(csv_output, "w") as f:
             f.write(f"# Converted from binary, Sample Rate: {sample_rate} Hz\n")
             f.write("Time (s),Amplitude (V)\n")
-            for t, v in zip(time_values, binary_data):
+            for t, v in zip(time_values, binary_data, strict=False):
                 f.write(f"{t:.9e},{v:.6e}\n")
 
         self.result("Output Format", "CSV (text)")
@@ -213,7 +215,7 @@ class FormatConversionDemo(BaseDemo):
         time_values = np.arange(len(original_data)) / sample_rate
         with open(csv_temp, "w") as f:
             f.write("Time (s),Amplitude (V)\n")
-            for t, v in zip(time_values, original_data):
+            for t, v in zip(time_values, original_data, strict=False):
                 f.write(f"{t:.9e},{v:.6e}\n")
 
         # Convert back to binary

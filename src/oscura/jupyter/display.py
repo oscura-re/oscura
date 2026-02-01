@@ -103,8 +103,8 @@ class TraceDisplay:
             rows.append(("Sample Rate", rate_str))
 
         # Channel name
-        if hasattr(meta, "channel_name") and meta.channel_name:
-            rows.append(("Channel", meta.channel_name))
+        if hasattr(meta, "channel") and meta.channel:
+            rows.append(("Channel", meta.channel))
 
         # Source file
         if hasattr(meta, "source_file") and meta.source_file:

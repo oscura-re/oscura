@@ -306,10 +306,14 @@ class TestTHD:
         signal = make_sine_wave(1000, 100000, 0.1, amplitude=1.0)
         trace = make_trace(signal, 100000)
 
-        thd_db = thd(trace, n_harmonics=5)
+        thd_result = thd(trace, n_harmonics=5)
 
         # Pure sine should have very low THD
-        assert thd_db < -60  # Less than 0.1%
+        assert thd_result["applicable"]
+        assert thd_result["unit"] == "%"
+        thd_pct = thd_result["value"]
+        assert thd_pct is not None
+        assert thd_pct < 0.1  # Less than 0.1%
 
     def test_distorted_signal_thd(self) -> None:
         """Test THD on signal with harmonics."""
@@ -323,18 +327,26 @@ class TestTHD:
         )
         trace = make_trace(signal, 100000)
 
-        thd_db = thd(trace, n_harmonics=5)
+        thd_result = thd(trace, n_harmonics=5)
 
-        # Should detect significant THD
-        assert thd_db > -30
+        # Should detect significant THD (>3%)
+        assert thd_result["applicable"]
+        thd_pct = thd_result["value"]
+        assert thd_pct is not None
+        assert thd_pct > 3.0  # More than 3%
 
     def test_thd_return_percentage(self) -> None:
         """Test THD in percentage format."""
         signal = make_multitone([1000, 2000, 3000], [1.0, 0.1, 0.05], 100000, 0.1)
         trace = make_trace(signal, 100000)
 
-        thd_pct = thd(trace, n_harmonics=5, return_db=False)
+        thd_result = thd(trace, n_harmonics=5, return_db=False)
 
+        # THD now always returns percentage in MeasurementResult format
+        assert thd_result["applicable"]
+        assert thd_result["unit"] == "%"
+        thd_pct = thd_result["value"]
+        assert thd_pct is not None
         assert thd_pct > 0
         assert isinstance(thd_pct, float)
 
@@ -360,9 +372,12 @@ class TestTHD:
         )
 
         trace = make_trace(signal, sample_rate)
-        thd_pct = thd(trace, n_harmonics=10, return_db=False)
+        thd_result = thd(trace, n_harmonics=10, return_db=False)
 
         # Expected: sqrt(0.5^2 + 0.3^2) / 1.0 = 0.583 = 58.3%
+        assert thd_result["applicable"]
+        thd_pct = thd_result["value"]
+        assert thd_pct is not None
         expected_thd = np.sqrt(0.5**2 + 0.3**2) * 100
         assert pytest.approx(thd_pct, rel=0.02) == expected_thd
 
@@ -381,7 +396,10 @@ class TestTHD:
 
         for signal in test_signals:
             trace = make_trace(signal, 100000)
-            thd_pct = thd(trace, n_harmonics=10, return_db=False)
+            thd_result = thd(trace, n_harmonics=10, return_db=False)
+            assert thd_result["applicable"]
+            thd_pct = thd_result["value"]
+            assert thd_pct is not None
             assert thd_pct >= 0, f"THD percentage must be non-negative, got {thd_pct}%"
 
     def test_thd_high_distortion(self) -> None:
@@ -402,27 +420,36 @@ class TestTHD:
         signal = 1.0 * np.sin(2 * np.pi * f0 * t) + 0.9 * np.sin(2 * np.pi * 2 * f0 * t)
 
         trace = make_trace(signal, sample_rate)
-        thd_pct = thd(trace, n_harmonics=10, return_db=False)
+        thd_result = thd(trace, n_harmonics=10, return_db=False)
 
         # Should be approximately 90%
+        assert thd_result["applicable"]
+        thd_pct = thd_result["value"]
+        assert thd_pct is not None
         assert pytest.approx(thd_pct, rel=0.05) == 90.0
         assert thd_pct >= 0
 
     def test_thd_db_percentage_consistency(self) -> None:
-        """Test that dB and percentage conversions are consistent.
+        """Test that THD always returns percentage format.
 
-        Verifies: THD_pct = 10^(THD_dB/20) * 100
+        Note: return_db parameter is now ignored, THD always returns percentage.
         """
         signal = make_multitone([1000, 2000, 3000], [1.0, 0.5, 0.3], 100000, 0.1)
         trace = make_trace(signal, 100000)
 
-        thd_db = thd(trace, n_harmonics=10, return_db=True)
-        thd_pct = thd(trace, n_harmonics=10, return_db=False)
+        thd_result_db = thd(trace, n_harmonics=10, return_db=True)
+        thd_result_pct = thd(trace, n_harmonics=10, return_db=False)
 
-        # Convert dB to percentage: pct = 10^(dB/20) * 100
-        thd_pct_from_db = 10 ** (thd_db / 20) * 100
-
-        assert pytest.approx(thd_pct, rel=1e-6) == thd_pct_from_db
+        # Both should return same percentage value (return_db is ignored)
+        assert thd_result_db["applicable"]
+        assert thd_result_pct["applicable"]
+        assert thd_result_db["unit"] == "%"
+        assert thd_result_pct["unit"] == "%"
+        thd_val_db = thd_result_db["value"]
+        thd_val_pct = thd_result_pct["value"]
+        assert thd_val_db is not None
+        assert thd_val_pct is not None
+        assert pytest.approx(thd_val_db, rel=1e-6) == thd_val_pct
 
 
 # =============================================================================
@@ -440,9 +467,13 @@ class TestSNR:
         signal = make_sine_wave(1000, 100000, 0.1, amplitude=1.0)
         trace = make_trace(signal, 100000)
 
-        snr_db = snr(trace, n_harmonics=5)
+        snr_result = snr(trace, n_harmonics=5)
 
         # Pure sine should have very high SNR
+        assert snr_result["applicable"]
+        assert snr_result["unit"] == "dB"
+        snr_db = snr_result["value"]
+        assert snr_db is not None
         assert snr_db > 60
 
     def test_noisy_signal_snr(self) -> None:
@@ -454,9 +485,12 @@ class TestSNR:
 
         trace = make_trace(noisy_signal, 100000)
 
-        snr_db = snr(trace, n_harmonics=5)
+        snr_result = snr(trace, n_harmonics=5)
 
         # Should detect reduced SNR due to noise
+        assert snr_result["applicable"]
+        snr_db = snr_result["value"]
+        assert snr_db is not None
         assert 10 < snr_db < 40
 
 
@@ -475,9 +509,13 @@ class TestSINAD:
         signal = make_sine_wave(1000, 100000, 0.1, amplitude=1.0)
         trace = make_trace(signal, 100000)
 
-        sinad_db = sinad(trace)
+        sinad_result = sinad(trace)
 
         # Pure sine should have high SINAD
+        assert sinad_result["applicable"]
+        assert sinad_result["unit"] == "dB"
+        sinad_db = sinad_result["value"]
+        assert sinad_db is not None
         assert sinad_db > 60
 
     def test_sinad_with_noise_and_distortion(self) -> None:
@@ -490,9 +528,12 @@ class TestSINAD:
 
         trace = make_trace(noisy_signal, 100000)
 
-        sinad_db = sinad(trace)
+        sinad_result = sinad(trace)
 
         # Should detect degraded SINAD
+        assert sinad_result["applicable"]
+        sinad_db = sinad_result["value"]
+        assert sinad_db is not None
         assert 10 < sinad_db < 50
 
 
@@ -511,9 +552,12 @@ class TestENOB:
         signal = make_sine_wave(1000, 100000, 0.1, amplitude=1.0)
         trace = make_trace(signal, 100000)
 
-        bits = enob(trace)
+        enob_result = enob(trace)
 
         # Pure sine should have high ENOB
+        assert enob_result["applicable"]
+        bits = enob_result["value"]
+        assert bits is not None
         assert bits > 10  # Reasonable for clean signal
 
     def test_enob_with_noise(self) -> None:
@@ -525,9 +569,12 @@ class TestENOB:
 
         trace = make_trace(noisy_signal, 100000)
 
-        bits = enob(trace)
+        enob_result = enob(trace)
 
         # Noise should reduce ENOB
+        assert enob_result["applicable"]
+        bits = enob_result["value"]
+        assert bits is not None
         assert 2 < bits < 12  # More lenient range
 
 
@@ -546,9 +593,13 @@ class TestSFDR:
         signal = make_sine_wave(1000, 100000, 0.1, amplitude=1.0)
         trace = make_trace(signal, 100000)
 
-        sfdr_db = sfdr(trace)
+        sfdr_result = sfdr(trace)
 
         # Pure sine should have very high SFDR
+        assert sfdr_result["applicable"]
+        assert sfdr_result["unit"] == "dB"
+        sfdr_db = sfdr_result["value"]
+        assert sfdr_db is not None
         assert sfdr_db > 60
 
     def test_sfdr_with_spur(self) -> None:
@@ -557,9 +608,12 @@ class TestSFDR:
         signal = make_multitone([1000, 3500], [1.0, 0.1], 100000, 0.1)
         trace = make_trace(signal, 100000)
 
-        sfdr_db = sfdr(trace)
+        sfdr_result = sfdr(trace)
 
         # Should detect spur
+        assert sfdr_result["applicable"]
+        sfdr_db = sfdr_result["value"]
+        assert sfdr_db is not None
         assert 10 < sfdr_db < 30  # ~20 dB for 10% spur
 
 
@@ -884,14 +938,20 @@ class TestWaveformSpectralEdgeCases:
         signal = make_multitone(freqs, amps, 10000, 1.0)
         trace = make_trace(signal, 10000)
 
-        # All metrics should work
-        thd_val = thd(trace)
-        snr_val = snr(trace)
-        sfdr_val = sfdr(trace)
+        # All metrics should work and return applicable results
+        thd_result = thd(trace)
+        snr_result = snr(trace)
+        sfdr_result = sfdr(trace)
 
-        assert not np.isnan(thd_val)
-        assert not np.isnan(snr_val)
-        assert not np.isnan(sfdr_val)
+        # Check that all measurements are applicable
+        assert thd_result["applicable"]
+        assert snr_result["applicable"]
+        assert sfdr_result["applicable"]
+
+        # Check that values are not None
+        assert thd_result["value"] is not None
+        assert snr_result["value"] is not None
+        assert sfdr_result["value"] is not None
 
 
 # =============================================================================

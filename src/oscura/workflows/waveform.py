@@ -545,16 +545,21 @@ def analyze_complete(
             },
         )
 
-        # Add basic measurement sections - handle BOTH formats
+        # Add basic measurement sections - handle MeasurementResult format
         for analysis_name, analysis_results in results.items():
-            # Extract measurements in both formats:
-            # 1. Unified format: {"value": float, "unit": str}
-            # 2. Legacy format: flat float/int values
+            # Extract measurements from MeasurementResult format:
+            # MeasurementResult: {"value": float|None, "unit": str, "applicable": bool, ...}
+            # Only include applicable measurements in the report
             measurements = {}
 
             for k, v in analysis_results.items():
-                if isinstance(v, dict) and "value" in v:
-                    # Unified format - extract value for reporting
+                if isinstance(v, dict) and "value" in v and "applicable" in v:
+                    # MeasurementResult format - only include if applicable
+                    if v["applicable"] and v["value"] is not None:
+                        measurements[k] = v["value"]
+                    # Skip inapplicable measurements (they'll show as N/A in detailed views)
+                elif isinstance(v, dict) and "value" in v:
+                    # Legacy unified format (for compatibility)
                     measurements[k] = v["value"]
                 elif isinstance(v, (int, float)) and not isinstance(v, bool):
                     # Legacy flat format

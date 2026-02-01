@@ -243,12 +243,26 @@ def _add_buffer_results(results: dict[str, Any], trace: Any, logic_family: str) 
     os_pct = overshoot(trace)
     us_pct = undershoot(trace)
 
+    # Extract values from MeasurementResult dicts
+    rt_val = rt["value"] if isinstance(rt, dict) and rt.get("applicable") else None
+    ft_val = ft["value"] if isinstance(ft, dict) and ft.get("applicable") else None
+    os_val = os_pct["value"] if isinstance(os_pct, dict) and os_pct.get("applicable") else None
+    us_val = us_pct["value"] if isinstance(us_pct, dict) and us_pct.get("applicable") else None
+
     results.update(
         {
-            "rise_time": f"{rt * 1e9:.2f} ns" if not np.isnan(rt) else "N/A",
-            "fall_time": f"{ft * 1e9:.2f} ns" if not np.isnan(ft) else "N/A",
-            "overshoot": f"{os_pct:.1f} %" if not np.isnan(os_pct) else "N/A",
-            "undershoot": f"{us_pct:.1f} %" if not np.isnan(us_pct) else "N/A",
+            "rise_time": f"{rt_val * 1e9:.2f} ns"
+            if rt_val is not None and not np.isnan(rt_val)
+            else "N/A",
+            "fall_time": f"{ft_val * 1e9:.2f} ns"
+            if ft_val is not None and not np.isnan(ft_val)
+            else "N/A",
+            "overshoot": f"{os_val:.1f} %"
+            if os_val is not None and not np.isnan(os_val)
+            else "N/A",
+            "undershoot": f"{us_val:.1f} %"
+            if us_val is not None and not np.isnan(us_val)
+            else "N/A",
             "status": "PASS",
         }
     )

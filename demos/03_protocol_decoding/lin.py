@@ -25,11 +25,15 @@ from pathlib import Path
 # Add demos to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import DigitalTrace, TraceMetadata
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class LINDemo(BaseDemo):
@@ -38,15 +42,15 @@ class LINDemo(BaseDemo):
     name = "LIN Bus Protocol Decoding"
     description = "Decode LIN bus frames with master/slave communication"
     category = "protocol_decoding"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "LIN frame decoding",
         "Break field detection",
         "Protected ID validation",
         "Classic and enhanced checksum",
         "Diagnostic frame support",
     ]
-    ieee_standards = ["ISO 17987-1:2016"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["ISO 17987-1:2016"]
+    related_demos: ClassVar[list[str]] = [
         "03_protocol_decoding/04_can_basic.py",
         "03_protocol_decoding/05_can_fd.py",
     ]
@@ -152,7 +156,7 @@ class LINDemo(BaseDemo):
         bit_time = 1.0 / baudrate
         samples_per_bit = max(1, int(sample_rate * bit_time))
 
-        signal = []
+        signal: ClassVar[list[str]] = []
 
         # Idle state (high/recessive)
         signal.extend([1] * (2 * samples_per_bit))
@@ -295,7 +299,7 @@ class LINDemo(BaseDemo):
         print_info(f"Expected ID: 0x{expected_id:02X}")
         print_info(f"Expected data: {expected_data.hex()}")
 
-        frames = []
+        frames: ClassVar[list[str]] = []
         try:
             from oscura import decode_lin
 

@@ -176,11 +176,7 @@ class SyntheticSource:
                 sample_rate=trace.metadata.sample_rate,
                 vertical_scale=trace.metadata.vertical_scale,
                 vertical_offset=trace.metadata.vertical_offset,
-                acquisition_time=trace.metadata.acquisition_time,
-                trigger_info=trace.metadata.trigger_info,
-                source_file=trace.metadata.source_file,
-                channel_name=trace.metadata.channel_name,
-                calibration_info=trace.metadata.calibration_info,
+                channel=trace.metadata.channel,
             )
 
             if isinstance(trace, DigitalTrace):

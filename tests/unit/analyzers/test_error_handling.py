@@ -259,9 +259,11 @@ class TestWaveformMeasurementErrors:
         signal = np.array([0.0, 0.5, np.nan, 1.0])
         trace = WaveformTrace(data=signal, metadata=TraceMetadata(sample_rate=1e6))
 
-        # rise_time handles NaN gracefully by returning NaN (optimal behavior)
+        # rise_time handles NaN gracefully by returning inapplicable (optimal behavior)
         result = rise_time(trace)
-        assert np.isnan(result)
+        assert not result["applicable"] or (
+            result["value"] is not None and np.isnan(result["value"])
+        )
 
     def test_fall_time_with_nan(self) -> None:
         """Test fall_time with NaN values."""
@@ -270,9 +272,11 @@ class TestWaveformMeasurementErrors:
         signal = np.array([1.0, 0.5, np.nan, 0.0])
         trace = WaveformTrace(data=signal, metadata=TraceMetadata(sample_rate=1e6))
 
-        # fall_time handles NaN gracefully by returning NaN (optimal behavior)
+        # fall_time handles NaN gracefully by returning inapplicable (optimal behavior)
         result = fall_time(trace)
-        assert np.isnan(result)
+        assert not result["applicable"] or (
+            result["value"] is not None and np.isnan(result["value"])
+        )
 
     def test_overshoot_unknown_method(self) -> None:
         """Test overshoot - no method parameter exists."""
@@ -613,12 +617,12 @@ class TestInvalidArrayInputs:
         """Test compute_psd with invalid input."""
         from oscura.core.types import TraceMetadata, WaveformTrace
 
-        trace = WaveformTrace(data=invalid_array, metadata=TraceMetadata(sample_rate=1e6))
-
         if len(invalid_array) == 0:
-            with pytest.raises(InsufficientDataError):
-                compute_psd(trace)
+            # Empty array raises ValueError at WaveformTrace creation time
+            with pytest.raises(ValueError, match="data array cannot be empty"):
+                trace = WaveformTrace(data=invalid_array, metadata=TraceMetadata(sample_rate=1e6))
         else:
+            trace = WaveformTrace(data=invalid_array, metadata=TraceMetadata(sample_rate=1e6))
             # NaN/Inf should either raise or be handled gracefully
             with pytest.raises((ValueError, InsufficientDataError, RuntimeError)):
                 compute_psd(trace)
@@ -718,6 +722,8 @@ class TestAnalyzersErrorHandlingEdgeCases:
         signal = np.array([1.0, 2.0, np.nan, 4.0, 5.0])
         trace = WaveformTrace(data=signal, metadata=TraceMetadata(sample_rate=1e6))
 
-        # rise_time handles NaN gracefully by returning NaN (optimal behavior)
+        # rise_time handles NaN gracefully by returning inapplicable (optimal behavior)
         result = rise_time(trace)
-        assert np.isnan(result)
+        assert not result["applicable"] or (
+            result["value"] is not None and np.isnan(result["value"])
+        )

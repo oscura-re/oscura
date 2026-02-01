@@ -88,13 +88,22 @@ class MeasurementFormatter:
     def format_measurement(self, measurement: dict[str, Any]) -> str:
         """Format complete measurement dict with value, unit, spec, status.
 
+        Supports both legacy format and MeasurementResult format.
+
         Args:
             measurement: Dictionary containing:
-                - value: numeric measurement value
-                - unit: unit string (optional)
-                - spec: specification limit (optional)
-                - spec_type: "max", "min", or "exact" (optional)
-                - passed: boolean pass/fail status (optional)
+                Legacy format:
+                  - value: numeric measurement value
+                  - unit: unit string (optional)
+                  - spec: specification limit (optional)
+                  - spec_type: "max", "min", or "exact" (optional)
+                  - passed: boolean pass/fail status (optional)
+                MeasurementResult format:
+                  - value: float | None
+                  - unit: str
+                  - applicable: bool
+                  - reason: str | None
+                  - display: str (pre-formatted)
 
         Returns:
             Formatted string representation of measurement.
@@ -110,24 +119,56 @@ class MeasurementFormatter:
             ... }
             >>> formatter.format_measurement(measurement)
             '2.30 ns (spec: < 10.0 ns) ✓'
+
+            >>> # MeasurementResult format with inapplicable measurement
+            >>> inapplicable = {
+            ...     "value": None,
+            ...     "unit": "Hz",
+            ...     "applicable": False,
+            ...     "reason": "Aperiodic signal",
+            ...     "display": "N/A"
+            ... }
+            >>> formatter.format_measurement(inapplicable)
+            'N/A (Aperiodic signal)'
         """
-        value = measurement.get("value")
-        unit = measurement.get("unit", "")
+        # Check if this is MeasurementResult format
+        if "applicable" in measurement:
+            if not measurement["applicable"]:
+                # Inapplicable measurement - show N/A with reason
+                reason = measurement.get("reason")
+                if reason:
+                    return f"N/A ({reason})"
+                return "N/A"
 
-        if value is None:
-            return "N/A"
+            # Applicable measurement - use pre-formatted display if available
+            if "display" in measurement:
+                formatted = str(measurement["display"])
+            else:
+                # Fallback to manual formatting
+                value = measurement.get("value")
+                unit = measurement.get("unit", "")
+                if value is None:
+                    return "N/A"
+                formatted = self.format_single(value, unit)
+        else:
+            # Legacy format
+            value = measurement.get("value")
+            unit = measurement.get("unit", "")
 
-        if not isinstance(value, (int, float)):
-            return str(value)
+            if value is None:
+                return "N/A"
 
-        # Format the value
-        formatted = self.format_single(value, unit)
+            if not isinstance(value, (int, float)):
+                return str(value)
+
+            # Format the value
+            formatted = self.format_single(value, unit)
 
         # Add spec comparison if requested
         if self.show_specs and "spec" in measurement:
             spec = measurement["spec"]
             spec_type = measurement.get("spec_type", "exact")
-            spec_formatted = self.format_single(spec, unit)
+            spec_formatted = self.format_single(spec, measurement.get("unit", ""))
 
             if spec_type == "max":
                 formatted += f" (spec: < {spec_formatted})"

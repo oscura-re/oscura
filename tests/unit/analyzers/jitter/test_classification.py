@@ -677,13 +677,18 @@ class TestPerformance:
         result = extract_rj(data)
 
         assert result.rj_rms > 0
-        assert len(result.n_samples) == 100_000 or result.n_samples == 100_000
+        assert result.n_samples == 100_000
 
     def test_large_dataset_dj_extraction(self) -> None:
         """Test DJ extraction on large dataset."""
-        rng = np.random.default_rng(54)
         n = 50_000
-        data = np.where(rng.random(n) > 0.5, 10e-12, -10e-12)
+        # Create deterministic jitter pattern (repeating dual-Dirac)
+        # Alternate between two levels with period of 10 samples (deterministic)
+        pattern = np.array([10e-12] * 5 + [-10e-12] * 5)
+        data = np.tile(pattern, n // len(pattern))
+        # Add small RJ component
+        rng = np.random.default_rng(54)
+        data = data + rng.normal(0, 1e-12, len(data))
 
         result = extract_dj(data)
 
@@ -699,7 +704,7 @@ class TestPerformance:
         pj = 1e-12 * np.sin(2 * np.pi * 1e6 * t)
         data = pj + np.random.randn(n_samples) * 0.1e-12
 
-        result = extract_pj(data, sample_rate=sample_rate, n_peaks=3)
+        result = extract_pj(data, sample_rate=sample_rate, n_components=3)
 
         assert result.dominant_frequency is not None
 

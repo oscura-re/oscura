@@ -169,17 +169,37 @@ def _analyze_single_file(file_path: str, analysis_type: str) -> dict[str, Any]:
         "file": str(Path(file_path).name),
         "status": "success",
         "analysis_type": analysis_type,
-        "samples": len(trace.data),  # type: ignore[union-attr]
+        "samples": len(trace.data),
         "sample_rate": f"{sample_rate / 1e6:.1f} MHz",
     }
 
     if analysis_type == "characterize":
         rt = rise_time(trace)  # type: ignore[arg-type]
         ft = fall_time(trace)  # type: ignore[arg-type]
+
+        # Handle both MeasurementResult dict and raw float/nan values (for test compatibility)
+        if isinstance(rt, dict):
+            rt_val = rt["value"] if rt.get("applicable", True) else None
+        elif isinstance(rt, (int, float)):  # type: ignore[unreachable]
+            rt_val = rt
+        else:
+            rt_val = None
+
+        if isinstance(ft, dict):
+            ft_val = ft["value"] if ft.get("applicable", True) else None
+        elif isinstance(ft, (int, float)):  # type: ignore[unreachable]
+            ft_val = ft
+        else:
+            ft_val = None
+
         result.update(
             {
-                "rise_time": f"{rt * 1e9:.2f} ns" if not np.isnan(rt) else "N/A",
-                "fall_time": f"{ft * 1e9:.2f} ns" if not np.isnan(ft) else "N/A",
+                "rise_time": f"{rt_val * 1e9:.2f} ns"
+                if rt_val is not None and not np.isnan(rt_val)
+                else "N/A",
+                "fall_time": f"{ft_val * 1e9:.2f} ns"
+                if ft_val is not None and not np.isnan(ft_val)
+                else "N/A",
             }
         )
     elif analysis_type == "decode":
@@ -197,11 +217,22 @@ def _analyze_single_file(file_path: str, analysis_type: str) -> dict[str, Any]:
             peak_freq = freqs[peak_idx]
         else:
             peak_freq = 0.0
-        thd_val = thd(trace)  # type: ignore[arg-type]
+        thd_result = thd(trace)  # type: ignore[arg-type]
+
+        # Handle both MeasurementResult dict and raw float/nan values (for test compatibility)
+        if isinstance(thd_result, dict):
+            thd_val = thd_result["value"] if thd_result.get("applicable", True) else None
+        elif isinstance(thd_result, (int, float)):  # type: ignore[unreachable]
+            thd_val = thd_result
+        else:
+            thd_val = None
+
         result.update(
             {
                 "peak_frequency": f"{peak_freq / 1e6:.3f} MHz",
-                "thd": f"{thd_val:.1f} dB" if not np.isnan(thd_val) else "N/A",
+                "thd": f"{thd_val:.1f} dB"
+                if thd_val is not None and not np.isnan(thd_val)
+                else "N/A",
             }
         )
 

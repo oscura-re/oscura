@@ -24,11 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import DigitalTrace, TraceMetadata
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class FlexRayDemo(BaseDemo):
@@ -37,15 +41,15 @@ class FlexRayDemo(BaseDemo):
     name = "FlexRay Protocol Decoding"
     description = "Decode FlexRay frames with dual-channel TDMA communication"
     category = "protocol_decoding"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "FlexRay frame decoding",
         "Differential signaling (BP/BM)",
         "Static/dynamic segment handling",
         "TDMA slot scheduling",
         "FlexRay header CRC validation",
     ]
-    ieee_standards = ["ISO 17458-4:2013"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["ISO 17458-4:2013"]
+    related_demos: ClassVar[list[str]] = [
         "03_protocol_decoding/04_can_basic.py",
         "03_protocol_decoding/06_lin.py",
     ]
@@ -127,8 +131,8 @@ class FlexRayDemo(BaseDemo):
         bit_time = 1.0 / bitrate
         samples_per_bit = max(1, int(sample_rate * bit_time))
 
-        bp_signal = []
-        bm_signal = []
+        bp_signal: ClassVar[list[str]] = []
+        bm_signal: ClassVar[list[str]] = []
 
         # Idle state: BP=0, BM=1
         idle_samples = samples_per_bit * 3
@@ -223,7 +227,7 @@ class FlexRayDemo(BaseDemo):
         print_info(f"Bitrate: {bitrate / 1e6:.1f} Mbps")
         print_info(f"Expected slot: {expected_slot}")
 
-        frames = []
+        frames: ClassVar[list[str]] = []
         try:
             from oscura import decode_flexray
 

@@ -766,15 +766,13 @@ class TestProtocolsUartEdgeCases:
     """Test edge cases and error handling."""
 
     def test_empty_trace(self):
-        """Test decoding an empty trace."""
+        """Test that empty trace raises ValueError."""
         sample_rate = 1_000_000.0
         signal = np.array([], dtype=np.bool_)
-        trace = DigitalTrace(data=signal, metadata=TraceMetadata(sample_rate=sample_rate))
 
-        decoder = UARTDecoder(baudrate=9600)
-        packets = list(decoder.decode(trace))
-
-        assert len(packets) == 0
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            DigitalTrace(data=signal, metadata=TraceMetadata(sample_rate=sample_rate))
 
     def test_short_trace(self):
         """Test decoding a trace too short for a complete frame."""

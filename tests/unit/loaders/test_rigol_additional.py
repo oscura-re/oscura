@@ -98,9 +98,7 @@ class TestRigolBasicLoaderEdgeCases:
             assert trace.metadata.vertical_scale is None
             assert trace.metadata.vertical_offset is None
             assert trace.metadata.source_file == str(wfm_path)
-            assert trace.metadata.channel_name == f"CH{channel + 1}"
-            assert hasattr(trace.metadata, "time_base")
-            assert trace.metadata.time_base == 1.0 / 1e6
+            assert trace.metadata.channel == f"CH{channel + 1}"
 
     def test_load_basic_exception_during_parse(self, tmp_path: Path) -> None:
         """Test that parsing exceptions are wrapped in LoaderError."""
@@ -253,7 +251,7 @@ class TestRigolIntegration:
         for ch in range(4):
             trace = load_rigol_wfm(wfm_path, channel=ch)
             traces.append(trace)
-            assert trace.metadata.channel_name == f"CH{ch + 1}"
+            assert trace.metadata.channel == f"CH{ch + 1}"
 
         # All should have same data (basic loader doesn't split channels)
         for i in range(1, 4):

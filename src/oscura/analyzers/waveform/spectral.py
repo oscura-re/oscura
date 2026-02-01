@@ -24,12 +24,13 @@ import numpy as np
 from scipy import signal as sp_signal
 
 from oscura.core.exceptions import AnalysisError, InsufficientDataError
+from oscura.core.measurement_result import make_inapplicable, make_measurement
 from oscura.utils.windowing import get_window
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    from oscura.core.types import WaveformTrace
+    from oscura.core.types import MeasurementResult, WaveformTrace
 
 # Global FFT cache statistics
 _fft_cache_stats = {"hits": 0, "misses": 0, "size": 128}
@@ -645,7 +646,7 @@ def thd(
     window: str = "hann",
     nfft: int | None = None,
     return_db: bool = True,
-) -> float:
+) -> MeasurementResult:
     """Compute Total Harmonic Distortion per IEEE 1241-2010.
 
     THD is defined as the ratio of RMS harmonic power to fundamental amplitude:
@@ -659,17 +660,15 @@ def thd(
         window: Window function for FFT.
         nfft: FFT length. If None, uses data length (no zero-padding) to
             preserve coherent sampling per IEEE 1241-2010.
-        return_db: If True, return in dB. If False, return percentage.
+        return_db: Ignored (always returns percentage, with dB in metadata if needed).
 
     Returns:
-        THD in dB (if return_db=True) or percentage (if return_db=False).
-        Always non-negative in percentage form.
+        MeasurementResult with THD as percentage, or inapplicable if cannot compute.
 
     Example:
-        >>> thd_db = thd(trace)
-        >>> thd_pct = thd(trace, return_db=False)
-        >>> print(f"THD: {thd_db:.1f} dB ({thd_pct:.2f}%)")
-        >>> assert thd_pct >= 0, "THD percentage must be non-negative"
+        >>> result = thd(trace)
+        >>> if result["applicable"]:
+        ...     print(f"THD: {result['display']}")
 
     References:
         IEEE 1241-2010 Section 4.1.4.2
@@ -688,13 +687,13 @@ def thd(
     _fund_idx, fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0 or fund_freq == 0:
-        return np.nan
+        return make_inapplicable("%", "No fundamental frequency detected")
 
     # Find harmonic frequencies (2*f0, 3*f0, ..., n*f0)
     harmonic_indices = _find_harmonic_indices(freq, fund_freq, n_harmonics)
 
     if len(harmonic_indices) == 0:
-        return 0.0 if not return_db else -np.inf
+        return make_measurement(0.0, "%")
 
     # Compute total harmonic power: sum of squared magnitudes
     harmonic_power = sum(magnitude[i] ** 2 for i in harmonic_indices)
@@ -710,13 +709,11 @@ def thd(
             f"Fundamental: {fund_mag:.6f}, Harmonic power: {harmonic_power:.6f}"
         )
 
-    if return_db:
-        if thd_ratio <= 0:
-            return -np.inf
-        return float(20 * np.log10(thd_ratio))
-    else:
-        # Return as percentage
-        return float(thd_ratio * 100)
+    if thd_ratio <= 0:
+        return make_measurement(0.0, "%")
+
+    # Return as percentage (0-100)
+    return make_measurement(float(thd_ratio * 100), "%")
 
 
 def snr(
@@ -725,7 +722,7 @@ def snr(
     n_harmonics: int = 10,
     window: str = "hann",
     nfft: int | None = None,
-) -> float:
+) -> MeasurementResult:
     """Compute Signal-to-Noise Ratio.
 
     SNR is the ratio of signal power to noise power, excluding harmonics.
@@ -738,11 +735,12 @@ def snr(
             preserve coherent sampling per IEEE 1241-2010.
 
     Returns:
-        SNR in dB.
+        MeasurementResult with SNR in dB, or inapplicable if cannot compute.
 
     Example:
-        >>> snr_db = snr(trace)
-        >>> print(f"SNR: {snr_db:.1f} dB")
+        >>> result = snr(trace)
+        >>> if result["applicable"]:
+        ...     print(f"SNR: {result['display']}")
 
     References:
         IEEE 1241-2010 Section 4.1.4.1
@@ -754,7 +752,7 @@ def snr(
     fund_idx, fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0 or fund_freq == 0:
-        return np.nan
+        return make_inapplicable("dB", "No fundamental frequency detected")
 
     harmonic_indices = _find_harmonic_indices(freq, fund_freq, n_harmonics)
     exclude_indices = _build_exclusion_set(fund_idx, harmonic_indices, len(magnitude))
@@ -763,9 +761,9 @@ def snr(
     noise_power = _compute_noise_power(magnitude, exclude_indices)
 
     if noise_power <= 0:
-        return np.inf
+        return make_inapplicable("dB", "No noise detected (perfect signal)")
 
-    return float(10 * np.log10(signal_power / noise_power))
+    return make_measurement(float(10 * np.log10(signal_power / noise_power)), "dB")
 
 
 def _compute_magnitude_spectrum(
@@ -856,7 +854,7 @@ def sinad(
     *,
     window: str = "hann",
     nfft: int | None = None,
-) -> float:
+) -> MeasurementResult:
     """Compute Signal-to-Noise and Distortion ratio.
 
     SINAD is the ratio of signal power to noise plus distortion power.
@@ -868,11 +866,12 @@ def sinad(
             preserve coherent sampling per IEEE 1241-2010.
 
     Returns:
-        SINAD in dB.
+        MeasurementResult with SINAD in dB, or inapplicable if cannot compute.
 
     Example:
-        >>> sinad_db = sinad(trace)
-        >>> print(f"SINAD: {sinad_db:.1f} dB")
+        >>> result = sinad(trace)
+        >>> if result["applicable"]:
+        ...     print(f"SINAD: {result['display']}")
 
     References:
         IEEE 1241-2010 Section 4.1.4.3
@@ -889,7 +888,7 @@ def sinad(
     fund_idx, _fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0:
-        return np.nan
+        return make_inapplicable("dB", "No fundamental frequency detected")
 
     # Signal power: use 3-bin window around fundamental to capture spectral leakage
     signal_power = 0.0
@@ -905,10 +904,10 @@ def sinad(
     nad_power = total_power - signal_power
 
     if nad_power <= 0:
-        return np.inf
+        return make_inapplicable("dB", "No noise/distortion detected (perfect signal)")
 
     sinad_ratio = signal_power / nad_power
-    return float(10 * np.log10(sinad_ratio))
+    return make_measurement(float(10 * np.log10(sinad_ratio)), "dB")
 
 
 def enob(
@@ -916,7 +915,7 @@ def enob(
     *,
     window: str = "hann",
     nfft: int | None = None,
-) -> float:
+) -> MeasurementResult:
     """Compute Effective Number of Bits from SINAD.
 
     ENOB = (SINAD - 1.76) / 6.02
@@ -927,21 +926,26 @@ def enob(
         nfft: FFT length.
 
     Returns:
-        ENOB in bits, or np.nan if SINAD is invalid.
+        MeasurementResult with ENOB in bits, or inapplicable if SINAD is invalid.
 
     Example:
-        >>> bits = enob(trace)
-        >>> print(f"ENOB: {bits:.2f} bits")
+        >>> result = enob(trace)
+        >>> if result["applicable"]:
+        ...     print(f"ENOB: {result['display']}")
 
     References:
         IEEE 1241-2010 Section 4.1.4.4
     """
-    sinad_db = sinad(trace, window=window, nfft=nfft)
+    sinad_result = sinad(trace, window=window, nfft=nfft)
 
-    if np.isnan(sinad_db) or sinad_db <= 0:
-        return np.nan
+    if not sinad_result["applicable"] or sinad_result["value"] is None:
+        return make_inapplicable("", "SINAD unavailable")
 
-    return float((sinad_db - 1.76) / 6.02)
+    sinad_db = sinad_result["value"]
+    if sinad_db <= 0:
+        return make_inapplicable("", "SINAD too low (≤0 dB)")
+
+    return make_measurement(float((sinad_db - 1.76) / 6.02), "")
 
 
 def sfdr(
@@ -949,7 +953,7 @@ def sfdr(
     *,
     window: str = "hann",
     nfft: int | None = None,
-) -> float:
+) -> MeasurementResult:
     """Compute Spurious-Free Dynamic Range.
 
     SFDR is the ratio of fundamental to largest spurious component.
@@ -961,11 +965,13 @@ def sfdr(
             preserve coherent sampling per IEEE 1241-2010.
 
     Returns:
-        SFDR in dBc (dB relative to carrier/fundamental).
+        MeasurementResult with SFDR in dBc (dB relative to carrier/fundamental),
+        or inapplicable if cannot compute.
 
     Example:
-        >>> sfdr_db = sfdr(trace)
-        >>> print(f"SFDR: {sfdr_db:.1f} dBc")
+        >>> result = sfdr(trace)
+        >>> if result["applicable"]:
+        ...     print(f"SFDR: {result['display']}")
 
     References:
         IEEE 1241-2010 Section 4.1.4.5
@@ -982,7 +988,7 @@ def sfdr(
     fund_idx, _fund_freq, fund_mag = _find_fundamental(freq, magnitude)
 
     if fund_mag == 0:
-        return np.nan
+        return make_inapplicable("dB", "No fundamental frequency detected")
 
     # Create mask for spurs (exclude fundamental and DC)
     spur_mask = np.ones(len(magnitude), dtype=bool)
@@ -1001,15 +1007,15 @@ def sfdr(
     # Find largest spur
     spur_magnitudes = magnitude[spur_mask]
     if len(spur_magnitudes) == 0:
-        return np.inf
+        return make_inapplicable("dB", "No spurs detected (clean spectrum)")
 
     max_spur = np.max(spur_magnitudes)
 
     if max_spur <= 0:
-        return np.inf
+        return make_inapplicable("dB", "No valid spurs detected")
 
     sfdr_ratio = fund_mag / max_spur
-    return float(20 * np.log10(sfdr_ratio))
+    return make_measurement(float(20 * np.log10(sfdr_ratio)), "dB")
 
 
 def hilbert_transform(
@@ -1029,7 +1035,7 @@ def hilbert_transform(
 
     Example:
         >>> envelope, phase, inst_freq = hilbert_transform(trace)
-        >>> plt.plot(trace.time_vector, envelope)
+        >>> plt.plot(trace.time, envelope)
 
     References:
         Oppenheim, A. V. & Schafer, R. W. (2009). Discrete-Time
@@ -1086,7 +1092,7 @@ def cwt(
 
     Example:
         >>> scales, freqs, coef = cwt(trace, wavelet="morlet")
-        >>> plt.pcolormesh(trace.time_vector, freqs, np.abs(coef))
+        >>> plt.pcolormesh(trace.time, freqs, np.abs(coef))
         >>> plt.ylabel("Frequency (Hz)")
 
     References:
@@ -2204,16 +2210,17 @@ def measure(
     """Compute multiple spectral measurements with consistent format.
 
     Unified function for computing spectral quality metrics following IEEE 1241-2010.
-    Matches the API pattern of oscura.analyzers.waveform.measurements.measure().
+    Returns MeasurementResult format with applicability tracking.
 
     Args:
         trace: Input waveform trace.
         parameters: List of measurement names to compute. If None, compute all.
             Valid names: thd, snr, sinad, enob, sfdr, dominant_freq
-        include_units: If True, return {value, unit} dicts. If False, return flat values.
+        include_units: If True, return MeasurementResult format. If False, return flat values.
 
     Returns:
-        Dictionary mapping measurement names to values (with units if requested).
+        Dictionary mapping measurement names to MeasurementResults (if include_units=True)
+        or raw values (if include_units=False).
 
     Raises:
         InsufficientDataError: If trace is too short for analysis.
@@ -2222,26 +2229,26 @@ def measure(
     Example:
         >>> from oscura.analyzers.waveform.spectral import measure
         >>> results = measure(trace)
-        >>> print(f"THD: {results['thd']['value']}{results['thd']['unit']}")
-        >>> print(f"SNR: {results['snr']['value']} {results['snr']['unit']}")
+        >>> if results['thd']['applicable']:
+        ...     print(f"THD: {results['thd']['display']}")
 
         >>> # Get specific measurements only
         >>> results = measure(trace, parameters=["thd", "snr"])
 
-        >>> # Get flat values without units
+        >>> # Get flat values (legacy compatibility)
         >>> results = measure(trace, include_units=False)
-        >>> thd_value = results["thd"]  # Just the float
+        >>> thd_value = results["thd"]  # float or np.nan
 
     References:
         IEEE 1241-2010: ADC Terminology and Test Methods
     """
-    # Define all available spectral measurements with units
+    # Define all available spectral measurements
     all_measurements = {
-        "thd": (thd, "%"),
-        "snr": (snr, "dB"),
-        "sinad": (sinad, "dB"),
-        "enob": (enob, "bits"),
-        "sfdr": (sfdr, "dB"),
+        "thd": thd,
+        "snr": snr,
+        "sinad": sinad,
+        "enob": enob,
+        "sfdr": sfdr,
     }
 
     # Select requested measurements or all
@@ -2252,16 +2259,26 @@ def measure(
 
     results: dict[str, Any] = {}
 
-    for name, (func, unit) in selected.items():
+    for name, func in selected.items():
         try:
-            value = func(trace)  # type: ignore[operator]
-        except Exception:
-            value = np.nan
+            measurement_result = func(trace)  # type: ignore[operator]
 
-        if include_units:
-            results[name] = {"value": value, "unit": unit}
-        else:
-            results[name] = value
+            if include_units:
+                # Return full MeasurementResult
+                results[name] = measurement_result
+            else:
+                # Legacy mode: extract raw value (NaN if inapplicable)
+                if measurement_result["applicable"]:
+                    results[name] = measurement_result["value"]
+                else:
+                    results[name] = np.nan
+
+        except Exception:
+            # On error, create inapplicable result
+            if include_units:
+                results[name] = make_inapplicable("", "Measurement failed")
+            else:
+                results[name] = np.nan
 
     # Add dominant frequency if requested or if computing all
     if parameters is None or "dominant_freq" in parameters:
@@ -2272,12 +2289,12 @@ def measure(
             dominant_freq_value = float(freq[dominant_idx])
 
             if include_units:
-                results["dominant_freq"] = {"value": dominant_freq_value, "unit": "Hz"}
+                results["dominant_freq"] = make_measurement(dominant_freq_value, "Hz")
             else:
                 results["dominant_freq"] = dominant_freq_value
         except Exception:
             if include_units:
-                results["dominant_freq"] = {"value": np.nan, "unit": "Hz"}
+                results["dominant_freq"] = make_inapplicable("Hz", "FFT failed")
             else:
                 results["dominant_freq"] = np.nan
 

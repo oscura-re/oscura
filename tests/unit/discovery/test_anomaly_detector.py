@@ -120,10 +120,9 @@ class TestAnomalyDetection:
 
     def test_empty_trace(self):
         """Test that empty trace raises error."""
-        trace = WaveformTrace(data=np.array([]), metadata=TraceMetadata(sample_rate=1e6))
-
-        with pytest.raises(ValueError, match="Cannot detect anomalies in empty trace"):
-            find_anomalies(trace)
+        # Empty array should raise ValueError at trace creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            WaveformTrace(data=np.array([]), metadata=TraceMetadata(sample_rate=1e6))
 
     def test_anomaly_sorting(self):
         """Test that anomalies are sorted by timestamp."""

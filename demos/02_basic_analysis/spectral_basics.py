@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -44,7 +45,7 @@ class SpectralBasicsDemo(BaseDemo):
     description = "FFT, PSD, THD, and harmonic analysis fundamentals"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.fft",
         "oscura.psd",
         "oscura.thd",
@@ -52,9 +53,9 @@ class SpectralBasicsDemo(BaseDemo):
         "oscura.snr",
     ]
 
-    ieee_standards = ["IEEE 1241-2010", "IEEE 1057"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 1241-2010", "IEEE 1057"]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "01_waveform_basics.py",
         "../04_advanced_analysis/03_fft_spectral.py",
         "../12_standards_compliance/spectral_compliance.py",

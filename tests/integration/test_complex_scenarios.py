@@ -203,11 +203,14 @@ class TestResourceManagement:
             chunk_count += 1
             total_packets += len(chunk.packets)
 
-            # Analyze chunk
+            # Analyze chunk - extract sample data for entropy calculation
             chunk_bytes = bytearray()
             for packet in chunk.packets[:10]:  # Sample first 10
-                if hasattr(packet, "header"):
-                    chunk_bytes.extend(bytes(packet.header))
+                # Extract samples as bytes for entropy analysis
+                if "samples" in packet and len(packet["samples"]) > 0:
+                    # Convert sample values to bytes (uint64 = 8 bytes each)
+                    for sample in packet["samples"][:5]:  # First 5 samples
+                        chunk_bytes.extend(sample.to_bytes(8, byteorder="little"))
 
             if len(chunk_bytes) > 0:
                 entropy = entropy_analyzer.calculate_entropy(bytes(chunk_bytes))

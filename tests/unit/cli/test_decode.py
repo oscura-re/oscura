@@ -1087,23 +1087,10 @@ def test_decode_command_all_protocols(cli_runner, tmp_path):
 
 @pytest.mark.unit
 def test_decode_empty_trace(sample_metadata):
-    """Test decoding an empty trace."""
-    empty_trace = DigitalTrace(data=np.array([], dtype=bool), metadata=sample_metadata)
-
-    with patch("oscura.cli.decode._decode_uart") as mock_uart:
-        mock_uart.return_value = ([], [], {})
-
-        results = _perform_decoding(
-            trace=empty_trace,
-            protocol="uart",
-            baud_rate=9600,
-            parity="none",
-            stop_bits=1,
-            show_errors=False,
-        )
-
-        assert results["packets_decoded"] == 0
-        assert results["samples"] == 0
+    """Test decoding an empty trace raises ValueError."""
+    # Empty digital trace should raise ValueError during creation
+    with pytest.raises(ValueError, match="data array cannot be empty"):
+        empty_trace = DigitalTrace(data=np.array([], dtype=bool), metadata=sample_metadata)
 
 
 @pytest.mark.unit

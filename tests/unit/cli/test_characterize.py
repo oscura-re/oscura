@@ -81,10 +81,22 @@ def cli_runner():
 @pytest.mark.cli
 def test_perform_characterization_buffer_basic(sample_trace):
     """Test basic buffer characterization."""
-    with patch("oscura.analyzers.waveform.measurements.rise_time", return_value=10.5e-9):
-        with patch("oscura.analyzers.waveform.measurements.fall_time", return_value=12.3e-9):
-            with patch("oscura.analyzers.waveform.measurements.overshoot", return_value=5.2):
-                with patch("oscura.analyzers.waveform.measurements.undershoot", return_value=3.1):
+    with patch(
+        "oscura.analyzers.waveform.measurements.rise_time",
+        return_value={"applicable": True, "value": 10.5e-9},
+    ):
+        with patch(
+            "oscura.analyzers.waveform.measurements.fall_time",
+            return_value={"applicable": True, "value": 12.3e-9},
+        ):
+            with patch(
+                "oscura.analyzers.waveform.measurements.overshoot",
+                return_value={"applicable": True, "value": 5.2},
+            ):
+                with patch(
+                    "oscura.analyzers.waveform.measurements.undershoot",
+                    return_value={"applicable": True, "value": 3.1},
+                ):
                     results = _perform_characterization(
                         trace=sample_trace,
                         reference_trace=None,

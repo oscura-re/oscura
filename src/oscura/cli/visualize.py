@@ -90,10 +90,12 @@ def visualize(
 
         # Plot waveform (handle IQTrace separately)
         if isinstance(trace, IQTrace):
-            # Plot I/Q components
-            time_axis = np.arange(len(trace.i_data)) / trace.metadata.sample_rate
-            ax.plot(time_axis * 1e3, trace.i_data, linewidth=0.5, label="I")
-            ax.plot(time_axis * 1e3, trace.q_data, linewidth=0.5, label="Q")
+            # Plot I/Q components (extract from complex data)
+            i_data = trace.data.real
+            q_data = trace.data.imag
+            time_axis = np.arange(len(trace.data)) / trace.metadata.sample_rate
+            ax.plot(time_axis * 1e3, i_data, linewidth=0.5, label="I")
+            ax.plot(time_axis * 1e3, q_data, linewidth=0.5, label="Q")
             ax.legend()
         else:
             # Plot regular waveform or digital trace

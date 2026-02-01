@@ -27,9 +27,14 @@ from pathlib import Path
 # Add demos to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from demos.common import BaseDemo, ValidationSuite, print_header, print_info, print_subheader
+
+if TYPE_CHECKING:
+    from oscura.core import WaveformTrace
 
 
 class APIUsageDemo(BaseDemo):
@@ -152,8 +157,6 @@ class APIUsageDemo(BaseDemo):
 
         print_subheader("4. Error Handling")
         print_info("Robust error handling:")
-
-        from oscura.core import WaveformTrace
 
         def safe_analyze(trace: WaveformTrace | None) -> dict:
             """Analyze trace with error handling."""

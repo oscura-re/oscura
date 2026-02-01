@@ -25,11 +25,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import DigitalTrace, TraceMetadata
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class USBDemo(BaseDemo):
@@ -38,15 +42,15 @@ class USBDemo(BaseDemo):
     name = "USB Protocol Decoding"
     description = "Decode USB Low-Speed packets with NRZI encoding"
     category = "protocol_decoding"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "USB packet decoding",
         "NRZI encoding/decoding",
         "Token/Data/Handshake packets",
         "CRC validation",
         "Differential signaling",
     ]
-    ieee_standards = ["USB 2.0 Specification"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["USB 2.0 Specification"]
+    related_demos: ClassVar[list[str]] = [
         "03_protocol_decoding/02_spi_basic.py",
         "03_protocol_decoding/09_swd.py",
     ]
@@ -138,10 +142,10 @@ class USBDemo(BaseDemo):
         samples_per_bit = max(1, int(sample_rate / bitrate))
 
         # Build packet bitstream
-        bits = []
+        bits: ClassVar[list[str]] = []
 
         # SYNC field: KJKJKJKK (8 bits: 00000001)
-        sync = [0, 0, 0, 0, 0, 0, 0, 1]
+        sync: ClassVar[list[str]] = [0, 0, 0, 0, 0, 0, 0, 1]
         bits.extend(sync)
 
         # PID field (8 bits)
@@ -166,8 +170,8 @@ class USBDemo(BaseDemo):
         stuffed = self._bit_stuff(nrzi)
 
         # Convert to differential signals
-        dp_signal = []
-        dm_signal = []
+        dp_signal: ClassVar[list[str]] = []
+        dm_signal: ClassVar[list[str]] = []
 
         # Idle state (J state for low speed: D- high, D+ low)
         idle_samples = samples_per_bit * 4
@@ -220,7 +224,7 @@ class USBDemo(BaseDemo):
 
     def _nrzi_encode(self, bits: list[int]) -> list[int]:
         """Apply NRZI encoding (no transition for 1, transition for 0)."""
-        nrzi = []
+        nrzi: ClassVar[list[str]] = []
         last = 0
         for bit in bits:
             if bit == 0:
@@ -230,7 +234,7 @@ class USBDemo(BaseDemo):
 
     def _bit_stuff(self, bits: list[int]) -> list[int]:
         """Insert 0 bit after six consecutive 1s."""
-        stuffed = []
+        stuffed: ClassVar[list[str]] = []
         count = 0
         for bit in bits:
             stuffed.append(bit)
@@ -267,7 +271,7 @@ class USBDemo(BaseDemo):
         print_info(f"Sample rate: {dp.metadata.sample_rate / 1e6:.1f} MHz")
         print_info(f"Expected PID: {expected_pid}")
 
-        packets = []
+        packets: ClassVar[list[str]] = []
         try:
             from oscura import decode_usb
 

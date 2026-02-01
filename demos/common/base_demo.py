@@ -31,7 +31,7 @@ import traceback
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from demos.common.formatting import (
     BOLD,
@@ -99,9 +99,9 @@ class BaseDemo(ABC):
     name: str = "Unnamed Demo"
     description: str = ""
     category: str = "general"
-    capabilities: list[str] = []
-    ieee_standards: list[str] = []
-    related_demos: list[str] = []
+    capabilities: ClassVar[list[str]] = []
+    ieee_standards: ClassVar[list[str]] = []
+    related_demos: ClassVar[list[str]] = []
 
     def __init__(
         self,

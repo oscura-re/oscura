@@ -411,16 +411,18 @@ class TestChannelExtractionEdgeCases:
             extract_channels([], channel_map)
 
     def test_extract_channels_packets_with_no_samples(self) -> None:
-        """Test extracting channels from packets with no samples."""
+        """Test extracting channels from packets with no samples.
+
+        Empty data arrays are rejected in v0.9.0, so this should raise ValueError.
+        """
         packets = [
             {"index": 0, "header": {}, "samples": []},
             {"index": 1, "header": {}, "samples": []},
         ]
         channel_map = {"ch0": {"bits": [0, 7]}}
 
-        traces = extract_channels(packets, channel_map)
-        assert "ch0" in traces
-        assert len(traces["ch0"].data) == 0
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            extract_channels(packets, channel_map)
 
     def test_extract_single_bit_channel(self) -> None:
         """Test extracting single-bit channel."""

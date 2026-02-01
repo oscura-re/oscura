@@ -573,15 +573,10 @@ class TestSOAEdgeCases:
     """Test edge cases and error conditions."""
 
     def test_empty_traces(self, sample_rate: float) -> None:
-        """Test with empty traces."""
-        voltage = create_trace(np.array([]), sample_rate)
-        current = create_trace(np.array([]), sample_rate)
-        limits = [SOALimit(v_max=100.0, i_max=50.0)]
-
-        result = soa_analysis(voltage, current, limits)
-
-        assert result["passed"] is True
-        assert len(result["violations"]) == 0
+        """Test that empty trace raises ValueError."""
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            create_trace(np.array([]), sample_rate)
 
     def test_single_sample(self, sample_rate: float) -> None:
         """Test with single sample traces."""

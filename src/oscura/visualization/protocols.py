@@ -227,7 +227,7 @@ def _plot_waveform_if_present(
         return 0
 
     ax = axes[0]
-    trace_time = trace.time_vector * time_mult
+    trace_time = trace.time * time_mult
     trace_data = trace.data.astype(float)
 
     mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
@@ -590,7 +590,7 @@ def _plot_uart_channel_pair(
         show_errors: Whether to highlight errors.
     """
     # Plot waveform
-    trace_time = trace.time_vector * time_mult
+    trace_time = trace.time * time_mult
     trace_data = trace.data.astype(float)
     mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
     _plot_digital_waveform(ax_wave, trace_time[mask], trace_data[mask])
@@ -1014,7 +1014,7 @@ def _render_spi_waveform_row(
         time_mult: Time multiplier for unit conversion.
     """
     trace = row["trace"]
-    trace_time = trace.time_vector * time_mult
+    trace_time = trace.time * time_mult
     trace_data = trace.data.astype(float)
     mask = (trace_time >= t_min * time_mult) & (trace_time <= t_max * time_mult)
     _plot_digital_waveform(ax, trace_time[mask], trace_data[mask])

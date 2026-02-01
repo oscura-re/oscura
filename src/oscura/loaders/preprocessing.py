@@ -293,13 +293,11 @@ def trim_idle(
             sample_rate=trace.metadata.sample_rate,
             vertical_scale=trace.metadata.vertical_scale,
             vertical_offset=trace.metadata.vertical_offset,
-            acquisition_time=trace.metadata.acquisition_time,
-            trigger_info=trace.metadata.trigger_info,
-            source_file=trace.metadata.source_file,
-            channel_name=trace.metadata.channel_name,
+            channel=trace.metadata.channel,
+            units=trace.metadata.units,
         )
 
-        return DigitalTrace(data=trimmed_data, metadata=new_metadata, edges=None)
+        return DigitalTrace(data=trimmed_data, metadata=new_metadata)
 
     return trace
 

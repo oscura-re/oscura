@@ -25,11 +25,15 @@ from pathlib import Path
 # Add demos to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import DigitalTrace, TraceMetadata
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class CANFDDemo(BaseDemo):
@@ -38,14 +42,14 @@ class CANFDDemo(BaseDemo):
     name = "CAN-FD Protocol Decoding"
     description = "Decode CAN-FD frames with bit rate switching and extended payload"
     category = "protocol_decoding"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "CAN-FD frame decoding",
         "Dual bitrate analysis (nominal and data phase)",
         "Extended payload support (up to 64 bytes)",
         "Bit rate switching detection",
     ]
-    ieee_standards = ["ISO 11898-1:2015", "ISO 17458-1:2013"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["ISO 11898-1:2015", "ISO 17458-1:2013"]
+    related_demos: ClassVar[list[str]] = [
         "03_protocol_decoding/04_can_basic.py",
         "03_protocol_decoding/06_lin.py",
     ]
@@ -165,7 +169,7 @@ class CANFDDemo(BaseDemo):
         nom_samples = max(1, int(sample_rate * nominal_bit_time))
         data_samples = max(1, int(sample_rate * data_bit_time))
 
-        signal = []
+        signal: ClassVar[list[str]] = []
 
         # SOF: dominant bit (0)
         signal.extend([0] * nom_samples)
@@ -254,7 +258,7 @@ class CANFDDemo(BaseDemo):
         print_info(f"Expected payload: {expected_data_len} bytes")
 
         # Note: decode_can_fd may not exist yet, prepare for that
-        frames = []
+        frames: ClassVar[list[str]] = []
         try:
             from oscura import decode_can_fd
 

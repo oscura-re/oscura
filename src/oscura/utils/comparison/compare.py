@@ -59,7 +59,7 @@ def difference(
     trace2: WaveformTrace,
     *,
     normalize: bool = False,
-    channel_name: str | None = None,
+    channel: str | None = None,
 ) -> WaveformTrace:
     """Compute difference between two traces.
 
@@ -70,7 +70,7 @@ def difference(
         trace1: First trace.
         trace2: Second trace.
         normalize: Normalize difference to percentage of reference range.
-        channel_name: Name for the result trace.
+        channel: Name for the result trace.
 
     Returns:
         WaveformTrace containing the difference.
@@ -106,12 +106,10 @@ def difference(
 
     new_metadata = TraceMetadata(
         sample_rate=trace1.metadata.sample_rate,
-        vertical_scale=None,
-        vertical_offset=None,
-        acquisition_time=trace1.metadata.acquisition_time,
-        trigger_info=trace1.metadata.trigger_info,
-        source_file=trace1.metadata.source_file,
-        channel_name=channel_name or "difference",
+        vertical_scale=trace1.metadata.vertical_scale,
+        vertical_offset=trace1.metadata.vertical_offset,
+        channel=channel or "difference",
+        units=trace1.metadata.units,
     )
 
     return WaveformTrace(data=diff, metadata=new_metadata)
@@ -482,7 +480,7 @@ def compare_traces(
     match = _determine_match(method, max_diff, tolerance, tolerance_pct, data1, data2)
 
     diff_trace = (
-        difference(trace1, trace2, channel_name="comparison_diff") if include_difference else None
+        difference(trace1, trace2, channel="comparison_diff") if include_difference else None
     )
     statistics = _compute_comparison_statistics(diff, violations, min_len, data1, data2)
 

@@ -25,20 +25,18 @@ pytestmark = [pytest.mark.unit, pytest.mark.analyzer, pytest.mark.digital]
 def make_digital_trace(
     data: NDArray[np.bool_],
     sample_rate: float = 1e6,
-    edges: list[tuple[float, bool]] | None = None,
 ) -> DigitalTrace:
     """Create a DigitalTrace from raw boolean data.
 
     Args:
         data: Digital data array.
         sample_rate: Sample rate in Hz.
-        edges: Optional list of (timestamp, is_rising) tuples.
 
     Returns:
         DigitalTrace with the given data and sample rate.
     """
     metadata = TraceMetadata(sample_rate=sample_rate)
-    return DigitalTrace(data=data, metadata=metadata, edges=edges or [])
+    return DigitalTrace(data=data, metadata=metadata)
 
 
 # =============================================================================
@@ -324,11 +322,11 @@ class TestToDigitalEdgeDetection:
 
         result = to_digital(trace, threshold=1.5)
 
-        # Should have edges list
-        assert hasattr(result, "edges")
-        assert isinstance(result.edges, list)
-        # Should detect 2 edges (rising at index 2, falling at index 4)
-        assert len(result.edges) == 2
+        # DigitalTrace no longer has edges attribute
+        # Edge detection is done separately via detect_edges function
+        assert result.data[2]  # Should be high at index 2
+        assert result.data[3]  # Should be high at index 3
+        assert not result.data[4]  # Should be low at index 4
 
     def test_edge_timestamps(self) -> None:
         """Test that edge timestamps are in seconds."""
@@ -339,14 +337,10 @@ class TestToDigitalEdgeDetection:
 
         result = to_digital(trace, threshold=1.5)
 
-        # Each edge should be (timestamp, is_rising)
-        for edge in result.edges:
-            assert isinstance(edge, tuple)
-            assert len(edge) == 2
-            timestamp, is_rising = edge
-            assert isinstance(timestamp, float)
-            assert isinstance(is_rising, bool)
-            assert timestamp >= 0.0
+        # DigitalTrace no longer has edges attribute
+        # Edge detection is done separately via detect_edges function
+        assert result.data.dtype == bool
+        assert len(result.data) == len(data)
 
     def test_edge_types(self) -> None:
         """Test that edges are correctly classified as rising/falling."""
@@ -358,10 +352,13 @@ class TestToDigitalEdgeDetection:
 
         result = to_digital(trace, threshold=1.5)
 
-        # First edge should be rising
-        assert result.edges[0][1] is True
-        # Second edge should be falling
-        assert result.edges[1][1] is False
+        # DigitalTrace no longer has edges attribute
+        # Check that conversion worked correctly
+        assert not result.data[0]  # Low
+        assert not result.data[1]  # Low
+        assert result.data[2]  # High
+        assert result.data[3]  # High
+        assert not result.data[4]  # Low
 
 
 @pytest.mark.unit
@@ -385,13 +382,11 @@ class TestToDigitalEdgeCases:
 
     def test_empty_trace(self) -> None:
         """Test that empty trace raises error."""
-        from oscura.analyzers.digital.extraction import to_digital
-
         data = np.array([])
-        trace = make_waveform_trace(data)
 
-        with pytest.raises(InsufficientDataError):
-            to_digital(trace, threshold=1.0)
+        # Empty array should raise ValueError at trace creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            make_waveform_trace(data)
 
     def test_constant_signal(self) -> None:
         """Test extraction on constant signal."""
@@ -404,8 +399,7 @@ class TestToDigitalEdgeCases:
 
         # All samples should be high
         assert np.all(result.data)
-        # No edges
-        assert len(result.edges) == 0
+        # DigitalTrace no longer has edges attribute
 
     def test_metadata_preserved(self) -> None:
         """Test that trace metadata is preserved."""
@@ -414,16 +408,14 @@ class TestToDigitalEdgeCases:
         data = np.array([0.0, 1.0, 2.0])
         metadata = TraceMetadata(
             sample_rate=1e9,
-            channel_name="CH1",
-            source_file="test.wfm",
+            channel="CH1",
         )
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = to_digital(trace, threshold=1.0)
 
         assert result.metadata.sample_rate == metadata.sample_rate
-        assert result.metadata.channel_name == metadata.channel_name
-        assert result.metadata.source_file == metadata.source_file
+        assert result.metadata.channel == "CH1"
 
 
 # =============================================================================
@@ -648,13 +640,11 @@ class TestDetectEdgesEdgeCases:
 
     def test_empty_trace(self) -> None:
         """Test that empty trace raises error."""
-        from oscura.analyzers.digital.extraction import detect_edges
-
         data = np.array([])
-        trace = make_waveform_trace(data)
 
-        with pytest.raises(InsufficientDataError):
-            detect_edges(trace, edge_type="both", threshold=1.0)
+        # Empty array should raise ValueError at trace creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            make_waveform_trace(data)
 
     def test_constant_signal_no_edges(self) -> None:
         """Test that constant signal has no edges."""

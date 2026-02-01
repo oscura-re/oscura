@@ -194,13 +194,13 @@ class TestReportingComprehensiveValidationEdgeCases:
             yield mock_engine
 
     def test_empty_waveform(self, mock_engine):
-        """Test empty waveform is handled gracefully."""
+        """Test empty waveform is rejected at load time."""
         test_file = TEST_DATA_DIR / "edge_cases" / "empty.npz"
         with tempfile.TemporaryDirectory() as tmpdir:
             config = AnalysisConfig(generate_plots=False, continue_on_error=True)
-            # Empty data should still produce a result (possibly with errors logged)
-            result = analyze(input_path=test_file, output_dir=tmpdir, config=config)
-            assert isinstance(result, AnalysisResult)
+            # Empty data should raise ValueError at trace creation time
+            with pytest.raises(ValueError, match="data array cannot be empty"):
+                analyze(input_path=test_file, output_dir=tmpdir, config=config)
 
     def test_single_sample(self, mock_engine):
         """Test single sample waveform is handled."""

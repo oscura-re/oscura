@@ -952,10 +952,9 @@ class TestComponentComponentEdgeCases:
 
     def test_empty_data_impedance(self) -> None:
         """Test impedance extraction with empty data."""
-        trace = create_trace(np.array([]))
-
-        with pytest.raises(InsufficientDataError):
-            extract_impedance(trace)
+        # Empty array should raise ValueError at trace creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            create_trace(np.array([]))
 
     def test_single_sample_impedance(self) -> None:
         """Test impedance extraction with single sample."""

@@ -779,13 +779,12 @@ class TestPowerBasicEdgeCases:
     """Test edge cases and error conditions."""
 
     def test_empty_traces(self, sample_rate: float) -> None:
-        """Test functions with empty traces."""
+        """Test that empty trace raises ValueError."""
         empty_data = np.array([])
-        empty_trace = create_trace(empty_data, sample_rate)
 
-        # Should handle empty traces gracefully
-        power = instantaneous_power(empty_trace, empty_trace)
-        assert len(power.data) == 0
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            create_trace(empty_data, sample_rate)
 
     def test_single_sample_traces(self, sample_rate: float) -> None:
         """Test functions with single-sample traces."""

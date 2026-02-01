@@ -38,7 +38,7 @@ class TestReverseEngineerSignal:
         signal_data = np.array(signal_data) + 0.05 * np.random.randn(len(signal_data))
 
         trace = WaveformTrace(
-            data=signal_data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=signal_data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         result = osc.workflows.reverse_engineer_signal(trace)

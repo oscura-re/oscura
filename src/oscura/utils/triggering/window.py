@@ -97,7 +97,7 @@ class WindowTrigger(Trigger):
             List of trigger events for window crossings.
         """
         data = trace.data
-        sample_period = trace.metadata.time_base
+        sample_period = 1.0 / trace.metadata.sample_rate
         events: list[TriggerEvent] = []
 
         # Determine if each sample is inside the window
@@ -182,7 +182,7 @@ class ZoneTrigger(Trigger):
             List of trigger events.
         """
         data = trace.data
-        sample_period = trace.metadata.time_base
+        sample_period = 1.0 / trace.metadata.sample_rate
         time_vector = np.arange(len(data)) * sample_period
         events: list[TriggerEvent] = []
 
@@ -396,7 +396,7 @@ class MaskTrigger(Trigger):
         mask_path = Path(self.mask_points)
 
         data = trace.data
-        sample_period = trace.metadata.time_base
+        sample_period = 1.0 / trace.metadata.sample_rate
         time_vector = np.arange(len(data)) * sample_period
 
         # Create points array for containment test

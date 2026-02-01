@@ -73,8 +73,8 @@ except ImportError:
 try:
     from scapy.all import IP, UDP, Packet, wrpcap  # type: ignore[attr-defined]
 except ImportError:
-    IP = None  # type: ignore[assignment]
-    UDP = None  # type: ignore[assignment]
+    IP = None  # type: ignore[assignment,misc]
+    UDP = None  # type: ignore[assignment,misc]
     Packet = None  # type: ignore[assignment,misc]
     wrpcap = None  # type: ignore[assignment]
 
@@ -954,13 +954,13 @@ class HILTester:
         for timestamp, sent_data, recv_data in self._pcap_packets:
             # Create UDP packet for sent data
             pkt = IP(dst="192.168.1.1") / UDP(dport=12345) / bytes(sent_data)
-            pkt.time = timestamp
+            pkt.time = timestamp  # type: ignore[attr-defined]
             packets.append(pkt)
 
             # Create UDP packet for received data if present
             if recv_data:
                 pkt = IP(src="192.168.1.1") / UDP(sport=12345) / bytes(recv_data)
-                pkt.time = timestamp + 0.001  # Slight offset
+                pkt.time = timestamp + 0.001  # type: ignore[attr-defined]
                 packets.append(pkt)
 
         if packets:

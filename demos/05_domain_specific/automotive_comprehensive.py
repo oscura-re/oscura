@@ -142,7 +142,7 @@ class ComprehensiveAutomotiveDemo(BaseDemo):
 
     def _analyze_can_bus(self) -> None:
         """Analyze CAN bus traffic."""
-        unique_ids = set(msg["id"] for msg in self.can_messages)
+        unique_ids = {msg["id"] for msg in self.can_messages}
         print_result("Total messages", len(self.can_messages))
         print_result("Unique CAN IDs", len(unique_ids))
 

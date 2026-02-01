@@ -60,5 +60,5 @@ class TestWAVChannelEdgeCases:
 
         # channel=None should default to first channel
         trace = load_wav(wav_path, channel=None)
-        assert trace.metadata.channel_name == "left"
+        assert trace.metadata.channel == "left"
         assert len(trace.data) == 3

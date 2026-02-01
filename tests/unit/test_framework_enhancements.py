@@ -42,10 +42,10 @@ class TestSignalTypeProperties:
 
     def test_iq_trace_properties(self) -> None:
         """IQTrace should identify as iq."""
-        i_data = np.cos(np.linspace(0, 2 * np.pi, 100))
-        q_data = np.sin(np.linspace(0, 2 * np.pi, 100))
+        # Create complex I/Q data
+        data = np.exp(1j * 2 * np.pi * np.linspace(0, 1, 100))
         metadata = TraceMetadata(sample_rate=1e6)
-        trace = IQTrace(i_data=i_data, q_data=q_data, metadata=metadata)
+        trace = IQTrace(data=data, metadata=metadata)
 
         assert trace.is_analog is False
         assert trace.is_digital is False
