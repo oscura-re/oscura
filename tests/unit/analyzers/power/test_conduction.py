@@ -574,18 +574,13 @@ class TestConductionEdgeCases:
     """Test edge cases and error conditions."""
 
     def test_empty_traces(self, sample_rate: float) -> None:
-        """Test with empty traces."""
-        voltage = create_trace(np.array([]), sample_rate)
-        current = create_trace(np.array([]), sample_rate)
+        """Test with empty traces raises ValueError."""
+        # Empty traces should raise ValueError during creation
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            voltage = create_trace(np.array([]), sample_rate)
 
-        # numpy mean of empty array gives warning but returns nan
-        import warnings
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
-            p_cond = conduction_loss(voltage, current)
-
-        assert np.isnan(p_cond)
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            current = create_trace(np.array([]), sample_rate)
 
     def test_single_sample(self, sample_rate: float) -> None:
         """Test with single sample."""

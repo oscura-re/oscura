@@ -260,8 +260,8 @@ class TestParseWFM003:
         trace0 = _parse_wfm003(data, path, channel=0)
         trace1 = _parse_wfm003(data, path, channel=1)
 
-        assert trace0.metadata.channel_name == "CH1"
-        assert trace1.metadata.channel_name == "CH2"
+        assert trace0.metadata.channel == "CH1"
+        assert trace1.metadata.channel == "CH2"
 
     @staticmethod
     def _create_wfm003_header() -> bytes:
@@ -366,8 +366,8 @@ class TestParseWFMLegacy:
         trace0 = _parse_wfm_legacy(data, path, channel=0)
         trace3 = _parse_wfm_legacy(data, path, channel=3)
 
-        assert trace0.metadata.channel_name == "CH1"
-        assert trace3.metadata.channel_name == "CH4"
+        assert trace0.metadata.channel == "CH1"
+        assert trace3.metadata.channel == "CH4"
 
 
 # =============================================================================
@@ -461,7 +461,7 @@ class TestBuildWaveformTrace:
         assert isinstance(trace, WaveformTrace)
         np.testing.assert_array_equal(trace.data, data)
         assert trace.metadata.sample_rate == sample_rate
-        assert trace.metadata.channel_name == "CH1"
+        assert trace.metadata.channel == "CH1"
         assert trace.metadata.source_file == str(path)
 
     def test_with_vertical_scale_offset(self, tmp_path: Path) -> None:
@@ -703,7 +703,7 @@ class TestLoadDigitalWaveform:
 
         trace = _load_digital_waveform(mock_wfm, path, channel=0)
 
-        assert trace.metadata.channel_name == "DIGITAL_BUS_0"
+        assert trace.metadata.channel == "DIGITAL_BUS_0"
 
     def test_channel_naming_with_name_fallback(self, tmp_path: Path) -> None:
         """Test channel naming fallback to name attribute."""
@@ -715,7 +715,7 @@ class TestLoadDigitalWaveform:
 
         trace = _load_digital_waveform(mock_wfm, path, channel=0)
 
-        assert trace.metadata.channel_name == "Logic1"
+        assert trace.metadata.channel == "Logic1"
 
     def test_channel_naming_default(self, tmp_path: Path) -> None:
         """Test default channel naming."""
@@ -727,11 +727,11 @@ class TestLoadDigitalWaveform:
         trace0 = _load_digital_waveform(mock_wfm, path, channel=0)
         trace1 = _load_digital_waveform(mock_wfm, path, channel=1)
 
-        assert trace0.metadata.channel_name == "D1"
-        assert trace1.metadata.channel_name == "D2"
+        assert trace0.metadata.channel == "D1"
+        assert trace1.metadata.channel == "D2"
 
     def test_edges_extraction(self, tmp_path: Path) -> None:
-        """Test edge information extraction."""
+        """Test digital data extraction."""
         mock_wfm = mock.Mock()
         mock_wfm.y_axis_byte_values = bytes([0, 1])
         mock_wfm.x_axis_spacing = 1e-6
@@ -741,23 +741,25 @@ class TestLoadDigitalWaveform:
 
         trace = _load_digital_waveform(mock_wfm, path, channel=0)
 
-        assert trace.edges is not None
-        assert len(trace.edges) == 3
-        assert trace.edges[0] == (0.0, True)
-        assert trace.edges[1] == (1e-6, False)
+        # edges attribute removed in v0.9.0 - verify data loaded
+        assert trace.data is not None
+        assert len(trace.data) == 2  # y_axis_byte_values has 2 bytes
+        assert isinstance(trace.data, np.ndarray)
+        assert trace.data.dtype == bool
 
     def test_edges_extraction_failure(self, tmp_path: Path) -> None:
-        """Test graceful handling of edge extraction failure."""
+        """Test graceful handling with various edge formats."""
         mock_wfm = mock.Mock()
         mock_wfm.y_axis_byte_values = bytes([0, 1])
         mock_wfm.x_axis_spacing = 1e-6
         mock_wfm.source_name = "D1"
-        mock_wfm.edges = "invalid"  # Invalid format
+        mock_wfm.edges = "invalid"  # Invalid format (ignored in v0.9.0)
         path = tmp_path / "digital.wfm"
 
-        # Should not raise
+        # Should not raise - edges attribute removed in v0.9.0
         trace = _load_digital_waveform(mock_wfm, path, channel=0)
-        assert trace.edges is None
+        assert trace.data is not None
+        assert isinstance(trace.data, np.ndarray)
 
     def test_byte_to_boolean_conversion(self, tmp_path: Path) -> None:
         """Test that various byte values are correctly converted to boolean."""
@@ -798,10 +800,10 @@ class TestLoadIQWaveform:
         trace = _load_iq_waveform(mock_wfm, path)
 
         assert isinstance(trace, IQTrace)
-        assert len(trace.i_data) == 4
-        assert len(trace.q_data) == 4
-        np.testing.assert_array_equal(trace.i_data, [1.0, 0.0, -1.0, 0.0])
-        np.testing.assert_array_equal(trace.q_data, [0.0, 1.0, 0.0, -1.0])
+        assert len(trace.data.real) == 4
+        assert len(trace.data.imag) == 4
+        np.testing.assert_array_equal(trace.data.real, [1.0, 0.0, -1.0, 0.0])
+        np.testing.assert_array_equal(trace.data.imag, [0.0, 1.0, 0.0, -1.0])
 
     def test_iq_scaling_with_spacing(self, tmp_path: Path) -> None:
         """Test I/Q data scaling with iq_axis_spacing."""
@@ -823,8 +825,8 @@ class TestLoadIQWaveform:
 
         trace = _load_iq_waveform(mock_wfm, path)
 
-        np.testing.assert_array_almost_equal(trace.i_data, [0.1, 0.2, 0.3])
-        np.testing.assert_array_almost_equal(trace.q_data, [0.4, 0.5, 0.6])
+        np.testing.assert_array_almost_equal(trace.data.real, [0.1, 0.2, 0.3])
+        np.testing.assert_array_almost_equal(trace.data.imag, [0.4, 0.5, 0.6])
 
     def test_iq_offset(self, tmp_path: Path) -> None:
         """Test I/Q data offset with iq_axis_offset."""
@@ -846,8 +848,8 @@ class TestLoadIQWaveform:
 
         trace = _load_iq_waveform(mock_wfm, path)
 
-        np.testing.assert_array_almost_equal(trace.i_data, [11.0, 12.0, 13.0])
-        np.testing.assert_array_almost_equal(trace.q_data, [14.0, 15.0, 16.0])
+        np.testing.assert_array_almost_equal(trace.data.real, [11.0, 12.0, 13.0])
+        np.testing.assert_array_almost_equal(trace.data.imag, [14.0, 15.0, 16.0])
 
     def test_iq_scaling_and_offset(self, tmp_path: Path) -> None:
         """Test I/Q data with both scaling and offset."""
@@ -872,8 +874,8 @@ class TestLoadIQWaveform:
         trace = _load_iq_waveform(mock_wfm, path)
 
         # (value * spacing) + offset
-        np.testing.assert_array_almost_equal(trace.i_data, [7.0, 9.0])
-        np.testing.assert_array_almost_equal(trace.q_data, [11.0, 13.0])
+        np.testing.assert_array_almost_equal(trace.data.real, [7.0, 9.0])
+        np.testing.assert_array_almost_equal(trace.data.imag, [11.0, 13.0])
 
     def test_sample_rate_extraction(self, tmp_path: Path) -> None:
         """Test sample rate extraction from x_axis_spacing."""
@@ -915,7 +917,7 @@ class TestLoadIQWaveform:
 
         trace = _load_iq_waveform(mock_wfm, path)
 
-        assert trace.metadata.channel_name == "RF_CAPTURE_1"
+        assert trace.metadata.channel == "RF_CAPTURE_1"
 
     def test_default_channel_naming(self, tmp_path: Path) -> None:
         """Test default channel naming when source_name not available."""
@@ -927,7 +929,7 @@ class TestLoadIQWaveform:
 
         trace = _load_iq_waveform(mock_wfm, path)
 
-        assert trace.metadata.channel_name == "IQ1"
+        assert trace.metadata.channel == "IQ1"
 
 
 # =============================================================================
@@ -1052,7 +1054,7 @@ class TestTektronixIntegration:
         np.testing.assert_array_almost_equal(trace.data, original_data)
         assert trace.metadata.sample_rate == 1e6
         # Channel name may be "TEST_CH" or "CH1" depending on tm_data_types version
-        assert trace.metadata.channel_name in ("TEST_CH", "CH1")
+        assert trace.metadata.channel in ("TEST_CH", "CH1")
 
     def test_multi_channel_loading(self, tmp_path: Path) -> None:
         """Test loading different channels from multi-channel file."""

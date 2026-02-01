@@ -652,13 +652,12 @@ class TestFindEdges:
         assert len(edges_high[0]) > 3
 
     def test_find_edges_empty_trace(self) -> None:
-        """Test edge detection with empty trace."""
+        """Test that empty trace raises ValueError."""
         metadata = TraceMetadata(sample_rate=1e9)
-        trace = DigitalTrace(data=np.array([], dtype=bool), metadata=metadata)
-        rising, falling = _find_edges(trace, threshold_frac=0.5)
 
-        assert len(rising) == 0
-        assert len(falling) == 0
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            DigitalTrace(data=np.array([], dtype=bool), metadata=metadata)
 
     def test_find_edges_minimal_trace(self) -> None:
         """Test edge detection with minimal trace (< 3 samples)."""

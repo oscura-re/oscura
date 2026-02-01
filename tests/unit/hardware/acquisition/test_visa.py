@@ -240,8 +240,8 @@ class TestVISASource:
         assert len(trace.data) == 1000
         # Use approx for floating point comparison (1.0 / 1e-9 has rounding error)
         assert trace.metadata.sample_rate == pytest.approx(1e9, rel=1e-6)
-        assert "CH1" in trace.metadata.channel_name
-        assert "visa://" in trace.metadata.source_file
+        assert "CH1" in trace.metadata.channel
+        assert trace.metadata.source_file and "visa://" in trace.metadata.source_file
 
     @patch("oscura.hardware.acquisition.visa.pyvisa")
     @patch("oscura.hardware.acquisition.visa.time.sleep")
@@ -410,6 +410,7 @@ class TestVISASource:
         trace = source.read()
         after = datetime.now()
 
+        assert trace.metadata.acquisition_time is not None
         assert before <= trace.metadata.acquisition_time <= after
 
     @patch("oscura.hardware.acquisition.visa.pyvisa")
@@ -434,5 +435,5 @@ class TestVISASource:
 
         trace = source.read()
 
-        assert trace.metadata.calibration_info is not None
-        assert "CUSTOM,INSTRUMENT,SN12345,v2.0" in trace.metadata.calibration_info.instrument
+        assert trace.metadata.calibration is not None
+        assert "CUSTOM,INSTRUMENT,SN12345,v2.0" in trace.metadata.calibration.instrument

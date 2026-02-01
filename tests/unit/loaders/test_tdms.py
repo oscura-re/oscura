@@ -128,7 +128,7 @@ class TestTDMSLoader:
             assert len(trace.data) > 0
             assert trace.metadata.sample_rate == 1e6
             assert trace.metadata.source_file == str(tdms_path)
-            assert trace.metadata.channel_name == "CH1"
+            assert trace.metadata.channel == "CH1"
 
     def test_load_specific_group(self, tmp_path: Path) -> None:
         """Test loading a specific group by name."""
@@ -146,7 +146,7 @@ class TestTDMSLoader:
 
         with enable_tdms_with_mock(mock_tdms):
             trace = tdms_module.load_tdms(tdms_path, group="Current")
-            assert trace.metadata.channel_name == "CH2"
+            assert trace.metadata.channel == "CH2"
             assert trace.metadata.sample_rate == 2e6
 
     def test_load_specific_channel_by_name(self, tmp_path: Path) -> None:
@@ -164,7 +164,7 @@ class TestTDMSLoader:
 
         with enable_tdms_with_mock(mock_tdms):
             trace = tdms_module.load_tdms(tdms_path, channel="CH2")
-            assert trace.metadata.channel_name == "CH2"
+            assert trace.metadata.channel == "CH2"
             assert trace.metadata.sample_rate == 2e6
 
     def test_load_channel_by_index(self, tmp_path: Path) -> None:
@@ -181,10 +181,10 @@ class TestTDMSLoader:
 
         with enable_tdms_with_mock(mock_tdms):
             trace = tdms_module.load_tdms(tdms_path, channel=0)
-            assert trace.metadata.channel_name == "CH1"
+            assert trace.metadata.channel == "CH1"
 
             trace = tdms_module.load_tdms(tdms_path, channel=1)
-            assert trace.metadata.channel_name == "CH2"
+            assert trace.metadata.channel == "CH2"
 
     def test_sample_rate_from_wf_increment(self, tmp_path: Path) -> None:
         """Test sample rate extraction from wf_increment (time delta)."""

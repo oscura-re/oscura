@@ -256,7 +256,7 @@ class VISASource:
         if channel is None:
             channel = self.channels[0]
 
-        datetime.now()
+        acquisition_time = datetime.now()
 
         try:
             # Single acquisition
@@ -296,7 +296,7 @@ class VISASource:
             except Exception:
                 idn = "Unknown Instrument"
 
-            CalibrationInfo(
+            calibration = CalibrationInfo(
                 instrument=idn,
                 coupling="DC",  # Default
                 vertical_resolution=8,  # Typical for oscilloscopes
@@ -306,6 +306,9 @@ class VISASource:
                 sample_rate=sample_rate,
                 vertical_scale=self.vertical_scale,
                 channel=f"CH{channel}",
+                source_file=f"visa://{self.resource}" if self.resource else "visa://unknown",
+                acquisition_time=acquisition_time,
+                calibration=calibration,
             )
 
             return WaveformTrace(data=data, metadata=metadata)

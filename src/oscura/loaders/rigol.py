@@ -109,12 +109,28 @@ def _load_with_rigolwfm(
             _extract_rigol_channel_data(wfm, channel, str(path))
         )
 
+        # Extract trigger info if available
+        trigger_info = None
+        if (
+            hasattr(wfm, "trigger_level")
+            or hasattr(wfm, "trigger_mode")
+            or hasattr(wfm, "trigger_source")
+        ):
+            trigger_info = {}
+            if hasattr(wfm, "trigger_level"):
+                trigger_info["level"] = wfm.trigger_level
+            if hasattr(wfm, "trigger_mode"):
+                trigger_info["mode"] = wfm.trigger_mode
+            if hasattr(wfm, "trigger_source"):
+                trigger_info["source"] = wfm.trigger_source
+
         # Build metadata
         metadata = TraceMetadata(
             sample_rate=sample_rate,
             vertical_scale=vertical_scale,
             vertical_offset=vertical_offset,
             channel=channel_name,
+            trigger_info=trigger_info,
         )
 
         return WaveformTrace(data=data, metadata=metadata)

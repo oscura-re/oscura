@@ -76,15 +76,15 @@ class TestWAVLoader:
 
         # Default should load left channel
         trace = load_wav(wav_path)
-        assert trace.metadata.channel_name == "left"
+        assert trace.metadata.channel == "left"
 
         # Load right channel
         trace = load_wav(wav_path, channel="right")
-        assert trace.metadata.channel_name == "right"
+        assert trace.metadata.channel == "right"
 
         # Load mono mix
         trace = load_wav(wav_path, channel="mono")
-        assert trace.metadata.channel_name == "mono"
+        assert trace.metadata.channel == "mono"
 
     def test_load_channel_by_index(self, tmp_path: Path) -> None:
         """Test loading channels by index."""
@@ -92,10 +92,10 @@ class TestWAVLoader:
         self.create_wav_file(wav_path, n_channels=2)
 
         trace = load_wav(wav_path, channel=0)
-        assert trace.metadata.channel_name == "left"
+        assert trace.metadata.channel == "left"
 
         trace = load_wav(wav_path, channel=1)
-        assert trace.metadata.channel_name == "right"
+        assert trace.metadata.channel == "right"
 
     def test_normalization(self, tmp_path: Path) -> None:
         """Test that samples are normalized to [-1, 1]."""

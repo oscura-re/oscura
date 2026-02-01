@@ -230,12 +230,15 @@ def _build_tdms_metadata(
     sample_rate = _get_sample_rate(target_channel, target_group, tdms_file)
     vertical_scale = target_channel.properties.get("NI_Scale[0]_Linear_Slope")
     vertical_offset = target_channel.properties.get("NI_Scale[0]_Linear_Y_Intercept")
+    trigger_info = _extract_tdms_properties(target_channel)
 
     return TraceMetadata(
         sample_rate=sample_rate,
         vertical_scale=float(vertical_scale) if vertical_scale is not None else None,
         vertical_offset=float(vertical_offset) if vertical_offset is not None else None,
         channel=target_channel.name,
+        trigger_info=trigger_info,
+        source_file=str(path),
     )
 
 

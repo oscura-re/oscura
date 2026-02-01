@@ -174,6 +174,7 @@ def _build_npz_metadata(
         vertical_scale=float(detected_vertical_scale) if detected_vertical_scale else None,
         vertical_offset=float(detected_vertical_offset) if detected_vertical_offset else None,
         channel=_get_channel_name(npz, channel),
+        source_file=str(path),
     )
 
 
@@ -443,12 +444,13 @@ def _get_channel_name(
     elif isinstance(channel, int):
         return f"CH{channel + 1}"
 
-    # Try to find channel name in metadata
+    # Try to find channel name in metadata (support both old and new API)
     keys = list(npz.keys())
-    if "channel_name" in keys:
-        value = npz["channel_name"]
-        # NPZ values are always ndarrays
-        return str(value.item())
+    for key in ["channel", "channel_name"]:
+        if key in keys:
+            value = npz[key]
+            # NPZ values are always ndarrays
+            return str(value.item())
 
     return "CH1"
 
@@ -556,6 +558,7 @@ def load_raw_binary(
         metadata = TraceMetadata(
             sample_rate=sample_rate,
             channel="RAW",
+            source_file=str(path),
         )
 
         return WaveformTrace(data=data, metadata=metadata)

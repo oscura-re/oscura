@@ -5,6 +5,7 @@ Tests LOAD-009: VCD (Value Change Dump) Loader
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from oscura.core.exceptions import FormatError, LoaderError
@@ -89,7 +90,7 @@ class TestVCDLoader:
         self.create_vcd_file(vcd_path)
 
         trace = load_vcd(vcd_path, signal="clk")
-        assert trace.metadata.channel_name == "clk"
+        assert trace.metadata.channel == "clk"
 
     def test_timescale_parsing(self, tmp_path: Path) -> None:
         """Test that different timescales are parsed correctly."""
@@ -107,7 +108,10 @@ class TestVCDLoader:
             assert abs(trace.metadata.trigger_info["timescale"] - expected) < 1e-15
 
     def test_edge_detection(self, tmp_path: Path) -> None:
-        """Test that edges are detected from value changes."""
+        """Test that edges are detected from value changes.
+
+        In v0.9.0, DigitalTrace.edges was removed. We verify the data instead.
+        """
         vcd_path = tmp_path / "edges.vcd"
         changes = [
             (0, "!", "0"),
@@ -120,12 +124,17 @@ class TestVCDLoader:
 
         trace = load_vcd(vcd_path)
 
-        assert trace.edges is not None
-        rising = [e for e in trace.edges if e[1]]
-        falling = [e for e in trace.edges if not e[1]]
+        # Verify we got a DigitalTrace with boolean data
+        assert hasattr(trace, "data")
+        assert trace.data is not None
+        assert len(trace.data) > 0
+        # Check for transitions in the data
+        transitions = np.diff(trace.data.astype(int))
+        rising = np.sum(transitions > 0)
+        falling = np.sum(transitions < 0)
 
-        assert len(rising) >= 2
-        assert len(falling) >= 2
+        assert rising >= 2
+        assert falling >= 2
 
     def test_multibit_signals(self, tmp_path: Path) -> None:
         """Test loading multi-bit signals."""
@@ -225,4 +234,4 @@ $enddefinitions $end
 
         trace = load_vcd(vcd_path)
         assert trace is not None
-        assert trace.metadata.channel_name == "clk"
+        assert trace.metadata.channel == "clk"

@@ -87,8 +87,8 @@ def test_characterize_signal_basic(sample_waveform_trace):
     """Test basic signal characterization."""
     with patch("oscura.analyzers.waveform.measurements.rise_time") as mock_rt:
         with patch("oscura.analyzers.waveform.measurements.fall_time") as mock_ft:
-            mock_rt.return_value = 10e-9  # 10 ns
-            mock_ft.return_value = 8e-9  # 8 ns
+            mock_rt.return_value = {"applicable": True, "value": 10e-9}  # 10 ns
+            mock_ft.return_value = {"applicable": True, "value": 8e-9}  # 8 ns
 
             result = _characterize_signal(sample_waveform_trace)
 
@@ -110,8 +110,8 @@ def test_characterize_signal_nan_edge_times(sample_waveform_trace):
     """Test characterization when edge times cannot be measured."""
     with patch("oscura.analyzers.waveform.measurements.rise_time") as mock_rt:
         with patch("oscura.analyzers.waveform.measurements.fall_time") as mock_ft:
-            mock_rt.return_value = np.nan
-            mock_ft.return_value = np.nan
+            mock_rt.return_value = {"applicable": False, "value": np.nan}
+            mock_ft.return_value = {"applicable": False, "value": np.nan}
 
             result = _characterize_signal(sample_waveform_trace)
 
@@ -127,8 +127,8 @@ def test_characterize_signal_amplitude_calculation(sample_metadata):
 
     with patch("oscura.analyzers.waveform.measurements.rise_time") as mock_rt:
         with patch("oscura.analyzers.waveform.measurements.fall_time") as mock_ft:
-            mock_rt.return_value = np.nan
-            mock_ft.return_value = np.nan
+            mock_rt.return_value = {"applicable": False, "value": np.nan}
+            mock_ft.return_value = {"applicable": False, "value": np.nan}
 
             result = _characterize_signal(trace)
 
@@ -146,8 +146,8 @@ def test_characterize_signal_duration_calculation(sample_metadata):
 
     with patch("oscura.analyzers.waveform.measurements.rise_time") as mock_rt:
         with patch("oscura.analyzers.waveform.measurements.fall_time") as mock_ft:
-            mock_rt.return_value = np.nan
-            mock_ft.return_value = np.nan
+            mock_rt.return_value = {"applicable": False, "value": np.nan}
+            mock_ft.return_value = {"applicable": False, "value": np.nan}
 
             result = _characterize_signal(trace)
 

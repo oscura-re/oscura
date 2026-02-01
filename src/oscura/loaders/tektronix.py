@@ -356,11 +356,31 @@ def _build_waveform_trace(
     Returns:
         Constructed WaveformTrace.
     """
+    # Extract trigger information
+    trigger_info = _extract_trigger_info(wfm)
+
+    # Extract acquisition time if available
+    acquisition_time = None
+    if hasattr(wfm, "date_time"):
+        try:
+            from datetime import datetime
+
+            # Handle both datetime objects and other formats
+            if isinstance(wfm.date_time, datetime):
+                acquisition_time = wfm.date_time
+            # Add additional parsing if needed for other formats
+        except (ValueError, AttributeError, TypeError):
+            # Silently ignore invalid or unparseable times
+            pass
+
     metadata = TraceMetadata(
         sample_rate=sample_rate,
         vertical_scale=vertical_scale,
         vertical_offset=vertical_offset,
         channel=channel,
+        source_file=str(path),
+        trigger_info=trigger_info,
+        acquisition_time=acquisition_time,
     )
 
     return WaveformTrace(data=data, metadata=metadata)
@@ -635,6 +655,7 @@ def _parse_wfm003(
         vertical_scale=vertical_scale,
         vertical_offset=vertical_offset,
         channel=channel_name,
+        source_file=str(path),
     )
 
     return WaveformTrace(data=data, metadata=metadata)

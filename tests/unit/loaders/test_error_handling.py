@@ -522,9 +522,9 @@ class TestLazyLoadingErrors:
 @pytest.mark.parametrize(
     "invalid_input,expected_error",
     [
-        (np.array([]), LoaderError),  # Empty array
-        (np.array([np.nan, np.nan]), LoaderError),  # All NaN
-        (np.array([np.inf, -np.inf]), LoaderError),  # All Inf
+        (np.array([]), ValueError),  # Empty array rejected in v0.9.0
+        (np.array([np.nan, np.nan]), None),  # All NaN allowed
+        (np.array([np.inf, -np.inf]), None),  # All Inf allowed
     ],
 )
 class TestInvalidDataInputs:
@@ -533,18 +533,22 @@ class TestInvalidDataInputs:
     def test_npz_invalid_data(
         self,
         invalid_input: np.ndarray,
-        expected_error: type[Exception],
+        expected_error: type[Exception] | None,
         tmp_path: Path,
     ) -> None:
         """Test NPZ loader with invalid data."""
         npz_path = tmp_path / "invalid.npz"
         np.savez(npz_path, data=invalid_input, sample_rate=1e6)
 
-        # All data types should load successfully (empty, NaN, Inf are valid arrays)
-        # Validation happens at analysis time, not load time
-        trace = load_npz(npz_path)
-        assert trace is not None
-        assert len(trace.data) == len(invalid_input)
+        # v0.9.0: Empty arrays rejected during trace construction
+        # NaN/Inf arrays allowed (validation happens at analysis time)
+        if expected_error is not None:
+            with pytest.raises(expected_error):
+                load_npz(npz_path)
+        else:
+            trace = load_npz(npz_path)
+            assert trace is not None
+            assert len(trace.data) == len(invalid_input)
 
 
 @pytest.mark.unit

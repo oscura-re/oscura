@@ -16,7 +16,7 @@ import mmap
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -239,9 +239,20 @@ def _build_trace_metadata(
     path: Path, target_var: VCDVariable, header: VCDHeader, sample_rate: float
 ) -> TraceMetadata:
     """Build trace metadata from VCD information."""
+    # Build trigger_info from VCD header
+    trigger_info: dict[str, Any] = {}
+    if header.timescale is not None:
+        trigger_info["timescale"] = header.timescale
+    if header.date:
+        trigger_info["date"] = header.date
+    if header.version:
+        trigger_info["version"] = header.version
+
     return TraceMetadata(
         sample_rate=sample_rate,
         channel=target_var.name,
+        source_file=str(path),
+        trigger_info=trigger_info if trigger_info else None,
     )
 
 

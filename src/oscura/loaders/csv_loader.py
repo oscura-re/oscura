@@ -209,6 +209,7 @@ def _load_with_pandas(
         metadata = TraceMetadata(
             sample_rate=detected_sample_rate,
             channel=voltage_col_name or "CH1",
+            source_file=str(path),
         )
 
         return WaveformTrace(data=np.asarray(voltage_data, dtype=np.float64), metadata=metadata)
@@ -429,6 +430,7 @@ def _load_basic(
         metadata = TraceMetadata(
             sample_rate=detected_sample_rate,
             channel=channel_name,
+            source_file=str(path),
         )
 
         return WaveformTrace(data=np.array(voltage_data, dtype=np.float64), metadata=metadata)
