@@ -352,13 +352,12 @@ class TestAnalysisSession:
 
     def test_compare_iqtrace_not_supported(self, session: ConcreteSession) -> None:
         """Test that IQTrace comparison raises appropriate error."""
-        # Create IQTrace manually with i_data and q_data
+        # Create IQTrace manually with complex data
         i_data = np.array([1.0, 2.0, 3.0], dtype=np.float64)
         q_data = np.array([1.0, 2.0, 3.0], dtype=np.float64)
         iq_trace = IQTrace(
-            i_data=i_data,
-            q_data=q_data,
-            metadata=TraceMetadata(sample_rate=1e6, source_file="test.iq", channel_name="IQ"),
+            data=i_data + 1j * q_data,
+            metadata=TraceMetadata(sample_rate=1e6, source_file="test.iq", channel="IQ"),
         )
 
         # Mock the recordings with IQTrace

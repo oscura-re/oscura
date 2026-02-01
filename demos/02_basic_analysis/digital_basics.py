@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -43,7 +44,7 @@ class DigitalBasicsDemo(BaseDemo):
     description = "Edge detection, pulse width, timing analysis for digital signals"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.find_edges",
         "oscura.pulse_width",
         "oscura.duty_cycle",
@@ -52,9 +53,9 @@ class DigitalBasicsDemo(BaseDemo):
         "oscura.frequency",
     ]
 
-    ieee_standards = ["IEEE 181-2011"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "01_waveform_basics.py",
         "../03_protocol_decoding/01_uart_analysis.py",
         "04_measurements.py",

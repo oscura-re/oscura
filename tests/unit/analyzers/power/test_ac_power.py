@@ -640,19 +640,13 @@ class TestPowerAcPowerEdgeCases:
     """Test edge cases and error conditions."""
 
     def test_empty_traces(self, sample_rate: float) -> None:
-        """Test functions with empty traces."""
+        """Test that empty trace raises ValueError."""
         empty_data = np.array([])
         metadata = TraceMetadata(sample_rate=sample_rate)
-        empty_trace = WaveformTrace(data=empty_data, metadata=metadata)
 
-        # Empty arrays produce NaN from np.mean - this is expected behavior
-        # that warns but doesn't crash
-        import warnings
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
-            s = apparent_power(empty_trace, empty_trace)
-            assert np.isnan(s)
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            WaveformTrace(data=empty_data, metadata=metadata)
 
     def test_single_sample_traces(self, sample_rate: float) -> None:
         """Test functions with single-sample traces."""

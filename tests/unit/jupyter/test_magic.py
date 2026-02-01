@@ -270,7 +270,7 @@ class TestOscuraMagicsClass:
             data=data,
             metadata=TraceMetadata(
                 sample_rate=1e9,
-                channel_name="CH1",
+                channel="CH1",
             ),
         )
         set_current_trace(trace, "test.wfm")

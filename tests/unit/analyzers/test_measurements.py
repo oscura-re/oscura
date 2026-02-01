@@ -49,7 +49,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.amplitude(trace)
-        assert 0.9 < result < 1.1  # Should be ~1.0
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert 0.9 < result["value"] < 1.1  # Should be ~1.0
 
     def test_frequency_function_works(self) -> None:
         """Test frequency function is correctly re-exported."""
@@ -61,7 +63,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.frequency(trace)
-        assert 0.9e6 < result < 1.1e6  # Should be ~1 MHz
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert 0.9e6 < result["value"] < 1.1e6  # Should be ~1 MHz
 
     def test_rise_time_function_works(self) -> None:
         """Test rise_time function is correctly re-exported."""
@@ -72,7 +76,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.rise_time(trace, ref_levels=(0.1, 0.9))
-        assert result > 0  # Should have positive rise time
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert result["value"] > 0  # Should have positive rise time
 
     def test_mean_function_works(self) -> None:
         """Test mean function is correctly re-exported."""
@@ -81,7 +87,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.mean(trace)
-        assert abs(result - 3.0) < 0.01  # Should be exactly 3.0
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert abs(result["value"] - 3.0) < 0.01  # Should be exactly 3.0
 
     def test_rms_function_works(self) -> None:
         """Test rms function is correctly re-exported."""
@@ -91,7 +99,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.rms(trace)
-        assert abs(result - 2.0) < 0.01  # RMS of DC is the DC value
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert abs(result["value"] - 2.0) < 0.01  # RMS of DC is the DC value
 
     def test_period_function_works(self) -> None:
         """Test period function is correctly re-exported."""
@@ -103,7 +113,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.period(trace)
-        assert 0.9e-6 < result < 1.1e-6  # Should be ~1 µs
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert 0.9e-6 < result["value"] < 1.1e-6  # Should be ~1 µs
 
     def test_duty_cycle_function_works(self) -> None:
         """Test duty_cycle function is correctly re-exported."""
@@ -114,8 +126,10 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.duty_cycle(trace, percentage=True)
-        # Should be close to 50% for a sine-based square wave
-        assert 40 < result < 60 or np.isnan(result)  # Or NaN if no period found
+        # Should be close to 50% (0.5 ratio) for a sine-based square wave
+        if result["applicable"] and result["value"] is not None:
+            assert 0.40 < result["value"] < 0.60  # Duty cycle returns ratio (0-1)
+        # Otherwise it's inapplicable (no period found)
 
     def test_overshoot_function_works(self) -> None:
         """Test overshoot function is correctly re-exported."""
@@ -125,7 +139,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.overshoot(trace)
-        assert result > 0  # Should have positive overshoot
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert result["value"] > 0  # Should have positive overshoot
 
     def test_undershoot_function_works(self) -> None:
         """Test undershoot function is correctly re-exported."""
@@ -135,7 +151,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.undershoot(trace)
-        assert result > 0  # Should have positive undershoot
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert result["value"] > 0  # Should have positive undershoot
 
     def test_pulse_width_function_works(self) -> None:
         """Test pulse_width function is correctly re-exported."""
@@ -145,7 +163,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.pulse_width(trace)
-        assert result > 0  # Should have positive pulse width
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert result["value"] > 0  # Should have positive pulse width
 
     def test_fall_time_function_works(self) -> None:
         """Test fall_time function is correctly re-exported."""
@@ -156,7 +176,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.fall_time(trace, ref_levels=(0.9, 0.1))
-        assert result > 0  # Should have positive fall time
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert result["value"] > 0  # Should have positive fall time
 
     def test_preshoot_function_works(self) -> None:
         """Test preshoot function is correctly re-exported."""
@@ -166,7 +188,9 @@ class TestMeasurementsNamespace:
         trace = WaveformTrace(data=data, metadata=metadata)
 
         result = measurements.preshoot(trace)
-        assert result >= 0  # Preshoot should be non-negative
+        assert result["applicable"]
+        assert result["value"] is not None
+        assert result["value"] >= 0  # Preshoot should be non-negative
 
     def test_measure_function_works(self) -> None:
         """Test measure function is correctly re-exported."""
@@ -205,11 +229,10 @@ class TestMeasurementsErrors:
             measurements.amplitude(None)  # type: ignore[arg-type]
 
     def test_empty_trace_handled(self) -> None:
-        """Test that empty trace is handled gracefully."""
+        """Test that empty trace raises ValueError."""
         data = np.array([])
         metadata = TraceMetadata(sample_rate=1e6)
-        trace = WaveformTrace(data=data, metadata=metadata)
 
-        # Should return NaN for empty trace
-        result = measurements.amplitude(trace)
-        assert np.isnan(result) or result == 0
+        # Empty trace raises ValueError at creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            trace = WaveformTrace(data=data, metadata=metadata)

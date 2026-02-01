@@ -213,10 +213,9 @@ class TestWFMAnalysisPipelines:
                 assert np.isfinite(m), f"Channel {name} has invalid mean"
             elif isinstance(trace, IQTrace):
                 # For IQTrace, verify I and Q data separately
-                assert len(trace.i_data) > 0
-                assert len(trace.q_data) > 0
-                assert np.isfinite(trace.i_data).all()
-                assert np.isfinite(trace.q_data).all()
+                assert len(trace.data) > 0
+                assert np.isfinite(trace.data.real).all()
+                assert np.isfinite(trace.data.imag).all()
 
 
 @pytest.mark.integration

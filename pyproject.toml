@@ -6,7 +6,7 @@
 
 [project]
 name = "oscura"
-version = "0.8.0"
+version = "0.9.0"
 description = "Unified hardware reverse engineering framework. Extract all information from any system through signals and data. Unknown protocol discovery, state machine extraction, CRC recovery, security analysis. 16+ protocols, IEEE-compliant measurements."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -189,7 +189,7 @@ hardware = [
 # =============================================================================
 # SEC-005 fix: Updated cryptography to >=44.0.1 to address CVE-2024-12797
 # (OpenSSL vulnerability in static binary, MEDIUM severity)
-iot = [
+ iot = [
     "cryptography>=44.0.1,<47.0.0",      # Modern cryptography for LoRaWAN
 ]
 

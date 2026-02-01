@@ -65,7 +65,7 @@ class TestTraceDisplay:
             data=data,
             metadata=TraceMetadata(
                 sample_rate=1e9,
-                channel_name="CH1",
+                channel="CH1",
                 source_file="test.wfm",
             ),
         )

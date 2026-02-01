@@ -826,17 +826,12 @@ class TestPowerRippleEdgeCases:
     """Test edge cases and error conditions."""
 
     def test_empty_trace(self, sample_rate: float) -> None:
-        """Test functions with empty trace."""
+        """Test that empty trace raises ValueError."""
         empty_data = np.array([])
-        trace = create_trace(empty_data, sample_rate)
 
-        # Empty trace raises ValueError from numpy operations (after RuntimeWarning)
-        import warnings
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
-            with pytest.raises(ValueError, match="zero-size array"):
-                ripple(trace)
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            create_trace(empty_data, sample_rate)
 
     def test_single_sample(self, sample_rate: float) -> None:
         """Test functions with single sample."""

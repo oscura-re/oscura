@@ -16,7 +16,7 @@ import mmap
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -130,7 +130,7 @@ def load_vcd(
         data, edges = _changes_to_samples(changes, header.timescale, sample_rate)
         metadata = _build_trace_metadata(path, target_var, header, sample_rate)
 
-        return DigitalTrace(data=data.astype(np.bool_), metadata=metadata, edges=edges)
+        return DigitalTrace(data=data.astype(np.bool_), metadata=metadata)
 
     except UnicodeDecodeError as e:
         raise FormatError(
@@ -239,15 +239,20 @@ def _build_trace_metadata(
     path: Path, target_var: VCDVariable, header: VCDHeader, sample_rate: float
 ) -> TraceMetadata:
     """Build trace metadata from VCD information."""
+    # Build trigger_info from VCD header
+    trigger_info: dict[str, Any] = {}
+    if header.timescale is not None:
+        trigger_info["timescale"] = header.timescale
+    if header.date:
+        trigger_info["date"] = header.date
+    if header.version:
+        trigger_info["version"] = header.version
+
     return TraceMetadata(
         sample_rate=sample_rate,
+        channel=target_var.name,
         source_file=str(path),
-        channel_name=target_var.name,
-        trigger_info={
-            "timescale": header.timescale,
-            "var_type": target_var.var_type,
-            "bit_width": target_var.size,
-        },
+        trigger_info=trigger_info if trigger_info else None,
     )
 
 

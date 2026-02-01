@@ -537,15 +537,13 @@ class TestHDLCEdgeCases:
     """Test HDLC decoder edge cases and error handling."""
 
     def test_decode_empty_trace(self):
-        """Test decoding empty trace."""
-        trace = DigitalTrace(
-            data=np.array([], dtype=bool),
-            metadata=TraceMetadata(sample_rate=10000.0),
-        )
-
-        decoder = HDLCDecoder(baudrate=1000, fcs="crc16")
-        packets = list(decoder.decode(trace))
-        assert len(packets) == 0
+        """Test that empty trace raises ValueError."""
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            DigitalTrace(
+                data=np.array([], dtype=bool),
+                metadata=TraceMetadata(sample_rate=10000.0),
+            )
 
     def test_decode_no_flags(self):
         """Test decoding trace with no flag sequences."""

@@ -61,28 +61,41 @@ def rise_time(
         IEEE 181-2011 Annex B (measurement uncertainty)
     """
     # Get the measurement value
-    value = meas.rise_time(trace, ref_levels=ref_levels)
+    result = meas.rise_time(trace, ref_levels=ref_levels)
 
-    if not include_uncertainty or np.isnan(value):
-        return MeasurementWithUncertainty(value=float(value), uncertainty=float(np.nan), unit="s")
+    # Extract value from MeasurementResult
+    if not result["applicable"]:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="s")
+
+    value = result["value"]
+
+    if value is None:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="s")
+
+    if not include_uncertainty:
+        return MeasurementWithUncertainty(
+            value=float(value),
+            uncertainty=float(np.nan),
+            unit="s",
+        )
 
     # Estimate uncertainty components
     uncertainties = []
 
     # 1. Time base uncertainty (Type B)
     if (
-        trace.metadata.calibration_info is not None
-        and trace.metadata.calibration_info.timebase_accuracy is not None
+        trace.metadata.calibration is not None
+        and trace.metadata.calibration.timebase_accuracy is not None
     ):
         # Use calibration timebase accuracy if available
-        timebase_ppm = trace.metadata.calibration_info.timebase_accuracy
+        timebase_ppm = trace.metadata.calibration.timebase_accuracy
         u_timebase = UncertaintyEstimator.time_base_uncertainty(
             trace.metadata.sample_rate, timebase_ppm
         )
         # Rise time involves 2 samples (start and stop), so uncertainty scales
         u_timebase_rise = u_timebase * np.sqrt(2)
         uncertainties.append(u_timebase_rise)
-    elif trace.metadata.calibration_info is not None:
+    elif trace.metadata.calibration is not None:
         # Use conservative estimate if calibration present but no timebase accuracy
         timebase_ppm = 25.0  # Typical scope: 25-50 ppm
         u_timebase = UncertaintyEstimator.time_base_uncertainty(
@@ -97,7 +110,7 @@ def rise_time(
 
     # 2. Interpolation uncertainty (Type B - rectangular distribution)
     # Linear interpolation error: typically ±0.5 samples worst case
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
     u_interp = UncertaintyEstimator.type_b_rectangular(0.5 * sample_period)
     uncertainties.append(u_interp)
 
@@ -147,20 +160,33 @@ def fall_time(
     References:
         IEEE 181-2011 Section 5.2
     """
-    value = meas.fall_time(trace, ref_levels=ref_levels)
+    result = meas.fall_time(trace, ref_levels=ref_levels)
 
-    if not include_uncertainty or np.isnan(value):
-        return MeasurementWithUncertainty(value=float(value), uncertainty=float(np.nan), unit="s")
+    # Extract value from MeasurementResult
+    if not result["applicable"]:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="s")
+
+    value = result["value"]
+
+    if value is None:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="s")
+
+    if not include_uncertainty:
+        return MeasurementWithUncertainty(
+            value=float(value),
+            uncertainty=float(np.nan),
+            unit="s",
+        )
 
     # Similar uncertainty calculation as rise_time
     uncertainties = []
 
     # Time base uncertainty
     if (
-        trace.metadata.calibration_info is not None
-        and trace.metadata.calibration_info.timebase_accuracy is not None
+        trace.metadata.calibration is not None
+        and trace.metadata.calibration.timebase_accuracy is not None
     ):
-        timebase_ppm = trace.metadata.calibration_info.timebase_accuracy
+        timebase_ppm = trace.metadata.calibration.timebase_accuracy
     else:
         timebase_ppm = 25.0  # Conservative default
     u_timebase = UncertaintyEstimator.time_base_uncertainty(
@@ -169,7 +195,7 @@ def fall_time(
     uncertainties.append(u_timebase * np.sqrt(2))
 
     # Interpolation uncertainty
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
     u_interp = UncertaintyEstimator.type_b_rectangular(0.5 * sample_period)
     uncertainties.append(u_interp)
 
@@ -208,9 +234,18 @@ def frequency(
         IEEE 181-2011 Section 5.3
         IEEE 1057-2017 Section 4.3
     """
-    value = meas.frequency(trace)
+    result = meas.frequency(trace)
 
-    if not include_uncertainty or np.isnan(value):
+    # Extract value from MeasurementResult
+    if not result["applicable"]:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="Hz")
+
+    value = result["value"]
+
+    if value is None:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="Hz")
+
+    if not include_uncertainty:
         return MeasurementWithUncertainty(value=float(value), uncertainty=float(np.nan), unit="Hz")
 
     # Frequency is 1/period, so uncertainty propagation:
@@ -225,10 +260,10 @@ def frequency(
 
     # Time base uncertainty
     if (
-        trace.metadata.calibration_info is not None
-        and trace.metadata.calibration_info.timebase_accuracy is not None
+        trace.metadata.calibration is not None
+        and trace.metadata.calibration.timebase_accuracy is not None
     ):
-        timebase_ppm = trace.metadata.calibration_info.timebase_accuracy
+        timebase_ppm = trace.metadata.calibration.timebase_accuracy
     else:
         timebase_ppm = 25.0  # Conservative default
     # Period measurement spans multiple cycles, typically more accurate
@@ -236,7 +271,7 @@ def frequency(
     uncertainties.append(u_period_timebase)
 
     # Interpolation uncertainty for edge detection
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
     u_interp = UncertaintyEstimator.type_b_rectangular(0.5 * sample_period)
     # Two edges per period
     u_period_interp = u_interp * np.sqrt(2)
@@ -246,10 +281,11 @@ def frequency(
     u_period = UncertaintyEstimator.combined_uncertainty([float(u) for u in uncertainties])
 
     # Propagate to frequency: u(f) = |df/dT| * u(T) = f^2 * u(T)
-    u_frequency = float((value**2) * u_period)
+    value_float = float(value)  # Already checked for None above
+    u_frequency = float((value_float**2) * u_period)
 
     return MeasurementWithUncertainty(
-        value=float(value), uncertainty=u_frequency, unit="Hz", n_samples=len(trace.data)
+        value=value_float, uncertainty=u_frequency, unit="Hz", n_samples=len(trace.data)
     )
 
 
@@ -275,9 +311,18 @@ def amplitude(
         IEEE 1057-2017 Section 4.2 (amplitude measurement)
         IEEE 1057-2017 Section 4.4 (amplitude accuracy)
     """
-    value = meas.amplitude(trace)
+    result = meas.amplitude(trace)
 
-    if not include_uncertainty or np.isnan(value):
+    # Extract value from MeasurementResult
+    if not result["applicable"]:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="V")
+
+    value = result["value"]
+
+    if value is None:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="V")
+
+    if not include_uncertainty:
         return MeasurementWithUncertainty(value=float(value), uncertainty=float(np.nan), unit="V")
 
     uncertainties = []
@@ -291,17 +336,18 @@ def amplitude(
     else:
         offset_error = 0.001  # 1 mV default
 
+    value_float = float(value)  # Already checked for None
     u_vertical = UncertaintyEstimator.vertical_uncertainty(
-        float(value), vertical_accuracy_pct, offset_error
+        value_float, vertical_accuracy_pct, offset_error
     )
     uncertainties.append(u_vertical)
 
     # 2. Quantization uncertainty (Type B - rectangular)
     if (
-        trace.metadata.calibration_info is not None
-        and trace.metadata.calibration_info.vertical_resolution is not None
+        trace.metadata.calibration is not None
+        and trace.metadata.calibration.vertical_resolution is not None
     ):
-        bits = trace.metadata.calibration_info.vertical_resolution
+        bits = trace.metadata.calibration.vertical_resolution
         vertical_range = np.ptp(trace.data)  # Simplification
         lsb = vertical_range / (2**bits)
         u_quant = UncertaintyEstimator.type_b_rectangular(0.5 * lsb)
@@ -321,7 +367,7 @@ def amplitude(
     total_uncertainty = UncertaintyEstimator.combined_uncertainty(uncertainties)
 
     return MeasurementWithUncertainty(
-        value=float(value),
+        value=value_float,
         uncertainty=total_uncertainty,
         unit="V",
         n_samples=len(trace.data),
@@ -347,9 +393,18 @@ def rms(
     References:
         IEEE 1057-2017 Section 4.3
     """
-    value = meas.rms(trace, ac_coupled=ac_coupled)
+    result = meas.rms(trace, ac_coupled=ac_coupled)
 
-    if not include_uncertainty or np.isnan(value):
+    # Extract value from MeasurementResult
+    if not result["applicable"]:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="V")
+
+    value = result["value"]
+
+    if value is None:
+        return MeasurementWithUncertainty(value=float(np.nan), uncertainty=float(np.nan), unit="V")
+
+    if not include_uncertainty:
         return MeasurementWithUncertainty(value=float(value), uncertainty=float(np.nan), unit="V")
 
     uncertainties = []
@@ -357,21 +412,22 @@ def rms(
     # Vertical accuracy
     vertical_accuracy_pct = 2.0
     offset_error = 0.001  # 1 mV
+    value_float = float(value)  # Already checked for None
     u_vertical = UncertaintyEstimator.vertical_uncertainty(
-        float(value), vertical_accuracy_pct, offset_error
+        value_float, vertical_accuracy_pct, offset_error
     )
     uncertainties.append(u_vertical)
 
     # Statistical uncertainty (Type A)
     # RMS of N samples: u(RMS) ≈ RMS / sqrt(2N) for Gaussian noise
     n = len(trace.data)
-    u_statistical = value / np.sqrt(2 * n) if n > 0 else 0.0
+    u_statistical = value_float / np.sqrt(2 * n) if n > 0 else 0.0
     uncertainties.append(u_statistical)
 
     total_uncertainty = UncertaintyEstimator.combined_uncertainty(uncertainties)
 
     return MeasurementWithUncertainty(
-        value=float(value),
+        value=value_float,
         uncertainty=total_uncertainty,
         unit="V",
         n_samples=len(trace.data),

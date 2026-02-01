@@ -250,13 +250,8 @@ def load_wav(
     # Build metadata
     metadata = TraceMetadata(
         sample_rate=float(sample_rate),
+        channel=channel_name,
         source_file=str(path),
-        channel_name=channel_name,
-        trigger_info={
-            "original_dtype": str(data.dtype),
-            "n_channels": data.shape[1] if data.ndim == 2 else 1,
-            "normalized": normalize,
-        },
     )
 
     return WaveformTrace(data=audio_data, metadata=metadata)

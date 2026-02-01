@@ -105,7 +105,7 @@ def soa_analysis(
     min_len = min(len(v_data), len(i_data))
     v_data = v_data[:min_len]
     i_data = i_data[:min_len]
-    sample_period = voltage.metadata.time_base
+    sample_period = 1.0 / voltage.metadata.sample_rate
 
     # Select applicable limits based on pulse width
     if pulse_width is None:

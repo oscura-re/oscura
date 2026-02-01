@@ -239,7 +239,7 @@ class AutomotiveDiagnosticsDemo(BaseDemo):
         """Analyze OBD-II messages."""
         print_info("Analyzing OBD-II diagnostic messages...")
 
-        for name, trace in self.can_traces:
+        for name, _trace in self.can_traces:
             if "OBD2" in name and "RESP" in name:
                 # Decode OBD-II response (simplified)
                 # In real implementation, would parse CAN frame properly
@@ -261,7 +261,7 @@ class AutomotiveDiagnosticsDemo(BaseDemo):
         print_info("Analyzing UDS diagnostic messages...")
 
         uds_count = 0
-        for name, trace in self.can_traces:
+        for name, _trace in self.can_traces:
             if "UDS" in name:
                 print_info(f"\n{name}:")
 

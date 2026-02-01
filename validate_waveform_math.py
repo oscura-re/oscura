@@ -223,7 +223,12 @@ class MathematicalValidator:
 
             # Get amplitude from analyzer
             try:
-                actual_vpp = osc.amplitude(trace)
+                measurement_result = osc.amplitude(trace)
+                actual_vpp = (
+                    (measurement_result.get("value") or 0.0)
+                    if measurement_result.get("applicable")
+                    else 0.0
+                )
             except Exception as e:
                 print(f"  Error measuring amplitude for {filename}: {e}")
                 continue
@@ -233,7 +238,7 @@ class MathematicalValidator:
                 parameter="Vpp (V)",
                 expected=expected_vpp,
                 actual=actual_vpp,
-                formula="Vpp = max(signal) - min(signal) = 2 × amplitude",
+                formula="Vpp = max(signal) - min(signal) = 2 x amplitude",
                 notes=description,
             )
 
@@ -259,7 +264,12 @@ class MathematicalValidator:
 
             # Use oscura's frequency detection
             try:
-                actual_freq = osc.frequency(trace)
+                measurement_result = osc.frequency(trace)
+                actual_freq = (
+                    (measurement_result.get("value") or 0.0)
+                    if measurement_result.get("applicable")
+                    else 0.0
+                )
             except Exception as e:
                 print(f"  Error analyzing {filename}: {e}")
                 continue
@@ -336,7 +346,12 @@ class MathematicalValidator:
         if filepath.exists():
             trace = self._load_wfm(filepath)
             dc_level = 2.5  # From generator config
-            actual_rms = osc.rms(trace)
+            measurement_result = osc.rms(trace)
+            actual_rms = (
+                (measurement_result.get("value") or 0.0)
+                if measurement_result.get("applicable")
+                else 0.0
+            )
 
             self._add_result(
                 test_name="RMS: DC Signal",
@@ -370,7 +385,12 @@ class MathematicalValidator:
 
         # Get actual THD from analyzer
         try:
-            actual_thd = spectral.thd(trace)
+            measurement_result = spectral.thd(trace)
+            actual_thd = (
+                (measurement_result.get("value") or 0.0)
+                if measurement_result.get("applicable")
+                else 0.0
+            )
             # THD can be returned as percentage or ratio, ensure we're comparing same units
             if actual_thd < 0:
                 # Negative THD is impossible - skip this test
@@ -385,7 +405,7 @@ class MathematicalValidator:
             parameter="THD (ratio)",
             expected=expected_thd,
             actual=actual_thd,
-            formula="THD = √(A₂² + A₃² + A₄² + A₅²) / A₁ = √(0.5² + 0.33² + 0.25² + 0.2²) / 1.0 = 0.681",
+            formula="THD = √(A₂² + A₃² + A₄² + A₅²) / A₁ = √(0.5² + 0.33² + 0.25² + 0.2²) / 1.0",
             notes="5-component signal: 1kHz fundamental with 4 harmonics (amplitudes decay as 1/n)",
         )
 
@@ -408,7 +428,12 @@ class MathematicalValidator:
 
             # Get duty cycle from analyzer
             try:
-                actual_duty = osc.duty_cycle(trace)
+                measurement_result = osc.duty_cycle(trace)
+                actual_duty = (
+                    (measurement_result.get("value") or 0.0)
+                    if measurement_result.get("applicable")
+                    else 0.0
+                )
             except Exception as e:
                 print(f"  Error measuring duty cycle for {filename}: {e}")
                 continue
@@ -442,7 +467,12 @@ class MathematicalValidator:
 
             # Get SNR from analyzer
             try:
-                actual_snr_db = spectral.snr(trace)
+                measurement_result = spectral.snr(trace)
+                actual_snr_db = (
+                    (measurement_result.get("value") or 0.0)
+                    if measurement_result.get("applicable")
+                    else 0.0
+                )
             except Exception as e:
                 print(f"  Error measuring SNR for {filename}: {e}")
                 continue
@@ -474,7 +504,12 @@ class MathematicalValidator:
         expected_std = float(np.std(data, ddof=0))  # Population std dev
 
         # Get actual values from analyzer
-        actual_mean = osc.mean(trace)
+        measurement_result = osc.mean(trace)
+        actual_mean = (
+            (measurement_result.get("value") or 0.0)
+            if measurement_result.get("applicable")
+            else 0.0
+        )
         stats = statistics.basic_stats(trace)
         actual_std = stats.get("std", 0.0)
 
@@ -503,7 +538,12 @@ class MathematicalValidator:
             data = trace.data
 
             expected_mean_dc = 2.5  # From generator config
-            actual_mean_dc = osc.mean(trace)
+            measurement_result = osc.mean(trace)
+            actual_mean_dc = (
+                (measurement_result.get("value") or 0.0)
+                if measurement_result.get("applicable")
+                else 0.0
+            )
 
             self._add_result(
                 test_name="Statistics: DC Mean",

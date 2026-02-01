@@ -24,11 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class JitterAnalysisDemo(BaseDemo):
@@ -37,15 +41,15 @@ class JitterAnalysisDemo(BaseDemo):
     name = "Jitter Analysis Fundamentals"
     description = "IEEE 2414-2020 jitter measurements: TIE, C2C, period jitter, DCD"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Time Interval Error (TIE) measurement",
         "Cycle-to-cycle jitter (C2C)",
         "Period jitter analysis",
         "Duty cycle distortion (DCD)",
         "Jitter histogram generation",
     ]
-    ieee_standards = ["IEEE 2414-2020"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["IEEE 2414-2020"]
+    related_demos: ClassVar[list[str]] = [
         "04_advanced_analysis/02_jitter_decomposition.py",
         "04_advanced_analysis/03_bathtub_curves.py",
     ]
@@ -188,8 +192,8 @@ class JitterAnalysisDemo(BaseDemo):
         self,
         clock: WaveformTrace,
         label: str,
-        expected_tie_rms_ps: float = None,
-        expected_dcd_percent: float = None,
+        expected_tie_rms_ps: float | None = None,
+        expected_dcd_percent: float | None = None,
     ) -> dict[str, float]:
         """Analyze jitter characteristics of clock signal."""
         from demos.common.formatting import print_info

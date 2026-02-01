@@ -105,8 +105,8 @@ class TestCalibrationInfo:
         cal_info = CalibrationInfo(instrument="Test")
         assert cal_info.is_calibration_current is None
 
-    def test_traceability_summary(self):
-        """Test traceability summary generation."""
+    def test_traceability_info_complete(self):
+        """Test complete calibration traceability information."""
         cal_date = datetime(2024, 12, 15)
         due_date = datetime(2025, 12, 15)
 
@@ -118,20 +118,18 @@ class TestCalibrationInfo:
             calibration_cert_number="CAL-2024-12345",
         )
 
-        summary = cal_info.traceability_summary
-        assert "Tektronix DPO7254C" in summary
-        assert "C012345" in summary
-        assert "2024-12-15" in summary
-        assert "2025-12-15" in summary
-        assert "CAL-2024-12345" in summary
+        assert cal_info.instrument == "Tektronix DPO7254C"
+        assert cal_info.serial_number == "C012345"
+        assert cal_info.calibration_date == cal_date
+        assert cal_info.calibration_due_date == due_date
+        assert cal_info.calibration_cert_number == "CAL-2024-12345"
 
-    def test_traceability_summary_minimal(self):
-        """Test traceability summary with minimal info."""
+    def test_traceability_info_minimal(self):
+        """Test minimal calibration traceability information."""
         cal_info = CalibrationInfo(instrument="Generic Scope")
-        summary = cal_info.traceability_summary
-        assert "Generic Scope" in summary
-        # Should only have instrument name
-        assert summary == "Instrument: Generic Scope"
+        assert cal_info.instrument == "Generic Scope"
+        assert cal_info.serial_number is None
+        assert cal_info.calibration_cert_number is None
 
 
 class TestTraceMetadataWithCalibration:
@@ -144,17 +142,17 @@ class TestTraceMetadataWithCalibration:
             calibration_date=datetime(2024, 10, 1),
         )
 
-        metadata = TraceMetadata(sample_rate=1e9, calibration_info=cal_info)
+        metadata = TraceMetadata(sample_rate=1e9, calibration=cal_info)
 
         assert metadata.sample_rate == 1e9
-        assert metadata.calibration_info is not None
-        assert metadata.calibration_info.instrument == "Keysight DSOX4024A"
+        assert metadata.calibration is not None
+        assert metadata.calibration.instrument == "Keysight DSOX4024A"
 
     def test_metadata_without_calibration_info(self):
         """Test metadata without calibration info (backward compatible)."""
         metadata = TraceMetadata(sample_rate=1e6)
         assert metadata.sample_rate == 1e6
-        assert metadata.calibration_info is None
+        assert metadata.calibration is None
 
     def test_waveform_trace_with_calibration(self):
         """Test complete waveform trace with calibration info."""
@@ -170,16 +168,16 @@ class TestTraceMetadataWithCalibration:
             sample_rate=2.5e9,  # 2.5 GSa/s
             vertical_scale=0.1,  # 100 mV/div
             vertical_offset=0.0,
-            calibration_info=cal_info,
+            calibration=cal_info,
         )
 
         data = np.sin(2 * np.pi * 1e6 * np.linspace(0, 1e-3, 2500))
         trace = WaveformTrace(data=data, metadata=metadata)
 
         assert len(trace) == 2500
-        assert trace.metadata.calibration_info is not None
-        assert trace.metadata.calibration_info.instrument == "Tektronix MSO64"
-        assert trace.metadata.calibration_info.probe_attenuation == 10.0
+        assert trace.metadata.calibration is not None
+        assert trace.metadata.calibration.instrument == "Tektronix MSO64"
+        assert trace.metadata.calibration.probe_attenuation == 10.0
 
 
 class TestRegulatoryComplianceScenarios:
@@ -213,22 +211,17 @@ class TestRegulatoryComplianceScenarios:
             sample_rate=2.5e9,
             vertical_scale=0.5,  # 500 mV/div
             vertical_offset=0.0,
-            acquisition_time=datetime(2024, 12, 20, 14, 30, 0),
-            calibration_info=cal_info,
+            calibration=cal_info,
         )
 
         # Verify all required traceability fields are present
-        assert metadata.calibration_info.calibration_date is not None
-        assert metadata.calibration_info.calibration_due_date is not None
-        assert metadata.calibration_info.calibration_cert_number is not None
-        assert metadata.calibration_info.is_calibration_current is True
+        assert metadata.calibration.calibration_date is not None
+        assert metadata.calibration.calibration_due_date is not None
+        assert metadata.calibration.calibration_cert_number is not None
+        assert metadata.calibration.is_calibration_current is True
 
-        # Verify measurement timestamp
-        assert metadata.acquisition_time is not None
-
-        # Generate audit trail
-        summary = metadata.calibration_info.traceability_summary
-        assert "TEK-CAL-2024-040123" in summary
+        # Verify traceability certificate is present
+        assert metadata.calibration.calibration_cert_number == "TEK-CAL-2024-040123"
 
     def test_fda_regulated_scenario(self):
         """Test metadata for FDA-regulated medical device testing.
@@ -251,18 +244,14 @@ class TestRegulatoryComplianceScenarios:
 
         metadata = TraceMetadata(
             sample_rate=1e9,
-            acquisition_time=datetime.now(),
-            source_file="/data/medical_device_test_2024-12-20.csv",
-            calibration_info=cal_info,
+            calibration=cal_info,
         )
 
         # Verify audit trail components
-        assert metadata.calibration_info is not None
-        assert metadata.acquisition_time is not None
-        assert metadata.source_file is not None
+        assert metadata.calibration is not None
 
         # Verify calibration is current
-        assert metadata.calibration_info.is_calibration_current is True
+        assert metadata.calibration.is_calibration_current is True
 
     def test_nist_traceability_chain(self):
         """Test metadata documenting NIST traceability.
@@ -280,13 +269,12 @@ class TestRegulatoryComplianceScenarios:
 
         metadata = TraceMetadata(
             sample_rate=20e9,  # 20 GSa/s
-            calibration_info=cal_info,
+            calibration=cal_info,
         )
 
         # Document traceability
-        summary = metadata.calibration_info.traceability_summary
-        assert "RS-CAL-2024-123456" in summary
-        assert metadata.calibration_info.calibration_date == datetime(2024, 8, 1)
+        assert metadata.calibration.calibration_cert_number == "RS-CAL-2024-123456"
+        assert metadata.calibration.calibration_date == datetime(2024, 8, 1)
 
 
 class TestCalibrationWarnings:
@@ -306,7 +294,7 @@ class TestCalibrationWarnings:
     def test_missing_calibration_info_allowed(self):
         """Test that missing calibration info is allowed (backward compatible)."""
         metadata = TraceMetadata(sample_rate=1e6)
-        assert metadata.calibration_info is None
+        assert metadata.calibration is None
 
         # Should still be able to create trace
         data = np.array([1.0, 2.0, 3.0])

@@ -134,8 +134,6 @@ def apply_matching_optimizations():
     content = content.replace(old_copy, new_no_copy)
 
     # Optimization 4: Use enumerate in _compare_candidate_pairs
-    old_loop = """    for i, (offset1, seq1) in enumerate(candidates):
-        for offset2, seq2 in candidates[i + 1 :]:"""
     # Already using enumerate, this is good
 
     # Optimization 5: Fuzzy search loop bounds check

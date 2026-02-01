@@ -45,7 +45,7 @@ def create_test_trace(
 
     metadata = TraceMetadata(
         sample_rate=sample_rate,
-        channel_name="test_channel",
+        channel="test_channel",
     )
 
     return WaveformTrace(data=data, metadata=metadata)

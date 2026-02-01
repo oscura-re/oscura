@@ -25,7 +25,7 @@ class TestSmartFilter:
         noisy = clean + 0.3 * np.random.randn(n_samples)
 
         trace = WaveformTrace(
-            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         filtered = osc.smart_filter(trace, target="noise")
@@ -47,7 +47,7 @@ class TestSmartFilter:
         noisy = signal_clean + hum
 
         trace = WaveformTrace(
-            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         filtered = osc.smart_filter(trace, target="60hz_hum")

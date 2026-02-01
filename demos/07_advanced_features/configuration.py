@@ -71,7 +71,7 @@ class ConfigurationDemo(BaseDemo):
 
         # Test cache behavior
         signal = data["signal"]
-        for i in range(5):
+        for _i in range(5):
             _ = fft(signal)
 
         stats = get_fft_cache_stats()

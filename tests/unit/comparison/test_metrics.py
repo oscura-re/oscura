@@ -128,13 +128,13 @@ class TestDifference:
 
     def test_difference_channel_name(self, sample_trace, noisy_trace):
         """Test that difference trace has correct channel name."""
-        result = difference(sample_trace, noisy_trace, channel_name="test_diff")
-        assert result.metadata.channel_name == "test_diff"
+        result = difference(sample_trace, noisy_trace, channel="test_diff")
+        assert result.metadata.channel == "test_diff"
 
     def test_difference_default_channel_name(self, sample_trace, noisy_trace):
         """Test that difference trace has default channel name."""
         result = difference(sample_trace, noisy_trace)
-        assert result.metadata.channel_name == "difference"
+        assert result.metadata.channel == "difference"
 
     def test_difference_normalize(self, sample_trace):
         """Test normalized difference calculation."""
@@ -1082,11 +1082,10 @@ class TestErrorHandling:
         """Test difference with empty traces."""
         data = np.array([], dtype=np.float64)
         metadata = TraceMetadata(sample_rate=1e6)
-        trace1 = WaveformTrace(data=data, metadata=metadata)
-        trace2 = WaveformTrace(data=data, metadata=metadata)
 
-        result = difference(trace1, trace2)
-        assert len(result.data) == 0
+        # Empty traces cannot be created - they violate data validation
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            WaveformTrace(data=data, metadata=metadata)
 
     def test_similarity_single_sample(self):
         """Test similarity with single sample traces."""

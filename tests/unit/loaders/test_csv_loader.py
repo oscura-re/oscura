@@ -34,7 +34,7 @@ class TestCSVLoaderBasic:
         assert np.allclose(trace.data, [0.0, 1.0, 0.5, -0.5, -1.0])
         assert trace.metadata.sample_rate == pytest.approx(1000.0, rel=0.01)
         assert trace.metadata.source_file == str(csv_path)
-        assert trace.metadata.channel_name == "voltage"
+        assert trace.metadata.channel == "voltage"
 
     @pytest.mark.unit
     @pytest.mark.loader
@@ -65,7 +65,7 @@ class TestCSVLoaderBasic:
 
         assert len(trace.data) == 3
         assert np.allclose(trace.data, [0.2, 0.4, 0.6])
-        assert trace.metadata.channel_name == "ch2"
+        assert trace.metadata.channel == "ch2"
 
     @pytest.mark.unit
     @pytest.mark.loader
@@ -78,7 +78,7 @@ class TestCSVLoaderBasic:
 
         assert len(trace.data) == 2
         assert np.allclose(trace.data, [0.2, 0.5])
-        assert trace.metadata.channel_name == "ch2"
+        assert trace.metadata.channel == "ch2"
 
     @pytest.mark.unit
     @pytest.mark.loader
@@ -200,7 +200,7 @@ class TestCSVLoaderColumnDetection:
 
             trace = load_csv(csv_path)
             assert len(trace.data) == 2
-            assert trace.metadata.channel_name == voltage_name
+            assert trace.metadata.channel == voltage_name
 
     @pytest.mark.unit
     @pytest.mark.loader
@@ -213,12 +213,12 @@ class TestCSVLoaderColumnDetection:
 
         # Should auto-detect ch1 as first voltage column
         trace = load_csv(csv_path)
-        assert trace.metadata.channel_name == "ch1"
+        assert trace.metadata.channel == "ch1"
         assert np.allclose(trace.data, [1.0, 1.5, 2.0])
 
         # Explicitly select ch3
         trace = load_csv(csv_path, voltage_column="ch3")
-        assert trace.metadata.channel_name == "ch3"
+        assert trace.metadata.channel == "ch3"
         assert np.allclose(trace.data, [3.0, 3.5, 4.0])
 
     @pytest.mark.unit
@@ -230,7 +230,7 @@ class TestCSVLoaderColumnDetection:
 
         trace = load_csv(csv_path)
         assert len(trace.data) == 2
-        assert trace.metadata.channel_name == "VOLTAGE"
+        assert trace.metadata.channel == "VOLTAGE"
 
 
 class TestCSVLoaderSampleRate:
@@ -297,7 +297,7 @@ class TestCSVLoaderEdgeCases:
         trace = load_csv(csv_path, skip_rows=2)
         # After skipping 2 rows, should parse remaining data
         assert len(trace.data) == 3
-        assert trace.metadata.channel_name == "voltage"
+        assert trace.metadata.channel == "voltage"
         assert np.allclose(trace.data, [1.0, 2.0, 3.0])
 
     @pytest.mark.unit
@@ -314,7 +314,7 @@ class TestCSVLoaderEdgeCases:
         trace = load_csv(csv_path)
         # Should successfully parse valid rows
         assert len(trace.data) == 3
-        assert trace.metadata.channel_name == "voltage"
+        assert trace.metadata.channel == "voltage"
 
     @pytest.mark.unit
     @pytest.mark.loader
@@ -430,7 +430,7 @@ class TestCSVLoaderRealWorldFormats:
 
         trace = load_csv(csv_path)
         assert len(trace.data) == 5
-        assert trace.metadata.channel_name == "CH1"
+        assert trace.metadata.channel == "CH1"
         assert trace.metadata.sample_rate == pytest.approx(1e6, rel=0.01)
 
     @pytest.mark.unit
@@ -461,7 +461,7 @@ class TestCSVLoaderRealWorldFormats:
 
         # Should pick voltage column
         trace = load_csv(csv_path)
-        assert trace.metadata.channel_name == "Voltage"
+        assert trace.metadata.channel == "Voltage"
         assert len(trace.data) == 3
 
     @pytest.mark.unit
@@ -686,7 +686,7 @@ class TestBasicCSVLoader:
 
         assert len(trace.data) == 2
         assert np.allclose(trace.data, [10.0, 20.0])
-        assert trace.metadata.channel_name == "ch2"
+        assert trace.metadata.channel == "ch2"
 
     @pytest.mark.unit
     @pytest.mark.loader
@@ -709,7 +709,7 @@ class TestBasicCSVLoader:
 
         assert len(trace.data) == 2
         assert np.allclose(trace.data, [3.0, 6.0])
-        assert trace.metadata.channel_name == "ch3"
+        assert trace.metadata.channel == "ch3"
 
     @pytest.mark.unit
     @pytest.mark.loader
@@ -864,7 +864,7 @@ class TestBasicCSVLoader:
         )
 
         # Should auto-detect voltage column (first voltage-named column after time)
-        assert trace.metadata.channel_name == "voltage"
+        assert trace.metadata.channel == "voltage"
         assert np.allclose(trace.data, [1.0, 2.0])
 
 

@@ -210,7 +210,7 @@ class TestQuickSpectral:
         data = np.sin(2 * np.pi * fundamental * t)
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace, fundamental=fundamental)
@@ -232,7 +232,7 @@ class TestQuickSpectral:
         data += 0.01 * np.sin(2 * np.pi * 2 * fundamental * t)  # 2nd harmonic
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace, fundamental=fundamental)
@@ -250,7 +250,7 @@ class TestQuickSpectral:
         data = np.sin(2 * np.pi * fundamental * t)
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace)  # No fundamental specified
@@ -266,7 +266,7 @@ class TestQuickSpectral:
         data = np.sin(2 * np.pi * 1000 * t)
 
         trace = WaveformTrace(
-            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         metrics = quick_spectral(trace)
@@ -297,7 +297,7 @@ class TestSmartFilter:
         noisy = clean + 0.3 * np.random.randn(n_samples)
 
         trace = WaveformTrace(
-            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         filtered = osc.smart_filter(trace, target="noise")
@@ -326,7 +326,7 @@ class TestSmartFilter:
         noisy = signal_clean + hum
 
         trace = WaveformTrace(
-            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=noisy, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         filtered = osc.smart_filter(trace, target="60hz_hum")
@@ -369,7 +369,7 @@ class TestReverseEngineerSignal:
         signal_data = np.array(signal_data) + 0.05 * np.random.randn(len(signal_data))
 
         trace = WaveformTrace(
-            data=signal_data, metadata=TraceMetadata(sample_rate=sample_rate, channel_name="test")
+            data=signal_data, metadata=TraceMetadata(sample_rate=sample_rate, channel="test")
         )
 
         result = osc.workflows.reverse_engineer_signal(trace)

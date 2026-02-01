@@ -596,18 +596,13 @@ class TestCANFDDecoderDecode:
             assert data_length <= 64
 
     def test_decode_empty_trace(self):
-        """Test decoding empty trace."""
-        decoder = CANFDDecoder()
-
-        # Empty trace
-        trace = DigitalTrace(
-            data=np.array([], dtype=bool),
-            metadata=TraceMetadata(sample_rate=10e6),
-        )
-
-        packets = list(decoder.decode(trace))
-
-        assert len(packets) == 0
+        """Test that empty trace raises ValueError."""
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            DigitalTrace(
+                data=np.array([], dtype=bool),
+                metadata=TraceMetadata(sample_rate=10e6),
+            )
 
     def test_decode_idle_trace(self):
         """Test decoding trace with only idle (all recessive)."""

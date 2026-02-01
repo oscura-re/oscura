@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 
@@ -49,7 +50,7 @@ class EMCComplianceDemo(BaseDemo):
     category = "domain_specific"
 
     # CISPR 32 Class B limits (dBμV) - residential
-    CISPR32_CONDUCTED = {
+    CISPR32_CONDUCTED: ClassVar[dict[float, tuple[int, int]]] = {
         0.15: (66, 56),  # (quasi-peak, average) at 150 kHz
         0.50: (56, 46),  # 500 kHz
         5.00: (56, 46),  # 5 MHz
@@ -57,7 +58,7 @@ class EMCComplianceDemo(BaseDemo):
     }
 
     # CISPR 32 Class B radiated limits (dBμV/m at 10m)
-    CISPR32_RADIATED = {
+    CISPR32_RADIATED: ClassVar[dict[int, tuple[int, int]]] = {
         30: (30, 30),  # 30 MHz
         230: (37, 37),  # 230 MHz
         1000: (37, 37),  # 1 GHz
@@ -83,8 +84,8 @@ class EMCComplianceDemo(BaseDemo):
         fundamental = 100e3
         signal = np.zeros(n_samples)
 
-        harmonics = [1, 2, 3, 5, 7, 9]
-        levels_dbuv = [90, 75, 68, 55, 48, 42]
+        harmonics: ClassVar[list[str]] = [1, 2, 3, 5, 7, 9]
+        levels_dbuv: ClassVar[list[str]] = [90, 75, 68, 55, 48, 42]
 
         for harmonic, level_dbuv in zip(harmonics, levels_dbuv, strict=False):
             amplitude_uv = 10 ** (level_dbuv / 20)
@@ -108,8 +109,8 @@ class EMCComplianceDemo(BaseDemo):
 
         # Radiated emissions: Multiple RF sources
         radiated_signal = np.zeros(n_samples)
-        frequencies = [30e6, 88e6, 150e6, 433e6]
-        levels_dbuvm = [35, 42, 38, 33]
+        frequencies: ClassVar[list[str]] = [30e6, 88e6, 150e6, 433e6]
+        levels_dbuvm: ClassVar[list[str]] = [35, 42, 38, 33]
 
         antenna_factor = 20  # dB
         for freq, level_dbuvm in zip(frequencies, levels_dbuvm, strict=False):
@@ -163,9 +164,9 @@ class EMCComplianceDemo(BaseDemo):
         measurements = 0
         max_margin = 0.0
         min_margin = 100.0
-        violations = []
+        violations: ClassVar[list[str]] = []
 
-        for freq_mhz, (qp_limit, avg_limit) in sorted(self.CISPR32_CONDUCTED.items()):
+        for freq_mhz, (qp_limit, _avg_limit) in sorted(self.CISPR32_CONDUCTED.items()):
             freq_hz = freq_mhz * 1e6
             idx = np.argmin(np.abs(freqs - freq_hz))
             measured_dbuv = magnitude_dbuv[idx]
@@ -215,7 +216,7 @@ class EMCComplianceDemo(BaseDemo):
         measurements = 0
         max_margin = 0.0
         min_margin = 100.0
-        violations = []
+        violations: ClassVar[list[str]] = []
 
         for freq_mhz, (qp_limit, _avg_limit) in sorted(self.CISPR32_RADIATED.items()):
             freq_hz = freq_mhz * 1e6
@@ -249,7 +250,7 @@ class EMCComplianceDemo(BaseDemo):
         """Print overall compliance summary."""
         print_info("Overall EMC Compliance Status:\n")
 
-        tests = [
+        tests: ClassVar[list[str]] = [
             ("CISPR 32 Conducted", self.results.get("conducted_compliant", False)),
             ("CISPR 32 Radiated", self.results.get("radiated_compliant", False)),
         ]

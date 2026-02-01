@@ -76,12 +76,12 @@ class TestProtocolBoundaryConditions:
     """Test protocol decoder boundary conditions."""
 
     def test_empty_digital_trace(self) -> None:
-        """Test decoding with empty trace."""
+        """Test that empty trace raises ValueError."""
         metadata = TraceMetadata(sample_rate=1e6)
-        empty_trace = DigitalTrace(data=np.array([], dtype=bool), metadata=metadata)
 
-        # Decoders should handle empty gracefully
-        assert len(empty_trace.data) == 0
+        # Empty data arrays are rejected in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            DigitalTrace(data=np.array([], dtype=bool), metadata=metadata)
 
     def test_single_sample_trace(self) -> None:
         """Test decoding with single-sample trace."""
@@ -200,13 +200,13 @@ class TestPropertyBasedProtocol:
         decoder = SPIDecoder(cpol=0, cpha=0, bit_order=bit_order)
         assert decoder.get_option("bit_order") in ["msb", "lsb"]
 
-    @given(st.lists(st.booleans(), min_size=0, max_size=1000))
+    @given(st.lists(st.booleans(), min_size=1, max_size=1000))
     def test_digital_trace_arbitrary_data(self, data: list[bool]) -> None:
         """Property: DigitalTrace should handle arbitrary boolean sequences."""
         metadata = TraceMetadata(sample_rate=1e6)
         trace = DigitalTrace(data=np.array(data, dtype=bool), metadata=metadata)
 
-        # Should not crash
+        # Should not crash (empty arrays rejected in v0.9.0+)
         assert len(trace.data) == len(data)
         assert trace.data.dtype == np.bool_
 

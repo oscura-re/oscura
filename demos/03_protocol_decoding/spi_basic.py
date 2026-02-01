@@ -197,7 +197,7 @@ class SPIDemo(BaseDemo):
         miso.extend([0] * samples_per_bit)
 
         # Process each byte
-        for master_byte, slave_byte in zip(master_data, slave_data):
+        for master_byte, slave_byte in zip(master_data, slave_data, strict=False):
             for bit_idx in range(8):
                 master_bit = (master_byte >> (7 - bit_idx)) & 1
                 slave_bit = (slave_byte >> (7 - bit_idx)) & 1

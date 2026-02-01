@@ -54,7 +54,7 @@ class TestDisplay:
         data = np.sin(2 * np.pi * np.linspace(0, 1, 1000))
         trace = WaveformTrace(
             data=data.astype(np.float64),
-            metadata=TraceMetadata(sample_rate=1e6, channel_name="CH1"),
+            metadata=TraceMetadata(sample_rate=1e6, channel="CH1"),
         )
 
         display = TraceDisplay(trace, title="Test Trace")

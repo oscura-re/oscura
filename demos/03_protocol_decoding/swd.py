@@ -24,11 +24,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import DigitalTrace, TraceMetadata
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class SWDDemo(BaseDemo):
@@ -37,15 +41,15 @@ class SWDDemo(BaseDemo):
     name = "SWD Protocol Decoding"
     description = "Decode ARM Serial Wire Debug read/write transactions"
     category = "protocol_decoding"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "SWD packet decoding",
         "DP/AP read/write operations",
         "Parity validation",
         "ACK response decoding",
         "SWDIO bidirectional handling",
     ]
-    ieee_standards = ["ARM Debug Interface v5.2"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["ARM Debug Interface v5.2"]
+    related_demos: ClassVar[list[str]] = [
         "03_protocol_decoding/08_jtag.py",
         "03_protocol_decoding/02_spi_basic.py",
     ]
@@ -141,8 +145,8 @@ class SWDDemo(BaseDemo):
         clock_freq = 1e6  # 1 MHz
         samples_per_bit = max(1, int(sample_rate / clock_freq))
 
-        swclk = []
-        swdio = []
+        swclk: ClassVar[list[str]] = []
+        swdio: ClassVar[list[str]] = []
 
         # Idle period
         for _ in range(8):
@@ -200,11 +204,11 @@ class SWDDemo(BaseDemo):
 
         return (
             DigitalTrace(
-                data=np.array([val for val in swclk], dtype=bool),
+                data=np.array(list(swclk), dtype=bool),
                 metadata=TraceMetadata(sample_rate=sample_rate, channel_name="swclk"),
             ),
             DigitalTrace(
-                data=np.array([val for val in swdio], dtype=bool),
+                data=np.array(list(swdio), dtype=bool),
                 metadata=TraceMetadata(sample_rate=sample_rate, channel_name="swdio"),
             ),
         )
@@ -240,7 +244,7 @@ class SWDDemo(BaseDemo):
         print_info(f"Expected type: {expected_type}")
         print_info(f"Expected data: 0x{expected_data:08X}")
 
-        packets = []
+        packets: ClassVar[list[str]] = []
         try:
             from oscura import decode_swd
 

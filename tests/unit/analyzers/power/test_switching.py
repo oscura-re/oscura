@@ -616,19 +616,10 @@ class TestSwitchingEdgeCases:
     """Test edge cases and error conditions."""
 
     def test_empty_traces(self, sample_rate: float) -> None:
-        """Test with empty traces."""
-        v = create_trace(np.array([]), sample_rate)
-        i = create_trace(np.array([]), sample_rate)
-
-        # Empty traces may raise an error due to max() on empty array
-        # or return empty results depending on implementation
-        try:
-            result = switching_loss(v, i)
-            assert result["n_turn_on"] == 0
-            assert result["n_turn_off"] == 0
-        except ValueError:
-            # Expected for empty arrays - max() fails on empty
-            pass
+        """Test that empty trace raises ValueError."""
+        # Empty trace creation raises ValueError in v0.9.0+
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            create_trace(np.array([]), sample_rate)
 
     def test_single_sample(self, sample_rate: float) -> None:
         """Test with single sample traces."""

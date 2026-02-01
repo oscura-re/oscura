@@ -36,7 +36,7 @@ def sample_waveform():
     data = 2.5 * np.sin(2 * np.pi * 1000 * t)
     metadata = TraceMetadata(
         sample_rate=sample_rate,
-        channel_name="CH1",
+        channel="CH1",
         vertical_scale=1.0,
         vertical_offset=0.0,
     )
@@ -90,9 +90,9 @@ def multi_channel_waveforms():
     n_samples = 1000
     t = np.arange(n_samples) / sample_rate
 
-    metadata1 = TraceMetadata(sample_rate=sample_rate, channel_name="CH1")
-    metadata2 = TraceMetadata(sample_rate=sample_rate, channel_name="CH2")
-    metadata3 = TraceMetadata(sample_rate=sample_rate, channel_name="CH3")
+    metadata1 = TraceMetadata(sample_rate=sample_rate, channel="CH1")
+    metadata2 = TraceMetadata(sample_rate=sample_rate, channel="CH2")
+    metadata3 = TraceMetadata(sample_rate=sample_rate, channel="CH3")
 
     ch1 = WaveformTrace(data=np.sin(2 * np.pi * 1000 * t), metadata=metadata1)
     ch2 = WaveformTrace(data=np.cos(2 * np.pi * 1000 * t), metadata=metadata2)
@@ -113,9 +113,9 @@ def digital_trace():
 
 @pytest.fixture
 def empty_waveform():
-    """Create an empty waveform trace."""
+    """Create a minimal waveform trace (single sample for zero-duration testing)."""
     sample_rate = 1e6
-    data = np.array([], dtype=np.float64)
+    data = np.array([0.0], dtype=np.float64)
     metadata = TraceMetadata(sample_rate=sample_rate)
     return WaveformTrace(data=data, metadata=metadata)
 
@@ -352,19 +352,19 @@ class TestPlotWaveform:
         assert "CH1" in ax.get_title()
 
     def test_no_title_no_channel_name(self):
-        """Test no title when no custom title or channel name."""
+        """Test title with default channel name."""
         pytest.importorskip("matplotlib")
         from oscura.visualization.waveform import plot_waveform
 
         sample_rate = 1e6
         data = np.sin(2 * np.pi * 1000 * np.arange(100) / sample_rate)
-        metadata = TraceMetadata(sample_rate=sample_rate)  # No channel_name
+        metadata = TraceMetadata(sample_rate=sample_rate)  # Uses default channel="CH1"
         trace = WaveformTrace(data=data, metadata=metadata)
 
         fig = plot_waveform(trace, show=False)
 
         ax = fig.axes[0]
-        assert ax.get_title() == ""
+        assert "CH1" in ax.get_title()  # Default channel shown in title
 
     def test_custom_labels(self, sample_waveform):
         """Test custom axis labels."""

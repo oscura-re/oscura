@@ -118,7 +118,7 @@ class TestLoadNPZ:
 
         assert len(trace.data) == 100
         assert np.allclose(trace.data, ch2_data, rtol=1e-10)
-        assert trace.metadata.channel_name == "ch2"
+        assert trace.metadata.channel == "ch2"
 
     def test_load_npz_with_explicit_channel_index(self, tmp_path: Path) -> None:
         """Test loading specific channel by index."""
@@ -130,7 +130,7 @@ class TestLoadNPZ:
         trace = load_npz(npz_path, channel=0)
 
         assert len(trace.data) == 50
-        assert trace.metadata.channel_name == "CH1"
+        assert trace.metadata.channel == "CH1"
 
     def test_load_npz_with_channel_index_1(self, tmp_path: Path) -> None:
         """Test loading second channel by index."""
@@ -142,7 +142,7 @@ class TestLoadNPZ:
         trace = load_npz(npz_path, channel=1)
 
         assert len(trace.data) == 50
-        assert trace.metadata.channel_name == "CH2"
+        assert trace.metadata.channel == "CH2"
         assert np.allclose(trace.data, 2.0)
 
     def test_load_npz_channel_case_insensitive(self, tmp_path: Path) -> None:
@@ -154,7 +154,7 @@ class TestLoadNPZ:
         trace = load_npz(npz_path, channel="mychannel")
 
         assert len(trace.data) == 100
-        assert trace.metadata.channel_name == "mychannel"
+        assert trace.metadata.channel == "mychannel"
 
     def test_load_npz_override_sample_rate(self, tmp_path: Path) -> None:
         """Test overriding sample rate from file."""
@@ -251,11 +251,11 @@ class TestLoadNPZ:
         """Test extraction of channel name from NPZ metadata."""
         npz_path = tmp_path / "ch_name.npz"
         sample_data = np.random.randn(100)
-        np.savez(npz_path, data=sample_data, channel_name=np.array("ANALOG1"))
+        np.savez(npz_path, data=sample_data, channel=np.array("ANALOG1"))
 
         trace = load_npz(npz_path)
 
-        assert trace.metadata.channel_name == "ANALOG1"
+        assert trace.metadata.channel == "ANALOG1"
 
     def test_load_npz_int16_dtype(self, tmp_path: Path) -> None:
         """Test loading int16 data and conversion to float64."""
@@ -290,15 +290,16 @@ class TestLoadNPZ:
         assert trace.data.dtype == np.float64
 
     def test_load_npz_empty_array(self, tmp_path: Path) -> None:
-        """Test loading NPZ with empty array."""
+        """Test loading NPZ with empty array.
+
+        Empty data arrays are rejected in v0.9.0, so this should raise ValueError.
+        """
         npz_path = tmp_path / "empty.npz"
         sample_data = np.array([], dtype=np.float64)
         np.savez(npz_path, data=sample_data)
 
-        trace = load_npz(npz_path)
-
-        assert len(trace.data) == 0
-        assert trace.data.dtype == np.float64
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            load_npz(npz_path)
 
     def test_load_npz_2d_array_flattened(self, tmp_path: Path) -> None:
         """Test that 2D arrays are automatically flattened when using fallback."""
@@ -492,7 +493,7 @@ class TestLoadRawBinary:
         assert trace.data.dtype == np.float64
         assert np.allclose(trace.data, [1.5, 2.5, 3.5, 4.5])
         assert trace.metadata.sample_rate == 1e6
-        assert trace.metadata.channel_name == "RAW"
+        assert trace.metadata.channel == "RAW"
 
     def test_load_float64_binary(self, tmp_path: Path) -> None:
         """Test loading raw float64 binary data."""
@@ -610,13 +611,15 @@ class TestLoadRawBinary:
         assert len(trace.data) == 1000
 
     def test_load_binary_empty_file(self, tmp_path: Path) -> None:
-        """Test loading empty binary file."""
+        """Test loading empty binary file.
+
+        Empty data arrays are rejected in v0.9.0, so this should raise LoaderError.
+        """
         bin_path = tmp_path / "empty.bin"
         bin_path.write_bytes(b"")
 
-        trace = load_raw_binary(bin_path, dtype="float32", sample_rate=1e6)
-
-        assert len(trace.data) == 0
+        with pytest.raises((LoaderError, ValueError), match="(empty|Failed to load)"):
+            load_raw_binary(bin_path, dtype="float32", sample_rate=1e6)
 
     def test_load_binary_source_file_metadata(self, tmp_path: Path) -> None:
         """Test that source file path is stored in metadata."""
@@ -734,7 +737,7 @@ class TestLoadersNumpyLoaderEdgeCases:
         trace = load_npz(npz_path, channel=1)
 
         assert len(trace.data) == 50
-        assert trace.metadata.channel_name == "CH2"
+        assert trace.metadata.channel == "CH2"
 
     def test_npz_metadata_dict_with_errors(self, tmp_path: Path) -> None:
         """Test metadata extraction when metadata dict has invalid structure."""

@@ -94,9 +94,7 @@ class TestAutoDecode:
         """Test UART decoding with digital trace."""
         # Create simple digital trace (all high)
         data = np.ones(1000, dtype=bool)
-        trace = DigitalTrace(
-            data=data, metadata=TraceMetadata(sample_rate=115200, channel_name="test")
-        )
+        trace = DigitalTrace(data=data, metadata=TraceMetadata(sample_rate=115200, channel="test"))
 
         result = convenience.auto_decode(trace, protocol="UART")
 
@@ -124,7 +122,7 @@ class TestAutoDecode:
         """Test SPI decoding."""
         data = np.ones(1000, dtype=bool)
         trace = DigitalTrace(
-            data=data, metadata=TraceMetadata(sample_rate=1_000_000, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=1_000_000, channel="test")
         )
 
         result = convenience.auto_decode(trace, protocol="SPI")
@@ -137,7 +135,7 @@ class TestAutoDecode:
         """Test I2C decoding."""
         data = np.ones(1000, dtype=bool)
         trace = DigitalTrace(
-            data=data, metadata=TraceMetadata(sample_rate=1_000_000, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=1_000_000, channel="test")
         )
 
         result = convenience.auto_decode(trace, protocol="I2C")
@@ -149,7 +147,7 @@ class TestAutoDecode:
         """Test CAN decoding."""
         data = np.ones(1000, dtype=bool)
         trace = DigitalTrace(
-            data=data, metadata=TraceMetadata(sample_rate=2_000_000, channel_name="test")
+            data=data, metadata=TraceMetadata(sample_rate=2_000_000, channel="test")
         )
 
         result = convenience.auto_decode(trace, protocol="CAN")
@@ -160,9 +158,7 @@ class TestAutoDecode:
     def test_unsupported_protocol(self) -> None:
         """Test unsupported protocol handling."""
         data = np.ones(100, dtype=bool)
-        trace = DigitalTrace(
-            data=data, metadata=TraceMetadata(sample_rate=100_000, channel_name="test")
-        )
+        trace = DigitalTrace(data=data, metadata=TraceMetadata(sample_rate=100_000, channel="test"))
 
         result = convenience.auto_decode(trace, protocol="UNKNOWN_PROTO")
 
@@ -173,9 +169,7 @@ class TestAutoDecode:
     def test_auto_detect_protocol_digital(self) -> None:
         """Test auto protocol detection with digital trace."""
         data = np.ones(100, dtype=bool)
-        trace = DigitalTrace(
-            data=data, metadata=TraceMetadata(sample_rate=100_000, channel_name="test")
-        )
+        trace = DigitalTrace(data=data, metadata=TraceMetadata(sample_rate=100_000, channel="test"))
 
         result = convenience.auto_decode(trace, protocol=None)
 
@@ -185,9 +179,7 @@ class TestAutoDecode:
     def test_statistics_calculation(self) -> None:
         """Test statistics are calculated correctly."""
         data = np.ones(100, dtype=bool)
-        trace = DigitalTrace(
-            data=data, metadata=TraceMetadata(sample_rate=100_000, channel_name="test")
-        )
+        trace = DigitalTrace(data=data, metadata=TraceMetadata(sample_rate=100_000, channel="test"))
 
         result = convenience.auto_decode(trace, protocol="UART")
 

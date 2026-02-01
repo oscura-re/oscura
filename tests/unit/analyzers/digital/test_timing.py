@@ -1543,11 +1543,10 @@ class TestDigitalTimingEdgeCases:
     def test_empty_trace(self) -> None:
         """Test timing functions with empty trace."""
         empty = np.array([])
-        trace = make_waveform_trace(empty, 1e6)
 
-        # Most functions should handle gracefully
-        sr = slew_rate(trace)
-        assert np.isnan(sr)
+        # Empty trace raises ValueError at creation time
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            trace = make_waveform_trace(empty, 1e6)
 
     def test_single_sample_trace(self) -> None:
         """Test timing functions with single sample."""

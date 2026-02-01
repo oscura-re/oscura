@@ -430,16 +430,13 @@ class TestGetValidMeasurements:
         assert "period" not in valid
 
     def test_empty_signal_measurements(self) -> None:
-        """Test valid measurements for empty signal."""
-        from oscura.analyzers.validation import get_valid_measurements
+        """Test empty signal raises ValueError."""
 
         signal = np.array([], dtype=np.float64)
-        trace = make_waveform_trace(signal, sample_rate=1e9)
 
-        valid = get_valid_measurements(trace)
-
-        # Should return empty or very limited list
-        assert isinstance(valid, list)
+        # Empty signal should raise ValueError during trace creation
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            trace = make_waveform_trace(signal, sample_rate=1e9)
 
     def test_single_sample_measurements(self) -> None:
         """Test valid measurements for single sample."""

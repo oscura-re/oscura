@@ -448,7 +448,7 @@ class TestEyeDiagramCentering:
             data=data,
             metadata=TraceMetadata(
                 sample_rate=sample_rate,
-                channel_name="Data",
+                channel="Data",
             ),
         )
 

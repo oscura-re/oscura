@@ -174,8 +174,8 @@ is_jsonc_file() {
   [[ "${file}" == .vscode/*.json ]] && return 0
 
   # tsconfig and jsconfig often have comments
-  [[ "$(basename "${file}")" == "tsconfig.json" ]] && return 0
-  [[ "$(basename "${file}")" == "jsconfig.json" ]] && return 0
+  [[ "$(basename -- "${file}")" == "tsconfig.json" ]] && return 0
+  [[ "$(basename -- "${file}")" == "jsconfig.json" ]] && return 0
 
   return 1
 }

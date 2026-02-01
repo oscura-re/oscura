@@ -270,19 +270,16 @@ def _build_digital_trace(
     Returns:
         DigitalTrace object.
     """
-    edges = _compute_edges(channel_data, sample_rate)
+    _compute_edges(channel_data, sample_rate)
 
     trace_metadata = TraceMetadata(
         sample_rate=sample_rate,
-        source_file=str(path),
-        channel_name=channel_name,
-        trigger_info=metadata_dict.get("trigger"),
+        channel=channel_name,
     )
 
     return DigitalTrace(
         data=channel_data,
         metadata=trace_metadata,
-        edges=edges,
     )
 
 

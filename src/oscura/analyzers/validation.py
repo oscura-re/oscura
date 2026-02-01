@@ -64,7 +64,7 @@ def is_suitable_for_frequency_measurement(trace: WaveformTrace) -> tuple[bool, s
 
     # Check period consistency (is it periodic?)
     if len(rising_edges) >= 3:
-        edge_times = rising_edges * trace.metadata.time_base
+        edge_times = rising_edges / trace.metadata.sample_rate
         periods = np.diff(edge_times)
         period_cv = np.std(periods) / np.mean(periods) if np.mean(periods) > 0 else float("inf")
 

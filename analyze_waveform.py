@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""IDEAL Comprehensive Waveform Analysis - Reference Implementation for v0.8.0.
+"""IDEAL Comprehensive Waveform Analysis - Reference Implementation for v0.9.0.
 
 Demonstrates the COMPLETE oscura framework with ALL capabilities:
-- Unified measurement APIs (37 measurements across 4 domains)
+- Unified measurement APIs (28 measurements across 4 domains)
 - Professional IEEE-compliant reporting with citations
 - Protocol decoding and reverse engineering
 - Pattern recognition and anomaly detection
@@ -30,59 +30,88 @@ from oscura.workflows.waveform import analyze_complete
 
 
 def print_summary(results: dict[str, Any]) -> None:
-    """Print human-readable analysis summary."""
+    """Print human-readable analysis summary with defensive key access."""
     print("\n" + "=" * 80)
     print("ANALYSIS SUMMARY")
     print("=" * 80)
 
-    # Signal information
-    print(f"\n📊 Signal: {results['filepath']}")
-    print(f"   Type: {results['signal_type']}")
-    print(f"   Samples: {results['sample_count']:,}")
-    print(f"   Sample Rate: {results['sample_rate']:.2e} Hz")
-    print(f"   Duration: {results['duration']:.6f} s")
+    # Signal information - extract from trace object
+    filepath = results.get("filepath", "N/A")
+    trace = results.get("trace")
 
-    # Measurements (ALL 37 via unified APIs)
+    # Default values if trace is unavailable
+    signal_type = "Unknown"
+    sample_count = 0
+    sample_rate = 0.0
+    duration = 0.0
+
+    # Extract info from trace if available
+    if trace is not None:
+        signal_type = getattr(trace, "signal_type", "Unknown")
+        sample_count = len(trace)
+        sample_rate = trace.metadata.sample_rate if hasattr(trace, "metadata") else 0.0
+        duration = trace.duration if hasattr(trace, "duration") else 0.0
+
+    print(f"\n📊 Signal: {filepath}")
+    print(f"   Type: {signal_type.capitalize()}")
+    print(f"   Samples: {sample_count:,}")
+    print(f"   Sample Rate: {sample_rate:.2e} Hz")
+    print(f"   Duration: {duration:.6f} s")
+
+    # Measurements (28 total via unified APIs - corrected from 37)
     if "measurements" in results:
         meas = results["measurements"]
 
-        # Time-domain (13 measurements)
+        # Time-domain
         if meas.get("time_domain"):
-            print("\n⏱️  Time-Domain Analysis (13 measurements):")
+            print("\n⏱️  Time-Domain Analysis:")
             td = meas["time_domain"]
+            print(f"   {len(td)} measurements computed")
             for name, value_dict in td.items():
-                val = value_dict["value"]
-                unit = value_dict["unit"]
+                val = value_dict.get("value", 0)
+                unit = value_dict.get("unit", "")
                 print(f"   {name:20s}: {val:12.6g} {unit}")
 
-        # Frequency-domain (6 measurements)
+        # Frequency-domain
         if meas.get("frequency_domain"):
-            print("\n📡 Frequency-Domain Analysis (6 measurements):")
+            print("\n📡 Frequency-Domain Analysis:")
             fd = meas["frequency_domain"]
+            numeric_count = sum(
+                1
+                for k, v in fd.items()
+                if k not in ["fft_freqs", "fft_data"] and isinstance(v, (int, float, dict))
+            )
+            print(f"   {numeric_count} measurements computed")
             for name, value_dict in fd.items():
-                val = value_dict["value"]
-                unit = value_dict["unit"]
-                print(f"   {name:20s}: {val:12.6g} {unit}")
+                if name not in ["fft_freqs", "fft_data"]:
+                    val = value_dict.get("value", 0)
+                    unit = value_dict.get("unit", "")
+                    print(f"   {name:20s}: {val:12.6g} {unit}")
 
-        # Statistical (14 measurements)
+        # Statistical
         if meas.get("statistics"):
-            print("\n📈 Statistical Analysis (14 measurements):")
+            print("\n📈 Statistical Analysis:")
             stats = meas["statistics"]
+            print(f"   {len(stats)} measurements computed")
             key_stats = ["mean", "std", "min", "max", "p50"]  # Show subset
             for name in key_stats:
                 if name in stats:
                     value_dict = stats[name]
-                    val = value_dict["value"]
-                    unit = value_dict["unit"]
+                    val = value_dict.get("value", 0)
+                    unit = value_dict.get("unit", "")
                     print(f"   {name:20s}: {val:12.6g} {unit}")
-            print(f"   ... and {len(stats) - len(key_stats)} more")
+            if len(stats) > len(key_stats):
+                print(f"   ... and {len(stats) - len(key_stats)} more")
 
-        # Digital (4 measurements if applicable)
+        # Digital (if applicable)
         if meas.get("digital"):
-            print("\n🔲 Digital Analysis (4 measurements):")
+            print("\n🔲 Digital Analysis:")
             dig = meas["digital"]
+            numeric_count = sum(1 for v in dig.values() if isinstance(v, (int, float)))
+            print(f"   {numeric_count} measurements computed")
             for name, value in dig.items():
-                print(f"   {name:20s}: {value}")
+                if isinstance(value, (int, float)):
+                    print(f"   {name:20s}: {value}")
 
     # Protocol decoding
     if results.get("protocols_detected"):
@@ -126,14 +155,14 @@ def print_summary(results: dict[str, Any]) -> None:
         print("   Includes: IEEE citations, interpretations, executive summary")
 
     # Output directory
-    print(f"\n📁 All outputs: {results['output_dir']}")
+    print(f"\n📁 All outputs: {results.get('output_dir', 'N/A')}")
     print("=" * 80 + "\n")
 
 
 def main() -> int:
     """Execute complete waveform analysis using oscura framework."""
     parser = argparse.ArgumentParser(
-        description="IDEAL Waveform Analysis - Demonstrates complete oscura v0.8.0 framework",
+        description="IDEAL Waveform Analysis - Demonstrates complete oscura v0.9.0 framework",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -143,7 +172,7 @@ Examples:
   %(prog)s data.wfm --no-re --no-patterns # Skip RE and pattern recognition
 
 Features demonstrated:
-  • 37 measurements via unified APIs (time/freq/digital/stats)
+  • 28 measurements via unified APIs (time/freq/digital/stats)
   • IEEE-compliant reporting with citations and interpretations
   • Protocol auto-decoding (UART/SPI/I2C/CAN/etc)
   • Reverse engineering (clock recovery, sync patterns, CRC)
@@ -215,10 +244,10 @@ Features demonstrated:
         args.enable_pattern_recognition = False
 
     print(f"\n{'=' * 80}")
-    print("OSCURA v0.8.0 - COMPLETE WAVEFORM ANALYSIS")
+    print("OSCURA v0.9.0 - COMPLETE WAVEFORM ANALYSIS")
     print(f"{'=' * 80}")
     print("Configuration:")
-    print("  • Measurements: ALL (37 across 4 domains)")
+    print("  • Measurements: 28 across 4 domains (time/freq/digital/stats)")
     print(f"  • Protocol decode: {'✓' if args.enable_protocol_decode else '✗'}")
     print(
         f"  • Reverse engineering: {'✓ (' + args.re_depth + ')' if args.enable_reverse_engineering else '✗'}"
@@ -251,8 +280,8 @@ Features demonstrated:
 
     print("✅ Analysis complete!")
     print(
-        "This demonstrates oscura v0.8.0 COMPLETE framework:\n"
-        "  • Unified measurement APIs (37 measurements)\n"
+        "This demonstrates oscura v0.9.0 COMPLETE framework:\n"
+        "  • Unified measurement APIs (28 measurements)\n"
         "  • Professional IEEE-compliant reporting\n"
         "  • Protocol decoding + reverse engineering\n"
         "  • Pattern recognition + anomaly detection\n"

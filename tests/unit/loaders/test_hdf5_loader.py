@@ -221,7 +221,7 @@ class TestLoadHDF5:
 
         trace = load_hdf5(hdf5_path)
 
-        assert trace.metadata.channel_name == "Channel 1"
+        assert trace.metadata.channel == "Channel 1"
 
     def test_load_hdf5_channel_name_from_dataset_path(self, create_h5_file, tmp_path: Path) -> None:
         """Test that channel name defaults to dataset name from path."""
@@ -235,7 +235,7 @@ class TestLoadHDF5:
 
         trace = load_hdf5(hdf5_path)
 
-        assert trace.metadata.channel_name == "my_channel"
+        assert trace.metadata.channel == "my_channel"
 
     def test_load_hdf5_default_sample_rate(self, create_h5_file, tmp_path: Path) -> None:
         """Test that default sample rate is used when not found in attributes."""
@@ -353,7 +353,7 @@ class TestLoadHDF5:
 
         trace = load_hdf5(hdf5_path)
 
-        assert trace.metadata.channel_name == "Test Channel"
+        assert trace.metadata.channel == "Test Channel"
 
     def test_load_hdf5_alternative_attribute_names(self, create_h5_file, tmp_path: Path) -> None:
         """Test that alternative attribute names are recognized."""

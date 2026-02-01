@@ -29,7 +29,7 @@ INSTALL_HINT="npm install -g prettier"
 MODE="check"
 VERBOSE=false
 PATHS=()
-FILE_TYPES="json,yaml,yml,md" # Default file types
+FILE_TYPES="json,yaml,yml" # Default file types (md excluded per .prettierignore)
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do

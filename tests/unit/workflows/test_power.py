@@ -367,19 +367,19 @@ class TestPowerAnalysisErrors:
 
     def test_power_analysis_empty_traces(self, sample_rate: float):
         """Test power analysis with empty traces."""
-        voltage = WaveformTrace(
-            data=np.array([]),
-            metadata=TraceMetadata(sample_rate=sample_rate),
-        )
-        current = WaveformTrace(
-            data=np.array([]),
-            metadata=TraceMetadata(sample_rate=sample_rate),
-        )
+        # Empty data arrays are rejected during WaveformTrace construction
+        # This is expected behavior - v0.9.0 validates data cannot be empty
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            voltage = WaveformTrace(
+                data=np.array([]),
+                metadata=TraceMetadata(sample_rate=sample_rate),
+            )
 
-        # Empty arrays cause ValueError in numpy max/min operations
-        # This is expected behavior - the function should raise an error
-        with pytest.raises((ValueError, RuntimeWarning)):
-            power_analysis(voltage, current)
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            current = WaveformTrace(
+                data=np.array([]),
+                metadata=TraceMetadata(sample_rate=sample_rate),
+            )
 
     def test_power_analysis_single_sample(self, sample_rate: float):
         """Test power analysis with single sample traces."""

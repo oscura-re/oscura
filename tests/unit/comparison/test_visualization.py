@@ -27,7 +27,7 @@ pytestmark = pytest.mark.unit
 def trace1() -> WaveformTrace:
     """Create first test trace."""
     data = np.sin(2 * np.pi * 1e6 * np.linspace(0, 1e-3, 1000))
-    metadata = TraceMetadata(sample_rate=1e6, channel_name="CH1")
+    metadata = TraceMetadata(sample_rate=1e6, channel="CH1")
     return WaveformTrace(data=data, metadata=metadata)
 
 
@@ -35,7 +35,7 @@ def trace1() -> WaveformTrace:
 def trace2() -> WaveformTrace:
     """Create second test trace (slightly different)."""
     data = np.sin(2 * np.pi * 1e6 * np.linspace(0, 1e-3, 1000) + 0.1)
-    metadata = TraceMetadata(sample_rate=1e6, channel_name="CH2")
+    metadata = TraceMetadata(sample_rate=1e6, channel="CH2")
     return WaveformTrace(data=data, metadata=metadata)
 
 

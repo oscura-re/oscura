@@ -23,11 +23,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class EyeDiagramDemo(BaseDemo):
@@ -36,14 +40,14 @@ class EyeDiagramDemo(BaseDemo):
     name = "Eye Diagram Generation"
     description = "Generate eye diagrams for high-speed serial signal visualization"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Eye pattern overlay",
         "Multiple UI period display",
         "Density histogram generation",
         "Edge transition analysis",
     ]
-    ieee_standards = ["IEEE 2414-2020"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["IEEE 2414-2020"]
+    related_demos: ClassVar[list[str]] = [
         "04_advanced_analysis/05_eye_metrics.py",
         "04_advanced_analysis/01_jitter_analysis.py",
     ]
@@ -127,7 +131,7 @@ class EyeDiagramDemo(BaseDemo):
     def _prbs7(self, length: int) -> np.ndarray:
         """Generate PRBS-7 sequence."""
         state = 0x7F
-        bits = []
+        bits: ClassVar[list[str]] = []
         for _ in range(length):
             bit = (state >> 6) & 1
             bits.append(bit)

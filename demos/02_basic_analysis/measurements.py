@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -43,7 +44,7 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
     description = "Complete IEEE 181-2011 compliant measurement suite"
     category = "basic_analysis"
 
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.amplitude",
         "oscura.frequency",
         "oscura.period",
@@ -60,9 +61,9 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
         "oscura.max",
     ]
 
-    ieee_standards = ["IEEE 181-2011"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
 
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "01_waveform_basics.py",
         "02_digital_basics.py",
         "08_statistics.py",
@@ -97,7 +98,7 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
 
     def run_analysis(self) -> None:
         """Execute comprehensive measurement suite."""
-        measurements = {}
+        measurements: ClassVar[dict[str, str]] = {}
 
         # ========== PART 1: AMPLITUDE MEASUREMENTS ==========
         print_subheader("Part 1: Amplitude Measurements (IEEE 181 Section 4)")
@@ -200,8 +201,8 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
         print_subheader("Part 6: Comprehensive Measurement Report")
 
         # Create measurement table
-        headers = ["Measurement", "Value", "Unit", "IEEE 181 Section"]
-        rows = [
+        headers: ClassVar[list[str]] = ["Measurement", "Value", "Unit", "IEEE 181 Section"]
+        rows: ClassVar[list[str]] = [
             ["Peak-to-peak", f"{measurements['peak_to_peak']:.4f}", "V", "4.1"],
             ["Maximum", f"{measurements['max']:.4f}", "V", "4.2"],
             ["Minimum", f"{measurements['min']:.4f}", "V", "4.3"],
@@ -259,7 +260,7 @@ class ComprehensiveMeasurementsDemo(BaseDemo):
         suite.check_range("Peak-to-peak", self.results["peak_to_peak"], 4.9, 5.1)
         suite.check_range("Maximum", self.results["max"], 4.9, 5.1)
         suite.check_range("Minimum", self.results["min"], -0.1, 0.1)
-        suite.check_range("Mean", self.results["mean"], 1.2, 1.3)  # 25% duty cycle × 5V
+        suite.check_range("Mean", self.results["mean"], 1.2, 1.3)  # 25% duty cycle x 5V
         suite.check_range("RMS", self.results["rms"], 2.0, 2.6)
 
         # Timing measurements

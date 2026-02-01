@@ -27,7 +27,7 @@ def sample_trace():
 
     metadata = TraceMetadata(
         sample_rate=sample_rate,
-        channel_name="CH1",
+        channel="CH1",
     )
 
     return WaveformTrace(data=signal, metadata=metadata)
@@ -444,7 +444,7 @@ if __name__ == "__main__":
     samples = int(sample_rate * duration)
     t = np.linspace(0, duration, samples)
     signal = 3.3 * (np.sin(2 * np.pi * 1e6 * t) > 0).astype(np.float64)
-    metadata = TraceMetadata(sample_rate=sample_rate, channel_name="CH1")
+    metadata = TraceMetadata(sample_rate=sample_rate, channel="CH1")
     trace = WaveformTrace(data=signal, metadata=metadata)
 
     # Noisy trace

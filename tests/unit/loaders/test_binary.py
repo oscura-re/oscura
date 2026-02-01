@@ -30,7 +30,7 @@ class TestBinaryLoader:
         np.testing.assert_array_almost_equal(trace.data, data)
         assert trace.metadata.sample_rate == 1000.0
         assert trace.metadata.source_file == str(file_path)
-        assert trace.metadata.channel_name == "Channel 0"
+        assert trace.metadata.channel == "Channel 0"
 
     def test_load_int16_dtype(self, tmp_path: Path) -> None:
         """Test loading int16 data."""
@@ -115,12 +115,12 @@ class TestMultiChannel:
         # Load channel 0
         trace0 = load_binary(file_path, sample_rate=1000.0, channels=2, channel=0)
         np.testing.assert_array_almost_equal(trace0.data, ch0)
-        assert trace0.metadata.channel_name == "Channel 0"
+        assert trace0.metadata.channel == "Channel 0"
 
         # Load channel 1
         trace1 = load_binary(file_path, sample_rate=1000.0, channels=2, channel=1)
         np.testing.assert_array_almost_equal(trace1.data, ch1)
-        assert trace1.metadata.channel_name == "Channel 1"
+        assert trace1.metadata.channel == "Channel 1"
 
     def test_load_four_channels(self, tmp_path: Path) -> None:
         """Test loading from 4-channel interleaved data."""
@@ -207,7 +207,7 @@ class TestMetadata:
         data.tofile(file_path)
 
         trace = load_binary(file_path, sample_rate=1000.0)
-        assert trace.metadata.channel_name == "Channel 0"
+        assert trace.metadata.channel == "Channel 0"
 
     def test_metadata_channel_name_multi(self, tmp_path: Path) -> None:
         """Test channel names for multi-channel data."""
@@ -216,13 +216,13 @@ class TestMetadata:
         data.tofile(file_path)
 
         trace0 = load_binary(file_path, sample_rate=1000.0, channels=3, channel=0)
-        assert trace0.metadata.channel_name == "Channel 0"
+        assert trace0.metadata.channel == "Channel 0"
 
         trace1 = load_binary(file_path, sample_rate=1000.0, channels=3, channel=1)
-        assert trace1.metadata.channel_name == "Channel 1"
+        assert trace1.metadata.channel == "Channel 1"
 
         trace2 = load_binary(file_path, sample_rate=1000.0, channels=3, channel=2)
-        assert trace2.metadata.channel_name == "Channel 2"
+        assert trace2.metadata.channel == "Channel 2"
 
 
 class TestPathHandling:
@@ -251,12 +251,15 @@ class TestLoadersBinaryEdgeCases:
     """Test edge cases."""
 
     def test_empty_file(self, tmp_path: Path) -> None:
-        """Test loading empty file."""
+        """Test loading empty file.
+
+        Empty data arrays are rejected in v0.9.0, so this should raise ValueError.
+        """
         file_path = tmp_path / "empty.bin"
         file_path.touch()
 
-        trace = load_binary(file_path, sample_rate=1000.0)
-        assert len(trace.data) == 0
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            load_binary(file_path, sample_rate=1000.0)
 
     def test_single_sample(self, tmp_path: Path) -> None:
         """Test loading single sample."""
@@ -569,16 +572,13 @@ class TestMemoryMappedIO:
     def test_mmap_empty_file(self, tmp_path: Path) -> None:
         """Test memory-mapped loading of empty file.
 
-        Validates:
-        - Handles empty files gracefully
-        - No crashes or errors
+        Empty data arrays are rejected in v0.9.0, so this should raise ValueError.
         """
         file_path = tmp_path / "empty_mmap.bin"
         file_path.touch()
 
-        trace = load_binary(file_path, dtype="float32", sample_rate=1e6, mmap_mode=True)
-
-        assert len(trace.data) == 0
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            load_binary(file_path, dtype="float32", sample_rate=1e6, mmap_mode=True)
 
     def test_mmap_count_exceeds_file_size(self, tmp_path: Path) -> None:
         """Test memory-mapped loading when count exceeds file size.

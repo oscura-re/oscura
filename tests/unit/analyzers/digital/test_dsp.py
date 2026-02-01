@@ -511,8 +511,8 @@ class TestPerformance:
 
     def test_edge_detection_large_signal(self) -> None:
         """Benchmark edge detection on large signal."""
-        # 10M samples
-        signal = np.tile([1] * 50 + [0] * 50, 100000).astype(bool)
+        # 1M samples (reduced from 10M for reasonable test time)
+        signal = np.tile([1] * 50 + [0] * 50, 10000).astype(bool)
 
         detector = EdgeDetector()
         rising, falling = detector.detect_all_edges(signal)

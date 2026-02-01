@@ -437,7 +437,7 @@ class TestLazyWaveformTraceConversion:
 
     def test_to_eager_preserves_metadata(self, temp_npy_file: Path) -> None:
         """Test that to_eager() preserves metadata."""
-        metadata = {"channel_name": "CH1", "source_file": "test.bin"}
+        metadata = {"channel": "CH1", "source_file": "test.bin"}
         trace = LazyWaveformTrace(
             file_path=temp_npy_file,
             sample_rate=1e6,
@@ -445,7 +445,7 @@ class TestLazyWaveformTraceConversion:
             metadata=metadata,
         )
         eager = trace.to_eager()
-        assert eager.metadata.channel_name == "CH1"
+        assert eager.metadata.channel == "CH1"
         assert eager.metadata.source_file == "test.bin"
 
 

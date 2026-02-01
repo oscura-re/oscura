@@ -232,7 +232,7 @@ def energy(
         power = instantaneous_power(voltage, current)
 
     data = power.data
-    sample_period = power.metadata.time_base
+    sample_period = 1.0 / power.metadata.sample_rate
 
     # Apply time limits
     if start_time is not None or end_time is not None:
@@ -290,7 +290,7 @@ def power_statistics(
         power = instantaneous_power(voltage, current)
 
     data = power.data
-    sample_period = power.metadata.time_base
+    sample_period = 1.0 / power.metadata.sample_rate
 
     # Use scipy trapezoid for stable API across NumPy versions
     from scipy.integrate import trapezoid
@@ -330,7 +330,7 @@ def power_profile(
     """
     power = instantaneous_power(voltage, current)
     data = power.data
-    sample_period = power.metadata.time_base
+    sample_period = 1.0 / power.metadata.sample_rate
 
     if window_size is None:
         # Auto-select: ~1% of total samples or 100, whichever is larger

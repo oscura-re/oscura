@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 # Add demos to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -35,13 +36,13 @@ class HelloWorldDemo(BaseDemo):
     name = "Hello World"
     description = "Minimal Oscura workflow: generate → measure → analyze"
     category = "getting_started"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "oscura.WaveformTrace",
         "oscura.amplitude",
         "oscura.frequency",
         "oscura.rms",
     ]
-    related_demos = [
+    related_demos: ClassVar[list[str]] = [
         "00_getting_started/01_core_types.py",
         "02_basic_analysis/01_waveform_basics.py",
     ]

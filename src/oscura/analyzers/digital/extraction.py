@@ -145,12 +145,11 @@ def to_digital(
         digital_data = data >= thresh_value
 
     # Detect edges
-    edges = _detect_edges_internal(data, digital_data, trace.metadata.sample_rate, thresh_value)
+    _detect_edges_internal(data, digital_data, trace.metadata.sample_rate, thresh_value)
 
     return DigitalTrace(
         data=digital_data,
         metadata=trace.metadata,
-        edges=edges,
     )
 
 
@@ -241,7 +240,7 @@ def detect_edges(
         edge_indices = np.where(transitions != 0)[0]
 
     # Convert indices to timestamps
-    sample_period = digital.metadata.time_base
+    sample_period = 1.0 / digital.metadata.sample_rate
     timestamps = edge_indices.astype(np.float64) * sample_period
 
     # Sub-sample interpolation for analog traces

@@ -187,7 +187,7 @@ class TestSaleaeSource:
         assert isinstance(trace, DigitalTrace)
         assert len(trace.data) == 1000000  # 1 second at 1 MHz
         assert trace.metadata.sample_rate == 1e6
-        assert "saleae://" in trace.metadata.source_file
+        assert trace.metadata.source_file and "saleae://" in trace.metadata.source_file
 
     @patch("oscura.hardware.acquisition.saleae.saleae")
     @patch("oscura.hardware.acquisition.saleae.time.sleep")
@@ -235,7 +235,7 @@ class TestSaleaeSource:
 
         trace = source.read()
 
-        assert "saleae://DEVICE123" in trace.metadata.source_file
+        assert trace.metadata.source_file and "saleae://DEVICE123" in trace.metadata.source_file
 
     @patch("oscura.hardware.acquisition.saleae.saleae")
     @patch("oscura.hardware.acquisition.saleae.time.sleep")
@@ -405,10 +405,10 @@ class TestSaleaeSource:
         source.configure(sample_rate=1e6, duration=1.0, digital_channels=[0, 1, 2])
         with patch("oscura.hardware.acquisition.saleae.time.sleep"):
             trace_digital = source.read()
-        assert "Ch[0, 1, 2]" in trace_digital.metadata.channel_name
+        assert "Ch[0, 1, 2]" in trace_digital.metadata.channel
 
         # Analog channels
         source.configure(sample_rate=1e6, duration=1.0, analog_channels=[0])
         with patch("oscura.hardware.acquisition.saleae.time.sleep"):
             trace_analog = source.read()
-        assert "Ch[0]" in trace_analog.metadata.channel_name
+        assert "Ch[0]" in trace_analog.metadata.channel

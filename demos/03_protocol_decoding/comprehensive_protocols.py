@@ -25,11 +25,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import DigitalTrace, TraceMetadata
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class ComprehensiveProtocolDemo(BaseDemo):
@@ -38,15 +42,15 @@ class ComprehensiveProtocolDemo(BaseDemo):
     name = "Comprehensive Multi-Protocol Analysis"
     description = "Decode and correlate multiple protocols in single capture"
     category = "protocol_decoding"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "Multi-protocol decoding",
         "Protocol auto-detection",
         "Cross-protocol correlation",
         "Timing relationship analysis",
         "Bus activity correlation",
     ]
-    ieee_standards = ["IEEE 181-2011"]
-    related_demos = [
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
+    related_demos: ClassVar[list[str]] = [
         "03_protocol_decoding/01_uart_basic.py",
         "03_protocol_decoding/02_spi_basic.py",
         "03_protocol_decoding/03_i2c_basic.py",
@@ -157,8 +161,8 @@ class ComprehensiveProtocolDemo(BaseDemo):
     ) -> tuple[DigitalTrace, DigitalTrace]:
         """Generate I2C read transaction."""
         samples_per_bit = max(1, int(sample_rate / clock_freq))
-        scl = [1] * start_sample
-        sda = [1] * start_sample
+        scl: ClassVar[list[str]] = [1] * start_sample
+        sda: ClassVar[list[str]] = [1] * start_sample
 
         # Start condition
         sda.extend([0] * samples_per_bit)
@@ -204,10 +208,10 @@ class ComprehensiveProtocolDemo(BaseDemo):
     ) -> tuple[DigitalTrace, DigitalTrace, DigitalTrace, DigitalTrace]:
         """Generate SPI transfer."""
         samples_per_bit = max(1, int(sample_rate / clock_freq))
-        sck = [0] * start_sample
-        mosi = [0] * start_sample
-        miso = [0] * start_sample
-        cs = [1] * start_sample
+        sck: ClassVar[list[str]] = [0] * start_sample
+        mosi: ClassVar[list[str]] = [0] * start_sample
+        miso: ClassVar[list[str]] = [0] * start_sample
+        cs: ClassVar[list[str]] = [1] * start_sample
 
         # CS low
         cs.extend([0] * samples_per_bit)
@@ -216,7 +220,7 @@ class ComprehensiveProtocolDemo(BaseDemo):
         miso.extend([0] * samples_per_bit)
 
         # Transfer bytes
-        for tx_byte, rx_byte in zip(tx_data, rx_data):
+        for tx_byte, rx_byte in zip(tx_data, rx_data, strict=False):
             for i in range(8):
                 tx_bit = (tx_byte >> (7 - i)) & 1
                 rx_bit = (rx_byte >> (7 - i)) & 1
@@ -257,7 +261,7 @@ class ComprehensiveProtocolDemo(BaseDemo):
     ) -> DigitalTrace:
         """Generate UART message."""
         samples_per_bit = max(1, int(sample_rate / baudrate))
-        signal = [1] * start_sample
+        signal: ClassVar[list[str]] = [1] * start_sample
 
         for byte_val in message:
             signal.extend([0] * samples_per_bit)  # Start bit
@@ -313,7 +317,7 @@ class ComprehensiveProtocolDemo(BaseDemo):
         """Correlate timing across protocols."""
         from demos.common.formatting import print_info
 
-        events = [
+        events: ClassVar[list[str]] = [
             {"protocol": "I2C", "time_us": 0, "event": "Sensor read start"},
             {"protocol": "I2C", "time_us": 80, "event": "Sensor read complete"},
             {"protocol": "SPI", "time_us": 180, "event": "Data transmission start"},

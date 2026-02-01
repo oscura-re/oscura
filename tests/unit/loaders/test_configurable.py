@@ -632,7 +632,7 @@ class TestIdleDetection:
         # Active region in the middle
         data[start_idle:end_idle] = True
 
-        metadata = TraceMetadata(sample_rate=100e6, channel_name="test")
+        metadata = TraceMetadata(sample_rate=100e6, channel="test")
         return DigitalTrace(data=data, metadata=metadata)
 
     def test_detect_idle_zeros(self) -> None:

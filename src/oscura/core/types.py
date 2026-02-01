@@ -9,12 +9,14 @@ Requirements addressed:
 - CORE-003: DigitalTrace Data Class
 - CORE-004: ProtocolPacket Data Class
 - CORE-005: CalibrationInfo Data Class (regulatory compliance)
+- CORE-006: MeasurementResult TypedDict (v0.9.0)
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 
@@ -22,6 +24,56 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from numpy.typing import NDArray
+
+
+class MeasurementResult(TypedDict, total=False):
+    """Structured measurement result with metadata and applicability tracking.
+
+    This replaces raw float values to handle edge cases gracefully and provide
+    rich metadata for reporting and interpretation.
+
+    Attributes:
+        value: Measurement value (None if not applicable).
+        unit: Unit of measurement (e.g., "V", "Hz", "s", "dB", "%", "ratio").
+        applicable: Whether measurement is applicable to this signal type.
+        reason: Explanation if not applicable (e.g., "Aperiodic signal").
+        display: Human-readable formatted display string.
+
+    Example:
+        >>> # Applicable measurement
+        >>> freq_result: MeasurementResult = {
+        ...     "value": 1000.0,
+        ...     "unit": "Hz",
+        ...     "applicable": True,
+        ...     "reason": None,
+        ...     "display": "1.000 kHz"
+        ... }
+
+        >>> # Inapplicable measurement (no NaN!)
+        >>> period_result: MeasurementResult = {
+        ...     "value": None,
+        ...     "unit": "s",
+        ...     "applicable": False,
+        ...     "reason": "Aperiodic signal (single impulse)",
+        ...     "display": "N/A"
+        ... }
+
+        >>> # Access safely
+        >>> if period_result["applicable"]:
+        ...     print(f"Period: {period_result['display']}")
+        ... else:
+        ...     print(f"Period: {period_result['display']} ({period_result['reason']})")
+        Period: N/A (Aperiodic signal (single impulse))
+
+    References:
+        API Improvement Recommendation #3 (v0.9.0)
+    """
+
+    value: float | None
+    unit: str
+    applicable: bool
+    reason: str | None
+    display: str
 
 
 @dataclass
@@ -99,146 +151,126 @@ class CalibrationInfo:
         """
         if self.calibration_date is None or self.calibration_due_date is None:
             return None
+
         from datetime import datetime
 
-        return datetime.now() < self.calibration_due_date
+        now = datetime.now(UTC)
+        # Ensure dates are timezone-aware for comparison
+        due_date = self.calibration_due_date
+        if due_date.tzinfo is None:
+            due_date = due_date.replace(tzinfo=UTC)
 
-    @property
-    def traceability_summary(self) -> str:
-        """Generate a traceability summary string.
-
-        Returns:
-            Human-readable summary of calibration traceability.
-        """
-        parts = [f"Instrument: {self.instrument}"]
-        if self.serial_number:
-            parts.append(f"S/N: {self.serial_number}")
-        if self.calibration_date:
-            parts.append(f"Cal Date: {self.calibration_date.strftime('%Y-%m-%d')}")
-        if self.calibration_due_date:
-            parts.append(f"Due: {self.calibration_due_date.strftime('%Y-%m-%d')}")
-        if self.calibration_cert_number:
-            parts.append(f"Cert: {self.calibration_cert_number}")
-        return ", ".join(parts)
+        return now < due_date
 
 
 @dataclass
 class TraceMetadata:
-    """Metadata describing a captured trace.
+    """Metadata for waveform and digital traces.
 
-    Contains sample rate, scaling information, acquisition details,
-    and provenance information for a captured waveform or digital trace.
+    Stores acquisition parameters, channel information, and optional
+    calibration data for oscilloscope/logic analyzer captures.
 
     Attributes:
-        sample_rate: Sample rate in Hz (required).
-        vertical_scale: Vertical scale in volts/division (optional).
-        vertical_offset: Vertical offset in volts (optional).
-        acquisition_time: Time of acquisition (optional).
-        trigger_info: Trigger configuration dictionary (optional).
-        source_file: Path to source file (optional).
-        channel_name: Name of the channel (optional).
-        calibration_info: Calibration and instrument traceability information (optional).
+        sample_rate: Sample rate in Hz.
+        start_time: Start time in seconds (relative to trigger).
+        channel: Channel name or number.
+        units: Physical units (e.g., "V", "A", "Pa").
+        calibration: Optional calibration and provenance information.
+        trigger_time: Trigger timestamp in seconds (optional).
+        coupling: Input coupling mode ("DC", "AC", "GND") (optional).
+        probe_attenuation: Probe attenuation factor (optional).
+        bandwidth_limit: Bandwidth limit in Hz (optional).
+        vertical_offset: Vertical offset in physical units (optional).
+        vertical_scale: Vertical scale in units/division (optional).
+        horizontal_scale: Horizontal scale in seconds/division (optional).
+        source_file: Source file path for loaded data (optional).
+        trigger_info: Additional trigger metadata as dict (optional).
+        acquisition_time: Timestamp when data was acquired (optional).
 
     Example:
-        >>> metadata = TraceMetadata(sample_rate=1e9)  # 1 GSa/s
-        >>> print(f"Time base: {metadata.time_base} s/sample")
-        Time base: 1e-09 s/sample
-
-    Example with calibration info:
-        >>> from datetime import datetime
-        >>> cal = CalibrationInfo(
-        ...     instrument="Tektronix DPO7254C",
-        ...     calibration_date=datetime(2024, 12, 15)
+        >>> meta = TraceMetadata(
+        ...     sample_rate=1e9,
+        ...     start_time=-0.001,
+        ...     channel="CH1",
+        ...     units="V"
         ... )
-        >>> metadata = TraceMetadata(sample_rate=1e9, calibration_info=cal)
-        >>> print(metadata.calibration_info.traceability_summary)
-        Instrument: Tektronix DPO7254C, Cal Date: 2024-12-15
-
-    References:
-        IEEE 181-2011: Standard for Transitional Waveform Definitions
-        ISO/IEC 17025: General Requirements for Testing/Calibration Laboratories
+        >>> print(f"Sample rate: {meta.sample_rate/1e6:.1f} MS/s")
+        Sample rate: 1000.0 MS/s
     """
 
     sample_rate: float
-    vertical_scale: float | None = None
+    start_time: float = 0.0
+    channel: str = "CH1"
+    units: str = "V"
+    calibration: CalibrationInfo | None = None
+    trigger_time: float | None = None
+    coupling: str | None = None
+    probe_attenuation: float | None = None
+    bandwidth_limit: float | None = None
     vertical_offset: float | None = None
-    acquisition_time: datetime | None = None
-    trigger_info: dict[str, Any] | None = None
+    vertical_scale: float | None = None
+    horizontal_scale: float | None = None
     source_file: str | None = None
-    channel_name: str | None = None
-    calibration_info: CalibrationInfo | None = None
+    trigger_info: dict[str, Any] | None = None
+    acquisition_time: datetime | None = None
 
     def __post_init__(self) -> None:
         """Validate metadata after initialization."""
         if self.sample_rate <= 0:
             raise ValueError(f"sample_rate must be positive, got {self.sample_rate}")
 
-    @property
-    def time_base(self) -> float:
-        """Time between samples in seconds (derived from sample_rate).
-
-        Returns:
-            Time per sample in seconds (1 / sample_rate).
-        """
-        return 1.0 / self.sample_rate
-
 
 @dataclass
 class WaveformTrace:
-    """Analog waveform data with metadata.
+    """Analog waveform trace with metadata.
 
-    Stores sampled analog voltage data as a numpy array along with
-    associated metadata for timing and scaling.
+    Represents time-series voltage/current data from an oscilloscope or
+    similar instrument. Provides properties for signal type detection.
 
     Attributes:
-        data: Waveform samples as numpy float array.
-        metadata: Associated trace metadata.
+        data: Waveform data array (voltage/current values).
+        metadata: Trace metadata (sample rate, channel, units).
+
+    Properties:
+        is_analog: Always True for WaveformTrace.
+        is_digital: Always False for WaveformTrace.
+        is_iq: Always False for WaveformTrace.
+        signal_type: Returns "analog".
 
     Example:
         >>> import numpy as np
-        >>> data = np.sin(2 * np.pi * 1e6 * np.linspace(0, 1e-3, 1000))
-        >>> trace = WaveformTrace(data=data, metadata=TraceMetadata(sample_rate=1e6))
-        >>> print(f"Duration: {trace.time_vector[-1]:.6f} seconds")
-        Duration: 0.000999 seconds
-
-    References:
-        IEEE 1241-2010: Standard for Terminology and Test Methods for ADCs
+        >>> data = np.sin(2 * np.pi * 1000 * np.linspace(0, 0.001, 1000))
+        >>> meta = TraceMetadata(sample_rate=1e6, units="V")
+        >>> trace = WaveformTrace(data=data, metadata=meta)
+        >>> print(f"Signal type: {trace.signal_type}")
+        Signal type: analog
+        >>> print(f"Is analog: {trace.is_analog}")
+        Is analog: True
     """
 
     data: NDArray[np.floating[Any]]
     metadata: TraceMetadata
 
     def __post_init__(self) -> None:
-        """Validate waveform data after initialization."""
+        """Validate trace data after initialization."""
         if not isinstance(self.data, np.ndarray):
-            raise TypeError(f"data must be a numpy array, got {type(self.data).__name__}")
-        if not np.issubdtype(self.data.dtype, np.floating):
-            # Convert to float64 if not already floating point
-            self.data = self.data.astype(np.float64)
-
-    @property
-    def time_vector(self) -> NDArray[np.float64]:
-        """Time axis in seconds.
-
-        Computes a time vector starting from 0, with intervals
-        determined by the sample rate.
-
-        Returns:
-            Array of time values in seconds, same length as data.
-        """
-        n_samples = len(self.data)
-        return np.arange(n_samples, dtype=np.float64) * self.metadata.time_base
+            raise TypeError(f"data must be numpy array, got {type(self.data).__name__}")
+        if self.data.ndim != 1:
+            raise ValueError(f"data must be 1-D array, got shape {self.data.shape}")
+        if len(self.data) == 0:
+            raise ValueError("data array cannot be empty")
 
     @property
     def duration(self) -> float:
-        """Total duration of the trace in seconds.
-
-        Returns:
-            Duration from first to last sample in seconds.
-        """
-        if len(self.data) == 0:
+        """Duration of the trace in seconds (time from first to last sample)."""
+        if len(self.data) <= 1:
             return 0.0
-        return (len(self.data) - 1) * self.metadata.time_base
+        return (len(self.data) - 1) / self.metadata.sample_rate
+
+    @property
+    def time(self) -> NDArray[np.floating[Any]]:
+        """Time axis array for the trace."""
+        return np.arange(len(self.data)) / self.metadata.sample_rate + self.metadata.start_time
 
     @property
     def is_analog(self) -> bool:
@@ -280,84 +312,63 @@ class WaveformTrace:
         """Return number of samples in the trace."""
         return len(self.data)
 
+    def __getitem__(self, key: int | slice) -> float | NDArray[np.floating[Any]]:
+        """Get sample(s) by index."""
+        return self.data[key]
+
 
 @dataclass
 class DigitalTrace:
-    """Digital/logic signal data with metadata.
+    """Digital logic trace with metadata.
 
-    Stores sampled digital signal data as a boolean numpy array,
-    with optional edge timestamp information.
+    Represents binary logic level data from a logic analyzer or
+    digital channel. Provides properties for signal type detection.
 
     Attributes:
-        data: Digital samples as numpy boolean array.
-        metadata: Associated trace metadata.
-        edges: Optional list of (timestamp, is_rising) tuples.
+        data: Boolean array representing logic levels.
+        metadata: Trace metadata (sample rate, channel, units).
+
+    Properties:
+        is_analog: Always False for DigitalTrace.
+        is_digital: Always True for DigitalTrace.
+        is_iq: Always False for DigitalTrace.
+        signal_type: Returns "digital".
 
     Example:
-        >>> import numpy as np
-        >>> data = np.array([False, False, True, True, False], dtype=bool)
-        >>> trace = DigitalTrace(data=data, metadata=TraceMetadata(sample_rate=1e6))
-        >>> print(f"High samples: {np.sum(trace.data)}")
-        High samples: 2
-
-    References:
-        IEEE 1076.6-2004: Standard for VHDL Register Transfer Level Synthesis
+        >>> data = np.array([0, 0, 1, 1, 0, 1, 0, 0], dtype=bool)
+        >>> meta = TraceMetadata(sample_rate=1e6, units="logic")
+        >>> trace = DigitalTrace(data=data, metadata=meta)
+        >>> print(f"Signal type: {trace.signal_type}")
+        Signal type: digital
+        >>> print(f"Is digital: {trace.is_digital}")
+        Is digital: True
     """
 
     data: NDArray[np.bool_]
     metadata: TraceMetadata
-    edges: list[tuple[float, bool]] | None = None
 
     def __post_init__(self) -> None:
-        """Validate digital data after initialization."""
+        """Validate trace data after initialization."""
         if not isinstance(self.data, np.ndarray):
-            raise TypeError(f"data must be a numpy array, got {type(self.data).__name__}")
-        if self.data.dtype != np.bool_:
-            # Convert to boolean if not already
-            self.data = self.data.astype(np.bool_)
-
-    @property
-    def time_vector(self) -> NDArray[np.float64]:
-        """Time axis in seconds.
-
-        Returns:
-            Array of time values in seconds, same length as data.
-        """
-        n_samples = len(self.data)
-        return np.arange(n_samples, dtype=np.float64) * self.metadata.time_base
+            raise TypeError(f"data must be numpy array, got {type(self.data).__name__}")
+        if self.data.dtype != bool:
+            raise TypeError(f"data must be boolean array, got dtype {self.data.dtype}")
+        if self.data.ndim != 1:
+            raise ValueError(f"data must be 1-D array, got shape {self.data.shape}")
+        if len(self.data) == 0:
+            raise ValueError("data array cannot be empty")
 
     @property
     def duration(self) -> float:
-        """Total duration of the trace in seconds.
-
-        Returns:
-            Duration from first to last sample in seconds.
-        """
-        if len(self.data) == 0:
+        """Duration of the trace in seconds (time from first to last sample)."""
+        if len(self.data) <= 1:
             return 0.0
-        return (len(self.data) - 1) * self.metadata.time_base
+        return (len(self.data) - 1) / self.metadata.sample_rate
 
     @property
-    def rising_edges(self) -> list[float]:
-        """Timestamps of rising edges.
-
-        Returns:
-            List of timestamps where signal transitions from low to high.
-        """
-        if self.edges is None:
-            return []
-        return [ts for ts, is_rising in self.edges if is_rising]
-
-    @property
-    def falling_edges(self) -> list[float]:
-        """Timestamps of falling edges.
-
-        Returns:
-            List of timestamps where signal transitions from high to low.
-        """
-        if self.edges is None:
-            return []
-        return [ts for ts, is_rising in self.edges if not is_rising]
+    def time(self) -> NDArray[np.floating[Any]]:
+        """Time axis array for the trace."""
+        return np.arange(len(self.data)) / self.metadata.sample_rate + self.metadata.start_time
 
     @property
     def is_analog(self) -> bool:
@@ -399,99 +410,63 @@ class DigitalTrace:
         """Return number of samples in the trace."""
         return len(self.data)
 
+    def __getitem__(self, key: int | slice) -> bool | NDArray[np.bool_]:
+        """Get sample(s) by index."""
+        return self.data[key]
+
 
 @dataclass
 class IQTrace:
-    """I/Q (In-phase/Quadrature) waveform data with metadata.
+    """I/Q (complex) trace for RF/SDR applications.
 
-    Stores complex-valued signal data as separate I and Q components,
-    commonly used for RF and software-defined radio applications.
+    Represents complex-valued I/Q data from software-defined radios
+    or RF measurement equipment. Provides properties for signal type detection.
 
     Attributes:
-        i_data: In-phase component samples as numpy float array.
-        q_data: Quadrature component samples as numpy float array.
-        metadata: Associated trace metadata.
+        data: Complex-valued I/Q data array.
+        metadata: Trace metadata (sample rate, channel, units).
+
+    Properties:
+        is_analog: Always False for IQTrace.
+        is_digital: Always False for IQTrace.
+        is_iq: Always True for IQTrace.
+        signal_type: Returns "iq".
 
     Example:
-        >>> import numpy as np
-        >>> t = np.linspace(0, 1e-3, 1000)
-        >>> i_data = np.cos(2 * np.pi * 1e6 * t)
-        >>> q_data = np.sin(2 * np.pi * 1e6 * t)
-        >>> trace = IQTrace(i_data=i_data, q_data=q_data, metadata=TraceMetadata(sample_rate=1e6))
-        >>> print(f"Complex samples: {len(trace)}")
-        Complex samples: 1000
-
-    References:
-        IEEE Std 181-2011: Transitional Waveform Definitions
+        >>> data = np.exp(1j * 2 * np.pi * np.linspace(0, 1, 100))
+        >>> meta = TraceMetadata(sample_rate=1e6, units="V")
+        >>> trace = IQTrace(data=data, metadata=meta)
+        >>> print(f"Signal type: {trace.signal_type}")
+        Signal type: iq
+        >>> print(f"Is I/Q: {trace.is_iq}")
+        Is I/Q: True
     """
 
-    i_data: NDArray[np.floating[Any]]
-    q_data: NDArray[np.floating[Any]]
+    data: NDArray[np.complexfloating[Any, Any]]
     metadata: TraceMetadata
 
     def __post_init__(self) -> None:
-        """Validate I/Q data after initialization."""
-        if not isinstance(self.i_data, np.ndarray):
-            raise TypeError(f"i_data must be a numpy array, got {type(self.i_data).__name__}")
-        if not isinstance(self.q_data, np.ndarray):
-            raise TypeError(f"q_data must be a numpy array, got {type(self.q_data).__name__}")
-        if len(self.i_data) != len(self.q_data):
-            raise ValueError(
-                f"I and Q data must have same length, got {len(self.i_data)} and {len(self.q_data)}"
-            )
-        # Convert to float64 if not already floating point
-        if not np.issubdtype(self.i_data.dtype, np.floating):
-            self.i_data = self.i_data.astype(np.float64)
-        if not np.issubdtype(self.q_data.dtype, np.floating):
-            self.q_data = self.q_data.astype(np.float64)
-
-    @property
-    def complex_data(self) -> NDArray[np.complex128]:
-        """Return I/Q data as complex array.
-
-        Returns:
-            Complex array where real=I, imag=Q.
-        """
-        return self.i_data + 1j * self.q_data
-
-    @property
-    def magnitude(self) -> NDArray[np.float64]:
-        """Magnitude (amplitude) of the complex signal.
-
-        Returns:
-            Array of magnitude values sqrt(I² + Q²).
-        """
-        return np.sqrt(self.i_data**2 + self.q_data**2)
-
-    @property
-    def phase(self) -> NDArray[np.float64]:
-        """Phase angle of the complex signal in radians.
-
-        Returns:
-            Array of phase values atan2(Q, I).
-        """
-        return np.arctan2(self.q_data, self.i_data)
-
-    @property
-    def time_vector(self) -> NDArray[np.float64]:
-        """Time axis in seconds.
-
-        Returns:
-            Array of time values in seconds, same length as data.
-        """
-        n_samples = len(self.i_data)
-        return np.arange(n_samples, dtype=np.float64) * self.metadata.time_base
+        """Validate trace data after initialization."""
+        if not isinstance(self.data, np.ndarray):
+            raise TypeError(f"data must be numpy array, got {type(self.data).__name__}")
+        if not np.iscomplexobj(self.data):
+            raise TypeError(f"data must be complex array, got dtype {self.data.dtype}")
+        if self.data.ndim != 1:
+            raise ValueError(f"data must be 1-D array, got shape {self.data.shape}")
+        if len(self.data) == 0:
+            raise ValueError("data array cannot be empty")
 
     @property
     def duration(self) -> float:
-        """Total duration of the trace in seconds.
-
-        Returns:
-            Duration from first to last sample in seconds.
-        """
-        if len(self.i_data) == 0:
+        """Duration of the trace in seconds (time from first to last sample)."""
+        if len(self.data) <= 1:
             return 0.0
-        return (len(self.i_data) - 1) * self.metadata.time_base
+        return (len(self.data) - 1) / self.metadata.sample_rate
+
+    @property
+    def time(self) -> NDArray[np.floating[Any]]:
+        """Time axis array for the trace."""
+        return np.arange(len(self.data)) / self.metadata.sample_rate + self.metadata.start_time
 
     @property
     def is_analog(self) -> bool:
@@ -531,22 +506,26 @@ class IQTrace:
 
     def __len__(self) -> int:
         """Return number of samples in the trace."""
-        return len(self.i_data)
+        return len(self.data)
+
+    def __getitem__(self, key: int | slice) -> complex | NDArray[np.complexfloating[Any, Any]]:
+        """Get sample(s) by index."""
+        return self.data[key]
 
 
 @dataclass
 class ProtocolPacket:
-    """Decoded protocol packet data.
+    """Decoded protocol packet with metadata.
 
-    Represents a decoded packet from a serial protocol (UART, SPI, I2C, etc.)
-    with timing, data content, annotations, and error information.
+    Represents a decoded packet/frame from protocol analysis
+    (UART, SPI, I2C, CAN, etc.).
 
     Attributes:
-        timestamp: Start time of the packet in seconds.
-        protocol: Name of the protocol (e.g., "UART", "SPI", "I2C").
-        data: Decoded data bytes.
-        annotations: Multi-level annotations dictionary (optional).
-        errors: List of detected errors (optional).
+        timestamp: Packet timestamp in seconds.
+        protocol: Protocol name (e.g., "UART", "SPI", "I2C").
+        data: Raw packet data as bytes.
+        annotations: Protocol-specific annotations (e.g., address, command).
+        errors: List of decoding errors (empty if no errors).
         end_timestamp: End time of the packet in seconds (optional).
 
     Example:
@@ -609,6 +588,7 @@ __all__ = [
     "CalibrationInfo",
     "DigitalTrace",
     "IQTrace",
+    "MeasurementResult",
     "ProtocolPacket",
     "Trace",
     "TraceMetadata",

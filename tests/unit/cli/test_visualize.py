@@ -64,7 +64,9 @@ def sample_iq_trace(sample_metadata):
     """Create sample IQ trace."""
     i_data = np.cos(2 * np.pi * 1000 * np.arange(1000) / 10e6)
     q_data = np.sin(2 * np.pi * 1000 * np.arange(1000) / 10e6)
-    return IQTrace(i_data=i_data, q_data=q_data, metadata=sample_metadata)
+    # IQTrace uses complex data array
+    data = i_data + 1j * q_data
+    return IQTrace(data=data, metadata=sample_metadata)
 
 
 # =============================================================================

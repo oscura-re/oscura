@@ -86,7 +86,7 @@ class TestRigolWFMWithMocks:
             assert trace.metadata.sample_rate == 1e6
             assert trace.metadata.vertical_scale == 2.0
             assert trace.metadata.vertical_offset == 0.5
-            assert trace.metadata.channel_name == "CH1"
+            assert trace.metadata.channel == "CH1"
         finally:
             _restore_rigol_wfm_module(rigol_module, original)
 
@@ -117,14 +117,14 @@ class TestRigolWFMWithMocks:
             # Load channel 0
             trace0 = _load_with_rigolwfm(wfm_path, channel=0)
             np.testing.assert_array_almost_equal(trace0.data, [1.0, 2.0, 3.0])
-            assert trace0.metadata.channel_name == "CH1"
+            assert trace0.metadata.channel == "CH1"
             assert trace0.metadata.vertical_scale == 1.5
             assert trace0.metadata.vertical_offset == 0.1
 
             # Load channel 1
             trace1 = _load_with_rigolwfm(wfm_path, channel=1)
             np.testing.assert_array_almost_equal(trace1.data, [4.0, 5.0, 6.0])
-            assert trace1.metadata.channel_name == "CH2"
+            assert trace1.metadata.channel == "CH2"
             assert trace1.metadata.vertical_scale == 2.5
             assert trace1.metadata.vertical_offset == 0.2
         finally:

@@ -343,7 +343,7 @@ def slew_rate(
         return np.array([], dtype=np.float64) if return_all else np.nan
 
     data = trace.data
-    sample_period = trace.metadata.time_base
+    sample_period = 1.0 / trace.metadata.sample_rate
 
     # Find signal levels and validate
     low, high = _find_levels(data)

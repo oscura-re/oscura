@@ -206,7 +206,7 @@ class SaleaeSource:
 
         from oscura.core.types import DigitalTrace, TraceMetadata, WaveformTrace
 
-        acquisition_start = datetime.now()
+        acquisition_time = datetime.now()
 
         # Start capture
         self.saleae.capture_start()
@@ -223,11 +223,15 @@ class SaleaeSource:
 
         n_samples = int(self.sample_rate * self.duration)
 
+        # Format channel list for display
+        channel_list = self.digital_channels or self.analog_channels
+        source_file = f"saleae://{self.device_id}" if self.device_id else "saleae://unknown"
+
         metadata = TraceMetadata(
             sample_rate=self.sample_rate,
-            acquisition_time=acquisition_start,
-            source_file=f"saleae://{self.device_id or 'auto'}",
-            channel_name=f"Saleae Ch{self.digital_channels or self.analog_channels}",
+            channel=f"Saleae Ch{channel_list}",
+            source_file=source_file,
+            acquisition_time=acquisition_time,
         )
 
         if self.digital_channels:
@@ -289,11 +293,7 @@ class SaleaeSource:
                 sample_rate=full_trace.metadata.sample_rate,
                 vertical_scale=full_trace.metadata.vertical_scale,
                 vertical_offset=full_trace.metadata.vertical_offset,
-                acquisition_time=full_trace.metadata.acquisition_time,
-                trigger_info=full_trace.metadata.trigger_info,
-                source_file=full_trace.metadata.source_file,
-                channel_name=full_trace.metadata.channel_name,
-                calibration_info=full_trace.metadata.calibration_info,
+                channel=full_trace.metadata.channel,
             )
 
             if isinstance(full_trace, DigitalTrace):

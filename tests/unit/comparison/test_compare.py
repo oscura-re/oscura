@@ -75,7 +75,7 @@ class TestDifference:
         """Test difference of identical traces returns zeros."""
         result = difference(sine_trace, sine_trace)
         np.testing.assert_allclose(result.data, 0, atol=1e-10)
-        assert result.metadata.channel_name == "difference"
+        assert result.metadata.channel == "difference"
 
     def test_difference_offset(self, sine_trace: WaveformTrace) -> None:
         """Test difference with constant offset."""
@@ -111,8 +111,8 @@ class TestDifference:
 
     def test_difference_custom_channel_name(self, sine_trace: WaveformTrace) -> None:
         """Test difference with custom channel name."""
-        result = difference(sine_trace, sine_trace, channel_name="my_diff")
-        assert result.metadata.channel_name == "my_diff"
+        result = difference(sine_trace, sine_trace, channel="my_diff")
+        assert result.metadata.channel == "my_diff"
 
 
 @pytest.mark.unit
@@ -348,17 +348,10 @@ class TestComparisonCompareEdgeCases:
 
     def test_empty_traces(self) -> None:
         """Test comparison with empty traces."""
+        # Empty arrays should raise ValueError at trace creation time
         metadata = TraceMetadata(sample_rate=1e6)
-        trace1 = WaveformTrace(data=np.array([]), metadata=metadata)
-        trace2 = WaveformTrace(data=np.array([]), metadata=metadata)
-
-        # Should handle gracefully (may raise or return sensible defaults)
-        try:
-            result = compare_traces(trace1, trace2)
-            assert isinstance(result, ComparisonResult)
-        except (ValueError, IndexError):
-            # Acceptable to raise on empty data
-            pass
+        with pytest.raises(ValueError, match="data array cannot be empty"):
+            WaveformTrace(data=np.array([]), metadata=metadata)
 
     def test_single_sample(self) -> None:
         """Test comparison with single sample traces."""

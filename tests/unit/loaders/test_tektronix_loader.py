@@ -342,7 +342,7 @@ class TestTektronixMetadata:
 
         # Channel name may or may not be present
         if hasattr(trace.metadata, "channel_name"):
-            cn = trace.metadata.channel_name
+            cn = trace.metadata.channel
             if cn is not None:
                 assert isinstance(cn, str)
 

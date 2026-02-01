@@ -80,7 +80,7 @@ class TestTektronixWFMLoader:
         # Verify
         assert len(trace.data) == 1000
         assert trace.metadata.source_file == str(wfm_file)
-        assert trace.metadata.channel_name is not None
+        assert trace.metadata.channel is not None
 
     def create_wfm003_file_with_data(
         self,
@@ -236,7 +236,7 @@ class TestTektronixWFMLoader:
         assert trace.metadata is not None
         # Sample rate and channel name should be present
         assert trace.metadata.sample_rate is not None or trace.metadata.sample_rate == 0
-        assert trace.metadata.channel_name is not None
+        assert trace.metadata.channel is not None
         assert trace.metadata.source_file == str(wfm_file)
 
     @pytest.mark.parametrize("sample_count", [1, 10, 100, 1000, 10000])
@@ -277,7 +277,7 @@ class TestDigitalWaveformLoader:
         assert len(trace.data) == 8
         assert trace.data.dtype == np.bool_
         assert trace.metadata.sample_rate == pytest.approx(1e9, rel=1e-6)
-        assert trace.metadata.channel_name == "D1"
+        assert trace.metadata.channel == "D1"
 
     def test_digital_trace_boolean_conversion(self) -> None:
         """Test that digital data is properly converted to boolean."""
@@ -335,7 +335,7 @@ class TestDigitalWaveformLoader:
         trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 0)
 
         # Should use default naming "D1" (channel index + 1)
-        assert trace.metadata.channel_name == "D1"
+        assert trace.metadata.channel == "D1"
 
     def test_digital_trace_with_empty_name(self) -> None:
         """Test digital trace loading when name attributes are empty strings."""
@@ -353,7 +353,7 @@ class TestDigitalWaveformLoader:
         trace = _load_digital_waveform(mock_wfm, Path("/tmp/test.wfm"), 2)
 
         # Should use default naming "D3" (channel index 2 + 1)
-        assert trace.metadata.channel_name == "D3"
+        assert trace.metadata.channel == "D3"
 
 
 class TestMultiChannelLoading:
@@ -560,66 +560,63 @@ class TestIQTrace:
         q_data = np.sin(2 * np.pi * 10e3 * t)
 
         metadata = TraceMetadata(sample_rate=sample_rate)
-        trace = IQTrace(i_data=i_data, q_data=q_data, metadata=metadata)
+        trace = IQTrace(data=i_data + 1j * q_data, metadata=metadata)
 
         assert len(trace) == n_samples
-        assert len(trace.i_data) == n_samples
-        assert len(trace.q_data) == n_samples
+        assert len(trace.data.real) == n_samples
+        assert len(trace.data.imag) == n_samples
         assert trace.metadata.sample_rate == sample_rate
 
     def test_iq_trace_complex_data(self) -> None:
-        """Test IQTrace.complex_data property."""
+        """Test IQTrace.data property."""
         from oscura.core.types import IQTrace, TraceMetadata
 
         i_data = np.array([1.0, 0.0, -1.0, 0.0])
         q_data = np.array([0.0, 1.0, 0.0, -1.0])
 
         trace = IQTrace(
-            i_data=i_data,
-            q_data=q_data,
+            data=i_data + 1j * q_data,
             metadata=TraceMetadata(sample_rate=1e6),
         )
 
-        complex_data = trace.complex_data
+        complex_data = trace.data
         assert complex_data.dtype == np.complex128
         np.testing.assert_array_almost_equal(complex_data.real, i_data)
         np.testing.assert_array_almost_equal(complex_data.imag, q_data)
 
     def test_iq_trace_magnitude_phase(self) -> None:
-        """Test IQTrace.magnitude and phase properties."""
+        """Test IQTrace complex data (magnitude and phase can be computed from .data)."""
         from oscura.core.types import IQTrace, TraceMetadata
 
         # Create unit circle points
         i_data = np.array([1.0, 0.0, -1.0, 0.0])
         q_data = np.array([0.0, 1.0, 0.0, -1.0])
 
-        trace = IQTrace(
-            i_data=i_data,
-            q_data=q_data,
-            metadata=TraceMetadata(sample_rate=1e6),
-        )
+        trace = IQTrace(data=i_data + 1j * q_data, metadata=TraceMetadata(sample_rate=1e6))
 
-        # Magnitude should be 1 for all points
-        np.testing.assert_array_almost_equal(trace.magnitude, [1.0, 1.0, 1.0, 1.0])
+        # Magnitude should be 1 for all points (computed from complex data)
+        magnitude = np.abs(trace.data)
+        np.testing.assert_array_almost_equal(magnitude, [1.0, 1.0, 1.0, 1.0])
 
-        # Phase should be 0, π/2, π, -π/2
+        # Phase should be 0, π/2, π, -π/2 (computed from complex data)
+        phase = np.angle(trace.data)
         expected_phase = np.array([0, np.pi / 2, np.pi, -np.pi / 2])
-        np.testing.assert_array_almost_equal(trace.phase, expected_phase)
+        np.testing.assert_array_almost_equal(phase, expected_phase)
 
     def test_iq_trace_time_vector(self) -> None:
-        """Test IQTrace.time_vector property."""
+        """Test IQTrace.time property (time axis generation)."""
         from oscura.core.types import IQTrace, TraceMetadata
 
         sample_rate = 1e6
         n_samples = 100
 
         trace = IQTrace(
-            i_data=np.zeros(n_samples),
-            q_data=np.zeros(n_samples),
+            data=np.zeros(n_samples) + 1j * np.zeros(n_samples),
             metadata=TraceMetadata(sample_rate=sample_rate),
         )
 
-        time_vec = trace.time_vector
+        # IQTrace has .time property, not .time_vector
+        time_vec = trace.time
         assert len(time_vec) == n_samples
         assert time_vec[0] == 0.0
         np.testing.assert_almost_equal(time_vec[1], 1.0 / sample_rate)
@@ -632,8 +629,7 @@ class TestIQTrace:
         n_samples = 1001  # 1000 intervals
 
         trace = IQTrace(
-            i_data=np.zeros(n_samples),
-            q_data=np.zeros(n_samples),
+            data=np.zeros(n_samples) + 1j * np.zeros(n_samples),
             metadata=TraceMetadata(sample_rate=sample_rate),
         )
 
@@ -641,13 +637,16 @@ class TestIQTrace:
         np.testing.assert_almost_equal(trace.duration, expected_duration)
 
     def test_iq_trace_length_mismatch(self) -> None:
-        """Test IQTrace raises error for mismatched I/Q lengths."""
+        """Test IQTrace validates complex data array.
+
+        In v0.9.0, IQTrace takes complex data directly, not separate I/Q arrays.
+        """
         from oscura.core.types import IQTrace, TraceMetadata
 
-        with pytest.raises(ValueError, match="I and Q data must have same length"):
+        # Test that empty arrays are rejected
+        with pytest.raises(ValueError, match="data array cannot be empty"):
             IQTrace(
-                i_data=np.array([1.0, 2.0, 3.0]),
-                q_data=np.array([1.0, 2.0]),
+                data=np.array([], dtype=np.complex128),
                 metadata=TraceMetadata(sample_rate=1e6),
             )
 

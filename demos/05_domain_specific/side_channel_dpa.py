@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 
@@ -44,7 +45,7 @@ class SideChannelDPADemo(BaseDemo):
     category = "domain_specific"
 
     # AES S-box (first 32 entries for demo)
-    AES_SBOX = [
+    AES_SBOX: ClassVar[list[int]] = [
         0x63,
         0x7C,
         0x77,
@@ -95,7 +96,7 @@ class SideChannelDPADemo(BaseDemo):
         sample_rate = 1e9
 
         # Generate traces with known key leakage
-        for i in range(num_traces):
+        for _i in range(num_traces):
             plaintext = np.random.randint(0, 32)  # Limited to first 32 S-box entries
             self.plaintexts.append(plaintext)
 

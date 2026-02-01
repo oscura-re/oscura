@@ -308,7 +308,6 @@ class MmapWaveformTrace:
 
         metadata = TraceMetadata(
             sample_rate=self._sample_rate,
-            source_file=str(self._file_path),
             **self._metadata,
         )
 

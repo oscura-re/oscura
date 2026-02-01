@@ -22,11 +22,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from typing import TYPE_CHECKING, ClassVar
+
 import numpy as np
 
 from demos.common.base_demo import BaseDemo, run_demo_main
-from demos.common.validation import ValidationSuite
 from oscura.core.types import TraceMetadata, WaveformTrace
+
+if TYPE_CHECKING:
+    from demos.common.validation import ValidationSuite
 
 
 class TDRDemo(BaseDemo):
@@ -35,14 +39,14 @@ class TDRDemo(BaseDemo):
     name = "Time-Domain Reflectometry (TDR)"
     description = "Impedance profiling and discontinuity detection"
     category = "advanced_analysis"
-    capabilities = [
+    capabilities: ClassVar[list[str]] = [
         "TDR trace analysis",
         "Impedance vs distance",
         "Discontinuity detection",
         "Reflection coefficient",
     ]
-    ieee_standards = ["IEEE 181-2011"]
-    related_demos = ["04_advanced_analysis/08_signal_integrity.py"]
+    ieee_standards: ClassVar[list[str]] = ["IEEE 181-2011"]
+    related_demos: ClassVar[list[str]] = ["04_advanced_analysis/08_signal_integrity.py"]
 
     def generate_data(self) -> None:
         """Generate TDR response signals."""
@@ -110,7 +114,7 @@ class TDRDemo(BaseDemo):
         z_prev = z_source
         distance = 0
 
-        for i, (z, length) in enumerate(zip(impedances, lengths)):
+        for _i, (z, length) in enumerate(zip(impedances, lengths, strict=False)):
             # Reflection coefficient
             gamma = (z - z_prev) / (z + z_prev)
 

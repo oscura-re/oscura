@@ -391,7 +391,7 @@ class TestCheckCompliance:
 
         metadata = TraceMetadata(
             sample_rate=sample_rate,
-            channel_name="CH1",
+            channel="CH1",
         )
 
         return WaveformTrace(data=signal, metadata=metadata)
@@ -508,7 +508,7 @@ class TestComplianceTestingIntegration:
 
         metadata = TraceMetadata(
             sample_rate=sample_rate,
-            channel_name="DUT",
+            channel="DUT",
         )
 
         trace = WaveformTrace(data=signal, metadata=metadata)

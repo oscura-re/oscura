@@ -172,8 +172,7 @@ class SocketCANSource:
             metadata = TraceMetadata(
                 sample_rate=1.0,  # Placeholder
                 acquisition_time=acquisition_start,
-                source_file=f"socketcan://{self.interface}",
-                channel_name=f"CAN {self.interface}",
+                channel=f"CAN {self.interface}",
             )
             return DigitalTrace(data=np.array([], dtype=np.uint8), metadata=metadata)
 
@@ -189,7 +188,7 @@ class SocketCANSource:
             sample_rate=effective_rate,
             acquisition_time=acquisition_start,
             source_file=f"socketcan://{self.interface}",
-            channel_name=f"CAN {self.interface}",
+            channel=f"CAN {self.interface}",
         )
 
         # Store CAN IDs as digital data
@@ -249,7 +248,7 @@ class SocketCANSource:
                         sample_rate=effective_rate,
                         acquisition_time=acquisition_start,
                         source_file=f"socketcan://{self.interface}",
-                        channel_name=f"CAN {self.interface}",
+                        channel=f"CAN {self.interface}",
                     )
 
                     data_bytes = can_ids.view(np.uint8)
@@ -268,8 +267,7 @@ class SocketCANSource:
             metadata = TraceMetadata(
                 sample_rate=effective_rate,
                 acquisition_time=acquisition_start,
-                source_file=f"socketcan://{self.interface}",
-                channel_name=f"CAN {self.interface}",
+                channel=f"CAN {self.interface}",
             )
 
             data_bytes = can_ids.view(np.uint8)

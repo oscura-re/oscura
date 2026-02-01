@@ -31,7 +31,7 @@ def trace_list() -> list[WaveformTrace]:
     for i in range(10):
         noise = np.random.normal(0, 0.01, 1000)
         data = base_data + noise
-        metadata = TraceMetadata(sample_rate=1e6, channel_name=f"CH{i}")
+        metadata = TraceMetadata(sample_rate=1e6, channel=f"CH{i}")
         traces.append(WaveformTrace(data=data, metadata=metadata))
 
     return traces

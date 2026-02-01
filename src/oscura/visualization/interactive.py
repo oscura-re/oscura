@@ -212,7 +212,7 @@ def enable_zoom_pan(
 
     Example:
         >>> fig, ax = plt.subplots()
-        >>> ax.plot(trace.time_vector, trace.data)
+        >>> ax.plot(trace.time, trace.data)
         >>> state = enable_zoom_pan(ax)
 
     References:
@@ -275,7 +275,7 @@ def plot_with_cursors(
     # Get data and time vector
     if isinstance(trace, WaveformTrace):
         data = trace.data
-        time = trace.time_vector
+        time = trace.time
     else:
         data = np.asarray(trace)
         if sample_rate is None:
